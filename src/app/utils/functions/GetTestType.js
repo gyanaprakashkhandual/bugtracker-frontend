@@ -16,7 +16,7 @@ export const getTestTypes = async () => {
 
     // 3. Fetch test types
     const response = await axios.get(
-      `http://localhost:5000/api/v1/test/${projectId}/test-types`,
+      `http://localhost:5000/api/v1/test-type/${projectId}`,
       {
         headers: {
           Authorization: `Bearer ${token}`,
