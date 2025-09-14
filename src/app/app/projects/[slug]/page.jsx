@@ -1,56 +1,53 @@
+'use client';
+
+import { useState, useEffect } from 'react';
 import Navbar from "@/app/components/modules/Navbar";
-import TestTypeList from "@/app/components/modules/Window";
-import { cookies } from "next/headers";
 
-export const dynamic = "force-dynamic";
+export default function TokenDebugger() {
+  const [token, setToken] = useState('');
+  const [tokenExists, setTokenExists] = useState(false);
+  const [error, setError] = useState('');
+  const [debugInfo, setDebugInfo] = useState('');
 
-async function getProjectBySlug(slug) {
-  const cookieStore = await cookies();
-  const token = cookieStore.get("token")?.value;
+  useEffect(() => {
+    // Check for token in cookies
+    const checkToken = () => {
+      const cookies = document.cookie.split(';');
+      const tokenCookie = cookies.find(cookie => cookie.trim().startsWith('token='));
+      
+      if (tokenCookie) {
+        const tokenValue = tokenCookie.split('=')[1];
+        setToken(tokenValue);
+        setTokenExists(true);
+        
+        // Debug info
+        setDebugInfo(`
+          Token found: Yes
+          Token length: ${tokenValue.length}
+          Token preview: ${tokenValue.substring(0, 20)}...
+          Token parts: ${tokenValue.split('.').length}
+          Issue: Invalid JWT signature (backend verification failed)
+        `);
+      } else {
+        setTokenExists(false);
+        setDebugInfo('No token found in cookies');
+      }
+    };
 
-  const res = await fetch(`http://localhost:5000/api/v1/project/slug/${slug}`, {
-    cache: "no-store",
-    headers: {
-      Authorization: token ? `Bearer ${token}` : "",
-      "Content-Type": "application/json",
-    },
-  });
+    checkToken();
+  }, []);
 
-  if (!res.ok) {
-    if (res.status === 401) throw new Error("Unauthorized: Please log in");
-    throw new Error("Failed to fetch project");
-  }
+  const clearToken = () => {
+    document.cookie = 'token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+    setToken('');
+    setTokenExists(false);
+    setError('Token cleared. Please log in again.');
+    setDebugInfo('Token has been cleared from cookies');
+  };
 
-  const result = await res.json();
-  return result.data;
-}
-
-export default async function ProjectPage({ params }) {
-  try {
-    const { slug } = await params;
-    const project = await getProjectBySlug(slug);
-
-    return (
-      <div className="">
-        <div>
-          <Navbar />
-        </div>
-        <div className="">
-          <TestTypeList />
-        </div>
-      </div>
-    );
-  } catch (error) {
-    return (
-      <div className="p-6">
-        <h1 className="text-3xl font-bold text-red-600">Error</h1>
-        <p className="mt-4 text-gray-700">{error.message}</p>
-        {error.message.includes("Unauthorized") && (
-          <p className="mt-2 text-sm text-blue-600">
-            <a href="/login">Please log in to continue</a>
-          </p>
-        )}
-      </div>
-    );
-  }
+  return (
+    <div className="min-h-screen bg-gray-50">
+      <Navbar />
+    </div>
+  );
 }
