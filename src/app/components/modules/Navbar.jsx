@@ -17,13 +17,15 @@ import {
     FileText,
     ChevronDown,
     Trash,
-    Trash2
+    Trash2,
+    Palette
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getProjectDetails } from '@/app/utils/functions/GetProjectDetails';
 import TestTypeList from './Window';
 import { SettingSidebar } from './Sidebar';
 import { GoogleArrowDown } from '../utils/Icon';
+import { FaThemeco } from 'react-icons/fa';
 
 // Styled Dropdown Component
 const StyledDropdown = ({ options, placeholder, value, onChange, size = "sm", className = "" }) => {
@@ -295,14 +297,14 @@ export default function Navbar() {
                             <Trash2 className="h-5 w-5 text-red-600" />
                         </motion.button>
 
-                        {/* Messages with team */}
+                        {/* Theme changing option */}
                         <motion.button
 
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
                             className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg transition-colors duration-200"
                         >
-                            <MessageSquarePlus className="h-5 w-5 text-blue-900" />
+                            <Palette className="h-5 w-5 text-blue-900" />
                         </motion.button>
                         <motion.button
                             whileHover={{ scale: 1.1 }}
