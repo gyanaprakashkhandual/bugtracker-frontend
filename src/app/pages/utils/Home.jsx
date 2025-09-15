@@ -101,6 +101,18 @@ export default function CaffetestLanding() {
 
               <motion.button
                 onClick={() => router.push('/auth')}
+                className="px-5 py-2 bg-purple-600 text-white font-medium rounded-4xl hover:bg-purple-700 transition-all duration-200 text-sm"
+                initial={{ opacity: 0, y: -10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.5, delay: 0.4 }}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                Subscribe
+              </motion.button>
+
+              <motion.button
+                onClick={() => router.push('/auth')}
                 className="px-5 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-all duration-200 text-sm"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -389,11 +401,7 @@ export default function CaffetestLanding() {
                   <p className="text-gray-600 leading-relaxed">{step.description}</p>
                 </div>
 
-                {index < 2 && (
-                  <div className="hidden lg:block absolute top-1/2 -right-4 w-6 h-6 text-gray-300">
-                    <FaArrowRight className="w-full h-full" />
-                  </div>
-                )}
+                
               </motion.div>
             ))}
           </div>
