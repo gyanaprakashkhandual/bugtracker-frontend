@@ -2,7 +2,15 @@
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { getTestTypes } from "@/app/utils/functions/GetTestType";
-import { MoreVertical, X, FolderOpen, Calendar, User, Code } from "lucide-react";
+import {
+    MoreVertical,
+    X,
+    FolderOpen,
+    Calendar,
+    User,
+    Code,
+} from "lucide-react";
+import { ThreeDotsDropdown } from "../assets/Dropdown";
 
 export default function TestTypeList({ sidebarOpen, onClose }) {
     const [testTypes, setTestTypes] = useState(null);
@@ -29,7 +37,7 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.4, ease: "easeInOut" }}
-                        className="fixed inset-0 bg-black bg-opacity-50 z-40"
+                        className="fixed inset-0 z-40"
                         onClick={onClose}
                     />
                 )}
@@ -42,23 +50,25 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
                         initial={{ x: -300, opacity: 0 }}
                         animate={{ x: 0, opacity: 1 }}
                         exit={{ x: -300, opacity: 0 }}
-                        transition={{ 
-                            duration: 0.5, 
+                        transition={{
+                            duration: 0.5,
                             ease: [0.25, 0.46, 0.45, 0.94],
                             type: "spring",
                             damping: 25,
-                            stiffness: 120
+                            stiffness: 120,
                         }}
-                        className="fixed left-0 top-0 h-[calc(100vh-4rem)] w-72 mt-16 bg-gradient-to-br from-blue-50 via-sky-50 to-white shadow-xl z-50 flex flex-col backdrop-blur-sm"
+                        className="fixed left-0 top-0 h-[calc(100vh-4rem)] w-72 mt-16 bg-gradient-to-br from-blue-50 via-sky-50 to-white z-50 flex flex-col backdrop-blur-sm"
                     >
                         {/* Header */}
-                        <motion.div 
+                        <motion.div
                             initial={{ y: -20, opacity: 0 }}
                             animate={{ y: 0, opacity: 1 }}
                             transition={{ delay: 0.2, duration: 0.4, ease: "easeOut" }}
                             className="flex items-center justify-between p-4 border-b border-gray-200/50 backdrop-blur-sm"
                         >
-                            <h2 className="text-lg font-semibold text-gray-800">Test Types</h2>
+                            <h2 className="text-lg font-semibold text-gray-800">
+                                Test Types
+                            </h2>
                             <motion.button
                                 onClick={onClose}
                                 className="p-1 rounded-full hover:bg-gray-100 transition-all duration-300 ease-in-out"
@@ -73,18 +83,18 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
                         {/* Content */}
                         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent p-2">
                             {loading ? (
-                                <motion.div 
+                                <motion.div
                                     initial={{ opacity: 0, scale: 0.8 }}
                                     animate={{ opacity: 1, scale: 1 }}
                                     transition={{ duration: 0.4, ease: "easeOut" }}
                                     className="flex justify-center items-center h-40"
                                 >
-                                    <motion.div 
+                                    <motion.div
                                         animate={{ rotate: 360 }}
-                                        transition={{ 
+                                        transition={{
                                             duration: 1,
                                             repeat: Infinity,
-                                            ease: "linear"
+                                            ease: "linear",
                                         }}
                                         className="rounded-full h-8 w-8 border-b-2 border-blue-500"
                                     ></motion.div>
@@ -103,47 +113,35 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
                                                 ease: [0.25, 0.46, 0.45, 0.94],
                                                 type: "spring",
                                                 damping: 20,
-                                                stiffness: 100
+                                                stiffness: 100,
                                             }}
                                             whileHover="hover"
                                             whileTap="tap"
                                             onHoverStart={() => setHoveredTest(testType._id)}
                                             onHoverEnd={() => setHoveredTest(null)}
-                                            className="mx-2 my-1 rounded-xl border border-transparent hover:border-slate-200/60 transition-all duration-300 ease-in-out"
-                                            variants={{
-                                                hover: {
-                                                    scale: 1.02,
-                                                    y: -2,
-                                                    boxShadow: "0 4px 20px rgba(0, 0, 0, 0.1)",
-                                                    transition: { duration: 0.2, ease: "easeOut" }
-                                                },
-                                                tap: {
-                                                    scale: 0.98,
-                                                    transition: { duration: 0.1 }
-                                                }
-                                            }}
+                                            className="mx-2 my-1 rounded-xl border border-transparent hover:border-slate-200/60 transition-all duration-300 ease-in-out cursor-pointer"
                                         >
                                             <div className="flex items-center justify-between px-4 py-3">
                                                 <div className="flex items-center gap-3 flex-1 min-w-0">
-                                                    <motion.div 
+                                                    <motion.div
                                                         className="flex-shrink-0"
                                                         variants={{
-                                                            hover: { 
+                                                            hover: {
                                                                 rotate: 15,
                                                                 scale: 1.1,
-                                                                transition: { duration: 0.2, ease: "easeOut" }
-                                                            }
+                                                                transition: { duration: 0.2, ease: "easeOut" },
+                                                            },
                                                         }}
                                                     >
                                                         <FolderOpen size={18} className="text-blue-500" />
                                                     </motion.div>
-                                                    <motion.span 
+                                                    <motion.span
                                                         className="font-medium text-slate-700 truncate"
                                                         variants={{
-                                                            hover: { 
+                                                            hover: {
                                                                 x: 4,
-                                                                transition: { duration: 0.2, ease: "easeOut" }
-                                                            }
+                                                                transition: { duration: 0.2, ease: "easeOut" },
+                                                            },
                                                         }}
                                                     >
                                                         {testType.testTypeName}
@@ -152,38 +150,49 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
 
                                                 <motion.div
                                                     initial={{ opacity: 0.7, scale: 0.8 }}
-                                                    animate={{
-                                                        opacity: hoveredTest === testType._id ? 1 : 0.7,
-                                                        scale: hoveredTest === testType._id ? 1 : 0.8,
-                                                        rotate: hoveredTest === testType._id ? 90 : 0
-                                                    }}
-                                                    transition={{ 
-                                                        duration: 0.3,
-                                                        ease: [0.25, 0.46, 0.45, 0.94]
-                                                    }}
+
                                                 >
-                                                    <MoreVertical className="w-4 h-4 text-gray-400" />
+                                                    <ThreeDotsDropdown
+                                                        className="ml-2" // adds some spacing from the element
+                                                        dropdownWidth="w-40" // slightly smaller, more compact
+                                                        position="bottom-right"
+                                                        options={[
+                                                            {
+                                                                label: "Rename",
+                                                                onClick: () => console.log("Rename clicked"),
+                                                                className: "text-blue-600 hover:text-blue-800", // extra styling
+                                                            },
+                                                            {
+                                                                label: "Delete",
+                                                                onClick: () => console.log("Delete clicked"),
+                                                                className: "text-red-600 hover:text-red-800", // extra styling
+                                                            },
+                                                        ]}
+                                                    />
+
+
+
                                                 </motion.div>
                                             </div>
                                         </motion.div>
                                     ))}
                                 </AnimatePresence>
                             ) : (
-                                <motion.div 
+                                <motion.div
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
                                     transition={{ duration: 0.4, ease: "easeOut" }}
                                     className="flex flex-col items-center justify-center h-40 text-gray-500"
                                 >
                                     <motion.div
-                                        animate={{ 
+                                        animate={{
                                             y: [0, -5, 0],
-                                            opacity: [0.5, 0.8, 0.5]
+                                            opacity: [0.5, 0.8, 0.5],
                                         }}
-                                        transition={{ 
+                                        transition={{
                                             duration: 2,
                                             repeat: Infinity,
-                                            ease: "easeInOut"
+                                            ease: "easeInOut",
                                         }}
                                     >
                                         <FolderOpen className="w-10 h-10 mb-2" />
