@@ -15,9 +15,11 @@ import {
     LayoutGrid,
     Bug,
     FileText,
-    ChevronDown
+    ChevronDown,
+    Trash,
+    Trash2
 } from 'lucide-react';
-
+import { useRouter } from 'next/navigation';
 import { getProjectDetails } from '@/app/utils/functions/GetProjectDetails';
 import TestTypeList from './Window';
 import { SettingSidebar } from './Sidebar';
@@ -106,6 +108,8 @@ export default function Navbar() {
     const [project, setProject] = useState(null);
     const [testTypeIsOpen, setTestTypeIsOpen] = useState(false);
     const [settingIsOpen, setSettingIsOpen] = useState(false);
+
+    const router = useRouter();
 
     useEffect(() => {
         (async () => {
@@ -225,7 +229,7 @@ export default function Navbar() {
                                 placeholder="Search..."
                                 onFocus={() => setSearchFocus(true)}
                                 onBlur={() => setSearchFocus(false)}
-                                className="block w-[500px] pl-10 pr-3 py-2.5 border border-blue-200/50 rounded-full bg-white/70 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
+                                className="block w-[500px] pl-10 pr-3 py-1.5 border border-blue-200/50 rounded-full bg-white/70 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
                             />
                         </motion.div>
                     </div>
@@ -279,6 +283,26 @@ export default function Navbar() {
                             className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg transition-colors duration-200"
                         >
                             <Settings className="h-5 w-5" />
+                        </motion.button>
+
+                        {/* Trash for all the application*/}
+                        <motion.button
+                            onClick={() => router.push(`/app/${project?.url}/trash`)}
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg transition-colors duration-200"
+                        >
+                            <Trash2 className="h-5 w-5 text-red-600" />
+                        </motion.button>
+
+                        {/* Messages with team */}
+                        <motion.button
+
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg transition-colors duration-200"
+                        >
+                            <MessageSquarePlus className="h-5 w-5 text-blue-900" />
                         </motion.button>
                         <motion.button
                             whileHover={{ scale: 1.1 }}
