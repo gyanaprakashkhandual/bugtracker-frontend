@@ -387,7 +387,7 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
                         transition={{ duration: 0.4, ease: "easeInOut" }}
-                        className="fixed inset-0 z-40 bg-black/20 backdrop-blur-sm"
+                        className="fixed inset-0 z-40"
                         onClick={onClose}
                     />
                 )}
@@ -407,7 +407,7 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
                             damping: 25,
                             stiffness: 120,
                         }}
-                        className="fixed left-0 top-0 h-[calc(100vh-4rem)] w-80 mt-16 bg-gradient-to-br from-blue-50 via-sky-50 to-white z-50 flex flex-col backdrop-blur-sm border-r border-gray-200/60"
+                        className="fixed left-0 top-0 h-[calc(100vh-4rem)] w-70 mt-16 bg-gradient-to-br from-blue-50 via-sky-50 to-white z-50 flex flex-col backdrop-blur-sm border-r border-gray-200/60"
                     >
                         {/* Header */}
                         <motion.div
@@ -421,18 +421,6 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
                                     <h2 className="text-lg font-semibold text-gray-800">
                                         Test Types
                                     </h2>
-                                    <motion.button
-                                        onClick={handleRefresh}
-                                        disabled={refreshing}
-                                        className="p-1.5 rounded-lg hover:bg-gray-100 transition-all duration-200 disabled:opacity-50"
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                    >
-                                        <RefreshCw 
-                                            size={16} 
-                                            className={`text-gray-500 ${refreshing ? 'animate-spin' : ''}`} 
-                                        />
-                                    </motion.button>
                                 </div>
                                 <p className="text-sm text-gray-500 mt-1">
                                     {testTypes?.data?.length || 0} configurations available
@@ -538,29 +526,7 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
                                                             {testType.testTypeName}
                                                         </motion.h3>
                                                         
-                                                        {testType.description && (
-                                                            <p className="text-xs text-gray-500 mt-1 truncate">
-                                                                {testType.description}
-                                                            </p>
-                                                        )}
-                                                        
-                                                        <div className="flex items-center justify-between mt-2">
-                                                            <div className="flex items-center gap-4 text-xs text-gray-500">
-                                                                <div className="flex items-center gap-1">
-                                                                    <Calendar size={12} />
-                                                                    <span>{testType.createdDate}</span>
-                                                                </div>
-                                                                <div className="flex items-center gap-1">
-                                                                    <User size={12} />
-                                                                    <span className="truncate">{testType.author}</span>
-                                                                </div>
-                                                            </div>
-                                                            {testType.testsCount && (
-                                                                <span className="text-xs bg-blue-100 text-blue-600 px-2 py-1 rounded-full">
-                                                                    {testType.testsCount} tests
-                                                                </span>
-                                                            )}
-                                                        </div>
+                                                    
                                                     </div>
                                                 </div>
 
