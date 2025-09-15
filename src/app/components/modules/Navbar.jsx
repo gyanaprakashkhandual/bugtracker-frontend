@@ -18,7 +18,8 @@ import {
     ChevronDown,
     Trash,
     Trash2,
-    Palette
+    Palette,
+    SplitIcon
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getProjectDetails } from '@/app/utils/functions/GetProjectDetails';
@@ -126,7 +127,8 @@ export default function Navbar() {
     const viewOptions = [
         { value: 'chart', label: 'Chart View', icon: <BarChart3 className="h-4 w-4" /> },
         { value: 'table', label: 'Table View', icon: <Table className="h-4 w-4" /> },
-        { value: 'card', label: 'Card View', icon: <LayoutGrid className="h-4 w-4" /> }
+        { value: 'card', label: 'Card View', icon: <LayoutGrid className="h-4 w-4" /> },
+        { value: 'split', label: 'Split View', icon: <SplitIcon className='h-4 w-4' />}
     ];
 
     // Report options
