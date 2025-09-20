@@ -19,7 +19,8 @@ import {
     Trash,
     Trash2,
     Palette,
-    SplitIcon
+    SplitIcon,
+    Plus
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getProjectDetails } from '@/app/utils/functions/GetProjectDetails';
@@ -108,6 +109,7 @@ export default function Navbar() {
     const [searchFocus, setSearchFocus] = useState(false);
     const [selectedView, setSelectedView] = useState(null);
     const [selectedReport, setSelectedReport] = useState(null);
+    const [selectedManual, setSelectedManual] = useState(null);
     const [project, setProject] = useState(null);
     const [testTypeIsOpen, setTestTypeIsOpen] = useState(false);
     const [settingIsOpen, setSettingIsOpen] = useState(false);
@@ -137,6 +139,12 @@ export default function Navbar() {
         { value: 'test-case', label: 'Test Case', icon: <FileText className="h-4 w-4" /> }
     ];
 
+    // Manual Data add options
+    const manualAddOptions = [
+        { value: 'addBug', label: 'Add Bug', icon: <Plus className="h-4, w-4"/>},
+        { value: 'addTestCase', label: 'Add Test Case', icon: <Plus className="h-4, w-4"/>},
+        { value: 'addData', label: 'Add Data', icon: <Plus className="h-4, w-4"/>},
+    ]
     // Prevent body scroll when settings sidebar is open
     useEffect(() => {
         if (settingIsOpen) {
@@ -261,6 +269,15 @@ export default function Navbar() {
                             className="w-40"
                         />
 
+                        <StyledDropdown
+                        options={manualAddOptions}
+                        placeholder="Add Manually"
+                        value={selectedManual}
+                        onChange={setSelectedManual}
+                        size='sm'
+                        className='w-40'
+                        />
+
                         {/* Action Buttons */}
                         <motion.button
                             whileHover={{ scale: 1.05 }}
@@ -269,15 +286,6 @@ export default function Navbar() {
                         >
                             <Filter className="h-4 w-4" />
                             <span>Filter</span>
-                        </motion.button>
-
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-lg hover:from-blue-600 hover:to-blue-700 transition-all duration-200"
-                        >
-                            <MessageSquarePlus className="h-4 w-4" />
-                            <span>Add Comment</span>
                         </motion.button>
 
                         <motion.button
