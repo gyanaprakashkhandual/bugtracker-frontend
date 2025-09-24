@@ -170,7 +170,66 @@ const AuthPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex relative">
+      {/* Animated Background Elements */}
+      <div className="absolute inset-0 overflow-hidden pointer-events-none">
+        <svg
+          className="absolute top-0 left-0 w-1/3 opacity-10"
+          viewBox="0 0 200 200"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fill="#3b82f6" // blue
+            d="M50,-50C64.5,-36.1,75.2,-18,74.3,-0.9C73.4,16.2,60.9,32.4,46.4,45.1C32,57.8,15.6,67,-3.4,70.4C-22.3,73.8,-44.7,71.4,-58.1,58.7C-71.6,46,-76.2,23,-74.5,1.5C-72.8,-20.1,-64.7,-40.1,-51.3,-54C-37.8,-67.9,-18.9,-75.6,0.3,-75.9C19.5,-76.2,39,-69.1,50,-50Z"
+            transform="translate(100 100)"
+          />
+        </svg>
+        <svg
+          className="absolute top-1/4 right-1/4 w-1/5 opacity-10"
+          viewBox="0 0 200 200"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fill="#10b981" // green
+            d="M42.4,-56.9C55.3,-47.9,66.5,-35.8,71.1,-21.5C75.7,-7.2,73.6,9.3,66.2,23.8C58.8,38.3,46.1,50.8,31.2,60.1C16.3,69.4,-0.8,75.6,-16.3,71.8C-31.8,68,-45.6,54.3,-56.1,38.9C-66.6,23.5,-73.8,6.5,-72.1,-10.9C-70.3,-28.2,-59.5,-45.9,-44.5,-54.6C-29.5,-63.3,-10.3,-63.1,5.5,-68.9C21.3,-74.7,42.6,-86.5,42.4,-56.9Z"
+            transform="translate(100 100)"
+          />
+        </svg>
+        <svg
+          className="absolute bottom-0 right-0 w-1/4 opacity-10"
+          viewBox="0 0 200 200"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fill="#a855f7" // purple
+            d="M42.4,-56.9C55.3,-47.9,66.5,-35.8,71.1,-21.5C75.7,-7.2,73.6,9.3,66.2,23.8C58.8,38.3,46.1,50.8,31.2,60.1C16.3,69.4,-0.8,75.6,-16.3,71.8C-31.8,68,-45.6,54.3,-56.1,38.9C-66.6,23.5,-73.8,6.5,-72.1,-10.9C-70.3,-28.2,-59.5,-45.9,-44.5,-54.6C-29.5,-63.3,-10.3,-63.1,5.5,-68.9C21.3,-74.7,42.6,-86.5,42.4,-56.9Z"
+            transform="translate(100 100)"
+          />
+        </svg>
+        <svg
+          className="absolute bottom-1/3 left-1/6 w-1/6 opacity-10"
+          viewBox="0 0 200 200"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fill="#f59e0b" // orange
+            d="M50,-50C64.5,-36.1,75.2,-18,74.3,-0.9C73.4,16.2,60.9,32.4,46.4,45.1C32,57.8,15.6,67,-3.4,70.4C-22.3,73.8,-44.7,71.4,-58.1,58.7C-71.6,46,-76.2,23,-74.5,1.5C-72.8,-20.1,-64.7,-40.1,-51.3,-54C-37.8,-67.9,-18.9,-75.6,0.3,-75.9C19.5,-76.2,39,-69.1,50,-50Z"
+            transform="translate(100 100)"
+          />
+        </svg>
+        <svg
+          className="absolute top-2/3 left-3/4 w-1/8 opacity-10"
+          viewBox="0 0 200 200"
+          xmlns="http://www.w3.org/2000/svg"
+        >
+          <path
+            fill="#ec4899" // pink
+            d="M42.4,-56.9C55.3,-47.9,66.5,-35.8,71.1,-21.5C75.7,-7.2,73.6,9.3,66.2,23.8C58.8,38.3,46.1,50.8,31.2,60.1C16.3,69.4,-0.8,75.6,-16.3,71.8C-31.8,68,-45.6,54.3,-56.1,38.9C-66.6,23.5,-73.8,6.5,-72.1,-10.9C-70.3,-28.2,-59.5,-45.9,-44.5,-54.6C-29.5,-63.3,-10.3,-63.1,5.5,-68.9C21.3,-74.7,42.6,-86.5,42.4,-56.9Z"
+            transform="translate(100 100)"
+          />
+        </svg>
+        <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/30"></div>
+      </div>
       {/* Notification */}
       <AnimatePresence>
         {notification.show && (
@@ -288,7 +347,7 @@ const AuthPage = () => {
                 >
                   {!showOTPForm ? (
                     // Step 1: Email and Role Selection
-                    <form onSubmit={handleSendOTP} className="space-y-6">
+                    <div className="space-y-6">
                       {/* Name Input */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -376,10 +435,10 @@ const AuthPage = () => {
                           <AnimatePresence>
                             {isDropdownOpen && (
                               <motion.div
-                                initial={{ opacity: 0, y: -10 }}
+                                initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, y: -10 }}
-                                className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10"
+                                exit={{ opacity: 0, y: 10 }}
+                                className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10"
                               >
                                 {roles.map((role) => (
                                   <button
@@ -389,7 +448,7 @@ const AuthPage = () => {
                                       setSelectedRole(role.value);
                                       setIsDropdownOpen(false);
                                     }}
-                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-2 first:rounded-t-lg last:rounded-b-lg transition-colors"
+                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-2 last:rounded-t-lg first:rounded-b-lg transition-colors"
                                   >
                                     <span>{role.icon}</span>
                                     <span className="text-gray-700">{role.label}</span>
@@ -403,7 +462,7 @@ const AuthPage = () => {
 
                       {/* Send OTP Button */}
                       <motion.button
-                        type="submit"
+                        onClick={handleSendOTP}
                         disabled={isLoading}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
@@ -418,10 +477,10 @@ const AuthPage = () => {
                           'Send OTP'
                         )}
                       </motion.button>
-                    </form>
+                    </div>
                   ) : (
                     // Step 2: OTP Verification
-                    <form onSubmit={handleRegister} className="space-y-6">
+                    <div className="space-y-6">
                       <div className="text-center mb-6">
                         <div className="w-16 h-16 bg-blue-100 rounded-full flex items-center justify-center mx-auto mb-4">
                           <Mail className="w-8 h-8 text-blue-600" />
@@ -451,7 +510,7 @@ const AuthPage = () => {
 
                       {/* Verify Button */}
                       <motion.button
-                        type="submit"
+                        onClick={handleRegister}
                         disabled={isLoading}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
@@ -475,7 +534,7 @@ const AuthPage = () => {
                       >
                         ← Back to registration
                       </button>
-                    </form>
+                    </div>
                   )}
                 </motion.div>
               ) : (
@@ -487,7 +546,7 @@ const AuthPage = () => {
                   exit={{ opacity: 0 }}
                   transition={{ duration: 0.3 }}
                 >
-                  <form onSubmit={handleLogin} className="space-y-6">
+                  <div className="space-y-6">
                     {/* Email Input */}
                     <div>
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -535,7 +594,7 @@ const AuthPage = () => {
 
                     {/* Login Button */}
                     <motion.button
-                      type="submit"
+                      onClick={handleLogin}
                       disabled={isLoading}
                       whileHover={{ scale: 1.02 }}
                       whileTap={{ scale: 0.98 }}
@@ -550,7 +609,7 @@ const AuthPage = () => {
                         'Sign In'
                       )}
                     </motion.button>
-                  </form>
+                  </div>
                 </motion.div>
               )}
             </AnimatePresence>
