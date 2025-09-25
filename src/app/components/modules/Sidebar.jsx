@@ -248,7 +248,7 @@ const Sidebar = () => {
                 whileHover={{ scale: 1.1, backgroundColor: "#f1f5f9" }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => setIsOpen(!isOpen)}
-                className="p-2 rounded-full text-slate-500 hover:text-slate-700 transition-all duration-200"
+                className="p-2 rounded-full text-blue-900 hover:text-slate-950 transition-all duration-200"
               >
                 <FaCoffee className="h-5 w-5"/>
               </motion.button>
