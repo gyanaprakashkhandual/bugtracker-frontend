@@ -3,21 +3,20 @@
 import Sidebar from "../components/modules/Sidebar"
 import NavbarApp from "../components/Navbars/Navbar"
 
-
-
-
-function page() {
+function Page() {
   return (
-    <div className="flex h-screen bg-gray-100">
+    <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
-      <Sidebar />
-      
+      <div className="sticky top-0">
+        <Sidebar />
+      </div>
+
       {/* Main Content Area with Navbar */}
-      <div className="flex-1">
+      <div className="flex-1 ">
         <NavbarApp isSidebarOpen={true} />
       </div>
     </div>
   )
 }
 
-export default page
+export default Page
