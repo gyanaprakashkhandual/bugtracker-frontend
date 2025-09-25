@@ -33,14 +33,15 @@ const Sidebar = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [token, setToken] = useState(null);
 
+  // ✅ use context instead of local state
   const { 
-    selectedProject, 
-    setSelectedProject, 
     isModalOpen, 
     modalMode, 
     openCreateModal, 
     openEditModal, 
-    closeModal 
+    closeModal,
+    selectedProject, 
+    setSelectedProject
   } = useProject();
   const router = useRouter();
 
@@ -104,21 +105,21 @@ const Sidebar = () => {
       });
       setProjects(projects.filter((p) => p._id !== projectId));
       
-      // If the deleted project was the selected one, clear the selection
       if (selectedProject && selectedProject._id === projectId) {
-        setSelectedProject(null);
-        localStorage.removeItem('currentProjectId');
-      }
+  setSelectedProject(null);
+  localStorage.removeItem("currentProjectId");
+}
+
     } catch (err) {
       console.error("Error deleting project", err);
     }
   };
+const handleProjectClick = (project) => {
+  setSelectedProject(project);        // ✅ store in context
+  localStorage.setItem("currentProjectId", project._id); // ✅ persist if needed
+};
 
-  const handleProjectClick = (project) => {
-    setSelectedProject(project); // This now only sets the selected project for display
-    storeProjectId(project._id);
-    console.log("Latest clicked project:", project);
-  };
+
 
   const handleLogout = async () => {
     const token = localStorage.getItem("token");
