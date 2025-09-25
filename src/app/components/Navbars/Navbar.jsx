@@ -40,12 +40,15 @@ const Tooltip = ({ children, text, position = 'bottom' }) => {
 
 import UserManagement from '../user/UserManagerment'
 import ProjectManagementDashboard from '../configure/main'
+import { useProject } from '@/app/script/Projectcontext'
 const NavbarApp = () => {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [activeView, setActiveView] = useState('Chart View')
   const [projectName, setProjectName] = useState('Google')
-  const [activeComponent, setActiveComponent] = useState(null)
+  const [activeComponent, setActiveComponent] = useState(null);
+
+  const {selectedProject} = useProject();
 
   // Get project name from localStorage
   useEffect(() => {
@@ -118,7 +121,7 @@ const NavbarApp = () => {
                 title={projectName}
                 onClick={handleBackToViews}
               >
-                {getTruncatedProjectName()}
+                {selectedProject?.projectName}
               </motion.div>
 
               {/* Back to Views Button - Show when component is active */}

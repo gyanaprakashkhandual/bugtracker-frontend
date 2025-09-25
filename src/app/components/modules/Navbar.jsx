@@ -1,233 +1,217 @@
-'use client';
-
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-    Menu,
-    X,
-    Search,
-    Filter,
-    MessageSquarePlus,
-    Settings,
-    User,
-    BarChart3,
-    Table,
-    LayoutGrid,
-    Bug,
-    FileText,
-    ChevronDown,
-    Trash,
-    Trash2,
-    Palette,
-    SplitIcon,
-    Plus
+  Menu,
+  X,
+  Search,
+  Filter,
+  MessageSquarePlus,
+  Settings,
+  User,
+  BarChart3,
+  Table,
+  LayoutGrid,
+  Bug,
+  FileText,
+  Trash2,
+  Palette,
+  SplitIcon,
+  Plus
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getProjectDetails } from '@/app/utils/functions/GetProjectDetails';
 import TestTypeList from './Window';
 import { SettingSidebar } from './Sidebar';
 import { GoogleArrowDown } from '../utils/Icon';
-import { FaThemeco } from 'react-icons/fa';
 import { useProject } from '@/app/script/Projectcontext';
 
-// Styled Dropdown Component
+// Styled Dropdown (no changes to this part)
 const StyledDropdown = ({ options, placeholder, value, onChange, size = "sm", className = "" }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [selectedOption, setSelectedOption] = useState(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [selectedOption, setSelectedOption] = useState(null);
 
-    useEffect(() => {
-        if (value) {
-            const option = options.find(opt => opt.value === value);
-            setSelectedOption(option);
-        }
-    }, [value, options]);
+  useEffect(() => {
+    if (value) {
+      const option = options.find(opt => opt.value === value);
+      setSelectedOption(option);
+    }
+  }, [value, options]);
 
-    const handleSelect = (option) => {
-        setSelectedOption(option);
-        onChange(option.value);
-        setIsOpen(false);
-    };
+  const handleSelect = (option) => {
+    setSelectedOption(option);
+    onChange(option.value);
+    setIsOpen(false);
+  };
 
-    return (
-        <div className={`relative ${className}`}>
-            <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setIsOpen(!isOpen)}
-                className="flex items-center justify-between w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white/70 backdrop-blur-sm border border-blue-200/50 rounded-lg hover:bg-blue-50/50 hover:text-blue-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
-            >
-                <div className="flex items-center space-x-2">
-                    {selectedOption?.icon}
-                    <span>{selectedOption?.label || placeholder}</span>
-                </div>
-                <motion.div
-                    animate={{ rotate: isOpen ? 180 : 0 }}
-                    transition={{ duration: 0.2 }}
-                >
-                    <GoogleArrowDown className="h-4 w-4" />
-                </motion.div>
-            </motion.button>
-
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white/90 backdrop-blur-md border border-blue-200/50 rounded-lg shadow-lg z-50 overflow-hidden"
-                    >
-                        {options.map((option, index) => (
-                            <motion.button
-                                key={option.value}
-                                initial={{ opacity: 0, x: -10 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: index * 0.05 }}
-                                onClick={() => handleSelect(option)}
-                                className="flex items-center space-x-2 w-full px-4 py-3 text-sm text-gray-700 hover:bg-blue-50/50 hover:text-blue-600 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg"
-                            >
-                                {option.icon}
-                                <span>{option.label}</span>
-                            </motion.button>
-                        ))}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
-            {/* Backdrop to close dropdown when clicking outside */}
-            {isOpen && (
-                <div
-                    className="fixed inset-0 z-40"
-                    onClick={() => setIsOpen(false)}
-                />
-            )}
+  return (
+    <div className={`relative ${className}`}>
+      <motion.button
+        whileHover={{ scale: 1.02 }}
+        whileTap={{ scale: 0.98 }}
+        onClick={() => setIsOpen(!isOpen)}
+        className="flex items-center justify-between w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white/70 backdrop-blur-sm border border-blue-200/50 rounded-lg hover:bg-blue-50/50 hover:text-blue-600 transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
+      >
+        <div className="flex items-center space-x-2">
+          {selectedOption?.icon}
+          <span>{selectedOption?.label || placeholder}</span>
         </div>
-    );
+        <motion.div
+          animate={{ rotate: isOpen ? 180 : 0 }}
+          transition={{ duration: 0.2 }}
+        >
+          <GoogleArrowDown className="h-4 w-4" />
+        </motion.div>
+      </motion.button>
+
+      <AnimatePresence>
+        {isOpen && (
+          <motion.div
+            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="absolute top-full left-0 right-0 mt-1 bg-white/90 backdrop-blur-md border border-blue-200/50 rounded-lg shadow-lg z-50 overflow-hidden"
+          >
+            {options.map((option, index) => (
+              <motion.button
+                key={option.value}
+                initial={{ opacity: 0, x: -10 }}
+                animate={{ opacity: 1, x: 0 }}
+                transition={{ delay: index * 0.05 }}
+                onClick={() => handleSelect(option)}
+                className="flex items-center space-x-2 w-full px-4 py-3 text-sm text-gray-700 hover:bg-blue-50/50 hover:text-blue-600 transition-colors duration-150 first:rounded-t-lg last:rounded-b-lg"
+              >
+                {option.icon}
+                <span>{option.label}</span>
+              </motion.button>
+            ))}
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* Backdrop to close dropdown when clicking outside */}
+      {isOpen && (
+        <div
+          className="fixed inset-0 z-40"
+          onClick={() => setIsOpen(false)}
+        />
+      )}
+    </div>
+  );
 };
 
 export default function Navbar() {
-    const [isOpen, setIsOpen] = useState(false);
-    const [searchFocus, setSearchFocus] = useState(false);
-    const [selectedView, setSelectedView] = useState(null);
-    const [selectedReport, setSelectedReport] = useState(null);
-    const [selectedManual, setSelectedManual] = useState(null);
-    const [project, setProject] = useState(null);
-    const [testTypeIsOpen, setTestTypeIsOpen] = useState(false);
-    const [settingIsOpen, setSettingIsOpen] = useState(false);
+  const [isOpen, setIsOpen] = useState(false);
+  const [searchFocus, setSearchFocus] = useState(false);
+  const [selectedView, setSelectedView] = useState(null);
+  const [selectedReport, setSelectedReport] = useState(null);
+  const [selectedManual, setSelectedManual] = useState(null);
+  const [testTypeIsOpen, setTestTypeIsOpen] = useState(false);
+  const [settingIsOpen, setSettingIsOpen] = useState(false);
 
-    const {selectedProject} = useProject();
-    const router = useRouter();
+  // ✅ Pull selectedProject from context
+  const { selectedProject } = useProject();
 
-    useEffect(() => {
-        (async () => {
-            const details = await getProjectDetails();
-            setProject(details);
-        })();
-    }, []);
+  const router = useRouter();
 
-    const toggleMenu = () => setIsOpen(!isOpen);
+  const toggleMenu = () => setIsOpen(!isOpen);
 
-    // View options
-    const viewOptions = [
-        { value: 'chart', label: 'Chart View', icon: <BarChart3 className="h-4 w-4" /> },
-        { value: 'table', label: 'Table View', icon: <Table className="h-4 w-4" /> },
-        { value: 'card', label: 'Card View', icon: <LayoutGrid className="h-4 w-4" /> },
-        { value: 'split', label: 'Split View', icon: <SplitIcon className='h-4 w-4' />}
-    ];
+  // View options
+  const viewOptions = [
+    { value: 'chart', label: 'Chart View', icon: <BarChart3 className="h-4 w-4" /> },
+    { value: 'table', label: 'Table View', icon: <Table className="h-4 w-4" /> },
+    { value: 'card', label: 'Card View', icon: <LayoutGrid className="h-4 w-4" /> },
+    { value: 'split', label: 'Split View', icon: <SplitIcon className='h-4 w-4' />}
+  ];
 
-    // Report options
-    const reportOptions = [
-        { value: 'bug', label: 'BUG', icon: <Bug className="h-4 w-4" /> },
-        { value: 'test-case', label: 'Test Case', icon: <FileText className="h-4 w-4" /> }
-    ];
+  const reportOptions = [
+    { value: 'bug', label: 'BUG', icon: <Bug className="h-4 w-4" /> },
+    { value: 'test-case', label: 'Test Case', icon: <FileText className="h-4 w-4" /> }
+  ];
 
-    // Manual Data add options
-    const manualAddOptions = [
-        { value: 'addBug', label: 'Add Bug', icon: <Plus className="h-4, w-4"/>},
-        { value: 'addTestCase', label: 'Add Test Case', icon: <Plus className="h-4, w-4"/>},
-        { value: 'addData', label: 'Add Data', icon: <Plus className="h-4, w-4"/>},
-    ]
-    // Prevent body scroll when settings sidebar is open
-    useEffect(() => {
-        if (settingIsOpen) {
-            document.body.style.overflow = 'hidden';
-        } else {
-            // Add delay before restoring scroll to prevent flash
-            const timer = setTimeout(() => {
-                document.body.style.overflow = 'unset';
-            }, 300); // Match sidebar animation duration
+  const manualAddOptions = [
+    { value: 'addBug', label: 'Add Bug', icon: <Plus className="h-4, w-4"/>},
+    { value: 'addTestCase', label: 'Add Test Case', icon: <Plus className="h-4, w-4"/>},
+    { value: 'addData', label: 'Add Data', icon: <Plus className="h-4, w-4"/>},
+  ];
 
-            return () => clearTimeout(timer);
-        }
+  // Prevent body scroll when settings sidebar is open
+  useEffect(() => {
+    if (settingIsOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      const timer = setTimeout(() => {
+        document.body.style.overflow = 'unset';
+      }, 300);
+      return () => clearTimeout(timer);
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [settingIsOpen]);
 
-        // Cleanup on unmount
-        return () => {
-            document.body.style.overflow = 'unset';
-        };
-    }, [settingIsOpen]);
+  return (
+    <nav className="sticky top-0 z-50 bg-gradient-to-r from-blue-100 via-sky-50 to-blue-100 backdrop-blur-md border-b border-blue-200/30">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="flex items-center justify-between h-16">
+          {/* Mobile hamburger */}
+          <div className="md:hidden">
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={toggleMenu}
+              className="p-2 rounded-lg hover:bg-blue-100/50 transition-colors duration-200"
+            >
+              <AnimatePresence mode="wait">
+                {isOpen ? (
+                  <motion.div
+                    key="close"
+                    initial={{ rotate: -90, opacity: 0 }}
+                    animate={{ rotate: 0, opacity: 1 }}
+                    exit={{ rotate: 90, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <X className="h-6 w-6 text-gray-700" />
+                  </motion.div>
+                ) : (
+                  <motion.div
+                    key="menu"
+                    initial={{ rotate: 90, opacity: 0 }}
+                    animate={{ rotate: 0, opacity: 1 }}
+                    exit={{ rotate: -90, opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Menu className="h-6 w-6 text-gray-700" />
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </motion.button>
+          </div>
 
-    return (
-        <nav className="sticky top-0 z-50 bg-gradient-to-r from-blue-100 via-sky-50 to-blue-100 backdrop-blur-md border-b border-blue-200/30">
-            <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-                <div className="flex items-center justify-between h-16">
+          {/* Brand */}
+          <div className="flex-shrink-0 flex items-center gap-3">
+            <motion.p
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              onClick={() => setTestTypeIsOpen((prev) => !prev)}
+              className="rounded-md p-1 hover:bg-blue-100/50 transition-colors duration-200 cursor-pointer"
+            >
+              <Menu className="h-6 w-6 text-black" />
+            </motion.p>
+            <TestTypeList
+              sidebarOpen={testTypeIsOpen}
+              onClose={() => setTestTypeIsOpen(false)}
+            />
 
-                    {/* Mobile hamburger */}
-                    <div className="md:hidden">
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={toggleMenu}
-                            className="p-2 rounded-lg hover:bg-blue-100/50 transition-colors duration-200"
-                        >
-                            <AnimatePresence mode="wait">
-                                {isOpen ? (
-                                    <motion.div
-                                        key="close"
-                                        initial={{ rotate: -90, opacity: 0 }}
-                                        animate={{ rotate: 0, opacity: 1 }}
-                                        exit={{ rotate: 90, opacity: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        <X className="h-6 w-6 text-gray-700" />
-                                    </motion.div>
-                                ) : (
-                                    <motion.div
-                                        key="menu"
-                                        initial={{ rotate: 90, opacity: 0 }}
-                                        animate={{ rotate: 0, opacity: 1 }}
-                                        exit={{ rotate: -90, opacity: 0 }}
-                                        transition={{ duration: 0.2 }}
-                                    >
-                                        <Menu className="h-6 w-6 text-gray-700" />
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
-                        </motion.button>
-                    </div>
-
-                    {/* Brand */}
-                    <div className="flex-shrink-0 flex items-center gap-3">
-                        <motion.p
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setTestTypeIsOpen((prev) => !prev)}
-                            className="rounded-md p-1 hover:bg-blue-100/50 transition-colors duration-200 cursor-pointer"
-                        >
-                            <Menu className="h-6 w-6 text-black" />
-                        </motion.p>
-                        <TestTypeList
-                            sidebarOpen={testTypeIsOpen}
-                            onClose={() => setTestTypeIsOpen(false)}
-                        />
-
-                        <motion.h1
-                            initial={{ opacity: 0, x: -20 }}
-                            animate={{ opacity: 1, x: 0 }}
-                            className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent"
-                        >
-                            {project?.projectName || "Loading..."}
-                        </motion.h1>
-                    </div>
+            <motion.h1
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="text-xl font-bold bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text text-transparent"
+            >
+              {/* ✅ Use project name from context */}
+              {selectedProject?.projectName || "No Project Selected"}
+            </motion.h1>
+          </div>
 
                     {/* Search Bar - Desktop */}
                     <div className="hidden md:flex flex-1 max-w-lg mx-8">
