@@ -136,6 +136,19 @@ const Sidebar = () => {
     }
   };
 
+  const getFirstWord = (user) => {
+  const name = user?.name || user?.email || "";
+  const firstWord = name.split(" ")[0]; // take first word before space
+  const formatted =
+    firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
+
+  return formatted.length > 5 ? formatted.slice(0, 5) + "." : formatted;
+
+
+
+};
+
+
   const handleModalSuccess = () => {
     fetchProjects(); // Refresh the projects list
   };
@@ -213,9 +226,10 @@ const Sidebar = () => {
               >
                 <div className="flex items-center">
                   <FaCoffee className="text-blue-900 w-7 h-7 mr-4 ml-3" />
-                  <h2 className="font-semibold text-xl text-slate-700 tracking-tight">
-                    Projects
-                  </h2>
+                 <h2 className="font-semibold text-xl text-slate-700 tracking-tight">
+  Projects - {userData ? getFirstWord(userData) : ""}
+</h2>
+
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.1, backgroundColor: "#f1f5f9" }}
