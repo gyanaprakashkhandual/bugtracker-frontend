@@ -24,9 +24,6 @@ import { CalfFolder } from "../utils/Icon";
 import { getProjectDetails } from "@/app/utils/functions/GetProjectDetails";
 import { getTestTypes } from "@/app/utils/functions/GetTestType";
 
-
-
-
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
   const [projects, setProjects] = useState([]);
@@ -35,7 +32,15 @@ const Sidebar = () => {
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
   const [token, setToken] = useState(null);
 
-  const { selectedProject, setSelectedProject } = useProject();
+  const { 
+    selectedProject, 
+    setSelectedProject, 
+    isModalOpen, 
+    modalMode, 
+    openCreateModal, 
+    openEditModal, 
+    closeModal 
+  } = useProject();
   const router = useRouter();
 
   // Utility function to store project ID in localStorage
@@ -108,11 +113,11 @@ const Sidebar = () => {
     }
   };
 
-const handleProjectClick = (project) => {
-  setSelectedProject(project); // Context now holds the latest clicked project
-  console.log("Latest clicked project:", project);
-};
-
+  const handleProjectClick = (project) => {
+    setSelectedProject(project); // This now only sets the selected project for display
+    storeProjectId(project._id);
+    console.log("Latest clicked project:", project);
+  };
 
   const handleLogout = async () => {
     const token = localStorage.getItem("token");
@@ -252,10 +257,7 @@ const handleProjectClick = (project) => {
                 exit="closed"
                 whileHover={{ backgroundColor: "#3b82f6" }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  setSelectedProject(null);
-                  // No need to set modalType here as ProjectModal handles it internally
-                }}
+                onClick={openCreateModal} // Use the context function to open create modal
                 className="w-full py-3 px-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-200 font-medium flex items-center justify-center gap-2 shadow-sm hover:shadow-xl"
               >
                 <Plus size={18} />
@@ -272,10 +274,7 @@ const handleProjectClick = (project) => {
                   boxShadow: "0 8px 25px rgba(59, 130, 246, 0.3)"
                 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => {
-                  setSelectedProject(null);
-                  // No need to set modalType here as ProjectModal handles it internally
-                }}
+                onClick={openCreateModal} // Use the context function to open create modal
                 className="w-full h-12 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-200 flex items-center justify-center shadow-sm"
               >
                 <Plus size={20} />
@@ -307,7 +306,7 @@ const handleProjectClick = (project) => {
                   <div className="flex items-center justify-between px-4 py-3">
                     <div 
                       className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
-                      onClick={() => handleProjectClick(project)}
+                      onClick={() => handleProjectClick(project)} // This now only selects the project
                     >
                       <motion.div className="flex-shrink-0">
                         <CalfFolder size={18} className={
@@ -338,10 +337,7 @@ const handleProjectClick = (project) => {
                           {
                             label: "Edit",
                             icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5 3 21l1.5-4L16.5 3.5z" /></svg>,
-                            onClick: () => {
-                              setSelectedProject(project);
-                              storeProjectId(project._id);
-                            },
+                            onClick: () => openEditModal(project), // Use context function to open edit modal
                           },
                           {
                             label: "Configure",
@@ -389,7 +385,7 @@ const handleProjectClick = (project) => {
                 ) : (
                   <div 
                     className="flex items-center justify-center py-4 cursor-pointer"
-                    onClick={() => handleProjectClick(project)}
+                    onClick={() => handleProjectClick(project)} // This now only selects the project
                   >
                     <motion.div
                       whileHover={{
@@ -472,16 +468,16 @@ const handleProjectClick = (project) => {
         </div>
       </motion.div>
 
-      {/* Project Modal - Only show when a project is selected for editing or creating */}
+      {/* Project Modal - Only show when modal is explicitly opened for editing or creating */}
       <AnimatePresence>
-        {selectedProject && (
-        <ProjectModal
-          project={selectedProject}
-          token={token} // Use the state instead of direct localStorage
-          onClose={() => setSelectedProject(undefined)}
-          onSuccess={handleModalSuccess}
-        />
-      )}
+        {isModalOpen && (
+          <ProjectModal
+            project={modalMode === 'edit' ? selectedProject : null}
+            token={token}
+            onClose={closeModal} // Use the context function to close modal
+            onSuccess={handleModalSuccess}
+          />
+        )}
       </AnimatePresence>
     </>
   );
