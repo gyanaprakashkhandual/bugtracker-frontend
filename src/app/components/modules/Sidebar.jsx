@@ -18,6 +18,7 @@ import {
 import { ThreeDotsDropdown } from "../assets/Dropdown";
 import ProjectModal from "../assets/Modal";
 import { FaCoffee } from "react-icons/fa";
+import { GoogleArrowLeft, GoogleArrowRight, GoogleArrowUp } from "../utils/Icon";
 
 import { useProject } from "@/app/script/Projectcontext";
 import { CalfFolder } from "../utils/Icon";
@@ -211,7 +212,7 @@ const Sidebar = () => {
                 className="flex items-center justify-between w-full"
               >
                 <div className="flex items-center">
-                  <FaCoffee className="text-blue-900 w-7 h-7 mr-4" />
+                  <FaCoffee className="text-blue-900 w-7 h-7 mr-4 ml-3" />
                   <h2 className="font-semibold text-xl text-slate-700 tracking-tight">
                     Projects
                   </h2>
@@ -222,9 +223,7 @@ const Sidebar = () => {
                   onClick={() => setIsOpen(!isOpen)}
                   className="p-2 rounded-full text-slate-500 hover:text-slate-700 transition-all duration-200"
                 >
-                  <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                    <path d="M14 7l-5 5 5 5V7z" />
-                  </svg>
+                  <GoogleArrowLeft/>
                 </motion.button>
               </motion.div>
             ) : (
@@ -237,52 +236,11 @@ const Sidebar = () => {
                 onClick={() => setIsOpen(!isOpen)}
                 className="p-2 rounded-full text-slate-500 hover:text-slate-700 transition-all duration-200"
               >
-                <svg width="30" height="30" viewBox="0 0 24 24" fill="currentColor">
-                  <path d="M10 7l5 5-5 5V7z" />
-                </svg>
+                <FaCoffee className="h-5 w-5"/>
               </motion.button>
             )}
           </AnimatePresence>
         </div>
-
-        {/* Create Project Button */}
-        <div className="p-4 border-b border-slate-200/60">
-          <AnimatePresence mode="wait">
-            {isOpen ? (
-              <motion.button
-                key="create-full"
-                variants={contentVariants}
-                initial="closed"
-                animate="open"
-                exit="closed"
-                whileHover={{ backgroundColor: "#3b82f6" }}
-                whileTap={{ scale: 0.98 }}
-                onClick={openCreateModal} // Use the context function to open create modal
-                className="w-full py-3 px-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-200 font-medium flex items-center justify-center gap-2 shadow-sm hover:shadow-xl"
-              >
-                <Plus size={18} />
-                Create Project
-              </motion.button>
-            ) : (
-              <motion.button
-                key="create-icon"
-                initial={{ opacity: 0, scale: 0.5 }}
-                animate={{ opacity: 1, scale: 1 }}
-                whileHover={{
-                  scale: 1.1,
-                  backgroundColor: "#3b82f6",
-                  boxShadow: "0 8px 25px rgba(59, 130, 246, 0.3)"
-                }}
-                whileTap={{ scale: 0.9 }}
-                onClick={openCreateModal} // Use the context function to open create modal
-                className="w-full h-12 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-200 flex items-center justify-center shadow-sm"
-              >
-                <Plus size={20} />
-              </motion.button>
-            )}
-          </AnimatePresence>
-        </div>
-
         {/* Projects List */}
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
           <AnimatePresence>
@@ -461,7 +419,7 @@ const Sidebar = () => {
                 animate={{ rotate: profileDropdownOpen ? 180 : 0 }}
                 transition={{ duration: 0.2 }}
               >
-                <ChevronUp size={16} className="text-slate-500" />
+                <GoogleArrowUp size={16} className="text-slate-500" />
               </motion.div>
             )}
           </button>
