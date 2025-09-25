@@ -39,6 +39,7 @@ const Tooltip = ({ children, text, position = 'bottom' }) => {
 
 
 import UserManagement from '../user/UserManagerment'
+import ProjectManagementDashboard from '../configure/main'
 const NavbarApp = () => {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -424,20 +425,7 @@ const NavbarApp = () => {
             className="min-h-[calc(100vh-69px)] bg-gray-50 p-4 md:p-6"
           >
             <div className="max-w-7xl mx-auto">
-              <div className="mb-8">
-                <h1 className="text-3xl font-bold text-gray-900 mb-2">Project Configuration</h1>
-                <p className="text-gray-600">Configure your project settings and preferences</p>
-              </div>
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">General Settings</h3>
-                  <p className="text-gray-500">Project configuration options would be displayed here...</p>
-                </div>
-                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Advanced Options</h3>
-                  <p className="text-gray-500">Advanced configuration settings...</p>
-                </div>
-              </div>
+              <ProjectManagementDashboard/>
             </div>
           </motion.div>
         ) : (
