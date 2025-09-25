@@ -224,6 +224,7 @@ export const ThreeDotsDropdown = ({
   dropdownWidth = 'w-48'
 }) => {
   const [isOpen, setIsOpen] = useState(false)
+  const [actualPosition, setActualPosition] = useState(position)
   const dropdownRef = useRef(null)
   const buttonRef = useRef(null)
 
@@ -240,8 +241,87 @@ export const ThreeDotsDropdown = ({
     return () => document.removeEventListener('mousedown', handleClickOutside)
   }, [])
 
+  // Calculate smart positioning based on screen boundaries
+  const calculateSmartPosition = () => {
+    if (!buttonRef.current) return position
+
+    const buttonRect = buttonRef.current.getBoundingClientRect()
+    const viewport = {
+      width: window.innerWidth,
+      height: window.innerHeight
+    }
+
+    // Estimated dropdown dimensions (you can adjust these based on your needs)
+    const dropdownHeight = Math.max(options.length * 40 + 16, 60) // ~40px per item + padding
+    const dropdownWidth = 192 // w-48 = 12rem = 192px
+    
+    // Buffer space to consider "near" the edge
+    const edgeBuffer = 20
+
+    // Calculate available space in all directions
+    const spaceRight = viewport.width - buttonRect.right
+    const spaceLeft = buttonRect.left
+    const spaceBelow = viewport.height - buttonRect.bottom
+    const spaceAbove = buttonRect.top
+
+    // Determine horizontal position with edge detection
+    let horizontal = 'right'
+    
+    // If near right edge or insufficient space on right, but enough space on left
+    if ((spaceRight < dropdownWidth + edgeBuffer || buttonRect.right + dropdownWidth > viewport.width) 
+        && spaceLeft > dropdownWidth) {
+      horizontal = 'left'
+    }
+    // If near left edge, prefer right positioning
+    else if (buttonRect.left < edgeBuffer && spaceRight > dropdownWidth) {
+      horizontal = 'right'
+    }
+    // If button is more towards the right side of screen, default to left
+    else if (buttonRect.left > viewport.width * 0.7 && spaceLeft > dropdownWidth) {
+      horizontal = 'left'
+    }
+
+    // Determine vertical position with edge detection
+    let vertical = 'bottom'
+    
+    // If near bottom edge or insufficient space below, but enough space above
+    if ((spaceBelow < dropdownHeight + edgeBuffer || buttonRect.bottom + dropdownHeight > viewport.height)
+        && spaceAbove > dropdownHeight) {
+      vertical = 'top'
+    }
+    // If near top edge, prefer bottom positioning
+    else if (buttonRect.top < edgeBuffer && spaceBelow > dropdownHeight) {
+      vertical = 'bottom'
+    }
+    // If button is in lower half of screen, prefer opening upward
+    else if (buttonRect.top > viewport.height * 0.6 && spaceAbove > dropdownHeight) {
+      vertical = 'top'
+    }
+
+    // Combine positions
+    const newPosition = `${vertical}-${horizontal}`
+    
+    // Log for debugging (remove in production)
+    console.log(`Smart positioning: ${newPosition}`, {
+      buttonRect,
+      viewport,
+      spaces: { spaceRight, spaceLeft, spaceBelow, spaceAbove },
+      dropdownDimensions: { dropdownWidth, dropdownHeight }
+    })
+
+    return newPosition
+  }
+
+  // Update position when opening dropdown
+  useEffect(() => {
+    if (isOpen) {
+      const smartPosition = calculateSmartPosition()
+      setActualPosition(smartPosition)
+    }
+  }, [isOpen, options.length])
+
   const getPositionClasses = () => {
-    switch (position) {
+    switch (actualPosition) {
       case 'bottom-left':
         return 'top-full left-0 mt-1'
       case 'bottom-right':
@@ -255,6 +335,15 @@ export const ThreeDotsDropdown = ({
     }
   }
 
+  const getAnimationDirection = () => {
+    const isTop = actualPosition.startsWith('top')
+    return {
+      initial: { opacity: 0, scale: 0.95, y: isTop ? 10 : -10 },
+      animate: { opacity: 1, scale: 1, y: 0 },
+      exit: { opacity: 0, scale: 0.95, y: isTop ? 10 : -10 }
+    }
+  }
+
   const handleOptionClick = (option) => {
     if (option.onClick) {
       option.onClick()
@@ -262,12 +351,16 @@ export const ThreeDotsDropdown = ({
     setIsOpen(false)
   }
 
+  const handleToggle = () => {
+    setIsOpen(!isOpen)
+  }
+
   return (
     <div className={`relative inline-block ${className}`}>
       {/* Three dots button */}
       <button
         ref={buttonRef}
-        onClick={() => setIsOpen(!isOpen)}
+        onClick={handleToggle}
         className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
         aria-label="More options"
       >
@@ -279,9 +372,7 @@ export const ThreeDotsDropdown = ({
         {isOpen && (
           <motion.div
             ref={dropdownRef}
-            initial={{ opacity: 0, scale: 0.95, y: -10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+            {...getAnimationDirection()}
             transition={{ duration: 0.15, ease: 'easeOut' }}
             className={`absolute z-50 ${getPositionClasses()} ${dropdownWidth}`}
           >

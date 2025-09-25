@@ -197,7 +197,7 @@ const Sidebar = () => {
       <motion.div
         variants={sidebarVariants}
         animate={isOpen ? "open" : "closed"}
-        className="h-screen bg-gradient-to-b from-slate-50 to-white text-slate-800 flex flex-col border-r border-slate-200/50 sticky top-0"
+        className="h-screen bg-gradient-to-b from-slate-50 to-white text-slate-800 flex flex-col border-r border-slate-200/50 sticky top-0 sidebar-scrollbar"
       >
         {/* Sidebar Header */}
         <div className="flex items-center justify-center p-4 border-b border-slate-200/60 bg-white/80 backdrop-blur-sm">
