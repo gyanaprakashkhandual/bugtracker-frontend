@@ -1,20 +1,23 @@
-import { Sidebar } from "../components/modules/Sidebar";
-import NavbarApp from "../components/Navbars/Navbar";
+'use client'
+
+import Sidebar from "../components/modules/Sidebar"
+import NavbarApp from "../components/Navbars/Navbar"
 
 
 
-export const metadata = {
-  title: "Dashboard - Integrate with code cloud",
-  description: "Dashboard page for Calf",
-};
 
-function Page() {
+function page() {
   return (
-    <div className="flex h-screen">
+    <div className="flex h-screen bg-gray-100">
+      {/* Sidebar */}
       <Sidebar />
-     <NavbarApp/>
+      
+      {/* Main Content Area with Navbar */}
+      <div className="flex-1">
+        <NavbarApp isSidebarOpen={true} />
+      </div>
     </div>
-  );
+  )
 }
 
-export default Page;
+export default page

@@ -17,17 +17,47 @@ import {
   BarChart3,
   Table,
   LayoutGrid,
-  MoreVertical
+  UserCog
 } from 'lucide-react'
-import { getStoredProjectName } from '@/app/script/Projectutils'
-import UserManagement from '../user/UserManagerment'
+
+// Custom Tooltip Component
+const Tooltip = ({ children, text, position = 'bottom' }) => {
+  return (
+    <div className="relative group">
+      {children}
+      <div className={`absolute ${position === 'bottom' ? 'top-full mt-2' : 'bottom-full mb-2'} left-1/2 transform -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none z-50`}>
+        <div className="bg-gray-900 text-white text-xs rounded-lg px-2 py-1 whitespace-nowrap">
+          {text}
+          <div className={`absolute left-1/2 transform -translate-x-1/2 ${position === 'bottom' ? '-top-1' : '-bottom-1'}`}>
+            <div className={`border-4 ${position === 'bottom' ? 'border-transparent border-b-gray-900' : 'border-transparent border-t-gray-900'}`}></div>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}
+
+// Simple UserManagement component placeholder
+const UserManagement = () => (
+  <div className="min-h-[calc(100vh-69px)] bg-gray-50 p-4 md:p-6">
+    <div className="max-w-7xl mx-auto">
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-2">User Management</h1>
+        <p className="text-gray-600">Manage user settings and permissions</p>
+      </div>
+      <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">User Settings</h3>
+        <p className="text-gray-500">User management options would be displayed here...</p>
+      </div>
+    </div>
+  </div>
+)
 
 const NavbarApp = () => {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
   const [activeView, setActiveView] = useState('Chart View')
-  const [projectName, setProjectName] = useState('')
-  const [showDropdown, setShowDropdown] = useState(false)
+  const [projectName, setProjectName] = useState('Google')
   const [activeComponent, setActiveComponent] = useState(null)
 
   // Get project name from localStorage
@@ -46,27 +76,13 @@ const NavbarApp = () => {
     setIsMobileMenuOpen(!isMobileMenuOpen)
   }
 
-  const toggleDropdown = () => {
-    setShowDropdown(!showDropdown)
+  const handleComponentSelect = (component) => {
+    setActiveComponent(component)
+    setIsMobileMenuOpen(false)
   }
 
-  const handleDropdownOption = (option) => {
-    setShowDropdown(false)
-    setIsMobileMenuOpen(false)
-    
-    switch(option) {
-      case 'User Control':
-        setActiveComponent('UserManagement')
-        break
-      case 'Project Configuration':
-        setActiveComponent('ProjectConfiguration')
-        break
-      case 'Settings':
-        setActiveComponent('Settings')
-        break
-      default:
-        setActiveComponent(null)
-    }
+  const handleBackToViews = () => {
+    setActiveComponent(null)
   }
 
   const viewOptions = [
@@ -75,56 +91,102 @@ const NavbarApp = () => {
     { name: 'Card View', icon: LayoutGrid }
   ]
 
-  const dropdownOptions = [
-    'Project Configuration',
-    'User Control', 
-    'Settings'
-  ]
-
   // Function to truncate project name based on available space
   const getTruncatedProjectName = () => {
     if (typeof window === 'undefined') return projectName
     
-    const width = window.innerWidth
-    if (width < 640) { // mobile
+    const availableWidth = window.innerWidth
+    
+    if (availableWidth < 400) { // very small screens
+      return projectName.length > 6 ? projectName.substring(0, 3) + '...' : projectName
+    } else if (availableWidth < 640) { // mobile
       return projectName.length > 8 ? projectName.substring(0, 5) + '...' : projectName
-    } else if (width < 768) { // tablet
+    } else if (availableWidth < 768) { // tablet
       return projectName.length > 12 ? projectName.substring(0, 9) + '...' : projectName
     } else { // desktop
-      return projectName.length > 15 ? projectName.substring(0, 12) + '...' : projectName
+      return projectName.length > 20 ? projectName.substring(0, 17) + '...' : projectName
     }
   }
 
   return (
-    <>
-      <nav className={`w-full h-[69px] bg-gradient-to-r from-blue-100 via-sky-50 to-blue-100 transition-all duration-300 ${
-        isDarkMode ? 'from-slate-900 via-gray-900 to-slate-900' : ''
-      }`}>
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
+    <div className="min-h-screen bg-gray-100 flex flex-col">
+      {/* Sticky Navbar */}
+      <nav 
+        className={`sticky top-0 z-40 h-[69px] bg-gradient-to-r from-blue-100 via-sky-50 to-blue-100 transition-all duration-300 ${
+          isDarkMode ? 'from-slate-900 via-gray-900 to-slate-900' : ''
+        }`}
+      >
+        <div className="h-full px-4 sm:px-6 lg:px-8">
           {/* Main Navbar */}
           <div className="flex items-center justify-between h-16">
             {/* Left Section */}
-            <div className="flex items-center space-x-6">
+            <div className="flex items-center space-x-4 md:space-x-6 flex-1 min-w-0">
               {/* Project Name */}
               <motion.div
-                className={`text-2xl font-bold ${isDarkMode ? 'text-blue-400' : 'text-blue-700'} truncate max-w-[120px] sm:max-w-[150px] md:max-w-[200px]`}
+                className={`text-xl md:text-2xl font-bold ${
+                  isDarkMode ? 'text-blue-400' : 'text-blue-700'
+                } truncate max-w-[100px] sm:max-w-[150px] md:max-w-[200px] lg:max-w-[250px] cursor-pointer`}
                 whileHover={{ scale: 1.05 }}
                 transition={{ type: "spring", stiffness: 400, damping: 17 }}
-                title={projectName} // Show full name on hover
+                title={projectName}
+                onClick={handleBackToViews}
               >
                 {getTruncatedProjectName()}
               </motion.div>
 
-              {/* Search Bar - Hidden on mobile */}
-              <div className="hidden md:block relative">
+              {/* Back to Views Button - Show when component is active */}
+              {activeComponent && (
+                <motion.button
+                  onClick={handleBackToViews}
+                  className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-all duration-200 ${
+                    isDarkMode
+                      ? 'bg-blue-600/20 text-blue-300 hover:bg-blue-600/30'
+                      : 'bg-blue-500/10 text-blue-700 hover:bg-blue-500/20'
+                  }`}
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  <LayoutGrid className="w-4 h-4" />
+                  <span>Back to Views</span>
+                </motion.button>
+              )}
+
+              {/* View Options - Desktop - Show when no component is active */}
+              {!activeComponent && (
+                <div className="hidden lg:flex items-center space-x-1 flex-1">
+                  {viewOptions.map(({ name, icon: Icon }) => (
+                    <motion.button
+                      key={name}
+                      onClick={() => setActiveView(name)}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 ${
+                        activeView === name
+                          ? isDarkMode
+                            ? 'bg-blue-600/20 text-blue-300 shadow-sm'
+                            : 'bg-blue-500/10 text-blue-700 shadow-sm'
+                          : isDarkMode
+                          ? 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
+                          : 'text-blue-600 hover:bg-white/50 hover:text-blue-700'
+                      }`}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="text-sm font-medium">{name}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              )}
+
+              {/* Search Bar - Hidden on mobile, shows when space allows */}
+              <div className="hidden md:block flex-1 max-w-md">
                 <div className="relative">
-                  <Search className={`absolute left-2 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
+                  <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
                     isDarkMode ? 'text-gray-400' : 'text-blue-400'
                   }`} />
                   <input
                     type="text"
                     placeholder="Search..."
-                    className={`pl-10 pr-4 py-2 w-64 lg:w-80 rounded-full border transition-all duration-200 ${
+                    className={`pl-10 pr-4 py-2 w-full rounded-full border transition-all duration-200 ${
                       isDarkMode 
                         ? 'bg-gray-800 border-gray-600 text-white placeholder-gray-400 focus:ring-blue-400' 
                         : 'bg-white/70 backdrop-blur-sm border-blue-200 text-gray-900 placeholder-blue-400 focus:ring-blue-500'
@@ -132,70 +194,64 @@ const NavbarApp = () => {
                   />
                 </div>
               </div>
-
-              {/* View Options - Desktop */}
-              <div className="hidden lg:flex items-center space-x-1">
-                {viewOptions.map(({ name, icon: Icon }) => (
-                  <motion.button
-                    key={name}
-                    onClick={() => setActiveView(name)}
-                    className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 ${
-                      activeView === name
-                        ? isDarkMode
-                          ? 'bg-blue-600/20 text-blue-300 shadow-sm'
-                          : 'bg-blue-500/10 text-blue-700 shadow-sm'
-                        : isDarkMode
-                        ? 'text-gray-300 hover:bg-gray-700/50 hover:text-white'
-                        : 'text-blue-600 hover:bg-white/50 hover:text-blue-700'
-                    }`}
-                    whileHover={{ scale: 1.05 }}
-                    whileTap={{ scale: 0.95 }}
-                  >
-                    <Icon className="w-4 h-4" />
-                    <span className="text-sm font-medium">{name}</span>
-                  </motion.button>
-                ))}
-              </div>
-            </div>
-
-            {/* Center Section - Open Workspace Button */}
-            <div className="hidden md:block">
-              <motion.button
-                className={`flex items-center space-x-2 px-4 py-2 rounded-sm font-medium transition-all duration-200  ${
-                  isDarkMode
-                    ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-900/20'
-                    : 'bg-blue-600 hover:bg-blue-700 text-white shadow-blue-500/20 hover:shadow-blue-500/30'
-                }`}
-                whileHover={{ scale: 1.05, y: -1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                <span>Open Workspace</span>
-              </motion.button>
             </div>
 
             {/* Right Section - Desktop */}
-            <div className="hidden lg:flex items-center space-x-1">
+            <div className="hidden lg:flex items-center space-x-2 flex-shrink-0">
               {/* Notification Icon */}
-              <motion.button
-                className={`p-2 rounded-lg transition-all duration-200 relative ${
-                  isDarkMode 
-                    ? 'text-gray-300 hover:bg-gray-700/50 hover:text-white' 
-                    : 'text-blue-600 hover:bg-white/50 hover:text-blue-700'
-                }`}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                title="Notifications"
-              >
-                <Bell className="w-5 h-5" />
-                <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                  3
-                </span>
-              </motion.button>
-
-              {/* Three dots dropdown */}
-              <div className="relative">
+              <Tooltip text="Notifications" position="bottom">
                 <motion.button
-                  onClick={toggleDropdown}
+                  className={`p-2 rounded-lg transition-all duration-200 relative ${
+                    isDarkMode 
+                      ? 'text-gray-300 hover:bg-gray-700/50 hover:text-white' 
+                      : 'text-blue-600 hover:bg-white/50 hover:text-blue-700'
+                  }`}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <Bell className="w-5 h-5" />
+                  <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                    3
+                  </span>
+                </motion.button>
+              </Tooltip>
+
+              {/* Project Configuration Icon */}
+              <Tooltip text="Project Configuration" position="bottom">
+                <motion.button
+                  onClick={() => handleComponentSelect('ProjectConfiguration')}
+                  className={`p-2 rounded-lg transition-all duration-200 ${
+                    isDarkMode 
+                      ? 'text-gray-300 hover:bg-gray-700/50 hover:text-white' 
+                      : 'text-blue-600 hover:bg-white/50 hover:text-blue-700'
+                  } ${activeComponent === 'ProjectConfiguration' ? (isDarkMode ? 'bg-blue-600/20 text-blue-300' : 'bg-blue-500/10 text-blue-700') : ''}`}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <Settings className="w-5 h-5" />
+                </motion.button>
+              </Tooltip>
+
+              {/* User Authentication/Control Icon */}
+              <Tooltip text="User Control" position="bottom">
+                <motion.button
+                  onClick={() => handleComponentSelect('UserManagement')}
+                  className={`p-2 rounded-lg transition-all duration-200 ${
+                    isDarkMode 
+                      ? 'text-gray-300 hover:bg-gray-700/50 hover:text-white' 
+                      : 'text-blue-600 hover:bg-white/50 hover:text-blue-700'
+                  } ${activeComponent === 'UserManagement' ? (isDarkMode ? 'bg-blue-600/20 text-blue-300' : 'bg-blue-500/10 text-blue-700') : ''}`}
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.9 }}
+                >
+                  <UserCog className="w-5 h-5" />
+                </motion.button>
+              </Tooltip>
+
+              {/* Theme Toggle */}
+              <Tooltip text={isDarkMode ? "Switch to Light Mode" : "Switch to Dark Mode"} position="bottom">
+                <motion.button
+                  onClick={toggleTheme}
                   className={`p-2 rounded-lg transition-all duration-200 ${
                     isDarkMode 
                       ? 'text-gray-300 hover:bg-gray-700/50 hover:text-white' 
@@ -203,43 +259,19 @@ const NavbarApp = () => {
                   }`}
                   whileHover={{ scale: 1.1 }}
                   whileTap={{ scale: 0.9 }}
-                  title="More options"
                 >
-                  <MoreVertical className="w-5 h-5" />
-                </motion.button>
-
-                {/* Dropdown Menu */}
-                {showDropdown && (
                   <motion.div
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    exit={{ opacity: 0, y: -10 }}
-                    className={`absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 z-50 ${
-                      isDarkMode 
-                        ? 'bg-gray-800 border border-gray-700' 
-                        : 'bg-white border border-gray-200'
-                    }`}
+                    animate={{ rotate: isDarkMode ? 180 : 0 }}
+                    transition={{ duration: 0.3 }}
                   >
-                    {dropdownOptions.map((option) => (
-                      <button
-                        key={option}
-                        onClick={() => handleDropdownOption(option)}
-                        className={`block w-full text-left px-4 py-2 text-sm transition-colors duration-200 ${
-                          isDarkMode
-                            ? 'text-gray-300 hover:bg-gray-700 hover:text-white'
-                            : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                        }`}
-                      >
-                        {option}
-                      </button>
-                    ))}
+                    {isDarkMode ? <Sun className="w-5 h-5" /> : <Moon className="w-5 h-5" />}
                   </motion.div>
-                )}
-              </div>
+                </motion.button>
+              </Tooltip>
             </div>
 
             {/* Mobile Menu Button */}
-            <div className="lg:hidden flex items-center space-x-2">
+            <div className="lg:hidden flex items-center space-x-2 flex-shrink-0">
               {/* Notification Icon for mobile */}
               <motion.button
                 className={`p-2 rounded-lg transition-all duration-200 relative ${
@@ -248,7 +280,6 @@ const NavbarApp = () => {
                     : 'text-blue-600 hover:bg-white/50 hover:text-blue-700'
                 }`}
                 whileTap={{ scale: 0.9 }}
-                title="Notifications"
               >
                 <Bell className="w-5 h-5" />
                 <span className="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
@@ -271,7 +302,7 @@ const NavbarApp = () => {
           </div>
 
           {/* Mobile Search Bar */}
-          <div className="md:hidden py-3 border-t border-blue-200/30">
+          <div className="lg:hidden py-3 border-t border-blue-200/30">
             <div className="relative">
               <Search className={`absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 ${
                 isDarkMode ? 'text-gray-400' : 'text-blue-400'
@@ -291,7 +322,9 @@ const NavbarApp = () => {
 
         {/* Mobile Menu */}
         <motion.div
-          className={`lg:hidden ${isMobileMenuOpen ? 'block' : 'hidden'}`}
+          className={`lg:hidden absolute top-full left-0 right-0 shadow-lg ${
+            isMobileMenuOpen ? 'block' : 'hidden'
+          }`}
           initial={{ opacity: 0, height: 0 }}
           animate={{ 
             opacity: isMobileMenuOpen ? 1 : 0, 
@@ -299,32 +332,20 @@ const NavbarApp = () => {
           }}
           transition={{ duration: 0.3 }}
         >
-          <div className={`px-4 py-3 space-y-3 border-t ${isDarkMode ? 'border-gray-600' : 'border-blue-200/30'}`}>
-            {/* Mobile Open Workspace Button */}
-            <motion.button
-              className={`flex items-center justify-center space-x-2 w-full px-4 py-3 rounded-lg font-medium transition-all duration-200 ${
-                isDarkMode
-                  ? 'bg-blue-600 hover:bg-blue-700 text-white'
-                  : 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
-              }`}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-            >
-              <FolderOpen className="w-5 h-5" />
-              <span>Open Workspace</span>
-            </motion.button>
-
-            {/* Mobile View Options */}
+          <div className={`px-4 py-3 space-y-3 border-t ${isDarkMode ? 'border-gray-600 bg-gray-900' : 'border-blue-200/30 bg-white'}`}>
+            {/* Mobile View Options - Always show but highlight when active */}
             <div className="space-y-2">
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2">View Options</div>
               {viewOptions.map(({ name, icon: Icon }) => (
                 <motion.button
                   key={name}
                   onClick={() => {
                     setActiveView(name)
+                    setActiveComponent(null)
                     setIsMobileMenuOpen(false)
                   }}
                   className={`flex items-center space-x-3 w-full px-4 py-2 rounded-lg transition-all duration-200 ${
-                    activeView === name
+                    activeView === name && !activeComponent
                       ? isDarkMode
                         ? 'bg-blue-600/20 text-blue-300'
                         : 'bg-blue-500/10 text-blue-700'
@@ -341,21 +362,37 @@ const NavbarApp = () => {
               ))}
             </div>
 
-            {/* Dropdown Options in Mobile Menu */}
+            {/* Mobile Menu Options */}
             <div className="space-y-2">
-              {dropdownOptions.map((option) => (
-                <motion.button
-                  key={option}
-                  onClick={() => handleDropdownOption(option)}
-                  className={`flex items-center space-x-3 w-full px-4 py-2 rounded-lg transition-all duration-200 ${
-                    isDarkMode ? 'text-gray-300 hover:bg-gray-700/50' : 'text-blue-600 hover:bg-white/50'
-                  }`}
-                  whileHover={{ scale: 1.02 }}
-                  whileTap={{ scale: 0.98 }}
-                >
-                  <span>{option}</span>
-                </motion.button>
-              ))}
+              <div className="text-xs font-semibold text-gray-400 uppercase tracking-wider px-2">Tools</div>
+              
+              <motion.button
+                onClick={() => handleComponentSelect('ProjectConfiguration')}
+                className={`flex items-center space-x-3 w-full px-4 py-2 rounded-lg transition-all duration-200 ${
+                  activeComponent === 'ProjectConfiguration'
+                    ? isDarkMode ? 'bg-blue-600/20 text-blue-300' : 'bg-blue-500/10 text-blue-700'
+                    : isDarkMode ? 'text-gray-300 hover:bg-gray-700/50' : 'text-blue-600 hover:bg-white/50'
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <Settings className="w-5 h-5" />
+                <span>Project Configuration</span>
+              </motion.button>
+
+              <motion.button
+                onClick={() => handleComponentSelect('UserManagement')}
+                className={`flex items-center space-x-3 w-full px-4 py-2 rounded-lg transition-all duration-200 ${
+                  activeComponent === 'UserManagement'
+                    ? isDarkMode ? 'bg-blue-600/20 text-blue-300' : 'bg-blue-500/10 text-blue-700'
+                    : isDarkMode ? 'text-gray-300 hover:bg-gray-700/50' : 'text-blue-600 hover:bg-white/50'
+                }`}
+                whileHover={{ scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
+              >
+                <UserCog className="w-5 h-5" />
+                <span>User Control</span>
+              </motion.button>
             </div>
 
             {/* Theme Toggle Mobile */}
@@ -379,10 +416,109 @@ const NavbarApp = () => {
         </motion.div>
       </nav>
 
-      {/* Render Active Component */}
-      {activeComponent === 'UserManagement' && <UserManagement />}
-    </>
+      {/* Scrollable Content Area */}
+      <div className="flex-1 overflow-auto">
+        {/* Conditional Component Rendering */}
+        {activeComponent === 'UserManagement' ? (
+          <motion.div
+            key="user-management"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="min-h-[calc(100vh-69px)]"
+          >
+            <UserManagement />
+          </motion.div>
+        ) : activeComponent === 'ProjectConfiguration' ? (
+          <motion.div
+            key="project-config"
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ duration: 0.3, ease: "easeInOut" }}
+            className="min-h-[calc(100vh-69px)] bg-gray-50 p-4 md:p-6"
+          >
+            <div className="max-w-7xl mx-auto">
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">Project Configuration</h1>
+                <p className="text-gray-600">Configure your project settings and preferences</p>
+              </div>
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">General Settings</h3>
+                  <p className="text-gray-500">Project configuration options would be displayed here...</p>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-4">Advanced Options</h3>
+                  <p className="text-gray-500">Advanced configuration settings...</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        ) : (
+          <motion.div
+            key="main-content"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ duration: 0.3 }}
+            className="min-h-[calc(100vh-69px)] bg-gray-50 p-4 md:p-6"
+          >
+            <div className="max-w-7xl mx-auto">
+              <div className="mb-8">
+                <h1 className="text-3xl font-bold text-gray-900 mb-2">
+                  Welcome to {projectName}
+                </h1>
+                <p className="text-gray-600 mb-8">
+                  Current view: {activeView}
+                </p>
+              </div>
+              
+              {/* View Options for Mobile/Tablet */}
+              <div className="lg:hidden mb-6">
+                <div className="flex space-x-2 overflow-x-auto pb-2">
+                  {viewOptions.map(({ name, icon: Icon }) => (
+                    <motion.button
+                      key={name}
+                      onClick={() => setActiveView(name)}
+                      className={`flex items-center space-x-2 px-3 py-2 rounded-lg transition-all duration-200 flex-shrink-0 ${
+                        activeView === name
+                          ? isDarkMode
+                            ? 'bg-blue-600/20 text-blue-300 shadow-sm'
+                            : 'bg-blue-500/10 text-blue-700 shadow-sm'
+                          : isDarkMode
+                          ? 'text-gray-300 hover:bg-gray-700/50'
+                          : 'text-blue-600 hover:bg-white/50'
+                      }`}
+                      whileHover={{ scale: 1.05 }}
+                      whileTap={{ scale: 0.95 }}
+                    >
+                      <Icon className="w-4 h-4" />
+                      <span className="text-sm font-medium">{name}</span>
+                    </motion.button>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Main Dashboard Content */}
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Dashboard Card 1</h3>
+                  <p className="text-gray-600">Your main content would go here...</p>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Dashboard Card 2</h3>
+                  <p className="text-gray-600">More content here...</p>
+                </div>
+                <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
+                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Dashboard Card 3</h3>
+                  <p className="text-gray-600">Additional content...</p>
+                </div>
+              </div>
+            </div>
+          </motion.div>
+        )}
+      </div>
+    </div>
   )
 }
 
-export default NavbarApp;
+export default NavbarApp

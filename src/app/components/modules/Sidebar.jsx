@@ -38,14 +38,18 @@ const Sidebar = () => {
   const { selectedProject, setSelectedProject } = useProject();
   const router = useRouter();
 
-  // Utility function to store project ID in localStorage
-  const storeProjectId = (projectId) => {
-    localStorage.setItem('currentProjectId', projectId);
+  // Store project name in localStorage for navbar
+  const storeProjectName = (projectName) => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('currentProjectName', projectName);
+    }
   };
 
-  // Utility function to get stored project ID
-  const getStoredProjectId = () => {
-    return localStorage.getItem('currentProjectId');
+  // Clear project name from localStorage
+  const clearProjectName = () => {
+    if (typeof window !== 'undefined') {
+      localStorage.removeItem('currentProjectName');
+    }
   };
 
   const fetchUserData = async () => {
@@ -55,15 +59,8 @@ const Sidebar = () => {
       const res = await axios.get("http://localhost:5000/api/v1/auth/me", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("Full API Response:", res.data);
       const user = res.data?.data || res.data?.user || res.data;
       setUserData(user);
-      if (user) {
-        console.log("User Email:", user.email || "Not provided");
-        console.log("User Name:", user.name || "Not provided");
-      } else {
-        console.warn("No user data found in response");
-      }
     } catch (err) {
       console.error("Error fetching user data", err);
     }
@@ -73,11 +70,9 @@ const Sidebar = () => {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      // Use the new API endpoint for getting user's own projects
       const res = await axios.get("http://localhost:5000/api/v1/project/my-projects", {
         headers: { Authorization: `Bearer ${token}` },
       });
-      console.log("API response:", res.data);
       setProjects(res.data.projects || []);
     } catch (err) {
       console.error("Error fetching projects", err);
@@ -86,6 +81,10 @@ const Sidebar = () => {
   };
 
   useEffect(() => {
+    // Get token on client side only
+    if (typeof window !== 'undefined') {
+      setToken(localStorage.getItem("token"));
+    }
     fetchUserData();
     fetchProjects();
   }, []);
@@ -101,7 +100,7 @@ const Sidebar = () => {
       // If the deleted project was the selected one, clear the selection
       if (selectedProject && selectedProject._id === projectId) {
         setSelectedProject(null);
-        localStorage.removeItem('currentProjectId');
+        clearProjectName(); // Clear project name from navbar
       }
     } catch (err) {
       console.error("Error deleting project", err);
@@ -110,7 +109,12 @@ const Sidebar = () => {
 
   const handleProjectClick = (project) => {
     setSelectedProject(project);
-    storeProjectId(project._id); // Store project ID in localStorage
+    storeProjectName(project.projectName); // Store project name for navbar
+  };
+
+  const handleCreateProject = () => {
+    setSelectedProject(null);
+    clearProjectName(); // Clear project name when creating new project
   };
 
   const handleLogout = async () => {
@@ -123,7 +127,7 @@ const Sidebar = () => {
       console.error("Error during logout", err);
     } finally {
       localStorage.removeItem("token");
-      localStorage.removeItem("currentProjectId"); // Clear stored project ID
+      localStorage.removeItem("currentProjectName"); // Clear project name
       document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       router.push("/login");
     }
@@ -170,27 +174,12 @@ const Sidebar = () => {
     }
   };
 
-  const projectItemVariants = {
-    hover: {
-      backgroundColor: "#f8fafc",
-      scale: 1.02,
-      transition: {
-        type: "spring",
-        stiffness: 400,
-        damping: 25
-      }
-    },
-    tap: {
-      scale: 0.98
-    }
-  };
-
   return (
     <>
       <motion.div
         variants={sidebarVariants}
         animate={isOpen ? "open" : "closed"}
-        className="h-screen bg-gradient-to-b from-slate-50 to-white text-slate-800 flex flex-col border-r border-slate-200/50 relative overflow-hidden"
+        className="h-screen bg-gradient-to-b from-slate-50 to-white text-slate-800 flex flex-col border-r border-slate-200/50 overflow-hidden sticky top-0"
       >
         {/* Sidebar Header */}
         <div className="flex items-center justify-center p-4 border-b border-slate-200/60 bg-white/80 backdrop-blur-sm">
@@ -251,10 +240,7 @@ const Sidebar = () => {
                 exit="closed"
                 whileHover={{ backgroundColor: "#3b82f6" }}
                 whileTap={{ scale: 0.98 }}
-                onClick={() => {
-                  setSelectedProject(null);
-                  // No need to set modalType here as ProjectModal handles it internally
-                }}
+                onClick={handleCreateProject}
                 className="w-full py-3 px-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-200 font-medium flex items-center justify-center gap-2 shadow-sm hover:shadow-xl"
               >
                 <Plus size={18} />
@@ -271,10 +257,7 @@ const Sidebar = () => {
                   boxShadow: "0 8px 25px rgba(59, 130, 246, 0.3)"
                 }}
                 whileTap={{ scale: 0.9 }}
-                onClick={() => {
-                  setSelectedProject(null);
-                  // No need to set modalType here as ProjectModal handles it internally
-                }}
+                onClick={handleCreateProject}
                 className="w-full h-12 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-200 flex items-center justify-center shadow-sm"
               >
                 <Plus size={20} />
@@ -286,14 +269,14 @@ const Sidebar = () => {
         {/* Projects List */}
         <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
           <AnimatePresence>
-            {projects.map((project, index) => (
+            {projects.map((project) => (
               <motion.div
                 key={project._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, x: -100 }}
-                whileHover="hover"
-                whileTap="tap"
+                whileHover={{ backgroundColor: "#f8fafc", scale: 1.02 }}
+                whileTap={{ scale: 0.98 }}
                 onHoverStart={() => setHoveredProject(project._id)}
                 onHoverEnd={() => setHoveredProject(null)}
                 className={`mx-2 my-1 rounded-xl border transition-all duration-200 ${
@@ -308,13 +291,13 @@ const Sidebar = () => {
                       className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
                       onClick={() => handleProjectClick(project)}
                     >
-                      <motion.div className="flex-shrink-0">
+                      <div className="flex-shrink-0">
                         <CalfFolder size={18} className={
                           selectedProject?._id === project._id 
                             ? "text-blue-600" 
                             : "text-blue-500"
                         } />
-                      </motion.div>
+                      </div>
                       <span className={`font-medium truncate ${
                         selectedProject?._id === project._id 
                           ? 'text-blue-700' 
@@ -337,43 +320,7 @@ const Sidebar = () => {
                           {
                             label: "Edit",
                             icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5 3 21l1.5-4L16.5 3.5z" /></svg>,
-                            onClick: () => {
-                              setSelectedProject(project);
-                              storeProjectId(project._id);
-                            },
-                          },
-                          {
-                            label: "Configure",
-                            icon: <svg
-                              width="16"
-                              height="16"
-                              fill="none"
-                              stroke="currentColor"
-                              strokeWidth="2"
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              viewBox="0 0 24 24"
-                            >
-                              <circle cx="12" cy="12" r="3" />
-                              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c0 .7.4 1.31 1 1.51.62.22 1.31.09 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.42.51-.55 1.2-.33 1.82.2.6.81 1 1.51 1H21a2 2 0 1 1 0 4h-.09c-.7 0-1.31.4-1.51 1z" />
-                            </svg>,
-                            onClick: () => {
-                              setSelectedProject(project);
-                              storeProjectId(project._id);
-                            },
-                          },
-                          {
-                            label: "Workspace",
-                            icon: (
-                              <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                                <rect x="3" y="3" width="18" height="18" rx="2" />
-                                <path d="M9 9h6v6H9z" />
-                              </svg>
-                            ),
-                            onClick: () => {
-                              handleProjectClick(project);
-                              router.push(`/app/projects/${project.slug}`);
-                            },
+                            onClick: () => handleProjectClick(project),
                           },
                           {
                             label: "Delete",
@@ -390,19 +337,17 @@ const Sidebar = () => {
                     className="flex items-center justify-center py-4 cursor-pointer"
                     onClick={() => handleProjectClick(project)}
                   >
-                    <motion.div
+                    <div
                       whileHover={{
                         color: "#3b82f6"
                       }}
-                      data-tooltip={project.projectName}
-                      data-position="top"
                     >
                       <CalfFolder size={20} className={
                         selectedProject?._id === project._id 
                           ? "text-blue-600" 
                           : "text-slate-500"
                       } />
-                    </motion.div>
+                    </div>
                   </div>
                 )}
               </motion.div>
@@ -471,16 +416,16 @@ const Sidebar = () => {
         </div>
       </motion.div>
 
-      {/* Project Modal - Only show when a project is selected for editing or creating */}
+      {/* Project Modal */}
       <AnimatePresence>
         {selectedProject && (
-        <ProjectModal
-          project={selectedProject}
-          token={token} // Use the state instead of direct localStorage
-          onClose={() => setSelectedProject(undefined)}
-          onSuccess={handleModalSuccess}
-        />
-      )}
+          <ProjectModal
+            project={selectedProject}
+            token={token}
+            onClose={() => setSelectedProject(undefined)}
+            onSuccess={handleModalSuccess}
+          />
+        )}
       </AnimatePresence>
     </>
   );
