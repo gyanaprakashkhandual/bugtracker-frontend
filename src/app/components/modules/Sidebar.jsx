@@ -14,8 +14,6 @@ import {
   ChevronUp,
   Settings,
   Copy,
-  X,
-  CheckCircle
 } from "lucide-react";
 import { ThreeDotsDropdown } from "../assets/Dropdown";
 import ProjectModal from "../assets/Modal";
@@ -26,24 +24,29 @@ import { CalfFolder } from "../utils/Icon";
 import { getProjectDetails } from "@/app/utils/functions/GetProjectDetails";
 import { getTestTypes } from "@/app/utils/functions/GetTestType";
 
+
+
+
 const Sidebar = () => {
   const [isOpen, setIsOpen] = useState(true);
   const [projects, setProjects] = useState([]);
-  // const [selectedProject, setSelectedProject] = useState(null); // Use context instead
-  const [modalOpen, setModalOpen] = useState(false);
-  const [modalType, setModalType] = useState(""); // "edit" or "create"
-  // Remove token state, always get from localStorage when needed
   const [hoveredProject, setHoveredProject] = useState(null);
   const [userData, setUserData] = useState(null);
   const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-
+  const [token, setToken] = useState(null);
 
   const { selectedProject, setSelectedProject } = useProject();
-
-
   const router = useRouter();
 
+  // Utility function to store project ID in localStorage
+  const storeProjectId = (projectId) => {
+    localStorage.setItem('currentProjectId', projectId);
+  };
 
+  // Utility function to get stored project ID
+  const getStoredProjectId = () => {
+    return localStorage.getItem('currentProjectId');
+  };
 
   const fetchUserData = async () => {
     const token = localStorage.getItem("token");
@@ -66,20 +69,16 @@ const Sidebar = () => {
     }
   };
 
-
-  useEffect(() => {
-    fetchUserData();
-  }, []);
-
   const fetchProjects = async () => {
     const token = localStorage.getItem("token");
     if (!token) return;
     try {
-      const res = await axios.get("http://localhost:5000/api/v1/project/", {
+      // Use the new API endpoint for getting user's own projects
+      const res = await axios.get("http://localhost:5000/api/v1/project/my-projects", {
         headers: { Authorization: `Bearer ${token}` },
       });
       console.log("API response:", res.data);
-      setProjects(res.data.data || []);
+      setProjects(res.data.projects || []);
     } catch (err) {
       console.error("Error fetching projects", err);
       setProjects([]);
@@ -87,6 +86,7 @@ const Sidebar = () => {
   };
 
   useEffect(() => {
+    fetchUserData();
     fetchProjects();
   }, []);
 
@@ -97,9 +97,20 @@ const Sidebar = () => {
         headers: { Authorization: `Bearer ${token}` },
       });
       setProjects(projects.filter((p) => p._id !== projectId));
+      
+      // If the deleted project was the selected one, clear the selection
+      if (selectedProject && selectedProject._id === projectId) {
+        setSelectedProject(null);
+        localStorage.removeItem('currentProjectId');
+      }
     } catch (err) {
       console.error("Error deleting project", err);
     }
+  };
+
+  const handleProjectClick = (project) => {
+    setSelectedProject(project);
+    storeProjectId(project._id); // Store project ID in localStorage
   };
 
   const handleLogout = async () => {
@@ -112,6 +123,7 @@ const Sidebar = () => {
       console.error("Error during logout", err);
     } finally {
       localStorage.removeItem("token");
+      localStorage.removeItem("currentProjectId"); // Clear stored project ID
       document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
       router.push("/login");
     }
@@ -119,7 +131,6 @@ const Sidebar = () => {
 
   const handleModalSuccess = () => {
     fetchProjects(); // Refresh the projects list
-    setModalOpen(false);
   };
 
   const sidebarVariants = {
@@ -241,8 +252,8 @@ const Sidebar = () => {
                 whileHover={{ backgroundColor: "#3b82f6" }}
                 whileTap={{ scale: 0.98 }}
                 onClick={() => {
-                  setModalType("create");
-                  setModalOpen(true);
+                  setSelectedProject(null);
+                  // No need to set modalType here as ProjectModal handles it internally
                 }}
                 className="w-full py-3 px-4 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-200 font-medium flex items-center justify-center gap-2 shadow-sm hover:shadow-xl"
               >
@@ -261,8 +272,8 @@ const Sidebar = () => {
                 }}
                 whileTap={{ scale: 0.9 }}
                 onClick={() => {
-                  setModalType("create");
-                  setModalOpen(true);
+                  setSelectedProject(null);
+                  // No need to set modalType here as ProjectModal handles it internally
                 }}
                 className="w-full h-12 bg-blue-500 text-white rounded-xl hover:bg-blue-600 transition-all duration-200 flex items-center justify-center shadow-sm"
               >
@@ -285,17 +296,30 @@ const Sidebar = () => {
                 whileTap="tap"
                 onHoverStart={() => setHoveredProject(project._id)}
                 onHoverEnd={() => setHoveredProject(null)}
-                className="mx-2 my-1 rounded-xl border border-transparent hover:border-slate-200/60 transition-all duration-200"
+                className={`mx-2 my-1 rounded-xl border transition-all duration-200 ${
+                  selectedProject?._id === project._id 
+                    ? 'border-blue-300 bg-blue-50' 
+                    : 'border-transparent hover:border-slate-200/60'
+                }`}
               >
                 {isOpen ? (
                   <div className="flex items-center justify-between px-4 py-3">
-                    <div className="flex items-center gap-3 flex-1 min-w-0">
-                      <motion.div
-                        className="flex-shrink-0"
-                      >
-                        <CalfFolder size={18} className="text-blue-500" />
+                    <div 
+                      className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                      onClick={() => handleProjectClick(project)}
+                    >
+                      <motion.div className="flex-shrink-0">
+                        <CalfFolder size={18} className={
+                          selectedProject?._id === project._id 
+                            ? "text-blue-600" 
+                            : "text-blue-500"
+                        } />
                       </motion.div>
-                      <span className="font-medium text-slate-700 truncate">
+                      <span className={`font-medium truncate ${
+                        selectedProject?._id === project._id 
+                          ? 'text-blue-700' 
+                          : 'text-slate-700'
+                      }`}>
                         {project.projectName}
                       </span>
                     </div>
@@ -315,8 +339,7 @@ const Sidebar = () => {
                             icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5 3 21l1.5-4L16.5 3.5z" /></svg>,
                             onClick: () => {
                               setSelectedProject(project);
-                              setModalType("edit");
-                              setModalOpen(true);
+                              storeProjectId(project._id);
                             },
                           },
                           {
@@ -334,7 +357,10 @@ const Sidebar = () => {
                               <circle cx="12" cy="12" r="3" />
                               <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c0 .7.4 1.31 1 1.51.62.22 1.31.09 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.42.51-.55 1.2-.33 1.82.2.6.81 1 1.51 1H21a2 2 0 1 1 0 4h-.09c-.7 0-1.31.4-1.51 1z" />
                             </svg>,
-                            onClick: () => setSelectedProject(project),
+                            onClick: () => {
+                              setSelectedProject(project);
+                              storeProjectId(project._id);
+                            },
                           },
                           {
                             label: "Workspace",
@@ -344,7 +370,10 @@ const Sidebar = () => {
                                 <path d="M9 9h6v6H9z" />
                               </svg>
                             ),
-                            onClick: () => router.push(`/app/projects/${project.slug}`),
+                            onClick: () => {
+                              handleProjectClick(project);
+                              router.push(`/app/projects/${project.slug}`);
+                            },
                           },
                           {
                             label: "Delete",
@@ -357,16 +386,22 @@ const Sidebar = () => {
                     </motion.div>
                   </div>
                 ) : (
-                  <div className="flex items-center justify-center py-4">
+                  <div 
+                    className="flex items-center justify-center py-4 cursor-pointer"
+                    onClick={() => handleProjectClick(project)}
+                  >
                     <motion.div
                       whileHover={{
                         color: "#3b82f6"
                       }}
-                      className="cursor-pointer"
                       data-tooltip={project.projectName}
                       data-position="top"
                     >
-                      <CalfFolder size={20} className="text-slate-500" />
+                      <CalfFolder size={20} className={
+                        selectedProject?._id === project._id 
+                          ? "text-blue-600" 
+                          : "text-slate-500"
+                      } />
                     </motion.div>
                   </div>
                 )}
@@ -436,21 +471,22 @@ const Sidebar = () => {
         </div>
       </motion.div>
 
-      {/* Project Modal */}
+      {/* Project Modal - Only show when a project is selected for editing or creating */}
       <AnimatePresence>
-        {modalOpen && (
-          <ProjectModal
-            type={modalType}
-            project={selectedProject}
-            token={localStorage.getItem("token")}
-            onClose={() => setModalOpen(false)}
-            onSuccess={handleModalSuccess}
-          />
-        )}
+        {selectedProject && (
+        <ProjectModal
+          project={selectedProject}
+          token={token} // Use the state instead of direct localStorage
+          onClose={() => setSelectedProject(undefined)}
+          onSuccess={handleModalSuccess}
+        />
+      )}
       </AnimatePresence>
     </>
   );
 };
+
+export default Sidebar;
 
 import { Cog, Database, Shield } from 'lucide-react';
 

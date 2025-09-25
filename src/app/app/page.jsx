@@ -1,5 +1,6 @@
 import { Sidebar } from "../components/modules/Sidebar";
-import UserManagement from "../components/user/UserManagerment";
+import NavbarApp from "../components/Navbars/Navbar";
+
 
 
 export const metadata = {
@@ -11,7 +12,7 @@ function Page() {
   return (
     <div className="flex h-screen">
       <Sidebar />
-      <UserManagement/>
+     <NavbarApp/>
     </div>
   );
 }
