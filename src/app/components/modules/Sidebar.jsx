@@ -108,10 +108,11 @@ const Sidebar = () => {
     }
   };
 
-  const handleProjectClick = (project) => {
-    setSelectedProject(project);
-    storeProjectId(project._id); // Store project ID in localStorage
-  };
+const handleProjectClick = (project) => {
+  setSelectedProject(project); // Context now holds the latest clicked project
+  console.log("Latest clicked project:", project);
+};
+
 
   const handleLogout = async () => {
     const token = localStorage.getItem("token");

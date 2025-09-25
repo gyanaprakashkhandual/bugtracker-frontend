@@ -28,6 +28,7 @@ import TestTypeList from './Window';
 import { SettingSidebar } from './Sidebar';
 import { GoogleArrowDown } from '../utils/Icon';
 import { FaThemeco } from 'react-icons/fa';
+import { useProject } from '@/app/script/Projectcontext';
 
 // Styled Dropdown Component
 const StyledDropdown = ({ options, placeholder, value, onChange, size = "sm", className = "" }) => {
@@ -114,6 +115,7 @@ export default function Navbar() {
     const [testTypeIsOpen, setTestTypeIsOpen] = useState(false);
     const [settingIsOpen, setSettingIsOpen] = useState(false);
 
+    const {selectedProject} = useProject();
     const router = useRouter();
 
     useEffect(() => {
