@@ -41,6 +41,7 @@ const Tooltip = ({ children, text, position = 'bottom' }) => {
 import UserManagement from '../user/UserManagerment'
 import ProjectManagementDashboard from '../configure/main'
 import { useProject } from '@/app/script/Projectcontext'
+import axios from 'axios'
 const NavbarApp = () => {
   const [isDarkMode, setIsDarkMode] = useState(false)
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false)
@@ -50,14 +51,26 @@ const NavbarApp = () => {
 
   const {selectedProject} = useProject();
 
-  // Get project name from localStorage
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const storedProjectName = localStorage.getItem('currentProjectName') || 'Google'
-      setProjectName(storedProjectName)
-    }
-  }, [])
+   useEffect(() => {
+    const currentProjectId = localStorage.getItem("currentProjectId");
+    const token = localStorage.getItem("token"); // retrieve token
 
+    if (currentProjectId && token) {
+      axios
+        .get(`http://localhost:5000/api/v1/project/${currentProjectId}`, {
+          headers: {
+            Authorization: `Bearer ${token}`, // pass token in headers
+          },
+        })
+        .then((res) => {
+          setProjectName(res.data.project.projectName || "Unnamed Project");
+        })
+        .catch((err) => {
+          console.error("Error fetching project details:", err);
+          setProjectName("Project Name"); // fallback
+        });
+    }
+  }, []); // run only once on mount
   const toggleTheme = () => {
     setIsDarkMode(!isDarkMode)
   }
@@ -121,7 +134,7 @@ const NavbarApp = () => {
                 title={projectName}
                 onClick={handleBackToViews}
               >
-                {selectedProject?.projectName}
+                {projectName}
               </motion.div>
 
               {/* Back to Views Button - Show when component is active */}
