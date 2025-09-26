@@ -114,78 +114,78 @@ const ProjectSidebar = () => {
 
     // Delete project with confirmation
     // Delete project with confirmation
-const deleteProject = async (projectId) => {
-    const project = projects.find(p => p._id === projectId);
-    if (!project) return;
+    const deleteProject = async (projectId) => {
+        const project = projects.find(p => p._id === projectId);
+        if (!project) return;
 
-    try {
-        // showConfirm should return a promise with the result
-        const result = await showConfirm({
-            title: `Delete "${project.projectName}"?`,
-            message: "This action cannot be undone. All project data will be permanently lost.",
-            confirmText: "Delete Project",
-            cancelText: "Keep Project",
-            type: "danger",
-        });
-
-        // Check if user confirmed the action
-        if (!result || !result.isConfirmed) {
-            return;
-        }
-
-        const token = getToken();
-        if (!token) {
-            showAlert({
-                type: "error",
-                message: "Authentication token not found"
+        try {
+            // showConfirm should return a promise with the result
+            const result = await showConfirm({
+                title: `Delete "${project.projectName}"?`,
+                message: "This action cannot be undone. All project data will be permanently lost.",
+                confirmText: "Delete Project",
+                cancelText: "Keep Project",
+                type: "danger",
             });
-            return;
-        }
 
-        showAlert({
-            type: "info",
-            message: "Deleting project...",
-            duration: 0
-        });
+            // Check if user confirmed the action
+            if (!result || !result.isConfirmed) {
+                return;
+            }
 
-        await axios.delete(`http://localhost:5000/api/v1/project/${projectId}`, {
-            headers: { 
-                Authorization: `Bearer ${token}`
-            },
-        });
-        
-        // Update projects list
-        setProjects(projects.filter((p) => p._id !== projectId));
-        
-        // Clear selected project if it was the deleted one
-        if (selectedProject && selectedProject._id === projectId) {
-            setSelectedProject(null);
-            localStorage.removeItem("currentProjectId");
-        }
+            const token = getToken();
+            if (!token) {
+                showAlert({
+                    type: "error",
+                    message: "Authentication token not found"
+                });
+                return;
+            }
 
-        showAlert({
-            type: "success",
-            message: `"${project.projectName}" deleted successfully`,
-        });
-
-    } catch (err) {
-        console.error("Error deleting project", err);
-        
-        // Handle different types of errors
-        if (err.response?.status === 401) {
             showAlert({
-                type: "error",
-                message: "Authentication failed. Please login again."
+                type: "info",
+                message: "Deleting project...",
+                duration: 0
             });
-            // Redirect to login or handle auth failure
-        } else {
+
+            await axios.delete(`http://localhost:5000/api/v1/project/${projectId}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+            });
+
+            // Update projects list
+            setProjects(projects.filter((p) => p._id !== projectId));
+
+            // Clear selected project if it was the deleted one
+            if (selectedProject && selectedProject._id === projectId) {
+                setSelectedProject(null);
+                localStorage.removeItem("currentProjectId");
+            }
+
             showAlert({
-                type: "error",
-                message: err.response?.data?.message || "Failed to delete the project. Please try again.",
+                type: "success",
+                message: `"${project.projectName}" deleted successfully`,
             });
+
+        } catch (err) {
+            console.error("Error deleting project", err);
+
+            // Handle different types of errors
+            if (err.response?.status === 401) {
+                showAlert({
+                    type: "error",
+                    message: "Authentication failed. Please login again."
+                });
+                // Redirect to login or handle auth failure
+            } else {
+                showAlert({
+                    type: "error",
+                    message: err.response?.data?.message || "Failed to delete the project. Please try again.",
+                });
+            }
         }
-    }
-};
+    };
     // Handle logout
     const handleLogout = async () => {
         const result = await showConfirm({
@@ -341,8 +341,8 @@ const deleteProject = async (projectId) => {
                                 onHoverStart={() => setHoveredProject(project._id)}
                                 onHoverEnd={() => setHoveredProject(null)}
                                 className={`mx-2 my-1 rounded-xl border transition-all duration-200 ${selectedProject?._id === project._id
-                                        ? 'border-blue-300 bg-blue-50'
-                                        : 'border-transparent hover:border-slate-200/60'
+                                    ? 'border-blue-300 bg-blue-50'
+                                    : 'border-transparent hover:border-slate-200/60'
                                     }`}
                             >
                                 {isOpen ? (
@@ -359,8 +359,8 @@ const deleteProject = async (projectId) => {
                                                 } />
                                             </motion.div>
                                             <span className={`font-medium truncate ${selectedProject?._id === project._id
-                                                    ? 'text-blue-700'
-                                                    : 'text-slate-700'
+                                                ? 'text-blue-700'
+                                                : 'text-slate-700'
                                                 }`}>
                                                 {project.projectName}
                                             </span>
@@ -416,7 +416,66 @@ const deleteProject = async (projectId) => {
                                         <Mail size={14} />
                                         <span className="truncate">{userData?.email || "user@example.com"}</span>
                                     </div>
+
+                                    {/* Role and Status Information */}
+                                    <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-100">
+                                        {/* Role Badge */}
+                                        <div className="flex items-center gap-1.5">
+                                            <div className={`w-2 h-2 rounded-full ${userData?.role === 'admin' ? 'bg-purple-500' :
+                                                    userData?.role === 'user' ? 'bg-blue-500' :
+                                                        'bg-gray-500'
+                                                }`}></div>
+                                            <span className="text-xs font-medium text-slate-700 capitalize">
+                                                {userData?.role || 'user'}
+                                            </span>
+                                        </div>
+
+                                        {/* Status Badge */}
+                                        <div className="flex items-center gap-1.5">
+                                            <div className={`w-2 h-2 rounded-full ${userData?.isActive ? 'bg-green-500' : 'bg-red-500'
+                                                }`}></div>
+                                            <span className="text-xs font-medium text-slate-700">
+                                                {userData?.isActive ? 'Active' : 'Inactive'}
+                                            </span>
+                                        </div>
+
+                                        {/* Verification Status */}
+                                        <div className="flex items-center gap-1.5">
+                                            <div className={`w-2 h-2 rounded-full ${userData?.isVerified ? 'bg-green-500' : 'bg-yellow-500'
+                                                }`}></div>
+                                            <span className="text-xs font-medium text-slate-700">
+                                                {userData?.isVerified ? 'Verified' : 'Pending'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Member Since */}
+                                    {userData?.createdAt && (
+                                        <div className="mt-2 text-xs text-slate-400">
+                                            Member since {new Date(userData.createdAt).toLocaleDateString('en-US', {
+                                                year: 'numeric',
+                                                month: 'short',
+                                                day: 'numeric'
+                                            })}
+                                        </div>
+                                    )}
                                 </div>
+
+                                {/* Additional User Info */}
+                                <div className="p-3 bg-slate-50 border-b border-slate-200/50">
+                                    <div className="grid grid-cols-2 gap-2 text-xs">
+                                        <div className="text-slate-600">User ID:</div>
+                                        <div className="text-slate-800 font-mono truncate" title={userData?._id}>
+                                            {userData?._id?.substring(0, 8)}...
+                                        </div>
+
+                                        <div className="text-slate-600">Last Updated:</div>
+                                        <div className="text-slate-800">
+                                            {userData?.updatedAt ? new Date(userData.updatedAt).toLocaleDateString() : 'N/A'}
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <button
                                     onClick={handleLogout}
                                     className="w-full p-4 text-left text-slate-700 hover:bg-slate-100 flex items-center gap-2 transition-colors duration-150"
@@ -433,17 +492,28 @@ const deleteProject = async (projectId) => {
                         className="w-full p-4 flex items-center justify-between hover:bg-slate-100/50 transition-colors duration-150"
                     >
                         <div className="flex items-center gap-3">
-                            <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
-                                <User size={16} />
+                            <div className="relative">
+                                <div className="w-8 h-8 rounded-full bg-blue-500 flex items-center justify-center text-white">
+                                    <User size={16} />
+                                </div>
+
+                                {/* Online Status Indicator */}
+                                {userData?.isActive && (
+                                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                                )}
+
                             </div>
+
                             {isOpen && (
                                 <div className="text-left truncate max-w-[140px]">
                                     <div className="text-sm font-medium text-slate-800 truncate">
                                         {userData?.name || "User"}
                                     </div>
-                                    <div className="text-xs text-slate-500 truncate">
-                                        {userData?.email || "user@example.com"}
+                                    <div className="text-xs text-slate-500 truncate flex items-center gap-1">
+                                        <span>{userData?.email || "user@example.com"}</span>
                                     </div>
+
+
                                 </div>
                             )}
                         </div>
