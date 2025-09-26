@@ -1,18 +1,40 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Eye, 
-  EyeOff, 
-  Mail, 
-  Lock, 
-  User, 
+import {
+  Eye,
+  EyeOff,
+  Mail,
+  Lock,
+  User,
   ChevronDown,
   CheckCircle,
   AlertCircle,
-  Loader2
+  Loader2,
+  Crown,
+  Users,
+  Code2,
+  TestTube,
+  Database,
+  Brain,
+  Smartphone,
+  Cloud,
+  Shield,
+  Wrench,
+  Network,
+  BarChart3,
+  Palette,
+  Briefcase,
+  GitBranch,
+  Server,
+  Github,
+  FileSpreadsheet,
+  MessageSquare,
+  Zap
 } from 'lucide-react';
 import { FaRocket, FaBug, FaChartLine, FaCheckCircle } from 'react-icons/fa';
+import { useAlert } from '@/app/script/Alert.context';
+import { GoogleArrowDown } from '@/app/components/utils/Icon';
 
 const AuthPage = () => {
   const [isLogin, setIsLogin] = useState(false);
@@ -21,8 +43,11 @@ const AuthPage = () => {
   const [selectedRole, setSelectedRole] = useState('developer');
   const [isLoading, setIsLoading] = useState(false);
   const [showOTPForm, setShowOTPForm] = useState(false);
-  const [notification, setNotification] = useState({ show: false, message: '', type: '' });
-  
+  const [showLoginModal, setShowLoginModal] = useState(false);
+  const [isPersistent, setIsPersistent] = useState(true);
+
+  const { showAlert } = useAlert();
+
   // Form states
   const [formData, setFormData] = useState({
     name: '',
@@ -32,15 +57,76 @@ const AuthPage = () => {
   });
 
   const roles = [
-    { value: 'developer', label: 'Developer', icon: '👨‍💻' },
-    { value: 'tester', label: 'Tester', icon: '🧪' },
-    { value: 'manager', label: 'Manager', icon: '👔' },
-    { value: 'admin', label: 'Admin', icon: '⚡' }
+    { value: 'admin', label: 'Admin', icon: <Crown className="w-4 h-4" /> },
+    { value: 'project manager', label: 'Project Manager', icon: <Users className="w-4 h-4" /> },
+    { value: 'developer', label: 'Developer', icon: <Code2 className="w-4 h-4" /> },
+    { value: 'qa tester', label: 'QA Tester', icon: <TestTube className="w-4 h-4" /> },
+    { value: 'hr manager', label: 'HR Manager', icon: <Users className="w-4 h-4" /> },
+    { value: 'devops engineer', label: 'DevOps Engineer', icon: <Server className="w-4 h-4" /> },
+    { value: 'ui-ux designer', label: 'UI/UX Designer', icon: <Palette className="w-4 h-4" /> },
+    { value: 'manager', label: 'Manager', icon: <Briefcase className="w-4 h-4" /> },
+    { value: 'product manager', label: 'Product Manager', icon: <BarChart3 className="w-4 h-4" /> },
+    { value: 'business analyst', label: 'Business Analyst', icon: <BarChart3 className="w-4 h-4" /> },
+    { value: 'scrum master', label: 'Scrum Master', icon: <GitBranch className="w-4 h-4" /> },
+    { value: 'data scientist', label: 'Data Scientist', icon: <Brain className="w-4 h-4" /> },
+    { value: 'data engineer', label: 'Data Engineer', icon: <Database className="w-4 h-4" /> },
+    { value: 'ml engineer', label: 'ML Engineer', icon: <Brain className="w-4 h-4" /> },
+    { value: 'ai engineer', label: 'AI Engineer', icon: <Brain className="w-4 h-4" /> },
+    { value: 'frontend developer', label: 'Frontend Developer', icon: <Code2 className="w-4 h-4" /> },
+    { value: 'backend developer', label: 'Backend Developer', icon: <Server className="w-4 h-4" /> },
+    { value: 'fullstack developer', label: 'Fullstack Developer', icon: <Code2 className="w-4 h-4" /> },
+    { value: 'mobile developer', label: 'Mobile Developer', icon: <Smartphone className="w-4 h-4" /> },
+    { value: 'cloud engineer', label: 'Cloud Engineer', icon: <Cloud className="w-4 h-4" /> },
+    { value: 'security engineer', label: 'Security Engineer', icon: <Shield className="w-4 h-4" /> },
+    { value: 'automation tester', label: 'Automation Tester', icon: <Wrench className="w-4 h-4" /> },
+    { value: 'manual tester', label: 'Manual Tester', icon: <TestTube className="w-4 h-4" /> },
+    { value: 'support engineer', label: 'Support Engineer', icon: <Network className="w-4 h-4" /> },
+    { value: 'system administrator', label: 'System Administrator', icon: <Server className="w-4 h-4" /> },
+    { value: 'solution architect', label: 'Solution Architect', icon: <BarChart3 className="w-4 h-4" /> },
+    { value: 'technical lead', label: 'Technical Lead', icon: <Users className="w-4 h-4" /> },
+    { value: 'software architect', label: 'Software Architect', icon: <Code2 className="w-4 h-4" /> },
+    { value: 'database administrator', label: 'Database Administrator', icon: <Database className="w-4 h-4" /> },
+    { value: 'intern', label: 'Intern', icon: <Users className="w-4 h-4" /> },
+    { value: 'other', label: 'Other', icon: <Wrench className="w-4 h-4" /> }
   ];
 
-  const showNotification = (message, type) => {
-    setNotification({ show: true, message, type });
-    setTimeout(() => setNotification({ show: false, message: '', type: '' }), 5000);
+  // Check for existing token on component mount
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      setShowLoginModal(true);
+      verifyToken(token);
+    }
+  }, []);
+
+  const verifyToken = async (token) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/v1/auth/verify-token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setTimeout(() => {
+          setShowLoginModal(false);
+          showAlert('Login successful! Welcome back.', 'success');
+          window.location.href = '/app';
+        }, 2000);
+      } else {
+        setShowLoginModal(false);
+        localStorage.removeItem('token');
+        localStorage.removeItem('user');
+      }
+    } catch (error) {
+      setShowLoginModal(false);
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+    }
   };
 
   const handleInputChange = (e) => {
@@ -53,7 +139,7 @@ const AuthPage = () => {
   const handleSendOTP = async (e) => {
     e.preventDefault();
     if (!formData.email) {
-      showNotification('Please enter your email address', 'error');
+      showAlert('Please enter your email address', 'error');
       return;
     }
 
@@ -68,15 +154,15 @@ const AuthPage = () => {
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
         setShowOTPForm(true);
-        showNotification('OTP sent to your email successfully!', 'success');
+        showAlert('OTP sent to your email successfully!', 'success');
       } else {
-        showNotification(data.message || 'Failed to send OTP', 'error');
+        showAlert(data.message || 'Failed to send OTP', 'error');
       }
     } catch (error) {
-      showNotification('Network error. Please try again.', 'error');
+      showAlert('Network error. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -85,7 +171,7 @@ const AuthPage = () => {
   const handleRegister = async (e) => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.password || !formData.otp) {
-      showNotification('Please fill in all fields', 'error');
+      showAlert('Please fill in all fields', 'error');
       return;
     }
 
@@ -106,19 +192,19 @@ const AuthPage = () => {
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
-        showNotification('Registration successful! Please login.', 'success');
+        showAlert('Registration successful! Please login.', 'success');
         setFormData({ name: '', email: '', password: '', otp: '' });
         setShowOTPForm(false);
         setTimeout(() => {
           setIsLogin(true);
         }, 2000);
       } else {
-        showNotification(data.message || 'Registration failed', 'error');
+        showAlert(data.message || 'Registration failed', 'error');
       }
     } catch (error) {
-      showNotification('Network error. Please try again.', 'error');
+      showAlert('Network error. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }
@@ -127,7 +213,7 @@ const AuthPage = () => {
   const handleLogin = async (e) => {
     e.preventDefault();
     if (!formData.email || !formData.password) {
-      showNotification('Please enter email and password', 'error');
+      showAlert('Please enter email and password', 'error');
       return;
     }
 
@@ -140,37 +226,42 @@ const AuthPage = () => {
         },
         body: JSON.stringify({
           email: formData.email,
-          password: formData.password
+          password: formData.password,
+          persistent: isPersistent
         }),
       });
 
       const data = await response.json();
-      
+
       if (response.ok) {
-        // Store token in localStorage and cookie
-        document.cookie = `token=${data.token}; path=/; max-age=86400`;
-        console.log('Token saved in the cookie');
-        localStorage.setItem('token', data.token);
+        // Store token based on persistence preference
+        if (isPersistent) {
+          document.cookie = `token=${data.token}; path=/; max-age=86400`;
+          localStorage.setItem('token', data.token);
+        } else {
+          sessionStorage.setItem('token', data.token);
+        }
+
         localStorage.setItem('user', JSON.stringify(data.user));
-        
-        showNotification('Login successful! Redirecting...', 'success');
-        
+
+        showAlert('Login successful! Redirecting...', 'success');
+
         // Redirect to app after successful login
         setTimeout(() => {
           window.location.href = '/app';
         }, 2000);
       } else {
-        showNotification(data.message || 'Login failed', 'error');
+        showAlert(data.message || 'Login failed', 'error');
       }
     } catch (error) {
-      showNotification('Network error. Please try again.', 'error');
+      showAlert('Network error. Please try again.', 'error');
     } finally {
       setIsLoading(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex relative">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex relative sidebar-scrollbar">
       {/* Animated Background Elements */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <svg
@@ -179,7 +270,7 @@ const AuthPage = () => {
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            fill="#3b82f6" // blue
+            fill="#3b82f6"
             d="M50,-50C64.5,-36.1,75.2,-18,74.3,-0.9C73.4,16.2,60.9,32.4,46.4,45.1C32,57.8,15.6,67,-3.4,70.4C-22.3,73.8,-44.7,71.4,-58.1,58.7C-71.6,46,-76.2,23,-74.5,1.5C-72.8,-20.1,-64.7,-40.1,-51.3,-54C-37.8,-67.9,-18.9,-75.6,0.3,-75.9C19.5,-76.2,39,-69.1,50,-50Z"
             transform="translate(100 100)"
           />
@@ -190,7 +281,7 @@ const AuthPage = () => {
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            fill="#10b981" // green
+            fill="#10b981"
             d="M42.4,-56.9C55.3,-47.9,66.5,-35.8,71.1,-21.5C75.7,-7.2,73.6,9.3,66.2,23.8C58.8,38.3,46.1,50.8,31.2,60.1C16.3,69.4,-0.8,75.6,-16.3,71.8C-31.8,68,-45.6,54.3,-56.1,38.9C-66.6,23.5,-73.8,6.5,-72.1,-10.9C-70.3,-28.2,-59.5,-45.9,-44.5,-54.6C-29.5,-63.3,-10.3,-63.1,5.5,-68.9C21.3,-74.7,42.6,-86.5,42.4,-56.9Z"
             transform="translate(100 100)"
           />
@@ -201,7 +292,7 @@ const AuthPage = () => {
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            fill="#a855f7" // purple
+            fill="#a855f7"
             d="M42.4,-56.9C55.3,-47.9,66.5,-35.8,71.1,-21.5C75.7,-7.2,73.6,9.3,66.2,23.8C58.8,38.3,46.1,50.8,31.2,60.1C16.3,69.4,-0.8,75.6,-16.3,71.8C-31.8,68,-45.6,54.3,-56.1,38.9C-66.6,23.5,-73.8,6.5,-72.1,-10.9C-70.3,-28.2,-59.5,-45.9,-44.5,-54.6C-29.5,-63.3,-10.3,-63.1,5.5,-68.9C21.3,-74.7,42.6,-86.5,42.4,-56.9Z"
             transform="translate(100 100)"
           />
@@ -212,7 +303,7 @@ const AuthPage = () => {
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            fill="#f59e0b" // orange
+            fill="#f59e0b"
             d="M50,-50C64.5,-36.1,75.2,-18,74.3,-0.9C73.4,16.2,60.9,32.4,46.4,45.1C32,57.8,15.6,67,-3.4,70.4C-22.3,73.8,-44.7,71.4,-58.1,58.7C-71.6,46,-76.2,23,-74.5,1.5C-72.8,-20.1,-64.7,-40.1,-51.3,-54C-37.8,-67.9,-18.9,-75.6,0.3,-75.9C19.5,-76.2,39,-69.1,50,-50Z"
             transform="translate(100 100)"
           />
@@ -223,34 +314,35 @@ const AuthPage = () => {
           xmlns="http://www.w3.org/2000/svg"
         >
           <path
-            fill="#ec4899" // pink
+            fill="#ec4899"
             d="M42.4,-56.9C55.3,-47.9,66.5,-35.8,71.1,-21.5C75.7,-7.2,73.6,9.3,66.2,23.8C58.8,38.3,46.1,50.8,31.2,60.1C16.3,69.4,-0.8,75.6,-16.3,71.8C-31.8,68,-45.6,54.3,-56.1,38.9C-66.6,23.5,-73.8,6.5,-72.1,-10.9C-70.3,-28.2,-59.5,-45.9,-44.5,-54.6C-29.5,-63.3,-10.3,-63.1,5.5,-68.9C21.3,-74.7,42.6,-86.5,42.4,-56.9Z"
             transform="translate(100 100)"
           />
         </svg>
         <div className="absolute inset-0 bg-gradient-to-b from-transparent to-white/30"></div>
       </div>
-      {/* Notification */}
+
+      {/* Persistent Login Modal */}
       <AnimatePresence>
-        {notification.show && (
+        {showLoginModal && (
           <motion.div
-            initial={{ opacity: 0, y: -100, x: '-50%' }}
-            animate={{ opacity: 1, y: 0, x: '-50%' }}
-            exit={{ opacity: 0, y: -100, x: '-50%' }}
-            className="fixed top-4 left-1/2 transform z-50"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
           >
-            <div className={`px-6 py-3 rounded-lg shadow-lg flex items-center space-x-2 ${
-              notification.type === 'success' 
-                ? 'bg-green-500 text-white' 
-                : 'bg-red-500 text-white'
-            }`}>
-              {notification.type === 'success' ? (
-                <CheckCircle className="w-5 h-5" />
-              ) : (
-                <AlertCircle className="w-5 h-5" />
-              )}
-              <span>{notification.message}</span>
-            </div>
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.9 }}
+              className="bg-white rounded-lg p-8 max-w-md w-full mx-4 shadow-2xl"
+            >
+              <div className="text-center">
+                <Loader2 className="w-12 h-12 animate-spin text-blue-600 mx-auto mb-4" />
+                <h3 className="text-xl font-semibold text-gray-900 mb-2">Logging you in...</h3>
+                <p className="text-gray-600">We found your previous session. Please wait while we authenticate you.</p>
+              </div>
+            </motion.div>
           </motion.div>
         )}
       </AnimatePresence>
@@ -264,34 +356,60 @@ const AuthPage = () => {
             transition={{ duration: 0.6 }}
           >
             <h1 className="text-5xl font-bold text-gray-800 mb-6">
-              Welcome to <span className="text-blue-600">Calf</span>
+              Welcome to <span className="text-blue-600">CaffeTest</span>
             </h1>
             <p className="text-xl text-gray-600 mb-8 leading-relaxed">
-              Combine the power of <span className="font-semibold text-blue-600">Selenium</span>,
-              <span className="font-semibold text-green-600"> Jira</span>,
-              <span className="font-semibold text-orange-600"> Grafana</span>, and
-              <span className="font-semibold text-purple-600"> AI</span> to automate your testing workflow.
+              Unified testing platform supporting <span className="font-semibold text-blue-600">Selenium</span>,
+              <span className="font-semibold text-green-600"> Appium</span>,
+              <span className="font-semibold text-purple-600"> Playwright</span>,
+              <span className="font-semibold text-orange-600"> Cypress</span>,
+              <span className="font-semibold text-red-600"> REST Assured</span>, and
+              <span className="font-semibold text-yellow-600"> PyTest</span>
             </p>
             <p className="text-lg text-gray-500 mb-12">
-              Let AI generate test cases, manage bugs, and deliver comprehensive reports automatically.
+              Integrated with GitHub, Google Sheets, Excel, OpenAI, and VS Code. Features AI-powered chatbot for intelligent test automation.
             </p>
 
             {/* Feature Icons */}
-            <div className="flex justify-center space-x-8 mb-8">
+            <div className="grid grid-cols-4 gap-4 mb-8">
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
               >
                 <FaRocket className="text-3xl text-blue-600 mb-2" />
-                <span className="text-sm font-medium text-gray-700">Automation</span>
+                <span className="text-xs font-medium text-gray-700">Automation</span>
               </motion.div>
 
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
               >
-                <FaBug className="text-3xl text-green-600 mb-2" />
-                <span className="text-sm font-medium text-gray-700">Bug Tracking</span>
+                <Github className="text-3xl text-gray-800 mb-2" />
+                <span className="text-xs font-medium text-gray-700">GitHub</span>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
+              >
+                <FileSpreadsheet className="text-3xl text-green-600 mb-2" />
+                <span className="text-xs font-medium text-gray-700">Sheets</span>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
+              >
+                <MessageSquare className="text-3xl text-purple-600 mb-2" />
+                <span className="text-xs font-medium text-gray-700">AI Chat</span>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
+              >
+                <FaBug className="text-3xl text-red-600 mb-2" />
+                <span className="text-xs font-medium text-gray-700">Bug Track</span>
               </motion.div>
 
               <motion.div
@@ -299,15 +417,23 @@ const AuthPage = () => {
                 className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
               >
                 <FaChartLine className="text-3xl text-orange-600 mb-2" />
-                <span className="text-sm font-medium text-gray-700">Analytics</span>
+                <span className="text-xs font-medium text-gray-700">Analytics</span>
               </motion.div>
 
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
               >
-                <FaCheckCircle className="text-3xl text-purple-600 mb-2" />
-                <span className="text-sm font-medium text-gray-700">AI Testing</span>
+                <Brain className="text-3xl text-indigo-600 mb-2" />
+                <span className="text-xs font-medium text-gray-700">OpenAI</span>
+              </motion.div>
+
+              <motion.div
+                whileHover={{ scale: 1.1 }}
+                className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
+              >
+                <Zap className="text-3xl text-yellow-600 mb-2" />
+                <span className="text-xs font-medium text-gray-700">VS Code</span>
               </motion.div>
             </div>
           </motion.div>
@@ -315,7 +441,7 @@ const AuthPage = () => {
       </div>
 
       {/* Right Side - Auth Forms */}
-      <div className="flex-1 flex items-center justify-center p-8">
+      <div className="flex-1 flex items-center justify-center p-6">
         <div className="w-full max-w-md">
           <motion.div
             key={isLogin ? 'login' : 'register'}
@@ -330,7 +456,7 @@ const AuthPage = () => {
                 {isLogin ? 'Welcome Back!' : 'Create Account'}
               </h2>
               <p className="text-gray-600">
-                {isLogin ? 'Sign in to your account' : 'Get started with Calf today'}
+                {isLogin ? 'Sign in to your account' : 'Get started with CaffeTest today'}
               </p>
             </div>
 
@@ -412,7 +538,7 @@ const AuthPage = () => {
                         </div>
                       </div>
 
-                      {/* Role Selection */}
+                      {/* Role Selection - GitHub Style Dropdown */}
                       <div>
                         <label className="block text-sm font-medium text-gray-700 mb-2">
                           Role
@@ -421,39 +547,46 @@ const AuthPage = () => {
                           <button
                             type="button"
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="w-full px-4 py-3 border border-gray-300 rounded-lg bg-white flex items-center justify-between hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg flex items-center justify-between hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
                           >
-                            <div className="flex items-center space-x-2">
-                              <span>{roles.find(r => r.value === selectedRole)?.icon}</span>
-                              <span className="text-gray-700">
-                                {roles.find(r => r.value === selectedRole)?.label}
-                              </span>
+                            <div className="flex items-center gap-3 text-gray-700">
+                              {roles.find(role => role.value === selectedRole)?.icon}
+                              <span className="font-medium">{roles.find(role => role.value === selectedRole)?.label}</span>
                             </div>
-                            <ChevronDown className="w-5 h-5 text-gray-400" />
+                            <GoogleArrowDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                           </button>
-                          
+
                           <AnimatePresence>
                             {isDropdownOpen && (
                               <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: 10 }}
-                                className="absolute bottom-full left-0 right-0 mb-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10"
+                                transition={{ duration: 0.2 }}
+                                className="absolute bottom-full left-0 right-0 mb-2 bg-white border border-gray-300 rounded-lg shadow-lg z-20 max-h-64 overflow-y-auto"
                               >
-                                {roles.map((role) => (
-                                  <button
-                                    key={role.value}
-                                    type="button"
-                                    onClick={() => {
-                                      setSelectedRole(role.value);
-                                      setIsDropdownOpen(false);
-                                    }}
-                                    className="w-full px-4 py-3 text-left hover:bg-gray-50 flex items-center space-x-2 last:rounded-t-lg first:rounded-b-lg transition-colors"
-                                  >
-                                    <span>{role.icon}</span>
-                                    <span className="text-gray-700">{role.label}</span>
-                                  </button>
-                                ))}
+                                <div className="py-1">
+                                  {roles.map((role) => (
+                                    <button
+                                      key={role.value}
+                                      type="button"
+                                      onClick={() => {
+                                        setSelectedRole(role.value);
+                                        setIsDropdownOpen(false);
+                                      }}
+                                      className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-blue-50 transition-colors text-left ${selectedRole === role.value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                                        }`}
+                                    >
+                                      <span className={selectedRole === role.value ? 'text-blue-600' : 'text-gray-500'}>
+                                        {role.icon}
+                                      </span>
+                                      <span>{role.label}</span>
+                                      {selectedRole === role.value && (
+                                        <CheckCircle className="w-4 h-4 ml-auto text-blue-600" />
+                                      )}
+                                    </button>
+                                  ))}
+                                </div>
                               </motion.div>
                             )}
                           </AnimatePresence>
@@ -590,6 +723,20 @@ const AuthPage = () => {
                           {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         </button>
                       </div>
+                    </div>
+
+                    {/* Persistent Login Checkbox */}
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="checkbox"
+                        id="persistent"
+                        checked={isPersistent}
+                        onChange={(e) => setIsPersistent(e.target.checked)}
+                        className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                      />
+                      <label htmlFor="persistent" className="text-sm text-gray-700 cursor-pointer select-none">
+                        Keep me logged in
+                      </label>
                     </div>
 
                     {/* Login Button */}
