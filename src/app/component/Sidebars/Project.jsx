@@ -85,6 +85,7 @@ const ProjectSidebar = () => {
     const deleteProject = async (projectId) => {
     const projectName = projects.find(p => p._id === projectId)?.name || 'this project';
     
+    // SweetAlert only for confirmation
     const result = await Swal.fire({
         title: `Delete "${projectName}"?`,
         text: "This action cannot be undone. All project data will be permanently lost.",
@@ -95,38 +96,37 @@ const ProjectSidebar = () => {
         confirmButtonText: 'Delete Project',
         cancelButtonText: 'Keep Project',
         reverseButtons: true,
-        focusCancel: true,
-        customClass: {
-            confirmButton: 'btn btn-danger',
-            cancelButton: 'btn btn-secondary'
-        }
+        focusCancel: true
     });
 
     if (!result.isConfirmed) {
         return;
     }
 
+    // Retrieve token from localStorage
     const token = localStorage.getItem("token");
+    
     try {
-        // Show loading state
-        Swal.fire({
-            title: 'Deleting...',
-            text: 'Please wait while we delete your project',
-            allowOutsideClick: false,
-            didOpen: () => {
-                Swal.showLoading();
-            }
+        // Show persistent loading alert
+        showAlert({
+            type: "info",
+            message: "Deleting project...",
+            duration: 0 // Persistent alert until manually cleared
         });
 
         await axios.delete(`http://localhost:5000/api/v1/project/${projectId}`, {
-            headers: { Authorization: `Bearer ${token}` },
+            headers: { 
+                Authorization: `Bearer ${token}`  // Token passed in Bearer format
+            },
         });
         
         setProjects(projects.filter((p) => p._id !== projectId));
+        
+        // Show success message
         showAlert({
             type: "success",
-            message: "Project deleted successfully",
-          });
+            message: `"${projectName}" deleted successfully`,
+        });
 
         if (selectedProject && selectedProject._id === projectId) {
             setSelectedProject(null);
@@ -136,11 +136,10 @@ const ProjectSidebar = () => {
     } catch (err) {
         console.error("Error deleting project", err);
         
-        Swal.fire({
-            icon: 'error',
-            title: 'Delete Failed',
-            text: err.response?.data?.message || 'Failed to delete the project. Please try again.',
-            confirmButtonColor: '#3085d6'
+        // Show error message
+        showAlert({
+            type: "error",
+            message: err.response?.data?.message || "Failed to delete the project. Please try again.",
         });
     }
 };
