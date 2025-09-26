@@ -4,7 +4,7 @@ import { useState, useEffect } from "react";
 import { X, Plus, Edit3, Save, Loader2 } from "lucide-react";
 import Alert from "../utils/Alert";
 import axios from "axios";
-import { useProject } from "@/app/script/Projectcontext";
+import { useProject } from "@/app/script/Project.context";
 
 const ProjectModal = ({ project, token, onClose, onSuccess }) => {
   const [formData, setFormData] = useState({

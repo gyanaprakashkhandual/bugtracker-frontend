@@ -20,7 +20,7 @@ import ProjectModal from "../assets/Modal";
 import { FaCoffee } from "react-icons/fa";
 import { GoogleArrowLeft, GoogleArrowRight, GoogleArrowUp } from "../utils/Icon";
 
-import { useProject } from "@/app/script/Projectcontext";
+import { useProject } from "@/app/script/Project.context";
 import { CalfFolder } from "../utils/Icon";
 import { getProjectDetails } from "@/app/utils/functions/GetProjectDetails";
 import { getTestTypes } from "@/app/utils/functions/GetTestType";

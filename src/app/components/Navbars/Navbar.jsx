@@ -40,7 +40,7 @@ const Tooltip = ({ children, text, position = 'bottom' }) => {
 
 import UserManagement from '../user/UserManagerment'
 import ProjectManagementDashboard from '../configure/main'
-import { useProject } from '@/app/script/Projectcontext'
+import { useProject } from '@/app/script/Project.context'
 import axios from 'axios'
 const NavbarApp = () => {
   const [isDarkMode, setIsDarkMode] = useState(false)

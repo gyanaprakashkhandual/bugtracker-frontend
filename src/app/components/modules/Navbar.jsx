@@ -23,7 +23,7 @@ import { getProjectDetails } from '@/app/utils/functions/GetProjectDetails';
 import TestTypeList from './Window';
 import { SettingSidebar } from './Sidebar';
 import { GoogleArrowDown } from '../utils/Icon';
-import { useProject } from '@/app/script/Projectcontext';
+import { useProject } from '@/app/script/Project.context';
 
 // Styled Dropdown (no changes to this part)
 const StyledDropdown = ({ options, placeholder, value, onChange, size = "sm", className = "" }) => {

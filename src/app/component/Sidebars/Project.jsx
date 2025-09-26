@@ -9,7 +9,7 @@ import { ThreeDotsDropdown } from "../assets/Dropdown";
 import ProjectModal from "../assets/Modal";
 import { FaCoffee } from "react-icons/fa";
 import { GoogleArrowLeft, CalfFolder, GoogleArrowUp } from "../utils/Icon";
-import { useProject } from "@/app/script/Projectcontext";
+import { useProject } from "@/app/script/Project.context";
 
 
 const ProjectSidebar = () => {
