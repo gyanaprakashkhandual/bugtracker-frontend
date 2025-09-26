@@ -13,6 +13,7 @@ import {
     FileText,
     UserCog
 } from 'lucide-react'
+import { GoogleArrowDown } from '@/app/components/utils/Icon'
 
 // Mock Components
 const ProjectConfiguration = () => (
@@ -151,7 +152,7 @@ const AppNavbar = () => {
     return (
         <div className="min-h-screen bg-gray-50 flex flex-col">
             {/* Navbar */}
-            <nav className="sticky top-0 z-50 h-[69px] bg-gradient-to-b from-slate-50 to-white border-b border-gray-200 shadow-sm">
+            <nav className="sticky top-0 z-50 h-[69px] bg-gradient-to-b from-slate-50 to-white border-b border-gray-200">
                 <div className="h-full px-4 sm:px-6 lg:px-8">
                     <div className="flex items-center justify-between h-full">
                         {/* Left Section */}
@@ -177,8 +178,8 @@ const AppNavbar = () => {
                             <motion.button
                                 onClick={() => handleComponentChange('Dashboard')}
                                 className={`hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${activeComponent === 'Dashboard'
-                                        ? 'bg-blue-50 text-blue-700 border border-blue-200'
-                                        : 'text-gray-700 hover:bg-gray-100 border border-transparent'
+                                    ? 'bg-blue-50 text-blue-700 border border-blue-200'
+                                    : 'text-gray-700 hover:bg-gray-100 border border-transparent'
                                     }`}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
@@ -201,7 +202,7 @@ const AppNavbar = () => {
                                         animate={{ rotate: isProjectDropdownOpen ? 180 : 0 }}
                                         transition={{ duration: 0.2 }}
                                     >
-                                        <ChevronDown className="w-4 h-4" />
+                                        <GoogleArrowDown className="w-4 h-4" />
                                     </motion.div>
                                 </motion.button>
 
@@ -227,8 +228,8 @@ const AppNavbar = () => {
                                                         key={option.component}
                                                         onClick={() => handleComponentChange(option.component)}
                                                         className={`w-full flex items-center space-x-3 px-4 py-2.5 text-sm transition-colors ${activeComponent === option.component
-                                                                ? 'bg-blue-50 text-blue-700'
-                                                                : 'text-gray-700 hover:bg-gray-50'
+                                                            ? 'bg-blue-50 text-blue-700'
+                                                            : 'text-gray-700 hover:bg-gray-50'
                                                             }`}
                                                     >
                                                         <option.icon className="w-4 h-4" />
@@ -258,8 +259,8 @@ const AppNavbar = () => {
                             <motion.button
                                 onClick={() => handleComponentChange('Notifications')}
                                 className={`p-2 rounded-lg transition-all relative ${activeComponent === 'Notifications'
-                                        ? 'bg-blue-50 text-blue-700'
-                                        : 'text-gray-600 hover:bg-gray-100'
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-600 hover:bg-gray-100'
                                     }`}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -272,8 +273,8 @@ const AppNavbar = () => {
                             <motion.button
                                 onClick={() => handleComponentChange('Messages')}
                                 className={`p-2 rounded-lg transition-all relative ${activeComponent === 'Messages'
-                                        ? 'bg-blue-50 text-blue-700'
-                                        : 'text-gray-600 hover:bg-gray-100'
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-600 hover:bg-gray-100'
                                     }`}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -286,8 +287,8 @@ const AppNavbar = () => {
                             <motion.button
                                 onClick={() => handleComponentChange('UserPanel')}
                                 className={`p-2 rounded-lg transition-all ${activeComponent === 'UserPanel'
-                                        ? 'bg-blue-50 text-blue-700'
-                                        : 'text-gray-600 hover:bg-gray-100'
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-600 hover:bg-gray-100'
                                     }`}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}

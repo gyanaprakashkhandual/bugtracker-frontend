@@ -1,6 +1,7 @@
 'use client'
+import AppNavbar from "../component/Navbars/App"
 import ProjectSidebar from "../component/Sidebars/Project"
-import NavbarApp from "../components/Navbars/Navbar"
+
 
 function Page() {
   return (
@@ -12,7 +13,7 @@ function Page() {
 
       {/* Main Content Area with Navbar */}
       <div className="flex-1 ">
-        <NavbarApp isSidebarOpen={true} />
+        <AppNavbar/>
       </div>
     </div>
   )
