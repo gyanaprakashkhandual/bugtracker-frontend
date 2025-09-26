@@ -4,26 +4,13 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import {
-    Plus,
-    FolderOpen,
-    User,
-    LogOut,
-    Mail,
-    ChevronDown,
-    ChevronUp,
-    Settings,
-    Copy,
-} from "lucide-react";
+import { User, LogOut, Mail, } from "lucide-react";
 import { ThreeDotsDropdown } from "../assets/Dropdown";
 import ProjectModal from "../assets/Modal";
 import { FaCoffee } from "react-icons/fa";
-import { GoogleArrowLeft, GoogleArrowRight, GoogleArrowUp } from "../utils/Icon";
-
+import { GoogleArrowLeft, CalfFolder, GoogleArrowUp } from "../utils/Icon";
 import { useProject } from "@/app/script/Projectcontext";
-import { CalfFolder } from "../utils/Icon";
-import { getProjectDetails } from "@/app/utils/functions/GetProjectDetails";
-import { getTestTypes } from "@/app/utils/functions/GetTestType";
+
 
 const ProjectSidebar = () => {
     const [isOpen, setIsOpen] = useState(true);
@@ -33,7 +20,6 @@ const ProjectSidebar = () => {
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [token, setToken] = useState(null);
 
-    // ✅ use context instead of local state
     const {
         isModalOpen,
         modalMode,
@@ -45,14 +31,9 @@ const ProjectSidebar = () => {
     } = useProject();
     const router = useRouter();
 
-    // Utility function to store project ID in localStorage
+
     const storeProjectId = (projectId) => {
         localStorage.setItem('currentProjectId', projectId);
-    };
-
-    // Utility function to get stored project ID
-    const getStoredProjectId = () => {
-        return localStorage.getItem('currentProjectId');
     };
 
     const fetchUserData = async () => {
@@ -115,8 +96,8 @@ const ProjectSidebar = () => {
         }
     };
     const handleProjectClick = (project) => {
-        setSelectedProject(project);        // ✅ store in context
-        localStorage.setItem("currentProjectId", project._id); // ✅ persist if needed
+        setSelectedProject(project);
+        localStorage.setItem("currentProjectId", project._id);
     };
 
 
@@ -139,7 +120,7 @@ const ProjectSidebar = () => {
 
     const getFirstWord = (user) => {
         const name = user?.name || user?.email || "";
-        const firstWord = name.split(" ")[0]; // take first word before space
+        const firstWord = name.split(" ")[0];
         const formatted =
             firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
 
@@ -151,7 +132,7 @@ const ProjectSidebar = () => {
 
 
     const handleModalSuccess = () => {
-        fetchProjects(); // Refresh the projects list
+        fetchProjects();
     };
 
     const sidebarVariants = {
@@ -270,8 +251,8 @@ const ProjectSidebar = () => {
                                 onHoverStart={() => setHoveredProject(project._id)}
                                 onHoverEnd={() => setHoveredProject(null)}
                                 className={`mx-2 my-1 rounded-xl border transition-all duration-200 ${selectedProject?._id === project._id
-                                        ? 'border-blue-300 bg-blue-50'
-                                        : 'border-transparent hover:border-slate-200/60'
+                                    ? 'border-blue-300 bg-blue-50'
+                                    : 'border-transparent hover:border-slate-200/60'
                                     }`}
                             >
                                 {isOpen ? (
@@ -288,8 +269,8 @@ const ProjectSidebar = () => {
                                                 } />
                                             </motion.div>
                                             <span className={`font-medium truncate ${selectedProject?._id === project._id
-                                                    ? 'text-blue-700'
-                                                    : 'text-slate-700'
+                                                ? 'text-blue-700'
+                                                : 'text-slate-700'
                                                 }`}>
                                                 {project.projectName}
                                             </span>
