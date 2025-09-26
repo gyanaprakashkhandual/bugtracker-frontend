@@ -7,13 +7,13 @@ import {
     User,
     Bell,
     MessageCircle,
-    ChevronDown,
     LayoutDashboard,
     ExternalLink,
     FileText,
     UserCog
 } from 'lucide-react'
-import { GoogleArrowDown } from '@/app/components/utils/Icon'
+import { GoogleArrowDown } from '@/app/components/utils/Icon';
+import UserManagementDashboard from '../Modules/User-Management/App';
 
 // Mock Components
 const ProjectConfiguration = () => (
@@ -137,7 +137,7 @@ const AppNavbar = () => {
             case 'TestTypeConfiguration':
                 return <TestTypeConfiguration />
             case 'UserManagement':
-                return <UserManagement />
+                return <UserManagementDashboard />
             case 'Notifications':
                 return <NotificationsPanel />
             case 'Messages':
