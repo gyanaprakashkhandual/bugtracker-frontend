@@ -212,27 +212,70 @@ const UserProfileInterface = () => {
   const RoleIcon = getRoleIcon(user.role);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 p-4">
-      <div className="max-w-4xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-3xl font-bold text-gray-900 mb-2">User Profile</h1>
-          <p className="text-gray-600">Manage your account information and settings</p>
-        </motion.div>
+    <div className="h-auto bg-gradient-to-br from-slate-50 to-gray-100">
+      <div className="max-w-full mx-auto">
 
         {/* Main Profile Card */}
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white rounded-2xl shadow-xl overflow-hidden mb-6"
+          className="bg-white overflow-hidden"
         >
-          {/* Profile Header */}
-          <div className="bg-gradient-to-r from-blue-600 to-purple-600 px-8 py-12 text-white relative">
+           {/* Profile Header */}
+<div className="bg-[radial-gradient(circle_at_top_left,_#3b82f6,_#8b5cf6,_#ec4899)] px-8 py-12 text-white relative overflow-hidden">
+  {/* Decorative SVG Background Elements */}
+  <div className="absolute inset-0 pointer-events-none">
+    <svg
+      className="absolute top-0 left-0 w-1/3 opacity-15"
+      viewBox="0 0 200 200"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        fill="#e0f2fe" // sky-100
+        d="M45.2,-62.8C58.6,-52.9,69.4,-38.1,73.8,-21.5C78.2,-4.9,76.2,13.4,68.9,28.9C61.6,44.4,49,57.1,34.1,64.3C19.2,71.5,2,73.2,-14.8,71.2C-31.6,69.2,-48,63.5,-58.2,52C-68.4,40.5,-72.4,23.2,-71.8,6.4C-71.2,-10.4,-66,-26.7,-55.9,-40.1C-45.8,-53.5,-30.8,-64,-13.7,-65.6C3.4,-67.2,31.8,-59.9,45.2,-62.8Z"
+        transform="translate(100 100)"
+      />
+    </svg>
+
+    <svg
+      className="absolute top-1/4 right-0 w-1/4 opacity-10"
+      viewBox="0 0 200 200"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        fill="#f3e8ff" // purple-100
+        d="M35.6,-48.1C46.8,-38.8,56.9,-28.2,61.1,-15.2C65.3,-2.2,63.6,13.2,56.7,26.4C49.8,39.6,37.7,50.6,24.1,57.3C10.5,64,-4.6,66.4,-18.5,62.9C-32.4,59.4,-45.1,50,-53.7,37.2C-62.3,24.4,-66.8,8.2,-65.5,-7.6C-64.2,-23.4,-57.1,-38.8,-45.9,-47.9C-34.7,-57,-19.4,-59.8,-5.2,-58.6C9,-57.4,26,-52.2,35.6,-48.1Z"
+        transform="translate(100 100)"
+      />
+    </svg>
+
+    <svg
+      className="absolute bottom-0 left-1/3 w-1/5 opacity-12"
+      viewBox="0 0 200 200"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        fill="#fce7f3" // pink-100
+        d="M42.4,-56.9C55.3,-47.9,66.5,-35.8,71.1,-21.5C75.7,-7.2,73.6,9.3,66.2,23.8C58.8,38.3,46.1,50.8,31.2,60.1C16.3,69.4,-0.8,75.6,-16.3,71.8C-31.8,68,-45.6,54.3,-56.1,38.9C-66.6,23.5,-73.8,6.5,-72.1,-10.9C-70.3,-28.2,-59.5,-45.9,-44.5,-54.6C-29.5,-63.3,-10.3,-63.1,5.5,-68.9C21.3,-74.7,42.6,-86.5,42.4,-56.9Z"
+        transform="translate(100 100)"
+      />
+    </svg>
+
+    <svg
+      className="absolute top-1/2 left-0 w-1/6 opacity-8"
+      viewBox="0 0 200 200"
+      xmlns="http://www.w3.org/2000/svg"
+    >
+      <path
+        fill="#ede9fe" // violet-100
+        d="M38.2,-45.8C50.1,-35.7,60.5,-24.5,65.3,-10.8C70.1,2.9,69.3,19.1,62.1,32.8C54.9,46.5,41.3,57.7,26.1,62.4C10.9,67.1,-5.9,65.3,-21.3,59.7C-36.7,54.1,-50.7,44.7,-58.3,31.4C-65.9,18.1,-67.1,0.9,-63.8,-14.8C-60.5,-30.5,-52.7,-44.7,-41.2,-55C-29.7,-65.3,-14.8,-71.7,-0.4,-71.2C14,-70.7,28,-63.3,38.2,-45.8Z"
+        transform="translate(100 100)"
+      />
+    </svg>
+  </div>
+
+
             <div className="absolute top-4 right-4">
               <motion.button
                 whileHover={{ scale: 1.05 }}
@@ -384,33 +427,6 @@ const UserProfileInterface = () => {
               </motion.div>
             </div>
           </div>
-        </motion.div>
-
-        {/* Action Buttons */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.7 }}
-          className="flex flex-wrap gap-4 justify-center"
-        >
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-          >
-            <Settings className="w-5 h-5" />
-            <span>Edit Profile</span>
-          </motion.button>
-          
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={fetchUserData}
-            className="flex items-center space-x-2 px-6 py-3 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
-          >
-            <Activity className="w-5 h-5" />
-            <span>Refresh Data</span>
-          </motion.button>
         </motion.div>
       </div>
     </div>
