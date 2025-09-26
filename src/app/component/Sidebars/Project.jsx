@@ -3,12 +3,13 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
+import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
 import { User, LogOut, Mail, } from "lucide-react";
-import { ThreeDotsDropdown } from "../assets/Dropdown";
-import ProjectModal from "../assets/Modal";
+import { ThreeDotsDropdown } from "@/app/components/assets/Dropdown";
+import ProjectModal from "@/app/components/assets/Modal";
 import { FaCoffee } from "react-icons/fa";
-import { GoogleArrowLeft, CalfFolder, GoogleArrowUp } from "../utils/Icon";
+import { GoogleArrowLeft, CalfFolder, GoogleArrowUp} from "@/app/components/utils/Icon";
 import { useProject } from "@/app/script/Project.context";
 
 
@@ -79,22 +80,72 @@ const ProjectSidebar = () => {
     }, []);
 
     const deleteProject = async (projectId) => {
-        const token = localStorage.getItem("token");
-        try {
-            await axios.delete(`http://localhost:5000/api/v1/project/${projectId}`, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
-            setProjects(projects.filter((p) => p._id !== projectId));
-
-            if (selectedProject && selectedProject._id === projectId) {
-                setSelectedProject(null);
-                localStorage.removeItem("currentProjectId");
-            }
-
-        } catch (err) {
-            console.error("Error deleting project", err);
+    const projectName = projects.find(p => p._id === projectId)?.name || 'this project';
+    
+    const result = await Swal.fire({
+        title: `Delete "${projectName}"?`,
+        text: "This action cannot be undone. All project data will be permanently lost.",
+        icon: 'warning',
+        showCancelButton: true,
+        confirmButtonColor: '#dc3545',
+        cancelButtonColor: '#6c757d',
+        confirmButtonText: 'Delete Project',
+        cancelButtonText: 'Keep Project',
+        reverseButtons: true,
+        focusCancel: true,
+        customClass: {
+            confirmButton: 'btn btn-danger',
+            cancelButton: 'btn btn-secondary'
         }
-    };
+    });
+
+    if (!result.isConfirmed) {
+        return;
+    }
+
+    const token = localStorage.getItem("token");
+    try {
+        // Show loading state
+        Swal.fire({
+            title: 'Deleting...',
+            text: 'Please wait while we delete your project',
+            allowOutsideClick: false,
+            didOpen: () => {
+                Swal.showLoading();
+            }
+        });
+
+        await axios.delete(`http://localhost:5000/api/v1/project/${projectId}`, {
+            headers: { Authorization: `Bearer ${token}` },
+        });
+        
+        setProjects(projects.filter((p) => p._id !== projectId));
+
+        if (selectedProject && selectedProject._id === projectId) {
+            setSelectedProject(null);
+            localStorage.removeItem("currentProjectId");
+        }
+
+        // Close loading and show success
+        Swal.fire({
+            icon: 'success',
+            title: 'Project Deleted!',
+            text: `"${projectName}" has been successfully deleted.`,
+            timer: 2000,
+            showConfirmButton: false
+        });
+
+    } catch (err) {
+        console.error("Error deleting project", err);
+        
+        Swal.fire({
+            icon: 'error',
+            title: 'Delete Failed',
+            text: err.response?.data?.message || 'Failed to delete the project. Please try again.',
+            confirmButtonColor: '#3085d6'
+        });
+    }
+};
     const handleProjectClick = (project) => {
         setSelectedProject(project);
         localStorage.setItem("currentProjectId", project._id);

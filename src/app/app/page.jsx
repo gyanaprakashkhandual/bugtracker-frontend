@@ -1,6 +1,5 @@
 'use client'
-
-import Sidebar from "../components/modules/Sidebar"
+import ProjectSidebar from "../component/Sidebars/Project"
 import NavbarApp from "../components/Navbars/Navbar"
 
 function Page() {
@@ -8,7 +7,7 @@ function Page() {
     <div className="flex min-h-screen bg-gray-100">
       {/* Sidebar */}
       <div className="sticky top-0">
-        <Sidebar />
+        <ProjectSidebar />
       </div>
 
       {/* Main Content Area with Navbar */}
