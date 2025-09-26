@@ -3,16 +3,15 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
-import Swal from "sweetalert2";
 import { useRouter } from "next/navigation";
-import { User, LogOut, Mail, } from "lucide-react";
+import { User, LogOut, Mail } from "lucide-react";
 import { ThreeDotsDropdown } from "@/app/components/assets/Dropdown";
 import ProjectModal from "@/app/components/assets/Modal";
 import { FaCoffee } from "react-icons/fa";
-import { GoogleArrowLeft, CalfFolder, GoogleArrowUp} from "@/app/components/utils/Icon";
+import { GoogleArrowLeft, CalfFolder, GoogleArrowUp } from "@/app/components/utils/Icon";
 import { useProject } from "@/app/script/Project.context";
 import { useAlert } from "@/app/script/Alert.context";
-
+import { useConfirm } from "@/app/script/Confirm.context";
 
 const ProjectSidebar = () => {
     const [isOpen, setIsOpen] = useState(true);
@@ -20,9 +19,9 @@ const ProjectSidebar = () => {
     const [hoveredProject, setHoveredProject] = useState(null);
     const [userData, setUserData] = useState(null);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
-    const [token, setToken] = useState(null);
 
     const { showAlert } = useAlert();
+    const { showConfirm } = useConfirm();
 
     const {
         isModalOpen,
@@ -33,47 +32,72 @@ const ProjectSidebar = () => {
         selectedProject,
         setSelectedProject
     } = useProject();
+
     const router = useRouter();
 
+    // Get token from localStorage
+    const getToken = () => {
+        return localStorage.getItem("token");
+    };
 
+    // Store project ID in localStorage
     const storeProjectId = (projectId) => {
         localStorage.setItem('currentProjectId', projectId);
     };
 
+    // Fetch user data with token
     const fetchUserData = async () => {
-        const token = localStorage.getItem("token");
-        if (!token) return;
+        const token = getToken();
+        if (!token) {
+            showAlert({
+                type: "error",
+                message: "Authentication token not found"
+            });
+            return;
+        }
+
         try {
             const res = await axios.get("http://localhost:5000/api/v1/auth/me", {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            console.log("Full API Response:", res.data);
+
             const user = res.data?.data || res.data?.user || res.data;
             setUserData(user);
-            if (user) {
-                console.log("User Email:", user.email || "Not provided");
-                console.log("User Name:", user.name || "Not provided");
-            } else {
-                console.warn("No user data found in response");
-            }
+
         } catch (err) {
             console.error("Error fetching user data", err);
+            showAlert({
+                type: "error",
+                message: "Failed to fetch user data"
+            });
         }
     };
 
+    // Fetch projects with token
     const fetchProjects = async () => {
-        const token = localStorage.getItem("token");
-        if (!token) return;
+        const token = getToken();
+        if (!token) {
+            showAlert({
+                type: "error",
+                message: "Authentication token not found"
+            });
+            return;
+        }
+
         try {
-            // Use the new API endpoint for getting user's own projects
             const res = await axios.get("http://localhost:5000/api/v1/project/my-projects", {
                 headers: { Authorization: `Bearer ${token}` },
             });
-            console.log("API response:", res.data);
+
             setProjects(res.data.projects || []);
+
         } catch (err) {
             console.error("Error fetching projects", err);
             setProjects([]);
+            showAlert({
+                type: "error",
+                message: "Failed to fetch projects"
+            });
         }
     };
 
@@ -82,158 +106,176 @@ const ProjectSidebar = () => {
         fetchProjects();
     }, []);
 
-    const deleteProject = async (projectId) => {
-    const projectName = projects.find(p => p._id === projectId)?.name || 'this project';
-    
-    // SweetAlert only for confirmation
-    const result = await Swal.fire({
-        title: `Delete "${projectName}"?`,
-        text: "This action cannot be undone. All project data will be permanently lost.",
-        icon: 'warning',
-        showCancelButton: true,
-        confirmButtonColor: '#dc3545',
-        cancelButtonColor: '#6c757d',
-        confirmButtonText: 'Delete Project',
-        cancelButtonText: 'Keep Project',
-        reverseButtons: true,
-        focusCancel: true
-    });
+    // Handle project click - store in context and localStorage
+    const handleProjectClick = (project) => {
+        setSelectedProject(project);
+        storeProjectId(project._id);
+    };
 
-    if (!result.isConfirmed) {
-        return;
-    }
+    // Delete project with confirmation
+    // Delete project with confirmation
+const deleteProject = async (projectId) => {
+    const project = projects.find(p => p._id === projectId);
+    if (!project) return;
 
-    // Retrieve token from localStorage
-    const token = localStorage.getItem("token");
-    
     try {
-        // Show persistent loading alert
+        // showConfirm should return a promise with the result
+        const result = await showConfirm({
+            title: `Delete "${project.projectName}"?`,
+            message: "This action cannot be undone. All project data will be permanently lost.",
+            confirmText: "Delete Project",
+            cancelText: "Keep Project",
+            type: "danger",
+        });
+
+        // Check if user confirmed the action
+        if (!result || !result.isConfirmed) {
+            return;
+        }
+
+        const token = getToken();
+        if (!token) {
+            showAlert({
+                type: "error",
+                message: "Authentication token not found"
+            });
+            return;
+        }
+
         showAlert({
             type: "info",
             message: "Deleting project...",
-            duration: 0 // Persistent alert until manually cleared
+            duration: 0
         });
 
         await axios.delete(`http://localhost:5000/api/v1/project/${projectId}`, {
             headers: { 
-                Authorization: `Bearer ${token}`  // Token passed in Bearer format
+                Authorization: `Bearer ${token}`
             },
         });
         
+        // Update projects list
         setProjects(projects.filter((p) => p._id !== projectId));
         
-        // Show success message
-        showAlert({
-            type: "success",
-            message: `"${projectName}" deleted successfully`,
-        });
-
+        // Clear selected project if it was the deleted one
         if (selectedProject && selectedProject._id === projectId) {
             setSelectedProject(null);
             localStorage.removeItem("currentProjectId");
         }
 
+        showAlert({
+            type: "success",
+            message: `"${project.projectName}" deleted successfully`,
+        });
+
     } catch (err) {
         console.error("Error deleting project", err);
         
-        // Show error message
-        showAlert({
-            type: "error",
-            message: err.response?.data?.message || "Failed to delete the project. Please try again.",
-        });
+        // Handle different types of errors
+        if (err.response?.status === 401) {
+            showAlert({
+                type: "error",
+                message: "Authentication failed. Please login again."
+            });
+            // Redirect to login or handle auth failure
+        } else {
+            showAlert({
+                type: "error",
+                message: err.response?.data?.message || "Failed to delete the project. Please try again.",
+            });
+        }
     }
 };
-    const handleProjectClick = (project) => {
-        setSelectedProject(project);
-        localStorage.setItem("currentProjectId", project._id);
-    };
-
-
-
+    // Handle logout
     const handleLogout = async () => {
-        const token = localStorage.getItem("token");
+        const result = await showConfirm({
+            title: "Sign Out?",
+            message: "Are you sure you want to sign out?",
+            confirmText: "Sign Out",
+            cancelText: "Cancel",
+            type: "warning",
+        });
+
+        if (!result.isConfirmed) {
+            return;
+        }
+
+        const token = getToken();
         try {
-            await axios.post("http://localhost:5000/api/v1/auth/logout", {}, {
-                headers: { Authorization: `Bearer ${token}` },
-            });
+            if (token) {
+                await axios.post("http://localhost:5000/api/v1/auth/logout", {}, {
+                    headers: { Authorization: `Bearer ${token}` },
+                });
+            }
         } catch (err) {
             console.error("Error during logout", err);
         } finally {
             localStorage.removeItem("token");
-            localStorage.removeItem("currentProjectId"); // Clear stored project ID
+            localStorage.removeItem("currentProjectId");
             document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
             router.push("/login");
         }
     };
 
+    // Navigate to project workspace
+    const navigateToWorkspace = (project) => {
+        handleProjectClick(project);
+        router.push(`/app/projects/${project.slug}`);
+    };
+
+    // Format user name display
     const getFirstWord = (user) => {
         const name = user?.name || user?.email || "";
         const firstWord = name.split(" ")[0];
-        const formatted =
-            firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
-
+        const formatted = firstWord.charAt(0).toUpperCase() + firstWord.slice(1).toLowerCase();
         return formatted.length > 5 ? formatted.slice(0, 5) + "." : formatted;
-
-
-
     };
 
-
+    // Refresh projects after modal operations
     const handleModalSuccess = () => {
         fetchProjects();
     };
 
+    // Animation variants
     const sidebarVariants = {
-        open: {
-            width: 280,
-            transition: {
-                type: "spring",
-                stiffness: 400,
-                damping: 40
-            }
-        },
-        closed: {
-            width: 64,
-            transition: {
-                type: "spring",
-                stiffness: 400,
-                damping: 40
-            }
-        }
+        open: { width: 280 },
+        closed: { width: 64 }
     };
 
     const contentVariants = {
-        open: {
-            opacity: 1,
-            x: 0,
-            transition: {
-                delay: 0.1,
-                duration: 0.2
-            }
-        },
-        closed: {
-            opacity: 0,
-            x: -20,
-            transition: {
-                duration: 0.1
-            }
-        }
+        open: { opacity: 1, x: 0 },
+        closed: { opacity: 0, x: -20 }
     };
 
     const projectItemVariants = {
-        hover: {
-            backgroundColor: "#f8fafc",
-            scale: 1.02,
-            transition: {
-                type: "spring",
-                stiffness: 400,
-                damping: 25
-            }
-        },
-        tap: {
-            scale: 0.98
-        }
+        hover: { backgroundColor: "#f8fafc", scale: 1.02 },
+        tap: { scale: 0.98 }
     };
+
+    // Dropdown options for project actions
+    const getProjectOptions = (project) => [
+        {
+            label: "Edit",
+            icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5 3 21l1.5-4L16.5 3.5z" /></svg>,
+            onClick: () => openEditModal(project),
+        },
+        {
+            label: "Configure",
+            icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><circle cx="12" cy="12" r="3" /><path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c0 .7.4 1.31 1 1.51.62.22 1.31.09 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.42.51-.55 1.2-.33 1.82.2.6.81 1 1.51 1H21a2 2 0 1 1 0 4h-.09c-.7 0-1.31.4-1.51 1z" /></svg>,
+            onClick: () => handleProjectClick(project),
+        },
+        {
+            label: "Workspace",
+            icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h6v6H9z" /></svg>,
+            onClick: () => navigateToWorkspace(project),
+        },
+        {
+            label: "Delete",
+            icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>,
+            onClick: () => deleteProject(project._id),
+            danger: true
+        }
+    ];
 
     return (
         <>
@@ -259,7 +301,6 @@ const ProjectSidebar = () => {
                                     <h2 className="font-semibold text-xl text-slate-700 tracking-tight">
                                         Projects - {userData ? getFirstWord(userData) : ""}
                                     </h2>
-
                                 </div>
                                 <motion.button
                                     whileHover={{ scale: 1.1, backgroundColor: "#f1f5f9" }}
@@ -285,10 +326,11 @@ const ProjectSidebar = () => {
                         )}
                     </AnimatePresence>
                 </div>
+
                 {/* Projects List */}
                 <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
                     <AnimatePresence>
-                        {projects.map((project, index) => (
+                        {projects.map((project) => (
                             <motion.div
                                 key={project._id}
                                 initial={{ opacity: 0, y: 20 }}
@@ -299,15 +341,15 @@ const ProjectSidebar = () => {
                                 onHoverStart={() => setHoveredProject(project._id)}
                                 onHoverEnd={() => setHoveredProject(null)}
                                 className={`mx-2 my-1 rounded-xl border transition-all duration-200 ${selectedProject?._id === project._id
-                                    ? 'border-blue-300 bg-blue-50'
-                                    : 'border-transparent hover:border-slate-200/60'
+                                        ? 'border-blue-300 bg-blue-50'
+                                        : 'border-transparent hover:border-slate-200/60'
                                     }`}
                             >
                                 {isOpen ? (
                                     <div className="flex items-center justify-between px-4 py-3">
                                         <div
                                             className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
-                                            onClick={() => handleProjectClick(project)} // This now only selects the project
+                                            onClick={() => handleProjectClick(project)}
                                         >
                                             <motion.div className="flex-shrink-0">
                                                 <CalfFolder size={18} className={
@@ -317,8 +359,8 @@ const ProjectSidebar = () => {
                                                 } />
                                             </motion.div>
                                             <span className={`font-medium truncate ${selectedProject?._id === project._id
-                                                ? 'text-blue-700'
-                                                : 'text-slate-700'
+                                                    ? 'text-blue-700'
+                                                    : 'text-slate-700'
                                                 }`}>
                                                 {project.projectName}
                                             </span>
@@ -332,67 +374,17 @@ const ProjectSidebar = () => {
                                             }}
                                             transition={{ duration: 0.2 }}
                                         >
-                                            <ThreeDotsDropdown
-                                                options={[
-                                                    {
-                                                        label: "Edit",
-                                                        icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5 3 21l1.5-4L16.5 3.5z" /></svg>,
-                                                        onClick: () => openEditModal(project), // Use context function to open edit modal
-                                                    },
-                                                    {
-                                                        label: "Configure",
-                                                        icon: <svg
-                                                            width="16"
-                                                            height="16"
-                                                            fill="none"
-                                                            stroke="currentColor"
-                                                            strokeWidth="2"
-                                                            strokeLinecap="round"
-                                                            strokeLinejoin="round"
-                                                            viewBox="0 0 24 24"
-                                                        >
-                                                            <circle cx="12" cy="12" r="3" />
-                                                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h.09a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09c0 .7.4 1.31 1 1.51.62.22 1.31.09 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06c-.42.51-.55 1.2-.33 1.82.2.6.81 1 1.51 1H21a2 2 0 1 1 0 4h-.09c-.7 0-1.31.4-1.51 1z" />
-                                                        </svg>,
-                                                        onClick: () => {
-                                                            setSelectedProject(project);
-                                                            storeProjectId(project._id);
-                                                        },
-                                                    },
-                                                    {
-                                                        label: "Workspace",
-                                                        icon: (
-                                                            <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24">
-                                                                <rect x="3" y="3" width="18" height="18" rx="2" />
-                                                                <path d="M9 9h6v6H9z" />
-                                                            </svg>
-                                                        ),
-                                                        onClick: () => {
-                                                            handleProjectClick(project);
-                                                            router.push(`/app/projects/${project.slug}`);
-                                                        },
-                                                    },
-                                                    {
-                                                        label: "Delete",
-                                                        icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" viewBox="0 0 24 24"><polyline points="3 6 5 6 21 6" /><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" /><line x1="10" y1="11" x2="10" y2="17" /><line x1="14" y1="11" x2="14" y2="17" /></svg>,
-                                                        onClick: () => deleteProject(project._id),
-                                                        danger: true
-                                                    }
-                                                ]}
-                                            />
+                                            <ThreeDotsDropdown options={getProjectOptions(project)} />
                                         </motion.div>
                                     </div>
                                 ) : (
                                     <div
                                         className="flex items-center justify-center py-4 cursor-pointer"
-                                        onClick={() => handleProjectClick(project)} // This now only selects the project
+                                        onClick={() => handleProjectClick(project)}
                                     >
                                         <motion.div
-                                            whileHover={{
-                                                color: "#3b82f6"
-                                            }}
+                                            whileHover={{ color: "#3b82f6" }}
                                             data-tooltip={project.projectName}
-                                            data-position="top"
                                         >
                                             <CalfFolder size={20} className={
                                                 selectedProject?._id === project._id
@@ -468,13 +460,13 @@ const ProjectSidebar = () => {
                 </div>
             </motion.div>
 
-            {/* Project Modal - Only show when modal is explicitly opened for editing or creating */}
+            {/* Project Modal */}
             <AnimatePresence>
                 {isModalOpen && (
                     <ProjectModal
                         project={modalMode === 'edit' ? selectedProject : null}
-                        token={token}
-                        onClose={closeModal} // Use the context function to close modal
+                        token={getToken()}
+                        onClose={closeModal}
                         onSuccess={handleModalSuccess}
                     />
                 )}

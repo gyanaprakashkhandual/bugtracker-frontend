@@ -6,8 +6,9 @@ const ConfirmContext = createContext();
 
 export const ConfirmProvider = ({ children }) => {
   const [confirmConfig, setConfirmConfig] = useState(null);
+  const [resolveRef, setResolveRef] = useState(null);
 
-  // Open modal
+  // Open modal and return a Promise
   const showConfirm = useCallback(
     ({
       title = "Confirm Action",
@@ -15,16 +16,17 @@ export const ConfirmProvider = ({ children }) => {
       confirmText = "Confirm",
       cancelText = "Cancel",
       type = "default",
-      onConfirm,
     }) => {
-      setConfirmConfig({
-        isOpen: true,
-        title,
-        message,
-        confirmText,
-        cancelText,
-        type,
-        onConfirm,
+      return new Promise((resolve) => {
+        setResolveRef(() => resolve);
+        setConfirmConfig({
+          isOpen: true,
+          title,
+          message,
+          confirmText,
+          cancelText,
+          type,
+        });
       });
     },
     []
@@ -32,14 +34,21 @@ export const ConfirmProvider = ({ children }) => {
 
   // Close modal
   const hideConfirm = useCallback(() => {
+    if (resolveRef) {
+      resolveRef({ isConfirmed: false });
+      setResolveRef(null);
+    }
     setConfirmConfig(null);
-  }, []);
+  }, [resolveRef]);
 
   // Handle confirm button
   const handleConfirm = useCallback(() => {
-    if (confirmConfig?.onConfirm) confirmConfig.onConfirm();
-    hideConfirm();
-  }, [confirmConfig, hideConfirm]);
+    if (resolveRef) {
+      resolveRef({ isConfirmed: true });
+      setResolveRef(null);
+    }
+    setConfirmConfig(null);
+  }, [resolveRef]);
 
   return (
     <ConfirmContext.Provider value={{ showConfirm, hideConfirm }}>
