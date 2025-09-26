@@ -155,13 +155,13 @@ const AppNavbar = () => {
                         <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
                             {/* Project Info */}
                             <div className="hidden lg:block min-w-0 max-w-xs xl:max-w-md">
-                                <h1 className="text-sm font-semibold text-gray-900 truncate">
-                                    {selectedProject?.projectName || "Project Name"}
+                                <h1 className="text-lg font-semibold text-gray-900 truncate">
+                                    {selectedProject
+                                        ? `${selectedProject.projectName} - ${selectedProject.projectDesc}`
+                                        : "Project Name - Project Description"}
                                 </h1>
-                                <p className="text-xs text-gray-500 truncate">
-                                    {selectedProject?.projectDesc || "Project Description"}
-                                </p>
                             </div>
+
 
                             {/* Mobile Project Name */}
                             <div className="lg:hidden min-w-0 flex-shrink">
@@ -193,7 +193,7 @@ const AppNavbar = () => {
                                     whileTap={{ scale: 0.98 }}
                                 >
                                     <Settings className="w-4 h-4" />
-                                    <span className="hidden sm:inline">Project</span>
+                                    <span className="hidden sm:inline">Set Configuration</span>
                                     <motion.div
                                         animate={{ rotate: isProjectDropdownOpen ? 180 : 0 }}
                                         transition={{ duration: 0.2 }}
