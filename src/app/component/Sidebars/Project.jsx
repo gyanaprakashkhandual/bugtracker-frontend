@@ -106,6 +106,24 @@ const ProjectSidebar = () => {
         fetchProjects();
     }, []);
 
+    // Add this useEffect after your existing useEffects in the ProjectSidebar component
+
+    useEffect(() => {
+        // Restore selected project from localStorage after projects are loaded
+        if (projects.length > 0) {
+            const storedProjectId = localStorage.getItem('currentProjectId');
+            if (storedProjectId) {
+                const foundProject = projects.find(project => project._id === storedProjectId);
+                if (foundProject) {
+                    setSelectedProject(foundProject);
+                } else {
+                    // Project not found (maybe deleted), clear storage
+                    localStorage.removeItem('currentProjectId');
+                }
+            }
+        }
+    }, [projects]); // Run when projects array changes
+
     // Handle project click - store in context and localStorage
     const handleProjectClick = (project) => {
         setSelectedProject(project);

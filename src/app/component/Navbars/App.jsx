@@ -11,7 +11,8 @@ import {
     ExternalLink,
     FileText,
     UserCog
-} from 'lucide-react'
+} from 'lucide-react';
+import { useProject } from '@/app/script/Project.context';
 import { GoogleArrowDown } from '@/app/components/utils/Icon';
 import UserManagementDashboard from '../Modules/User-Management/App';
 import ProjectConfiguration from '../Modules/Project-Management/App';
@@ -101,7 +102,8 @@ const AppNavbar = () => {
     const [activeComponent, setActiveComponent] = useState('Dashboard')
     const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false)
     const [projectName] = useState('My Project')
-    const [projectDescription] = useState('A comprehensive project management solution')
+    const [projectDescription] = useState('A comprehensive project management solution');
+    const { selectedProject } = useProject();
 
     useEffect(() => {
         const savedComponent = localStorage.getItem('activeComponent')
@@ -154,10 +156,10 @@ const AppNavbar = () => {
                             {/* Project Info */}
                             <div className="hidden lg:block min-w-0 max-w-xs xl:max-w-md">
                                 <h1 className="text-sm font-semibold text-gray-900 truncate">
-                                    {projectName}
+                                    {selectedProject?.projectName || "Project Name"}
                                 </h1>
                                 <p className="text-xs text-gray-500 truncate">
-                                    {projectDescription}
+                                    {selectedProject?.projectDesc || "Project Description"}
                                 </p>
                             </div>
 
