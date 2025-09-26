@@ -3,6 +3,7 @@ import "./globals.css";
 import { ProjectProvider } from "./script/Project.context";
 import { AlertProvider } from "./script/Alert.context";
 import { ConfirmProvider } from "./script/Confirm.context";
+import { LoaderProvider } from "./script/Loader.context";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,7 +29,9 @@ export default function RootLayout({ children }) {
         <ProjectProvider>
           <AlertProvider>
             <ConfirmProvider>
-              {children}
+              <LoaderProvider>
+                {children}
+              </LoaderProvider>
             </ConfirmProvider>
           </AlertProvider>
         </ProjectProvider>
