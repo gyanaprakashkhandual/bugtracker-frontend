@@ -11,6 +11,7 @@ import ProjectModal from "@/app/components/assets/Modal";
 import { FaCoffee } from "react-icons/fa";
 import { GoogleArrowLeft, CalfFolder, GoogleArrowUp} from "@/app/components/utils/Icon";
 import { useProject } from "@/app/script/Project.context";
+import { useAlert } from "@/app/script/Alert.context";
 
 
 const ProjectSidebar = () => {
@@ -20,6 +21,8 @@ const ProjectSidebar = () => {
     const [userData, setUserData] = useState(null);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [token, setToken] = useState(null);
+
+    const { showAlert } = useAlert();
 
     const {
         isModalOpen,
@@ -120,20 +123,15 @@ const ProjectSidebar = () => {
         });
         
         setProjects(projects.filter((p) => p._id !== projectId));
+        showAlert({
+            type: "success",
+            message: "Project deleted successfully",
+          });
 
         if (selectedProject && selectedProject._id === projectId) {
             setSelectedProject(null);
             localStorage.removeItem("currentProjectId");
         }
-
-        // Close loading and show success
-        Swal.fire({
-            icon: 'success',
-            title: 'Project Deleted!',
-            text: `"${projectName}" has been successfully deleted.`,
-            timer: 2000,
-            showConfirmButton: false
-        });
 
     } catch (err) {
         console.error("Error deleting project", err);

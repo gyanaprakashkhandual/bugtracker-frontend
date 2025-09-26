@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import { ProjectProvider } from "./script/Project.context";
+import { AlertProvider } from "./script/Alert.context"; // ⬅️ import your AlertProvider
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -23,7 +24,11 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-        <ProjectProvider>{children}</ProjectProvider>
+        <ProjectProvider>
+          <AlertProvider>
+            {children}
+          </AlertProvider>
+        </ProjectProvider>
       </body>
     </html>
   );
