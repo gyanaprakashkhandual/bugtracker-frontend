@@ -14,14 +14,8 @@ import {
 } from 'lucide-react'
 import { GoogleArrowDown } from '@/app/components/utils/Icon';
 import UserManagementDashboard from '../Modules/User-Management/App';
-
-// Mock Components
-const ProjectConfiguration = () => (
-    <div className="p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Project Configuration</h2>
-        <p className="text-gray-600">Configure your project settings here...</p>
-    </div>
-)
+import ProjectConfiguration from '../Modules/Project-Management/App';
+import UserProfileInterface from '../Modules/User/App';
 
 const TestTypeConfiguration = () => (
     <div className="p-8">
@@ -143,7 +137,7 @@ const AppNavbar = () => {
             case 'Messages':
                 return <MessagesPanel />
             case 'UserPanel':
-                return <UserPanel />
+                return <UserProfileInterface />
             default:
                 return <Dashboard />
         }
