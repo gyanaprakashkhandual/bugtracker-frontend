@@ -17,6 +17,7 @@ import { GoogleArrowDown } from '@/app/components/utils/Icon';
 import UserManagementDashboard from '../Modules/User-Management/App';
 import ProjectConfiguration from '../Modules/Project-Management/App';
 import UserProfileInterface from '../Modules/User/App';
+import { useRouter } from 'next/navigation';
 
 const TestTypeConfiguration = () => (
     <div className="p-8">
@@ -102,8 +103,10 @@ const AppNavbar = () => {
     const [activeComponent, setActiveComponent] = useState('Dashboard')
     const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false)
     const [projectName] = useState('My Project')
-    const [projectDescription] = useState('A comprehensive project management solution');
     const { selectedProject } = useProject();
+    const router = useRouter();
+
+    
 
     useEffect(() => {
         const savedComponent = localStorage.getItem('activeComponent')
