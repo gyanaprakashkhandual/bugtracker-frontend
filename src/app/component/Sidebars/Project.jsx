@@ -422,8 +422,8 @@ const ProjectSidebar = () => {
                                         {/* Role Badge */}
                                         <div className="flex items-center gap-1.5">
                                             <div className={`w-2 h-2 rounded-full ${userData?.role === 'admin' ? 'bg-purple-500' :
-                                                    userData?.role === 'user' ? 'bg-blue-500' :
-                                                        'bg-gray-500'
+                                                userData?.role === 'user' ? 'bg-blue-500' :
+                                                    'bg-gray-500'
                                                 }`}></div>
                                             <span className="text-xs font-medium text-slate-700 capitalize">
                                                 {userData?.role || 'user'}
