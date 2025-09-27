@@ -114,7 +114,7 @@ const ProjectModal = ({ project, token, onClose, onSuccess }) => {
     >
       {/* Success Alert */}
       {successMessage && (
-        <div className="absolute top-8 left-1/2 transform -translate-x-1/2 z-50">
+        <div className="absolute z-50 transform -translate-x-1/2 top-8 left-1/2">
           <Alert type="success" message={successMessage} />
         </div>
       )}
@@ -159,7 +159,7 @@ const ProjectModal = ({ project, token, onClose, onSuccess }) => {
 
           <button
             onClick={handleClose}
-            className="w-8 h-8 flex items-center justify-center rounded-lg text-gray-400 hover:text-gray-600 hover:bg-gray-100 transition-all duration-200"
+            className="flex items-center justify-center w-8 h-8 text-gray-400 transition-all duration-200 rounded-lg hover:text-gray-600 hover:bg-gray-100"
             disabled={isLoading}
           >
             <X className="w-5 h-5" />
@@ -170,7 +170,7 @@ const ProjectModal = ({ project, token, onClose, onSuccess }) => {
         <div className="px-6 py-6 space-y-5">
           {/* Error Message */}
           {errors.submit && (
-            <div className="p-3 bg-red-50 border border-red-200 rounded-lg">
+            <div className="p-3 border border-red-200 rounded-lg bg-red-50">
               <p className="text-sm text-red-600">{errors.submit}</p>
             </div>
           )}
@@ -193,7 +193,7 @@ const ProjectModal = ({ project, token, onClose, onSuccess }) => {
               disabled={isLoading}
             />
             {errors.projectName && (
-              <div className="flex items-center space-x-2 animate-in slide-in-from-left-1 duration-200">
+              <div className="flex items-center space-x-2 duration-200 animate-in slide-in-from-left-1">
                 <div className="w-1 h-1 bg-red-500 rounded-full"></div>
                 <p className="text-sm text-red-600">{errors.projectName}</p>
               </div>
@@ -218,7 +218,7 @@ const ProjectModal = ({ project, token, onClose, onSuccess }) => {
               disabled={isLoading}
             />
             {errors.projectDesc && (
-              <div className="flex items-center space-x-2 animate-in slide-in-from-left-1 duration-200">
+              <div className="flex items-center space-x-2 duration-200 animate-in slide-in-from-left-1">
                 <div className="w-1 h-1 bg-red-500 rounded-full"></div>
                 <p className="text-sm text-red-600">{errors.projectDesc}</p>
               </div>
@@ -227,7 +227,7 @@ const ProjectModal = ({ project, token, onClose, onSuccess }) => {
         </div>
 
         {/* Footer Actions */}
-        <div className="flex items-center justify-end space-x-3 px-6 py-5 bg-gray-50 border-t border-gray-200 rounded-b-lg">
+        <div className="flex items-center justify-end px-6 py-5 space-x-3 border-t border-gray-200 rounded-b-lg bg-gray-50">
           <button
             onClick={handleClose}
             disabled={isLoading}

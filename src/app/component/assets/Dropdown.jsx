@@ -128,7 +128,7 @@ export const Dropdown = ({
           transition={{ duration: 0.2 }}
           className="ml-2"
         >
-          <svg className="h-4 w-4" style={{ color: "var(--color-text-disabled)" }} viewBox="0 0 20 20" fill="currentColor">
+          <svg className="w-4 h-4" style={{ color: "var(--color-text-disabled)" }} viewBox="0 0 20 20" fill="currentColor">
             <path d="M7 10l5 5 5-5z" />
           </svg>
         </motion.div>
@@ -141,10 +141,10 @@ export const Dropdown = ({
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.15, ease: "easeOut" }}
-            className="absolute z-50 mt-2 w-full rounded-sm shadow-sm"
+            className="absolute z-50 w-full mt-2 rounded-sm shadow-sm"
             style={{ minWidth: '200px', backgroundColor: "var(--color-surface)" }}
           >
-            <div className="py-1 max-h-60 overflow-auto">
+            <div className="py-1 overflow-auto max-h-60">
               {searchable && (
                 <div className="px-3 py-2 border-b" style={{ borderColor: "var(--color-divider)" }}>
                   <input
@@ -200,7 +200,7 @@ export const Dropdown = ({
                       </div>
                     </div>
                     {isSelected(option) && (
-                      <Check className="h-4 w-4" style={{ color: "var(--color-primary)" }} />
+                      <Check className="w-4 h-4" style={{ color: "var(--color-primary)" }} />
                     )}
                   </motion.button>
                 ))
@@ -361,7 +361,7 @@ export const ThreeDotsDropdown = ({
       <button
         ref={buttonRef}
         onClick={handleToggle}
-        className="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors duration-200 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
+        className="p-2 transition-colors duration-200 rounded-full hover:bg-gray-100 dark:hover:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1"
         aria-label="More options"
       >
         <MoreVertical size={iconSize} className="text-gray-600 dark:text-gray-400" />
@@ -376,7 +376,7 @@ export const ThreeDotsDropdown = ({
             transition={{ duration: 0.15, ease: 'easeOut' }}
             className={`absolute z-50 ${getPositionClasses()} ${dropdownWidth}`}
           >
-            <div className="bg-white dark:bg-gray-900 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 overflow-hidden">
+            <div className="py-1 overflow-hidden bg-white border border-gray-200 rounded-lg shadow-lg dark:bg-gray-900 dark:border-gray-700">
               {options.map((option, index) => (
                 <motion.button
                   key={option.id || index}
@@ -409,7 +409,7 @@ export const ThreeDotsDropdown = ({
                       {option.label}
                     </div>
                     {option.description && (
-                      <div className="text-xs text-gray-500 dark:text-gray-400 truncate">
+                      <div className="text-xs text-gray-500 truncate dark:text-gray-400">
                         {option.description}
                       </div>
                     )}
