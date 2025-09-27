@@ -12,8 +12,8 @@ export const Dropdown = ({
   value = null,
   onChange = () => { },
   disabled = false,
-  variant = "default", // "default", "primary", "danger"
-  size = "md", // "sm", "md", "lg"
+  variant = "default",
+  size = "md",
   searchable = false,
   multiple = false,
   className = "",
@@ -254,7 +254,7 @@ export const ThreeDotsDropdown = ({
     // Estimated dropdown dimensions (you can adjust these based on your needs)
     const dropdownHeight = Math.max(options.length * 40 + 16, 60) // ~40px per item + padding
     const dropdownWidth = 192 // w-48 = 12rem = 192px
-    
+
     // Buffer space to consider "near" the edge
     const edgeBuffer = 20
 
@@ -266,10 +266,10 @@ export const ThreeDotsDropdown = ({
 
     // Determine horizontal position with edge detection
     let horizontal = 'right'
-    
+
     // If near right edge or insufficient space on right, but enough space on left
-    if ((spaceRight < dropdownWidth + edgeBuffer || buttonRect.right + dropdownWidth > viewport.width) 
-        && spaceLeft > dropdownWidth) {
+    if ((spaceRight < dropdownWidth + edgeBuffer || buttonRect.right + dropdownWidth > viewport.width)
+      && spaceLeft > dropdownWidth) {
       horizontal = 'left'
     }
     // If near left edge, prefer right positioning
@@ -283,10 +283,10 @@ export const ThreeDotsDropdown = ({
 
     // Determine vertical position with edge detection
     let vertical = 'bottom'
-    
+
     // If near bottom edge or insufficient space below, but enough space above
     if ((spaceBelow < dropdownHeight + edgeBuffer || buttonRect.bottom + dropdownHeight > viewport.height)
-        && spaceAbove > dropdownHeight) {
+      && spaceAbove > dropdownHeight) {
       vertical = 'top'
     }
     // If near top edge, prefer bottom positioning
@@ -300,7 +300,7 @@ export const ThreeDotsDropdown = ({
 
     // Combine positions
     const newPosition = `${vertical}-${horizontal}`
-    
+
     // Log for debugging (remove in production)
     console.log(`Smart positioning: ${newPosition}`, {
       buttonRect,
