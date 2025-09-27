@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useParams } from 'next/navigation';
 import {
   Menu,
   X,
@@ -21,10 +22,8 @@ import {
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useProject } from '@/app/utils/Get.project';
-import TestTypeList from './Window';
-import { SettingSidebar } from './Sidebar';
 import { GoogleArrowDown } from '../utils/Icon';
-
+import TestTypeList from '../Sidebars/TestType';
 import { MdReport } from 'react-icons/md';
 
 // Styled Dropdown (no changes to this part)

@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import Navbar from "@/app/components/modules/Navbar";
+import Navbar from '@/app/components/Navbars/Workspace';
 
 export default function TokenDebugger() {
   const [token, setToken] = useState('');
