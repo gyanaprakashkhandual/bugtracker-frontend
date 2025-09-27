@@ -6,9 +6,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
 import { User, LogOut, Mail } from "lucide-react";
 import { ThreeDotsDropdown } from "@/app/components/assets/Dropdown";
-import ProjectModal from "@/app/components/assets/Modal";
 import { FaCoffee } from "react-icons/fa";
-import { GoogleArrowLeft, CalfFolder, GoogleArrowUp } from "@/app/components/utils/Icon";
+import { GoogleArrowLeft, Folder, GoogleArrowUp } from "@/app/components/utils/Icon";
 import { useProject } from "@/app/script/Project.context";
 import { useAlert } from "@/app/script/Alert.context";
 import { useConfirm } from "@/app/script/Confirm.context";
@@ -365,7 +364,7 @@ const ProjectSidebar = () => {
                                             onClick={() => handleProjectClick(project)}
                                         >
                                             <motion.div className="flex-shrink-0">
-                                                <CalfFolder size={18} className={
+                                                <Folder size={18} className={
                                                     selectedProject?._id === project._id
                                                         ? "text-blue-600"
                                                         : "text-blue-500"
@@ -399,7 +398,7 @@ const ProjectSidebar = () => {
                                             whileHover={{ color: "#3b82f6" }}
                                             data-tooltip={project.projectName}
                                         >
-                                            <CalfFolder size={20} className={
+                                            <Folder size={20} className={
                                                 selectedProject?._id === project._id
                                                     ? "text-blue-600"
                                                     : "text-slate-500"

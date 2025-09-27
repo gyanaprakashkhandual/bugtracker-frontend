@@ -11,7 +11,7 @@ import {
   FaFlask, FaClipboardCheck, FaHeadset, FaCogs,
   FaSitemap, FaUserGraduate, FaEllipsisH
 } from 'react-icons/fa';
-import { SiScrum } from 'react-icons/si';
+import { SiScrapbox } from 'react-icons/si';
 
 const CreateUserModal = ({ isOpen, onClose, onSubmit }) => {
   const [formData, setFormData] = useState({
@@ -35,7 +35,7 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit }) => {
     { value: 'manager', label: 'Manager', description: 'Can manage team members', icon: FaUserTie, color: 'text-blue-600 bg-blue-50' },
     { value: 'product manager', label: 'Product Manager', description: 'Manages product strategy', icon: FaClipboardList, color: 'text-orange-600 bg-orange-50' },
     { value: 'business analyst', label: 'Business Analyst', description: 'Analyzes business requirements', icon: FaChartLine, color: 'text-teal-600 bg-teal-50' },
-    { value: 'scrum master', label: 'Scrum Master', description: 'Facilitates Agile processes', icon: SiScrum, color: 'text-indigo-600 bg-indigo-50' },
+    { value: 'scrum master', label: 'Scrum Master', description: 'Facilitates Agile processes', icon: SiScrapbox, color: 'text-indigo-600 bg-indigo-50' },
     { value: 'data scientist', label: 'Data Scientist', description: 'Analyzes and interprets data', icon: FaChartLine, color: 'text-blue-600 bg-blue-50' },
     { value: 'data engineer', label: 'Data Engineer', description: 'Builds data pipelines', icon: FaDatabase, color: 'text-gray-600 bg-gray-50' },
     { value: 'ml engineer', label: 'ML Engineer', description: 'Develops machine learning models', icon: FaBrain, color: 'text-purple-600 bg-purple-50' },
@@ -188,7 +188,7 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit }) => {
         </div>
 
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1">Password (Optional)</label>
+          <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
           <input
             type="password"
             value={formData.password}
