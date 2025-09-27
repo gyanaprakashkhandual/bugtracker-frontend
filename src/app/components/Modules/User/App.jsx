@@ -2,13 +2,13 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  User, 
-  Mail, 
-  Shield, 
-  Calendar, 
-  CheckCircle, 
-  LogOut, 
+import {
+  User,
+  Mail,
+  Shield,
+  Calendar,
+  CheckCircle,
+  LogOut,
   Settings,
   Crown,
   Activity
@@ -33,9 +33,9 @@ const UserProfileInterface = () => {
     try {
       setLoading(true);
       setError(null);
-      
+
       const token = getToken();
-      
+
       if (!token) {
         setError('No authentication token found. Please login again.');
         return;
@@ -59,13 +59,13 @@ const UserProfileInterface = () => {
       }
 
       const data = await response.json();
-      
+
       if (data.user) {
         setUser(data.user);
       } else {
         setError('Invalid response format from server');
       }
-      
+
     } catch (err) {
       console.error('Error fetching user data:', err);
       setError(err.message || 'Failed to fetch user data');
@@ -78,9 +78,9 @@ const UserProfileInterface = () => {
   const handleLogout = async () => {
     try {
       setLoggingOut(true);
-      
+
       const token = getToken();
-      
+
       if (!token) {
         setError('No authentication token found');
         return;
@@ -100,15 +100,15 @@ const UserProfileInterface = () => {
 
       // Clear token from localStorage
       localStorage.removeItem('token');
-      
+
       // Clear user data
       setUser(null);
-      
+
       alert('Logged out successfully!');
-      
+
       // In a real Next.js app, you would redirect:
       // window.location.href = '/login';
-      
+
     } catch (err) {
       console.error('Error during logout:', err);
       setError('Failed to logout: ' + (err.message || 'Unknown error'));
@@ -222,58 +222,58 @@ const UserProfileInterface = () => {
           transition={{ delay: 0.1 }}
           className="bg-white overflow-hidden"
         >
-           {/* Profile Header */}
-<div className="bg-[radial-gradient(circle_at_top_left,_#3b82f6,_#8b5cf6,_#ec4899)] px-8 py-12 text-white relative overflow-hidden">
-  {/* Decorative SVG Background Elements */}
-  <div className="absolute inset-0 pointer-events-none">
-    <svg
-      className="absolute top-0 left-0 w-1/3 opacity-15"
-      viewBox="0 0 200 200"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        fill="#e0f2fe" // sky-100
-        d="M45.2,-62.8C58.6,-52.9,69.4,-38.1,73.8,-21.5C78.2,-4.9,76.2,13.4,68.9,28.9C61.6,44.4,49,57.1,34.1,64.3C19.2,71.5,2,73.2,-14.8,71.2C-31.6,69.2,-48,63.5,-58.2,52C-68.4,40.5,-72.4,23.2,-71.8,6.4C-71.2,-10.4,-66,-26.7,-55.9,-40.1C-45.8,-53.5,-30.8,-64,-13.7,-65.6C3.4,-67.2,31.8,-59.9,45.2,-62.8Z"
-        transform="translate(100 100)"
-      />
-    </svg>
+          {/* Profile Header */}
+          <div className="bg-[radial-gradient(circle_at_top_left,_#3b82f6,_#8b5cf6,_#ec4899)] px-8 py-12 text-white relative overflow-hidden">
+            {/* Decorative SVG Background Elements */}
+            <div className="absolute inset-0 pointer-events-none">
+              <svg
+                className="absolute top-0 left-0 w-1/3 opacity-15"
+                viewBox="0 0 200 200"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fill="#e0f2fe" // sky-100
+                  d="M45.2,-62.8C58.6,-52.9,69.4,-38.1,73.8,-21.5C78.2,-4.9,76.2,13.4,68.9,28.9C61.6,44.4,49,57.1,34.1,64.3C19.2,71.5,2,73.2,-14.8,71.2C-31.6,69.2,-48,63.5,-58.2,52C-68.4,40.5,-72.4,23.2,-71.8,6.4C-71.2,-10.4,-66,-26.7,-55.9,-40.1C-45.8,-53.5,-30.8,-64,-13.7,-65.6C3.4,-67.2,31.8,-59.9,45.2,-62.8Z"
+                  transform="translate(100 100)"
+                />
+              </svg>
 
-    <svg
-      className="absolute top-1/4 right-0 w-1/4 opacity-10"
-      viewBox="0 0 200 200"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        fill="#f3e8ff" // purple-100
-        d="M35.6,-48.1C46.8,-38.8,56.9,-28.2,61.1,-15.2C65.3,-2.2,63.6,13.2,56.7,26.4C49.8,39.6,37.7,50.6,24.1,57.3C10.5,64,-4.6,66.4,-18.5,62.9C-32.4,59.4,-45.1,50,-53.7,37.2C-62.3,24.4,-66.8,8.2,-65.5,-7.6C-64.2,-23.4,-57.1,-38.8,-45.9,-47.9C-34.7,-57,-19.4,-59.8,-5.2,-58.6C9,-57.4,26,-52.2,35.6,-48.1Z"
-        transform="translate(100 100)"
-      />
-    </svg>
+              <svg
+                className="absolute top-1/4 right-0 w-1/4 opacity-10"
+                viewBox="0 0 200 200"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fill="#f3e8ff" // purple-100
+                  d="M35.6,-48.1C46.8,-38.8,56.9,-28.2,61.1,-15.2C65.3,-2.2,63.6,13.2,56.7,26.4C49.8,39.6,37.7,50.6,24.1,57.3C10.5,64,-4.6,66.4,-18.5,62.9C-32.4,59.4,-45.1,50,-53.7,37.2C-62.3,24.4,-66.8,8.2,-65.5,-7.6C-64.2,-23.4,-57.1,-38.8,-45.9,-47.9C-34.7,-57,-19.4,-59.8,-5.2,-58.6C9,-57.4,26,-52.2,35.6,-48.1Z"
+                  transform="translate(100 100)"
+                />
+              </svg>
 
-    <svg
-      className="absolute bottom-0 left-1/3 w-1/5 opacity-12"
-      viewBox="0 0 200 200"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        fill="#fce7f3" // pink-100
-        d="M42.4,-56.9C55.3,-47.9,66.5,-35.8,71.1,-21.5C75.7,-7.2,73.6,9.3,66.2,23.8C58.8,38.3,46.1,50.8,31.2,60.1C16.3,69.4,-0.8,75.6,-16.3,71.8C-31.8,68,-45.6,54.3,-56.1,38.9C-66.6,23.5,-73.8,6.5,-72.1,-10.9C-70.3,-28.2,-59.5,-45.9,-44.5,-54.6C-29.5,-63.3,-10.3,-63.1,5.5,-68.9C21.3,-74.7,42.6,-86.5,42.4,-56.9Z"
-        transform="translate(100 100)"
-      />
-    </svg>
+              <svg
+                className="absolute bottom-0 left-1/3 w-1/5 opacity-12"
+                viewBox="0 0 200 200"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fill="#fce7f3" // pink-100
+                  d="M42.4,-56.9C55.3,-47.9,66.5,-35.8,71.1,-21.5C75.7,-7.2,73.6,9.3,66.2,23.8C58.8,38.3,46.1,50.8,31.2,60.1C16.3,69.4,-0.8,75.6,-16.3,71.8C-31.8,68,-45.6,54.3,-56.1,38.9C-66.6,23.5,-73.8,6.5,-72.1,-10.9C-70.3,-28.2,-59.5,-45.9,-44.5,-54.6C-29.5,-63.3,-10.3,-63.1,5.5,-68.9C21.3,-74.7,42.6,-86.5,42.4,-56.9Z"
+                  transform="translate(100 100)"
+                />
+              </svg>
 
-    <svg
-      className="absolute top-1/2 left-0 w-1/6 opacity-8"
-      viewBox="0 0 200 200"
-      xmlns="http://www.w3.org/2000/svg"
-    >
-      <path
-        fill="#ede9fe" // violet-100
-        d="M38.2,-45.8C50.1,-35.7,60.5,-24.5,65.3,-10.8C70.1,2.9,69.3,19.1,62.1,32.8C54.9,46.5,41.3,57.7,26.1,62.4C10.9,67.1,-5.9,65.3,-21.3,59.7C-36.7,54.1,-50.7,44.7,-58.3,31.4C-65.9,18.1,-67.1,0.9,-63.8,-14.8C-60.5,-30.5,-52.7,-44.7,-41.2,-55C-29.7,-65.3,-14.8,-71.7,-0.4,-71.2C14,-70.7,28,-63.3,38.2,-45.8Z"
-        transform="translate(100 100)"
-      />
-    </svg>
-  </div>
+              <svg
+                className="absolute top-1/2 left-0 w-1/6 opacity-8"
+                viewBox="0 0 200 200"
+                xmlns="http://www.w3.org/2000/svg"
+              >
+                <path
+                  fill="#ede9fe" // violet-100
+                  d="M38.2,-45.8C50.1,-35.7,60.5,-24.5,65.3,-10.8C70.1,2.9,69.3,19.1,62.1,32.8C54.9,46.5,41.3,57.7,26.1,62.4C10.9,67.1,-5.9,65.3,-21.3,59.7C-36.7,54.1,-50.7,44.7,-58.3,31.4C-65.9,18.1,-67.1,0.9,-63.8,-14.8C-60.5,-30.5,-52.7,-44.7,-41.2,-55C-29.7,-65.3,-14.8,-71.7,-0.4,-71.2C14,-70.7,28,-63.3,38.2,-45.8Z"
+                  transform="translate(100 100)"
+                />
+              </svg>
+            </div>
 
 
             <div className="absolute top-4 right-4">
@@ -290,7 +290,7 @@ const UserProfileInterface = () => {
                 </span>
               </motion.button>
             </div>
-            
+
             <div className="flex items-center space-x-6">
               <motion.div
                 initial={{ scale: 0 }}
@@ -300,7 +300,7 @@ const UserProfileInterface = () => {
               >
                 <User className="w-12 h-12 text-white" />
               </motion.div>
-              
+
               <div>
                 <motion.h2
                   initial={{ opacity: 0, x: -20 }}
@@ -310,7 +310,7 @@ const UserProfileInterface = () => {
                 >
                   {user.name}
                 </motion.h2>
-                
+
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -321,17 +321,16 @@ const UserProfileInterface = () => {
                     <RoleIcon className="w-4 h-4" />
                     <span className="capitalize">{user.role}</span>
                   </span>
-                  
+
                   {user.isVerified && (
                     <span className="inline-flex items-center space-x-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
                       <CheckCircle className="w-4 h-4" />
                       <span>Verified</span>
                     </span>
                   )}
-                  
-                  <span className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium ${
-                    user.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
-                  }`}>
+
+                  <span className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium ${user.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                    }`}>
                     <Activity className="w-4 h-4" />
                     <span>{user.isActive ? 'Active' : 'Inactive'}</span>
                   </span>
@@ -351,7 +350,7 @@ const UserProfileInterface = () => {
                 className="space-y-4"
               >
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
-                
+
                 <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
                   <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
                     <User className="w-5 h-5 text-blue-600" />
@@ -361,7 +360,7 @@ const UserProfileInterface = () => {
                     <p className="font-medium text-gray-900">{user.name}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
                   <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
                     <Mail className="w-5 h-5 text-purple-600" />
@@ -371,7 +370,7 @@ const UserProfileInterface = () => {
                     <p className="font-medium text-gray-900">{user.email}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
                   <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
                     <Shield className="w-5 h-5 text-green-600" />
@@ -391,7 +390,7 @@ const UserProfileInterface = () => {
                 className="space-y-4"
               >
                 <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
-                
+
                 <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
                   <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
                     <Calendar className="w-5 h-5 text-indigo-600" />
@@ -401,7 +400,7 @@ const UserProfileInterface = () => {
                     <p className="font-medium text-gray-900">{formatDate(user.createdAt)}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
                   <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
                     <Calendar className="w-5 h-5 text-orange-600" />
@@ -411,7 +410,7 @@ const UserProfileInterface = () => {
                     <p className="font-medium text-gray-900">{formatDate(user.updatedAt)}</p>
                   </div>
                 </div>
-                
+
                 <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
                   <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
                     <Settings className="w-5 h-5 text-pink-600" />
