@@ -163,7 +163,7 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-md' }) => {
     } else {
       document.body.style.overflow = 'unset';
     }
-    
+
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -337,26 +337,26 @@ export default function ProjectConfiguration() {
   const [loading, setLoading] = useState(true);
   // Initialize current user
   const [currentUser, setCurrentUser] = useState(null);
-  
+
   // UI States
   const [searchTerm, setSearchTerm] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
   const [totalPages, setTotalPages] = useState(1);
   const [view, setView] = useState('all');
-  
+
   // Modal States
   const [createModalOpen, setCreateModalOpen] = useState(false);
   const [editModalOpen, setEditModalOpen] = useState(false);
   const [viewModalOpen, setViewModalOpen] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
-  
+
   // Form States
   const [formData, setFormData] = useState({
     projectName: '',
     projectDesc: '',
     userId: ''
   });
-  
+
   // Dropdown States
   const [viewDropdownOpen, setViewDropdownOpen] = useState(false);
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
@@ -387,7 +387,7 @@ export default function ProjectConfiguration() {
         ...(searchTerm && { search: searchTerm })
       };
 
-      const response = view === 'my' 
+      const response = view === 'my'
         ? await apiService.getMyProjects(params)
         : await apiService.getAllProjects(params);
 
@@ -421,12 +421,12 @@ export default function ProjectConfiguration() {
 
   const handleCreateProject = async (e) => {
     e.preventDefault();
-    
+
     try {
-      const response = currentUser?.role === 'admin' 
+      const response = currentUser?.role === 'admin'
         ? await apiService.adminCreateProject(formData)
         : await apiService.createProject(formData);
-      
+
       if (response.success && response.project) {
         setCreateModalOpen(false);
         setFormData({ projectName: '', projectDesc: '', userId: '' });
@@ -445,12 +445,12 @@ export default function ProjectConfiguration() {
 
   const handleEditProject = async (e) => {
     e.preventDefault();
-    
+
     try {
-      const response = currentUser?.role === 'admin' 
+      const response = currentUser?.role === 'admin'
         ? await apiService.adminUpdateProject(selectedProject._id, formData)
         : await apiService.updateProject(selectedProject._id, formData);
-      
+
       if (response.success && response.project) {
         setEditModalOpen(false);
         setSelectedProject(null);
@@ -470,10 +470,10 @@ export default function ProjectConfiguration() {
   const handleDeleteProject = async (project) => {
     if (window.confirm(`Are you sure you want to delete "${project.projectName}"? This action cannot be undone.`)) {
       try {
-        const response = currentUser?.role === 'admin' 
+        const response = currentUser?.role === 'admin'
           ? await apiService.adminDeleteProject(project._id)
           : await apiService.deleteProject(project._id);
-        
+
         if (response.success) {
           // Refresh the projects list and stats
           await fetchProjects();
@@ -506,15 +506,15 @@ export default function ProjectConfiguration() {
 
   const filteredProjects = projects.filter(project => {
     if (!project) return false;
-    
+
     const matchesSearch = project.projectName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.projectDesc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         project.user?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-    
+      project.projectDesc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      project.user?.name?.toLowerCase().includes(searchTerm.toLowerCase());
+
     if (view === 'my') {
       return matchesSearch && project.user?._id === currentUser?.id;
     }
-    
+
     return matchesSearch;
   });
 
@@ -539,7 +539,7 @@ export default function ProjectConfiguration() {
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        
+
         {/* Header */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -608,7 +608,7 @@ export default function ProjectConfiguration() {
           className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8"
         >
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-            
+
             {/* Search */}
             <div className="flex-1 max-w-md">
               <div className="relative">
@@ -624,7 +624,7 @@ export default function ProjectConfiguration() {
             </div>
 
             <div className="flex items-center space-x-3">
-              
+
               {/* View Toggle */}
               <Dropdown
                 isOpen={viewDropdownOpen}
@@ -643,9 +643,8 @@ export default function ProjectConfiguration() {
                     setViewDropdownOpen(false);
                     setCurrentPage(1);
                   }}
-                  className={`flex items-center w-full px-4 py-2 text-sm hover:bg-gray-50 ${
-                    view === 'all' ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
-                  }`}
+                  className={`flex items-center w-full px-4 py-2 text-sm hover:bg-gray-50 ${view === 'all' ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
+                    }`}
                 >
                   <FiBarChart size={14} className="mr-3" />
                   All Projects
@@ -656,9 +655,8 @@ export default function ProjectConfiguration() {
                     setViewDropdownOpen(false);
                     setCurrentPage(1);
                   }}
-                  className={`flex items-center w-full px-4 py-2 text-sm hover:bg-gray-50 ${
-                    view === 'my' ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
-                  }`}
+                  className={`flex items-center w-full px-4 py-2 text-sm hover:bg-gray-50 ${view === 'my' ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
+                    }`}
                 >
                   <FiUser size={14} className="mr-3" />
                   My Projects
@@ -790,7 +788,7 @@ export default function ProjectConfiguration() {
             >
               Previous
             </button>
-            
+
             {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
               let pageNum;
               if (totalPages <= 5) {
@@ -802,22 +800,21 @@ export default function ProjectConfiguration() {
               } else {
                 pageNum = currentPage - 2 + i;
               }
-              
+
               return (
                 <button
                   key={pageNum}
                   onClick={() => setCurrentPage(pageNum)}
-                  className={`px-4 py-2 text-sm border rounded-lg transition-colors ${
-                    pageNum === currentPage
+                  className={`px-4 py-2 text-sm border rounded-lg transition-colors ${pageNum === currentPage
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'border-gray-300 hover:bg-gray-50'
-                  }`}
+                    }`}
                 >
                   {pageNum}
                 </button>
               );
             })}
-            
+
             <button
               onClick={() => setCurrentPage(currentPage + 1)}
               disabled={currentPage === totalPages}
@@ -1128,18 +1125,16 @@ export default function ProjectConfiguration() {
           <div className="flex items-center justify-around">
             <button
               onClick={() => setView('all')}
-              className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
-                view === 'all' ? 'text-blue-600 bg-blue-50' : 'text-gray-600'
-              }`}
+              className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${view === 'all' ? 'text-blue-600 bg-blue-50' : 'text-gray-600'
+                }`}
             >
               <FiBarChart size={20} />
               <span className="text-xs font-medium">All</span>
             </button>
             <button
               onClick={() => setView('my')}
-              className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${
-                view === 'my' ? 'text-blue-600 bg-blue-50' : 'text-gray-600'
-              }`}
+              className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${view === 'my' ? 'text-blue-600 bg-blue-50' : 'text-gray-600'
+                }`}
             >
               <FiUser size={20} />
               <span className="text-xs font-medium">Mine</span>

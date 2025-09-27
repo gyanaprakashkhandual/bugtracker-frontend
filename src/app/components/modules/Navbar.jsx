@@ -16,7 +16,8 @@ import {
   Trash2,
   Palette,
   SplitIcon,
-  Plus
+  Plus,
+  CodeSquareIcon
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { getProjectDetails } from '@/app/utils/functions/GetProjectDetails';
@@ -24,6 +25,7 @@ import TestTypeList from './Window';
 import { SettingSidebar } from './Sidebar';
 import { GoogleArrowDown } from '../utils/Icon';
 import { useProject } from '@/app/script/Project.context';
+import { MdReport } from 'react-icons/md';
 
 // Styled Dropdown (no changes to this part)
 const StyledDropdown = ({ options, placeholder, value, onChange, size = "sm", className = "" }) => {
@@ -106,6 +108,7 @@ export default function Navbar() {
   const [selectedView, setSelectedView] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
   const [selectedManual, setSelectedManual] = useState(null);
+  const [ selectedData, setSelectedData ] = useState(null);
   const [testTypeIsOpen, setTestTypeIsOpen] = useState(false);
   const [settingIsOpen, setSettingIsOpen] = useState(false);
 
@@ -135,6 +138,10 @@ export default function Navbar() {
     { value: 'addData', label: 'Add Data', icon: <Plus className="h-4, w-4"/>},
   ];
 
+  const dataOption = [
+    {value: 'fromVsCode', label: 'From VS Code', icon: <CodeSquareIcon className='h-4, w-4'/> },
+    {value: 'fromManual', label: 'From Manual', icon: <MdReport className='h-4, w-4'/> },
+  ]
   // Prevent body scroll when settings sidebar is open
   useEffect(() => {
     if (settingIsOpen) {
@@ -153,7 +160,7 @@ export default function Navbar() {
   return (
     <nav className="sticky top-0 z-50 bg-gradient-to-r from-blue-100 via-sky-50 to-blue-100 backdrop-blur-md border-b border-blue-200/30">
       <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center h-16">
           {/* Mobile hamburger */}
           <div className="md:hidden">
             <motion.button
@@ -227,7 +234,7 @@ export default function Navbar() {
                                 placeholder="Search..."
                                 onFocus={() => setSearchFocus(true)}
                                 onBlur={() => setSearchFocus(false)}
-                                className="block w-[500px] pl-10 pr-3 py-1.5 border border-blue-200/50 rounded-full bg-white/70 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
+                                className="block w-[400px] pl-10 pr-3 py-1.5 border border-blue-200/50 rounded-full bg-white/70 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
                             />
                         </motion.div>
                     </div>
@@ -263,6 +270,14 @@ export default function Navbar() {
                         size='sm'
                         className='w-40'
                         />
+<StyledDropdown
+                        options={dataOption}
+                        placeholder="Data From"
+                        value={selectedData}
+                        onChange={setSelectedData}
+                        size='sm'
+                        className='w-40'
+                        />
 
                         {/* Action Buttons */}
                         <motion.button
@@ -272,42 +287,6 @@ export default function Navbar() {
                         >
                             <Filter className="h-4 w-4" />
                             <span>Filter</span>
-                        </motion.button>
-
-                        <motion.button
-                            onClick={() => setSettingIsOpen((prev) => !prev)}
-                            whileHover={{ scale: 1.1, rotate: 180 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg transition-colors duration-200"
-                        >
-                            <Settings className="h-5 w-5" />
-                        </motion.button>
-
-                        {/* Trash for all the application*/}
-                        <motion.button
-                            onClick={() => router.push(`/app/${project?.url}/trash`)}
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg transition-colors duration-200"
-                        >
-                            <Trash2 className="h-5 w-5 text-red-600" />
-                        </motion.button>
-
-                        {/* Theme changing option */}
-                        <motion.button
-
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg transition-colors duration-200"
-                        >
-                            <Palette className="h-5 w-5 text-blue-900" />
-                        </motion.button>
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50/50 rounded-lg transition-colors duration-200"
-                        >
-                            <User className="h-5 w-5" />
                         </motion.button>
                     </div>
                 </div>

@@ -246,6 +246,7 @@ const AppNavbar = () => {
                                 className="hidden xl:flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all border border-gray-200"
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
+                                onClick={() => router.push(`/app/projects/${selectedProject?.slug}`)}
                             >
                                 <ExternalLink className="w-4 h-4" />
                                 <span>Open Workspace</span>
