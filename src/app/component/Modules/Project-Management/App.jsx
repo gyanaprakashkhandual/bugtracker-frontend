@@ -1,3 +1,4 @@
+'use client';
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -15,112 +16,123 @@ import {
   FiSettings,
   FiFilter,
   FiExternalLink,
-  FiBarChart
+  FiBarChart,
+  FiLogIn
 } from 'react-icons/fi';
 
 const BASE_URL = 'http://localhost:5000/api/v1/project';
 
 // API Service
 const apiService = {
-  getHeaders() {
-    const token = localStorage.getItem('token');
+  getHeaders(token) {
     return {
       'Content-Type': 'application/json',
       'Authorization': `Bearer ${token}`
     };
   },
 
-  async getAllProjects(params = {}) {
+  async getAllProjects(token, params = {}) {
     const queryString = new URLSearchParams(params).toString();
     const response = await fetch(`${BASE_URL}?${queryString}`, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(token)
     });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   },
 
-  async getMyProjects(params = {}) {
+  async getMyProjects(token, params = {}) {
     const queryString = new URLSearchParams(params).toString();
     const response = await fetch(`${BASE_URL}/my-projects?${queryString}`, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(token)
     });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   },
 
-  async getProjectById(id) {
+  async getProjectById(token, id) {
     const response = await fetch(`${BASE_URL}/${id}`, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(token)
     });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   },
 
-  async getProjectBySlug(slug) {
+  async getProjectBySlug(token, slug) {
     const response = await fetch(`${BASE_URL}/slug/${slug}`, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(token)
     });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   },
 
-  async createProject(data) {
+  async createProject(token, data) {
     const response = await fetch(`${BASE_URL}`, {
       method: 'POST',
-      headers: this.getHeaders(),
+      headers: this.getHeaders(token),
       body: JSON.stringify(data)
     });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   },
 
-  async updateProject(id, data) {
+  async updateProject(token, id, data) {
     const response = await fetch(`${BASE_URL}/${id}`, {
       method: 'PUT',
-      headers: this.getHeaders(),
+      headers: this.getHeaders(token),
       body: JSON.stringify(data)
     });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   },
 
-  async deleteProject(id) {
+  async deleteProject(token, id) {
     const response = await fetch(`${BASE_URL}/${id}`, {
       method: 'DELETE',
-      headers: this.getHeaders()
+      headers: this.getHeaders(token)
     });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   },
 
-  async getProjectStats() {
+  async getProjectStats(token) {
     const response = await fetch(`${BASE_URL}/stats`, {
-      headers: this.getHeaders()
+      headers: this.getHeaders(token)
     });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   },
 
-  async adminCreateProject(data) {
+  async adminCreateProject(token, data) {
     const response = await fetch(`${BASE_URL}/admin/create`, {
       method: 'POST',
-      headers: this.getHeaders(),
+      headers: this.getHeaders(token),
       body: JSON.stringify(data)
     });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   },
 
-  async adminUpdateProject(id, data) {
+  async adminUpdateProject(token, id, data) {
     const response = await fetch(`${BASE_URL}/admin/${id}`, {
       method: 'PUT',
-      headers: this.getHeaders(),
+      headers: this.getHeaders(token),
       body: JSON.stringify(data)
     });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   },
 
-  async adminDeleteProject(id) {
+  async adminDeleteProject(token, id) {
     const response = await fetch(`${BASE_URL}/admin/${id}`, {
       method: 'DELETE',
-      headers: this.getHeaders()
+      headers: this.getHeaders(token)
     });
+    if (!response.ok) throw new Error(`HTTP ${response.status}`);
     return response.json();
   }
 };
 
-// GitHub Style Dropdown Component
+// Dropdown Component
 const Dropdown = ({ trigger, children, className = '', isOpen, onToggle, onClose }) => {
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -145,7 +157,7 @@ const Dropdown = ({ trigger, children, className = '', isOpen, onToggle, onClose
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: -10 }}
             transition={{ duration: 0.15 }}
-            className={`absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 border border-gray-200 focus:outline-none ${className}`}
+            className={`absolute right-0 z-50 mt-2 w-56 origin-top-right rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 border border-gray-200 ${className}`}
           >
             <div className="py-1">{children}</div>
           </motion.div>
@@ -163,7 +175,6 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-md' }) => {
     } else {
       document.body.style.overflow = 'unset';
     }
-
     return () => {
       document.body.style.overflow = 'unset';
     };
@@ -178,23 +189,19 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-md' }) => {
           initial={{ opacity: 0 }}
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
-          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm transition-opacity"
+          className="fixed inset-0 bg-black bg-opacity-50 backdrop-blur-sm"
           onClick={onClose}
         />
         <motion.div
           initial={{ opacity: 0, scale: 0.95, y: 20 }}
           animate={{ opacity: 1, scale: 1, y: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: 20 }}
-          transition={{ duration: 0.2 }}
-          className={`inline-block w-full ${maxWidth} transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl transition-all sm:my-8 sm:align-middle border border-gray-200`}
+          className={`inline-block w-full ${maxWidth} transform overflow-hidden rounded-lg bg-white text-left align-bottom shadow-xl sm:my-8 sm:align-middle border border-gray-200`}
         >
           <div className="bg-white px-6 pt-6 pb-4 sm:p-6 sm:pb-4">
             <div className="flex items-center justify-between mb-6 border-b border-gray-200 pb-4">
               <h3 className="text-xl font-semibold text-gray-900">{title}</h3>
-              <button
-                onClick={onClose}
-                className="text-gray-400 hover:text-gray-600 transition-colors p-1 hover:bg-gray-100 rounded-full"
-              >
+              <button onClick={onClose} className="text-gray-400 hover:text-gray-600 p-1 hover:bg-gray-100 rounded-full">
                 <FiX size={20} />
               </button>
             </div>
@@ -209,7 +216,6 @@ const Modal = ({ isOpen, onClose, title, children, maxWidth = 'max-w-md' }) => {
 // Project Card Component
 const ProjectCard = ({ project, onEdit, onDelete, onView, currentUser }) => {
   const [dropdownOpen, setDropdownOpen] = useState(false);
-
   const isOwner = project.user._id === currentUser?.id;
   const isAdmin = currentUser?.role === 'admin';
 
@@ -218,7 +224,7 @@ const ProjectCard = ({ project, onEdit, onDelete, onView, currentUser }) => {
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, y: -20 }}
-      className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:border-gray-300 transition-all duration-200"
+      className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 hover:shadow-lg hover:border-gray-300 transition-all"
     >
       <div className="flex items-start justify-between mb-4">
         <div className="flex-1 min-w-0">
@@ -244,16 +250,13 @@ const ProjectCard = ({ project, onEdit, onDelete, onView, currentUser }) => {
           onToggle={() => setDropdownOpen(!dropdownOpen)}
           onClose={() => setDropdownOpen(false)}
           trigger={
-            <button className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full transition-colors">
+            <button className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-full">
               <FiMoreHorizontal size={16} />
             </button>
           }
         >
           <button
-            onClick={() => {
-              onView(project);
-              setDropdownOpen(false);
-            }}
+            onClick={() => { onView(project); setDropdownOpen(false); }}
             className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
           >
             <FiEye size={14} className="mr-3 text-gray-400" />
@@ -262,10 +265,7 @@ const ProjectCard = ({ project, onEdit, onDelete, onView, currentUser }) => {
           {(isOwner || isAdmin) && (
             <>
               <button
-                onClick={() => {
-                  onEdit(project);
-                  setDropdownOpen(false);
-                }}
+                onClick={() => { onEdit(project); setDropdownOpen(false); }}
                 className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50"
               >
                 <FiEdit2 size={14} className="mr-3 text-gray-400" />
@@ -273,10 +273,7 @@ const ProjectCard = ({ project, onEdit, onDelete, onView, currentUser }) => {
               </button>
               <hr className="my-1 border-gray-100" />
               <button
-                onClick={() => {
-                  onDelete(project);
-                  setDropdownOpen(false);
-                }}
+                onClick={() => { onDelete(project); setDropdownOpen(false); }}
                 className="flex items-center w-full px-4 py-2 text-sm text-red-600 hover:bg-red-50"
               >
                 <FiTrash2 size={14} className="mr-3 text-red-500" />
@@ -292,7 +289,7 @@ const ProjectCard = ({ project, onEdit, onDelete, onView, currentUser }) => {
         </span>
         <button
           onClick={() => onView(project)}
-          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1 hover:bg-blue-50 px-2 py-1 rounded transition-colors"
+          className="text-blue-600 hover:text-blue-800 text-sm font-medium flex items-center space-x-1 hover:bg-blue-50 px-2 py-1 rounded"
         >
           <span>View</span>
           <FiExternalLink size={12} />
@@ -332,11 +329,13 @@ const StatsCard = ({ title, value, icon: Icon, color = 'blue' }) => {
 
 // Main Component
 export default function ProjectConfiguration() {
+  const [token, setToken] = useState('');
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [projects, setProjects] = useState([]);
   const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  // Initialize current user
+  const [loading, setLoading] = useState(false);
   const [currentUser, setCurrentUser] = useState(null);
+  const [error, setError] = useState('');
 
   // UI States
   const [searchTerm, setSearchTerm] = useState('');
@@ -361,25 +360,45 @@ export default function ProjectConfiguration() {
   const [viewDropdownOpen, setViewDropdownOpen] = useState(false);
   const [filterDropdownOpen, setFilterDropdownOpen] = useState(false);
 
-  // Initialize and fetch data
+  // Initialize token and user
   useEffect(() => {
-    fetchProjects();
-    fetchStats();
-    fetchCurrentUser();
-  }, [view, currentPage, searchTerm]);
+    const savedToken = window.localStorage?.getItem('token');
+    if (savedToken) {
+      setToken(savedToken);
+      setIsAuthenticated(true);
+      fetchUserInfo(savedToken);
+    }
+  }, []);
 
-  const fetchCurrentUser = () => {
-    // In a real app, you would decode the JWT token or make an API call to get user info
-    // For now, setting a placeholder - replace with actual user fetching logic
-    setCurrentUser({
-      id: 'current_user_id',
-      role: 'user', // or 'admin'
-      name: 'Current User'
-    });
+  // Fetch data when authenticated
+  useEffect(() => {
+    if (isAuthenticated && token) {
+      fetchProjects();
+      fetchStats();
+    }
+  }, [isAuthenticated, token, view, currentPage, searchTerm]);
+
+  const fetchUserInfo = async (authToken) => {
+    try {
+      const response = await fetch('http://localhost:5000/api/v1/auth/me', {
+        headers: { 'Authorization': `Bearer ${authToken}` }
+      });
+      if (response.ok) {
+        const data = await response.json();
+        setCurrentUser({
+          id: data.user._id,
+          role: data.user.role,
+          name: data.user.name
+        });
+      }
+    } catch (err) {
+      console.error('Failed to fetch user info:', err);
+    }
   };
 
   const fetchProjects = async () => {
     setLoading(true);
+    setError('');
     try {
       const params = {
         page: currentPage,
@@ -388,18 +407,15 @@ export default function ProjectConfiguration() {
       };
 
       const response = view === 'my'
-        ? await apiService.getMyProjects(params)
-        : await apiService.getAllProjects(params);
+        ? await apiService.getMyProjects(token, params)
+        : await apiService.getAllProjects(token, params);
 
       if (response.success && response.projects) {
         setProjects(response.projects);
         setTotalPages(response.pagination?.totalPages || 1);
-      } else {
-        console.error('Failed to fetch projects:', response.message);
-        setProjects([]);
       }
-    } catch (error) {
-      console.error('Error fetching projects:', error);
+    } catch (err) {
+      setError(`Failed to fetch projects: ${err.message}`);
       setProjects([]);
     } finally {
       setLoading(false);
@@ -408,83 +424,79 @@ export default function ProjectConfiguration() {
 
   const fetchStats = async () => {
     try {
-      const response = await apiService.getProjectStats();
+      const response = await apiService.getProjectStats(token);
       if (response.success && response.stats) {
         setStats(response.stats);
-      } else {
-        console.error('Failed to fetch stats:', response.message);
       }
-    } catch (error) {
-      console.error('Error fetching stats:', error);
+    } catch (err) {
+      console.error('Error fetching stats:', err);
+    }
+  };
+
+  const handleLogin = (e) => {
+    e.preventDefault();
+    if (token.trim()) {
+      window.localStorage?.setItem('token', token);
+      setIsAuthenticated(true);
+      fetchUserInfo(token);
     }
   };
 
   const handleCreateProject = async (e) => {
     e.preventDefault();
-
     try {
       const response = currentUser?.role === 'admin'
-        ? await apiService.adminCreateProject(formData)
-        : await apiService.createProject(formData);
+        ? await apiService.adminCreateProject(token, formData)
+        : await apiService.createProject(token, formData);
 
-      if (response.success && response.project) {
+      if (response.success) {
         setCreateModalOpen(false);
         setFormData({ projectName: '', projectDesc: '', userId: '' });
-        // Refresh the projects list and stats
         await fetchProjects();
         await fetchStats();
       } else {
-        console.error('Error creating project:', response.message);
-        alert('Failed to create project: ' + (response.message || 'Unknown error'));
+        alert('Failed to create project: ' + response.message);
       }
-    } catch (error) {
-      console.error('Error creating project:', error);
-      alert('Failed to create project. Please try again.');
+    } catch (err) {
+      alert('Error: ' + err.message);
     }
   };
 
   const handleEditProject = async (e) => {
     e.preventDefault();
-
     try {
       const response = currentUser?.role === 'admin'
-        ? await apiService.adminUpdateProject(selectedProject._id, formData)
-        : await apiService.updateProject(selectedProject._id, formData);
+        ? await apiService.adminUpdateProject(token, selectedProject._id, formData)
+        : await apiService.updateProject(token, selectedProject._id, formData);
 
-      if (response.success && response.project) {
+      if (response.success) {
         setEditModalOpen(false);
         setSelectedProject(null);
         setFormData({ projectName: '', projectDesc: '', userId: '' });
-        // Refresh the projects list
         await fetchProjects();
       } else {
-        console.error('Error updating project:', response.message);
-        alert('Failed to update project: ' + (response.message || 'Unknown error'));
+        alert('Failed to update project: ' + response.message);
       }
-    } catch (error) {
-      console.error('Error updating project:', error);
-      alert('Failed to update project. Please try again.');
+    } catch (err) {
+      alert('Error: ' + err.message);
     }
   };
 
   const handleDeleteProject = async (project) => {
-    if (window.confirm(`Are you sure you want to delete "${project.projectName}"? This action cannot be undone.`)) {
+    if (window.confirm(`Delete "${project.projectName}"?`)) {
       try {
         const response = currentUser?.role === 'admin'
-          ? await apiService.adminDeleteProject(project._id)
-          : await apiService.deleteProject(project._id);
+          ? await apiService.adminDeleteProject(token, project._id)
+          : await apiService.deleteProject(token, project._id);
 
         if (response.success) {
-          // Refresh the projects list and stats
           await fetchProjects();
           await fetchStats();
         } else {
-          console.error('Error deleting project:', response.message);
-          alert('Failed to delete project: ' + (response.message || 'Unknown error'));
+          alert('Failed to delete project: ' + response.message);
         }
-      } catch (error) {
-        console.error('Error deleting project:', error);
-        alert('Failed to delete project. Please try again.');
+      } catch (err) {
+        alert('Error: ' + err.message);
       }
     }
   };
@@ -504,112 +516,78 @@ export default function ProjectConfiguration() {
     setViewModalOpen(true);
   };
 
-  const filteredProjects = projects.filter(project => {
-    if (!project) return false;
-
-    const matchesSearch = project.projectName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.projectDesc?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      project.user?.name?.toLowerCase().includes(searchTerm.toLowerCase());
-
-    if (view === 'my') {
-      return matchesSearch && project.user?._id === currentUser?.id;
-    }
-
-    return matchesSearch;
-  });
-
-  // Add error boundary for API calls
-  const handleApiError = (error, action) => {
-    console.error(`Error ${action}:`, error);
-    if (error.message?.includes('401') || error.message?.includes('unauthorized')) {
-      alert('Your session has expired. Please login again.');
-      // In a real app, redirect to login page
-      // window.location.href = '/login';
-    } else if (error.message?.includes('403') || error.message?.includes('forbidden')) {
-      alert('You do not have permission to perform this action.');
-    } else if (error.message?.includes('404')) {
-      alert('The requested resource was not found.');
-    } else if (error.message?.includes('500')) {
-      alert('Server error. Please try again later.');
-    } else {
-      alert(`Failed to ${action}. Please check your connection and try again.`);
-    }
-  };
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center p-4">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-lg shadow-xl p-8 max-w-md w-full"
+        >
+          <div className="text-center mb-8">
+            <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-100 rounded-full mb-4">
+              <FiLogIn size={32} className="text-blue-600" />
+            </div>
+            <h2 className="text-2xl font-bold text-gray-900 mb-2">Welcome Back</h2>
+            <p className="text-gray-600">Enter your authentication token to continue</p>
+          </div>
+          <form onSubmit={handleLogin} className="space-y-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Authentication Token
+              </label>
+              <input
+                type="text"
+                value={token}
+                onChange={(e) => setToken(e.target.value)}
+                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="Paste your token here"
+                required
+              />
+            </div>
+            <button
+              type="submit"
+              className="w-full flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              <FiLogIn size={18} />
+              <span>Sign In</span>
+            </button>
+          </form>
+        </motion.div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
+        <motion.div initial={{ opacity: 0, y: -20 }} animate={{ opacity: 1, y: 0 }} className="mb-8">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <h1 className="text-3xl font-bold text-gray-900 mb-2">
-                Project Configuration
-              </h1>
-              <p className="text-gray-600">
-                Manage and organize your projects efficiently
-              </p>
+              <h1 className="text-3xl font-bold text-gray-900 mb-2">Project Configuration</h1>
+              <p className="text-gray-600">Manage and organize your projects</p>
             </div>
-            <div className="mt-4 sm:mt-0">
-              <button
-                onClick={() => setCreateModalOpen(true)}
-                className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
-              >
-                <FiPlus size={20} />
-                <span>New Project</span>
-              </button>
-            </div>
+            <button
+              onClick={() => setCreateModalOpen(true)}
+              className="flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm mt-4 sm:mt-0"
+            >
+              <FiPlus size={20} />
+              <span>New Project</span>
+            </button>
           </div>
         </motion.div>
 
-        {/* Stats Cards */}
         {stats && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
-          >
-            <StatsCard
-              title="Total Projects"
-              value={stats.totalProjects || 0}
-              icon={FiBarChart}
-              color="blue"
-            />
-            <StatsCard
-              title="Recent Projects"
-              value={stats.recentProjectsCount || 0}
-              icon={FiCalendar}
-              color="green"
-            />
-            <StatsCard
-              title="Active Users"
-              value={stats.projectsByUser?.length || 0}
-              icon={FiUsers}
-              color="purple"
-            />
-            <StatsCard
-              title="This Month"
-              value={stats.monthlyProjectsCount || stats.recentProjectsCount || 0}
-              icon={FiSettings}
-              color="orange"
-            />
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            <StatsCard title="Total Projects" value={stats.totalProjects || 0} icon={FiBarChart} color="blue" />
+            <StatsCard title="Recent Projects" value={stats.recentProjectsCount || 0} icon={FiCalendar} color="green" />
+            <StatsCard title="Active Users" value={stats.projectsByUser?.length || 0} icon={FiUsers} color="purple" />
+            <StatsCard title="This Month" value={stats.recentProjectsCount || 0} icon={FiSettings} color="orange" />
           </motion.div>
         )}
 
-        {/* Controls */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8"
-        >
+        <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-8">
           <div className="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-
-            {/* Search */}
             <div className="flex-1 max-w-md">
               <div className="relative">
                 <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
@@ -618,78 +596,28 @@ export default function ProjectConfiguration() {
                   placeholder="Search projects..."
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
-                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
             </div>
-
             <div className="flex items-center space-x-3">
-
-              {/* View Toggle */}
-              <Dropdown
-                isOpen={viewDropdownOpen}
-                onToggle={() => setViewDropdownOpen(!viewDropdownOpen)}
-                onClose={() => setViewDropdownOpen(false)}
-                trigger={
-                  <button className="flex items-center space-x-2 px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 transition-colors border border-gray-200">
-                    <span>{view === 'all' ? 'All Projects' : 'My Projects'}</span>
-                    <FiChevronDown size={16} />
-                  </button>
-                }
+              <button
+                onClick={() => { setView(view === 'all' ? 'my' : 'all'); setCurrentPage(1); }}
+                className="flex items-center space-x-2 px-4 py-2 bg-gray-50 text-gray-700 rounded-lg hover:bg-gray-100 border border-gray-200"
               >
-                <button
-                  onClick={() => {
-                    setView('all');
-                    setViewDropdownOpen(false);
-                    setCurrentPage(1);
-                  }}
-                  className={`flex items-center w-full px-4 py-2 text-sm hover:bg-gray-50 ${view === 'all' ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
-                    }`}
-                >
-                  <FiBarChart size={14} className="mr-3" />
-                  All Projects
-                </button>
-                <button
-                  onClick={() => {
-                    setView('my');
-                    setViewDropdownOpen(false);
-                    setCurrentPage(1);
-                  }}
-                  className={`flex items-center w-full px-4 py-2 text-sm hover:bg-gray-50 ${view === 'my' ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
-                    }`}
-                >
-                  <FiUser size={14} className="mr-3" />
-                  My Projects
-                </button>
-              </Dropdown>
-
-              {/* Filter */}
-              <Dropdown
-                isOpen={filterDropdownOpen}
-                onToggle={() => setFilterDropdownOpen(!filterDropdownOpen)}
-                onClose={() => setFilterDropdownOpen(false)}
-                trigger={
-                  <button className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                    <FiFilter size={16} />
-                    <span>Filter</span>
-                    <FiChevronDown size={16} />
-                  </button>
-                }
-              >
-                <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                  <FiCalendar size={14} className="mr-3 text-gray-400" />
-                  Recent First
-                </button>
-                <button className="flex items-center w-full px-4 py-2 text-sm text-gray-700 hover:bg-gray-50">
-                  <FiUser size={14} className="mr-3 text-gray-400" />
-                  By Owner
-                </button>
-              </Dropdown>
+                <span>{view === 'all' ? 'All Projects' : 'My Projects'}</span>
+                <FiChevronDown size={16} />
+              </button>
             </div>
           </div>
         </motion.div>
 
-        {/* Projects Grid */}
+        {error && (
+          <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg mb-4">
+            {error}
+          </div>
+        )}
+
         {loading ? (
           <div className="flex flex-col items-center justify-center py-16">
             <motion.div
@@ -699,297 +627,166 @@ export default function ProjectConfiguration() {
             />
             <p className="text-gray-600">Loading projects...</p>
           </div>
-        ) : projects.length === 0 && !searchTerm ? (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-16"
-          >
-            <div className="text-gray-300 mb-6">
-              <FiSettings size={64} className="mx-auto" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              No projects found
-            </h3>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              Get started by creating your first project and begin managing your work efficiently.
-            </p>
-            <button
-              onClick={() => setCreateModalOpen(true)}
-              className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
-            >
-              <FiPlus size={18} />
-              <span>Create Your First Project</span>
-            </button>
-          </motion.div>
-        ) : filteredProjects.length > 0 ? (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8"
-          >
-            <AnimatePresence>
-              {filteredProjects.map((project) => (
-                <ProjectCard
-                  key={project._id}
-                  project={project}
-                  currentUser={currentUser}
-                  onEdit={openEditModal}
-                  onDelete={handleDeleteProject}
-                  onView={openViewModal}
-                />
-              ))}
-            </AnimatePresence>
+        ) : projects.length > 0 ? (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+            {projects.map((project) => (
+              <ProjectCard
+                key={project._id}
+                project={project}
+                currentUser={currentUser}
+                onEdit={openEditModal}
+                onDelete={handleDeleteProject}
+                onView={openViewModal}
+              />
+            ))}
           </motion.div>
         ) : (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="text-center py-16"
-          >
-            <div className="text-gray-300 mb-6">
-              <FiSearch size={64} className="mx-auto" />
-            </div>
-            <h3 className="text-xl font-semibold text-gray-900 mb-3">
-              No projects match your search
-            </h3>
-            <p className="text-gray-600 mb-6 max-w-md mx-auto">
-              No projects match "{searchTerm}". Try adjusting your search terms or create a new project.
-            </p>
-            <div className="flex flex-col sm:flex-row items-center justify-center space-y-2 sm:space-y-0 sm:space-x-4">
-              <button
-                onClick={() => setSearchTerm('')}
-                className="inline-flex items-center space-x-2 px-4 py-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 transition-colors"
-              >
-                <span>Clear Search</span>
-              </button>
-              <button
-                onClick={() => setCreateModalOpen(true)}
-                className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm hover:shadow-md"
-              >
-                <FiPlus size={18} />
-                <span>Create New Project</span>
-              </button>
-            </div>
-          </motion.div>
+          <div className="text-center py-16">
+            <FiSettings size={64} className="mx-auto text-gray-300 mb-6" />
+            <h3 className="text-xl font-semibold text-gray-900 mb-3">No projects found</h3>
+            <p className="text-gray-600 mb-6">Create your first project to get started</p>
+            <button
+              onClick={() => setCreateModalOpen(true)}
+              className="inline-flex items-center space-x-2 px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+            >
+              <FiPlus size={18} />
+              <span>Create Project</span>
+            </button>
+          </div>
         )}
 
-        {/* Pagination */}
-        {totalPages > 1 && !searchTerm && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="flex items-center justify-center space-x-2 mb-8"
-          >
+        {totalPages > 1 && (
+          <div className="flex justify-center space-x-2">
             <button
-              onClick={() => setCurrentPage(currentPage - 1)}
+              onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
               disabled={currentPage === 1}
-              className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
             >
               Previous
             </button>
-
-            {Array.from({ length: Math.min(totalPages, 5) }, (_, i) => {
-              let pageNum;
-              if (totalPages <= 5) {
-                pageNum = i + 1;
-              } else if (currentPage <= 3) {
-                pageNum = i + 1;
-              } else if (currentPage >= totalPages - 2) {
-                pageNum = totalPages - 4 + i;
-              } else {
-                pageNum = currentPage - 2 + i;
-              }
-
-              return (
-                <button
-                  key={pageNum}
-                  onClick={() => setCurrentPage(pageNum)}
-                  className={`px-4 py-2 text-sm border rounded-lg transition-colors ${pageNum === currentPage
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'border-gray-300 hover:bg-gray-50'
-                    }`}
-                >
-                  {pageNum}
-                </button>
-              );
-            })}
-
+            <span className="px-4 py-2">{currentPage} / {totalPages}</span>
             <button
-              onClick={() => setCurrentPage(currentPage + 1)}
+              onClick={() => setCurrentPage(p => Math.min(totalPages, p + 1))}
               disabled={currentPage === totalPages}
-              className="px-4 py-2 text-sm border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="px-4 py-2 border rounded-lg hover:bg-gray-50 disabled:opacity-50"
             >
               Next
             </button>
-          </motion.div>
+          </div>
         )}
 
-        {/* Create Project Modal */}
         <Modal
           isOpen={createModalOpen}
-          onClose={() => {
-            setCreateModalOpen(false);
-            setFormData({ projectName: '', projectDesc: '', userId: '' });
-          }}
+          onClose={() => { setCreateModalOpen(false); setFormData({ projectName: '', projectDesc: '', userId: '' }); }}
           title="Create New Project"
           maxWidth="max-w-lg"
         >
           <form onSubmit={handleCreateProject}>
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Project Name *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Project Name *</label>
                 <input
                   type="text"
                   required
                   value={formData.projectName}
                   onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  placeholder="Enter project name"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
                   rows={4}
                   value={formData.projectDesc}
                   onChange={(e) => setFormData({ ...formData, projectDesc: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                  placeholder="Describe your project..."
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               {currentUser?.role === 'admin' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Assign to User (Optional)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Assign to User (Optional)</label>
                   <input
                     type="text"
                     value={formData.userId}
                     onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    placeholder="User ID (leave empty to assign to yourself)"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               )}
             </div>
             <div className="flex items-center justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={() => {
-                  setCreateModalOpen(false);
-                  setFormData({ projectName: '', projectDesc: '', userId: '' });
-                }}
-                className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
+              <button type="button" onClick={() => setCreateModalOpen(false)} className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
                 Cancel
               </button>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
+              <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                 Create Project
               </button>
             </div>
           </form>
         </Modal>
 
-        {/* Edit Project Modal */}
         <Modal
           isOpen={editModalOpen}
-          onClose={() => {
-            setEditModalOpen(false);
-            setSelectedProject(null);
-            setFormData({ projectName: '', projectDesc: '', userId: '' });
-          }}
+          onClose={() => { setEditModalOpen(false); setSelectedProject(null); }}
           title="Edit Project"
           maxWidth="max-w-lg"
         >
           <form onSubmit={handleEditProject}>
             <div className="space-y-6">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Project Name *
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Project Name *</label>
                 <input
                   type="text"
                   required
                   value={formData.projectName}
                   onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Description
-                </label>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Description</label>
                 <textarea
                   rows={4}
                   value={formData.projectDesc}
                   onChange={(e) => setFormData({ ...formData, projectDesc: e.target.value })}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
               {currentUser?.role === 'admin' && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Reassign to User (Optional)
-                  </label>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">Reassign to User (Optional)</label>
                   <input
                     type="text"
                     value={formData.userId}
                     onChange={(e) => setFormData({ ...formData, userId: e.target.value })}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
-                    placeholder="User ID"
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   />
                 </div>
               )}
             </div>
             <div className="flex items-center justify-end space-x-3 mt-8 pt-6 border-t border-gray-200">
-              <button
-                type="button"
-                onClick={() => {
-                  setEditModalOpen(false);
-                  setSelectedProject(null);
-                  setFormData({ projectName: '', projectDesc: '', userId: '' });
-                }}
-                className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-              >
+              <button type="button" onClick={() => { setEditModalOpen(false); setSelectedProject(null); }} className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
                 Cancel
               </button>
-              <button
-                type="submit"
-                className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-              >
+              <button type="submit" className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
                 Update Project
               </button>
             </div>
           </form>
         </Modal>
 
-        {/* View Project Modal */}
         <Modal
           isOpen={viewModalOpen}
-          onClose={() => {
-            setViewModalOpen(false);
-            setSelectedProject(null);
-          }}
+          onClose={() => { setViewModalOpen(false); setSelectedProject(null); }}
           title="Project Details"
           maxWidth="max-w-3xl"
         >
           {selectedProject && (
             <div className="space-y-6">
-              {/* Project Header */}
               <div className="bg-gradient-to-br from-blue-50 to-indigo-100 rounded-lg p-6 border border-blue-200">
                 <div className="flex items-start justify-between mb-4">
                   <div className="flex-1">
-                    <h2 className="text-2xl font-bold text-gray-900 mb-3">
-                      {selectedProject.projectName}
-                    </h2>
+                    <h2 className="text-2xl font-bold text-gray-900 mb-3">{selectedProject.projectName}</h2>
                     <div className="flex flex-wrap items-center gap-4 text-sm text-gray-600">
                       <div className="flex items-center space-x-2 bg-white px-3 py-1 rounded-full border border-gray-200">
                         <FiUser size={14} />
@@ -1001,114 +798,84 @@ export default function ProjectConfiguration() {
                       </div>
                     </div>
                   </div>
-                  <span className="px-4 py-2 bg-blue-600 text-white text-sm rounded-full font-medium shadow-sm">
-                    {selectedProject.slug}
-                  </span>
+                  <span className="px-4 py-2 bg-blue-600 text-white text-sm rounded-full font-medium">{selectedProject.slug}</span>
                 </div>
               </div>
 
-              {/* Project Details Grid */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                {/* Description */}
                 <div className="lg:col-span-2">
                   <h3 className="text-lg font-semibold text-gray-900 mb-3 flex items-center">
                     <FiSettings className="mr-2" size={20} />
                     Project Description
                   </h3>
                   <div className="bg-gray-50 rounded-lg p-4 border border-gray-200">
-                    <p className="text-gray-700 whitespace-pre-wrap leading-relaxed">
-                      {selectedProject.projectDesc || 'No description provided.'}
-                    </p>
+                    <p className="text-gray-700 whitespace-pre-wrap">{selectedProject.projectDesc || 'No description provided.'}</p>
                   </div>
                 </div>
 
-                {/* Owner Information */}
                 <div className="bg-white rounded-lg border border-gray-200 p-5">
                   <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
                     <FiUser className="mr-2" size={18} />
                     Owner Information
                   </h4>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
                       <span className="text-gray-600 font-medium">Name:</span>
                       <span className="text-gray-900 font-semibold">{selectedProject.user.name}</span>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
                       <span className="text-gray-600 font-medium">Email:</span>
                       <span className="text-gray-900">{selectedProject.user.email}</span>
                     </div>
                     <div className="flex justify-between items-center py-2">
                       <span className="text-gray-600 font-medium">User ID:</span>
-                      <span className="text-gray-900 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                        {selectedProject.user._id}
-                      </span>
+                      <span className="text-gray-900 font-mono text-sm bg-gray-100 px-2 py-1 rounded">{selectedProject.user._id}</span>
                     </div>
                   </div>
                 </div>
 
-                {/* Project Information */}
                 <div className="bg-white rounded-lg border border-gray-200 p-5">
                   <h4 className="font-semibold text-gray-900 mb-4 flex items-center">
                     <FiBarChart className="mr-2" size={18} />
                     Project Information
                   </h4>
                   <div className="space-y-3">
-                    <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
                       <span className="text-gray-600 font-medium">Project ID:</span>
-                      <span className="text-gray-900 font-mono text-sm bg-gray-100 px-2 py-1 rounded">
-                        {selectedProject._id}
-                      </span>
+                      <span className="text-gray-900 font-mono text-sm bg-gray-100 px-2 py-1 rounded">{selectedProject._id}</span>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
                       <span className="text-gray-600 font-medium">Slug:</span>
                       <span className="text-blue-600 font-medium">{selectedProject.slug}</span>
                     </div>
-                    <div className="flex justify-between items-center py-2 border-b border-gray-100 last:border-b-0">
+                    <div className="flex justify-between items-center py-2 border-b border-gray-100">
                       <span className="text-gray-600 font-medium">Created:</span>
-                      <span className="text-gray-900">
-                        {new Date(selectedProject.createdAt).toLocaleDateString()}
-                      </span>
+                      <span className="text-gray-900">{new Date(selectedProject.createdAt).toLocaleDateString()}</span>
                     </div>
                     <div className="flex justify-between items-center py-2">
                       <span className="text-gray-600 font-medium">Last Updated:</span>
-                      <span className="text-gray-900">
-                        {new Date(selectedProject.updatedAt || selectedProject.createdAt).toLocaleDateString()}
-                      </span>
+                      <span className="text-gray-900">{new Date(selectedProject.updatedAt || selectedProject.createdAt).toLocaleDateString()}</span>
                     </div>
                   </div>
                 </div>
               </div>
 
-              {/* Action Buttons */}
               <div className="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
-                <button
-                  onClick={() => {
-                    setViewModalOpen(false);
-                    setSelectedProject(null);
-                  }}
-                  className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                >
+                <button onClick={() => { setViewModalOpen(false); setSelectedProject(null); }} className="px-6 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200">
                   Close
                 </button>
                 {(selectedProject.user._id === currentUser?.id || currentUser?.role === 'admin') && (
                   <>
                     <button
-                      onClick={() => {
-                        setViewModalOpen(false);
-                        openEditModal(selectedProject);
-                      }}
-                      className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      onClick={() => { setViewModalOpen(false); openEditModal(selectedProject); }}
+                      className="flex items-center space-x-2 px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
                     >
                       <FiEdit2 size={16} />
                       <span>Edit</span>
                     </button>
                     <button
-                      onClick={() => {
-                        setViewModalOpen(false);
-                        handleDeleteProject(selectedProject);
-                        setSelectedProject(null);
-                      }}
-                      className="flex items-center space-x-2 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
+                      onClick={() => { setViewModalOpen(false); handleDeleteProject(selectedProject); }}
+                      className="flex items-center space-x-2 px-6 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700"
                     >
                       <FiTrash2 size={16} />
                       <span>Delete</span>
@@ -1119,45 +886,6 @@ export default function ProjectConfiguration() {
             </div>
           )}
         </Modal>
-
-        {/* Mobile Bottom Navigation */}
-        <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 sm:hidden shadow-lg">
-          <div className="flex items-center justify-around">
-            <button
-              onClick={() => setView('all')}
-              className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${view === 'all' ? 'text-blue-600 bg-blue-50' : 'text-gray-600'
-                }`}
-            >
-              <FiBarChart size={20} />
-              <span className="text-xs font-medium">All</span>
-            </button>
-            <button
-              onClick={() => setView('my')}
-              className={`flex flex-col items-center space-y-1 px-3 py-2 rounded-lg transition-colors ${view === 'my' ? 'text-blue-600 bg-blue-50' : 'text-gray-600'
-                }`}
-            >
-              <FiUser size={20} />
-              <span className="text-xs font-medium">Mine</span>
-            </button>
-            <button
-              onClick={() => setCreateModalOpen(true)}
-              className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg text-blue-600 bg-blue-50 shadow-sm"
-            >
-              <FiPlus size={22} />
-              <span className="text-xs font-medium">Add</span>
-            </button>
-            <button
-              onClick={() => setSearchTerm('')}
-              className="flex flex-col items-center space-y-1 px-3 py-2 rounded-lg text-gray-600"
-            >
-              <FiSearch size={20} />
-              <span className="text-xs font-medium">Search</span>
-            </button>
-          </div>
-        </div>
-
-        {/* Mobile padding */}
-        <div className="h-20 sm:hidden" />
       </div>
     </div>
   );
