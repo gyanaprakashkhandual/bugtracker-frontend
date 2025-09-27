@@ -1,6 +1,6 @@
 'use client'
-import AppNavbar from "../component/Navbars/App"
-import ProjectSidebar from "../component/Sidebars/Project"
+import AppNavbar from "../components/Navbars/App"
+import ProjectSidebar from "../components/Sidebars/Project"
 
 
 function Page() {

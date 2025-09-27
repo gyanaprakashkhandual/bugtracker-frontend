@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext, useState, useCallback } from "react";
-import Alert from "../component/utils/Alert";
+import Alert from "../components/utils/Alert";
 
 const AlertContext = createContext();
 

@@ -1,6 +1,6 @@
 "use client";
 import { createContext, useContext, useState, useCallback } from "react";
-import ConfirmModal from "../component/utils/Confirm";
+import ConfirmModal from "../components/utils/Confirm";
 
 const ConfirmContext = createContext();
 
