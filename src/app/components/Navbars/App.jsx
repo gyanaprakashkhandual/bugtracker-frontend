@@ -100,13 +100,71 @@ const UserPanel = () => (
 )
 
 const AppNavbar = () => {
-    const [activeComponent, setActiveComponent] = useState('Dashboard')
+    const [activeComponent, setActiveComponent] = useState('Dashboard');
+    const [user, setUser] = useState(null);
     const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false)
     const [projectName] = useState('My Project')
+    const [loading, setLoading] = useState(false);
+    const [error, setError] = useState(null);
     const { selectedProject } = useProject();
     const router = useRouter();
 
-    
+    const getToken = () => {
+        if (typeof window !== 'undefined') {
+            return localStorage.getItem('token');
+        }
+        return null;
+    };
+
+    // Fetch user data from API
+    const fetchUserData = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const token = getToken();
+
+            if (!token) {
+                setError('No authentication token found. Please login again.');
+                return;
+            }
+
+            const response = await fetch('http://localhost:5000/api/v1/auth/me', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('token');
+                    setError('Session expired. Please login again.');
+                    return;
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.user) {
+                setUser(data.user);
+            } else {
+                setError('Invalid response format from server');
+            }
+
+        } catch (err) {
+            console.error('Error fetching user data:', err);
+            setError(err.message || 'Failed to fetch user data');
+        } finally {
+            setLoading(false);
+        }
+    };
+    useEffect(() => {
+        fetchUserData();
+    }, []);
+
 
     useEffect(() => {
         const savedComponent = localStorage.getItem('activeComponent')
@@ -158,11 +216,16 @@ const AppNavbar = () => {
                         <div className="flex items-center space-x-2 sm:space-x-4 flex-1 min-w-0">
                             {/* Project Info */}
                             <div className="hidden lg:block min-w-0 max-w-xs xl:max-w-md">
-                                <h1 className="text-lg font-semibold text-gray-900 truncate">
-                                    {selectedProject
-                                        ? `${selectedProject.projectName} - ${selectedProject.projectDesc}`
-                                        : "Project Name - Project Description"}
-                                </h1>
+                                {!selectedProject ? (
+                                    <div className="animate-pulse flex space-x-2">
+                                        <div className="h-5 bg-gray-300 rounded w-32"></div>
+                                        <div className="h-5 bg-gray-300 rounded w-40"></div>
+                                    </div>
+                                ) : (
+                                    <h1 className="text-lg font-semibold text-gray-900 truncate">
+                                        {`${selectedProject.projectName} - ${selectedProject.projectDesc}`}
+                                    </h1>
+                                )}
                             </div>
 
 
@@ -286,7 +349,7 @@ const AppNavbar = () => {
                             {/* User Icon */}
                             <motion.button
                                 onClick={() => handleComponentChange('UserPanel')}
-                                className={`p-2 rounded-lg transition-all ${activeComponent === 'UserPanel'
+                                className={`p-2 bg-gray-100 rounded-lg transition-all flex items-center space-x-2 ${activeComponent === 'UserPanel'
                                     ? 'bg-blue-50 text-blue-700'
                                     : 'text-gray-600 hover:bg-gray-100'
                                     }`}
@@ -294,6 +357,11 @@ const AppNavbar = () => {
                                 whileTap={{ scale: 0.95 }}
                             >
                                 <User className="w-5 h-5" />
+                                {user?.role && (
+                                    <span className="text-xs font-medium hidden sm:inline bg-orange-500 text-white px-2 py-1 rounded">
+                                        {user.role.charAt(0).toUpperCase() + user.role.slice(1).toLowerCase()}
+                                    </span>
+                                )}
                             </motion.button>
                         </div>
                     </div>
