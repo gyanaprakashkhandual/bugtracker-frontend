@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Navbar from '@/app/components/Navbars/Workspace';
+import TestCaseDashboard from '@/app/pages/app/Split';
 
 export default function TokenDebugger() {
   const [token, setToken] = useState('');
@@ -46,8 +47,11 @@ export default function TokenDebugger() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar />
+    <div className="min-h-screen bg-gray-50 ">
+      <div>
+        <Navbar />
+      </div>
+      <TestCaseDashboard/>
     </div>
   );
 }
