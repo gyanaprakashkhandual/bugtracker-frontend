@@ -641,7 +641,7 @@ const TestTypeManagement = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
+            className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop:blur-md shadow-2xl"
           >
             <motion.div
               initial={{ scale: 0.95 }}
@@ -680,7 +680,7 @@ const TestTypeManagement = () => {
                   <textarea
                     value={formData.testTypeDesc}
                     onChange={(e) => setFormData({...formData, testTypeDesc: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full resize-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                     rows={3}
                     placeholder="Enter description"
                   />
