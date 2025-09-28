@@ -4,6 +4,8 @@ import { ProjectProvider } from "./script/Project.context";
 import { AlertProvider } from "./script/Alert.context";
 import { ConfirmProvider } from "./script/Confirm.context";
 import { LoaderProvider } from "./script/Loader.context";
+import { TestTypeProvider } from "./script/TestType.context";
+
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -28,6 +30,7 @@ export default function RootLayout({ children }) {
       >
       
           <ProjectProvider>
+            <TestTypeProvider>
             <AlertProvider>
               <ConfirmProvider>
                 <LoaderProvider>
@@ -35,6 +38,7 @@ export default function RootLayout({ children }) {
                 </LoaderProvider>
               </ConfirmProvider>
             </AlertProvider>
+            </TestTypeProvider>
           </ProjectProvider>
       </body>
     </html>

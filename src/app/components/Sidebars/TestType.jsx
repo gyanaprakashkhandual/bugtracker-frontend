@@ -19,7 +19,10 @@ import {
     AlertCircle,
     RefreshCw
 } from "lucide-react";
-
+import { useParams } from 'next/navigation';
+import { useProject as useProjectAPI } from '@/app/utils/Get.project';
+import { useTestType } from "@/app/script/TestType.context";
+import axios from 'axios';
 
 // Enhanced ThreeDotsDropdown Component with smart positioning
 const ThreeDotsDropdown = ({ 
@@ -220,6 +223,9 @@ const ThreeDotsDropdown = ({
 };
 
 export default function TestTypeList({ sidebarOpen, onClose }) {
+    const params = useParams();
+    const actualSlug = params?.slug; // Get slug directly from URL params
+    
     const [testTypes, setTestTypes] = useState(null);
     const [selectedTest, setSelectedTest] = useState(null);
     const [loading, setLoading] = useState(true);
@@ -227,15 +233,65 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
     const [hoveredTest, setHoveredTest] = useState(null);
     const [refreshing, setRefreshing] = useState(false);
 
+    // Get project data using the hook
+    const { project, loading: projectLoading, error: projectError } = useProjectAPI(actualSlug);
+    
+    // Debug project data
+    useEffect(() => {
+        console.log('Project Debug:', {
+            paramsSlug: params?.slug,
+            actualSlug,
+            slugType: typeof actualSlug,
+            project,
+            projectId: project?._id,
+            projectLoading,
+            projectError
+        });
+    }, [params?.slug, actualSlug, project, projectLoading, projectError]);
+    
+    // Get test type context
+    const { selectTestType, selectedTestType, openEditModal, openViewModal, openDeleteModal, openDuplicateModal } = useTestType();
+
     const fetchTestTypes = async () => {
+        console.log('🔄 fetchTestTypes called');
+        console.log('📁 Project:', project);
+        
+        if (!project) {
+            console.log('❌ No project found, returning early');
+            setLoading(false);
+            return;
+        }
+        
         try {
             setError(null);
-            const result = await getTestTypes();
-            setTestTypes(result);
+            const token = localStorage.getItem('token');
+            console.log('🔑 Token found:', !!token);
+            
+            if (!token) {
+                throw new Error('No authentication token found');
+            }
+
+            const url = `http://localhost:5000/api/v1/test-type/projects/${project._id}/test-types`;
+            console.log('🌐 API URL:', url);
+            console.log('📋 Project ID:', project._id);
+
+            const response = await axios.get(url, {
+                headers: { 
+                    Authorization: `Bearer ${token}` 
+                }
+            });
+            
+            console.log('✅ API Response:', response.data);
+            console.log('📊 Test Types Count:', response.data?.testTypes?.length || 0);
+            
+            setTestTypes(response.data);
         } catch (err) {
-            console.error('Error fetching test types:', err);
-            setError(err.message || 'Failed to load test types');
+            console.error('❌ Error fetching test types:', err);
+            console.error('📄 Error response:', err.response?.data);
+            console.error('🔗 Error status:', err.response?.status);
+            setError(err.response?.data?.message || err.message || 'Failed to load test types');
         } finally {
+            console.log('🏁 Setting loading to false');
             setLoading(false);
             setRefreshing(false);
         }
@@ -247,14 +303,34 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
     };
 
     useEffect(() => {
-        if (sidebarOpen) {
+        console.log('🔄 useEffect triggered');
+        console.log('📂 sidebarOpen:', sidebarOpen);
+        console.log('📁 project:', project);
+        console.log('⏳ projectLoading:', projectLoading);
+        
+        if (sidebarOpen && project && !projectLoading) {
+            console.log('✅ All conditions met, fetching test types');
+            setLoading(true);
             fetchTestTypes();
+        } else {
+            console.log('❌ Conditions not met:', {
+                sidebarOpen,
+                hasProject: !!project,
+                projectLoading
+            });
         }
-    }, [sidebarOpen]);
+    }, [sidebarOpen, project, projectLoading]);
+
+    // Handle test type selection
+    const handleTestTypeClick = (testType) => {
+        selectTestType(testType);
+        console.log('Selected test type:', testType);
+    };
 
     // Dropdown action handlers with API integration
     const handleRename = async (testType) => {
         try {
+            openEditModal(testType);
             console.log('Rename test type:', testType);
             // TODO: Implement rename API call
             // const result = await renameTestType(testType._id, newName);
@@ -266,12 +342,11 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
 
     const handleDelete = async (testType) => {
         try {
-            if (window.confirm(`Are you sure you want to delete "${testType.testTypeName}"?`)) {
-                console.log('Delete test type:', testType);
-                // TODO: Implement delete API call
-                // const result = await deleteTestType(testType._id);
-                // await fetchTestTypes(); // Refresh the list
-            }
+            openDeleteModal(testType);
+            console.log('Delete test type:', testType);
+            // TODO: Implement delete API call
+            // const result = await deleteTestType(testType._id);
+            // await fetchTestTypes(); // Refresh the list
         } catch (error) {
             console.error('Error deleting test type:', error);
         }
@@ -279,6 +354,7 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
 
     const handleDuplicate = async (testType) => {
         try {
+            openDuplicateModal(testType);
             console.log('Duplicate test type:', testType);
             // TODO: Implement duplicate API call
             // const result = await duplicateTestType(testType._id);
@@ -289,8 +365,9 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
     };
 
     const handleView = (testType) => {
+        openViewModal(testType);
+        selectTestType(testType);
         console.log('View test type:', testType);
-        setSelectedTest(testType);
         // TODO: Navigate to test type detail view
     };
 
@@ -377,6 +454,57 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
         }
     ];
 
+    // Show loading for project
+    if (projectLoading) {
+        return (
+            <AnimatePresence>
+                {sidebarOpen && (
+                    <motion.div
+                        initial={{ x: -300, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: -300, opacity: 0 }}
+                        className="fixed left-0 top-0 h-[calc(100vh-4rem)] w-70 mt-16 bg-gradient-to-br from-blue-50 via-sky-50 to-white z-50 flex flex-col backdrop-blur-sm border-r border-gray-200/60"
+                    >
+                        <div className="flex items-center justify-center h-full">
+                            <div className="text-center">
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                                    className="w-8 h-8 border-b-2 border-blue-500 rounded-full mx-auto"
+                                />
+                                <p className="mt-3 text-sm text-gray-500">Loading project...</p>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        );
+    }
+
+    // Show error for project
+    if (projectError) {
+        return (
+            <AnimatePresence>
+                {sidebarOpen && (
+                    <motion.div
+                        initial={{ x: -300, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: -300, opacity: 0 }}
+                        className="fixed left-0 top-0 h-[calc(100vh-4rem)] w-70 mt-16 bg-gradient-to-br from-blue-50 via-sky-50 to-white z-50 flex flex-col backdrop-blur-sm border-r border-gray-200/60"
+                    >
+                        <div className="flex items-center justify-center h-full">
+                            <div className="text-center text-red-500">
+                                <AlertCircle className="w-12 h-12 mb-3 mx-auto" />
+                                <p className="text-sm font-medium">Error loading project</p>
+                                <p className="mt-1 text-xs text-gray-500">{projectError}</p>
+                            </div>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+        );
+    }
+
     return (
         <>
             {/* Sidebar Overlay */}
@@ -423,7 +551,7 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
                                     </h2>
                                 </div>
                                 <p className="mt-1 text-sm text-gray-500">
-                                    {testTypes?.data?.length || 0} configurations available
+                                    {testTypes?.testTypes?.length || testTypes?.data?.length || 0} configurations available
                                 </p>
                             </div>
                             <motion.button
@@ -476,9 +604,9 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
                                         Try Again
                                     </motion.button>
                                 </motion.div>
-                            ) : testTypes && testTypes.data && testTypes.data.length > 0 ? (
+                            ) : testTypes && (testTypes.testTypes || testTypes.data) && (testTypes.testTypes?.length > 0 || testTypes.data?.length > 0) ? (
                                 <AnimatePresence mode="popLayout">
-                                    {testTypes.data.map((testType, index) => (
+                                    {(testTypes.testTypes || testTypes.data || []).map((testType, index) => (
                                         <motion.div
                                             key={testType._id}
                                             initial={{ opacity: 0, y: 30, scale: 0.95 }}
@@ -496,7 +624,8 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
                                             whileTap="tap"
                                             onHoverStart={() => setHoveredTest(testType._id)}
                                             onHoverEnd={() => setHoveredTest(null)}
-                                            className="mb-2 transition-all duration-300 ease-in-out border border-transparent cursor-pointer rounded-xl hover:border-slate-200/60 hover:bg-white/60 group"
+                                            className={`mb-2 transition-all duration-300 ease-in-out border border-transparent cursor-pointer rounded-xl hover:border-slate-200/60 hover:bg-white/60 group ${selectedTestType?._id === testType._id ? 'bg-blue-50 border-blue-200' : ''}`}
+                                            onClick={() => handleTestTypeClick(testType)}
                                         >
                                             <div className="flex items-start justify-between p-4">
                                                 <div className="flex items-start flex-1 min-w-0 gap-3">
@@ -510,12 +639,12 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
                                                             },
                                                         }}
                                                     >
-                                                        <FolderOpen size={20} className="text-blue-500" />
+                                                        <FolderOpen size={20} className={`${selectedTestType?._id === testType._id ? 'text-blue-600' : 'text-blue-500'}`} />
                                                     </motion.div>
                                                     
                                                     <div className="flex-1 min-w-0">
                                                         <motion.h3
-                                                            className="text-sm font-semibold truncate text-slate-800"
+                                                            className={`text-sm font-semibold truncate ${selectedTestType?._id === testType._id ? 'text-blue-900' : 'text-slate-800'}`}
                                                             variants={{
                                                                 hover: {
                                                                     x: 4,
@@ -525,8 +654,6 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
                                                         >
                                                             {testType.testTypeName}
                                                         </motion.h3>
-                                                        
-                                                    
                                                     </div>
                                                 </div>
 
@@ -538,6 +665,7 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
                                                     }}
                                                     transition={{ duration: 0.2, ease: "easeOut" }}
                                                     className="ml-2"
+                                                    onClick={(e) => e.stopPropagation()}
                                                 >
                                                     <ThreeDotsDropdown
                                                         options={getDropdownOptions(testType)}
