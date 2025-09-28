@@ -6,10 +6,14 @@ import {
   Plus, Search, Filter, MoreHorizontal, Edit2, Trash2, 
   RefreshCw, BarChart3, FolderOpen, GitBranch, 
   ChevronDown, X, AlertCircle, CheckCircle, 
-  ArrowLeft, ArrowRight, Settings, Eye
+  ArrowLeft, ArrowRight, Settings, Eye, Check
 } from 'lucide-react';
+import { useProject } from '@/app/script/Project.context';
 
 const TestTypeManagement = () => {
+  // Get project from context
+  const { selectedProject } = useProject();
+  
   // State management
   const [testTypes, setTestTypes] = useState([]);
   const [filteredTestTypes, setFilteredTestTypes] = useState([]);
@@ -36,6 +40,8 @@ const TestTypeManagement = () => {
   // Dropdown states
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [frameworkDropdown, setFrameworkDropdown] = useState(false);
+  const [createFrameworkDropdown, setCreateFrameworkDropdown] = useState(false);
+  const [editFrameworkDropdown, setEditFrameworkDropdown] = useState(false);
   
   // Form state
   const [formData, setFormData] = useState({
@@ -61,20 +67,15 @@ const TestTypeManagement = () => {
     };
   };
 
-  const getCurrentProjectId = () => {
-    return localStorage.getItem('currentProjectId');
-  };
-
   const fetchTestTypes = async (page = 1, search = '', framework = '') => {
+    if (!selectedProject?._id) {
+      setError('No project selected');
+      return;
+    }
+
     setLoading(true);
     try {
-      const projectId = getCurrentProjectId();
-      if (!projectId) {
-        setError('No project selected');
-        return;
-      }
-
-      let url = `${API_BASE}/projects/${projectId}/test-types?page=${page}&limit=12`;
+      let url = `${API_BASE}/projects/${selectedProject._id}/test-types?page=${page}&limit=12`;
       if (search) url += `&search=${encodeURIComponent(search)}`;
       if (framework) url += `&framework=${encodeURIComponent(framework)}`;
 
@@ -97,10 +98,14 @@ const TestTypeManagement = () => {
   };
 
   const createTestType = async () => {
+    if (!selectedProject?._id) {
+      setError('No project selected');
+      return;
+    }
+
     setLoading(true);
     try {
-      const projectId = getCurrentProjectId();
-      const response = await fetch(`${API_BASE}/projects/${projectId}/test-types`, {
+      const response = await fetch(`${API_BASE}/projects/${selectedProject._id}/test-types`, {
         method: 'POST',
         headers: getHeaders(),
         body: JSON.stringify(formData)
@@ -120,6 +125,24 @@ const TestTypeManagement = () => {
       setError('Network error occurred');
     } finally {
       setLoading(false);
+    }
+  };
+
+  const getTestTypeById = async (id) => {
+    try {
+      const response = await fetch(`${API_BASE}/test-types/${id}`, {
+        headers: getHeaders()
+      });
+
+      const data = await response.json();
+
+      if (response.ok) {
+        setSelectedTestType(data.testType);
+      } else {
+        setError(data.message || 'Failed to fetch test type');
+      }
+    } catch (error) {
+      setError('Network error occurred');
     }
   };
 
@@ -236,27 +259,47 @@ const TestTypeManagement = () => {
     }
   };
 
+  const emptyTrash = async () => {
+    try {
+      const response = await fetch(`${API_BASE}/test-types/trash/empty`, {
+        method: 'DELETE',
+        headers: getHeaders()
+      });
+
+      if (response.ok) {
+        setSuccess('Trash emptied successfully');
+        setTrashItems([]);
+      }
+    } catch (error) {
+      setError('Failed to empty trash');
+    }
+  };
+
   const resetForm = () => {
     setFormData({
       testTypeName: '',
       testTypeDesc: '',
       testFramework: 'Selenium'
     });
+    setCreateFrameworkDropdown(false);
+    setEditFrameworkDropdown(false);
   };
 
   // Effects
   useEffect(() => {
-    fetchTestTypes();
-  }, []);
+    if (selectedProject?._id) {
+      fetchTestTypes();
+    }
+  }, [selectedProject]);
 
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (searchTerm !== '' || selectedFramework !== '') {
+      if (selectedProject?._id && (searchTerm !== '' || selectedFramework !== '')) {
         fetchTestTypes(1, searchTerm, selectedFramework);
       }
     }, 500);
     return () => clearTimeout(timer);
-  }, [searchTerm, selectedFramework]);
+  }, [searchTerm, selectedFramework, selectedProject]);
 
   useEffect(() => {
     if (error || success) {
@@ -267,6 +310,21 @@ const TestTypeManagement = () => {
       return () => clearTimeout(timer);
     }
   }, [error, success]);
+
+  // Close dropdowns when clicking outside
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (!event.target.closest('.dropdown-container')) {
+        setActiveDropdown(null);
+        setFrameworkDropdown(false);
+        setCreateFrameworkDropdown(false);
+        setEditFrameworkDropdown(false);
+      }
+    };
+
+    document.addEventListener('click', handleClickOutside);
+    return () => document.removeEventListener('click', handleClickOutside);
+  }, []);
 
   // GitHub-style Dropdown Component
   const Dropdown = ({ isOpen, onToggle, children, className = '' }) => (
@@ -510,7 +568,7 @@ const TestTypeManagement = () => {
                         </button>
                         <button
                           onClick={() => {
-                            setSelectedTestType(testType);
+                            getTestTypeById(testType._id);
                             setActiveDropdown(null);
                           }}
                           className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
@@ -628,19 +686,57 @@ const TestTypeManagement = () => {
                   />
                 </div>
                 
-                <div>
+                <div className="dropdown-container">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Test Framework
                   </label>
-                  <select
-                    value={formData.testFramework}
-                    onChange={(e) => setFormData({...formData, testFramework: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    {frameworks.map(framework => (
-                      <option key={framework} value={framework}>{framework}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setCreateFrameworkDropdown(!createFrameworkDropdown)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <GitBranch size={16} className="text-gray-500" />
+                        {formData.testFramework}
+                      </div>
+                      <ChevronDown size={16} className={`text-gray-400 transition-transform ${createFrameworkDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    <AnimatePresence>
+                      {createFrameworkDropdown && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                          className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg py-1 max-h-60 overflow-y-auto"
+                        >
+                          {frameworks.map((framework) => (
+                            <button
+                              key={framework}
+                              type="button"
+                              onClick={() => {
+                                setFormData({...formData, testFramework: framework});
+                                setCreateFrameworkDropdown(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center justify-between transition-colors ${
+                                formData.testFramework === framework ? 'bg-blue-50 text-blue-600' : 'text-gray-900'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <GitBranch size={14} className="text-gray-500" />
+                                {framework}
+                              </div>
+                              {formData.testFramework === framework && (
+                                <Check size={14} className="text-blue-600" />
+                              )}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
               </div>
               
@@ -716,19 +812,57 @@ const TestTypeManagement = () => {
                   />
                 </div>
                 
-                <div>
+                <div className="dropdown-container">
                   <label className="block text-sm font-medium text-gray-700 mb-1">
                     Test Framework
                   </label>
-                  <select
-                    value={formData.testFramework}
-                    onChange={(e) => setFormData({...formData, testFramework: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  >
-                    {frameworks.map(framework => (
-                      <option key={framework} value={framework}>{framework}</option>
-                    ))}
-                  </select>
+                  <div className="relative">
+                    <button
+                      type="button"
+                      onClick={() => setEditFrameworkDropdown(!editFrameworkDropdown)}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    >
+                      <div className="flex items-center gap-2">
+                        <GitBranch size={16} className="text-gray-500" />
+                        {formData.testFramework}
+                      </div>
+                      <ChevronDown size={16} className={`text-gray-400 transition-transform ${editFrameworkDropdown ? 'rotate-180' : ''}`} />
+                    </button>
+                    
+                    <AnimatePresence>
+                      {editFrameworkDropdown && (
+                        <motion.div
+                          initial={{ opacity: 0, y: -10 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          exit={{ opacity: 0, y: -10 }}
+                          transition={{ duration: 0.2 }}
+                          className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg py-1 max-h-60 overflow-y-auto"
+                        >
+                          {frameworks.map((framework) => (
+                            <button
+                              key={framework}
+                              type="button"
+                              onClick={() => {
+                                setFormData({...formData, testFramework: framework});
+                                setEditFrameworkDropdown(false);
+                              }}
+                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center justify-between transition-colors ${
+                                formData.testFramework === framework ? 'bg-blue-50 text-blue-600' : 'text-gray-900'
+                              }`}
+                            >
+                              <div className="flex items-center gap-2">
+                                <GitBranch size={14} className="text-gray-500" />
+                                {framework}
+                              </div>
+                              {formData.testFramework === framework && (
+                                <Check size={14} className="text-blue-600" />
+                              )}
+                            </button>
+                          ))}
+                        </motion.div>
+                      )}
+                    </AnimatePresence>
+                  </div>
                 </div>
               </div>
               
@@ -976,14 +1110,7 @@ const TestTypeManagement = () => {
                     <button
                       onClick={() => {
                         if (confirm('Are you sure you want to permanently delete all items in trash?')) {
-                          // Empty trash API call would go here
-                          fetch(`${API_BASE}/test-types/trash/empty`, {
-                            method: 'DELETE',
-                            headers: getHeaders()
-                          }).then(() => {
-                            setSuccess('Trash emptied successfully');
-                            setTrashItems([]);
-                          });
+                          emptyTrash();
                         }
                       }}
                       className="px-3 py-1 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700"
@@ -1051,8 +1178,19 @@ const TestTypeManagement = () => {
         )}
       </AnimatePresence>
 
+      {/* No Project Selected */}
+      {!selectedProject && (
+        <div className="text-center py-12">
+          <FolderOpen size={48} className="mx-auto text-gray-300 mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Project Selected</h3>
+          <p className="text-gray-500">
+            Please select a project to view and manage test types
+          </p>
+        </div>
+      )}
+
       {/* Empty State */}
-      {!loading && testTypes.length === 0 && (
+      {selectedProject && !loading && testTypes.length === 0 && (
         <div className="text-center py-12">
           <FolderOpen size={48} className="mx-auto text-gray-300 mb-4" />
           <h3 className="text-lg font-medium text-gray-900 mb-2">No test types found</h3>
