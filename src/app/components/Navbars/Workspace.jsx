@@ -25,6 +25,9 @@ import { useProject } from '@/app/utils/Get.project';
 import { GoogleArrowDown } from '../utils/Icon';
 import TestTypeList from '../Sidebars/TestType';
 import { MdReport } from 'react-icons/md';
+import { ThreeDotsDropdown } from '../assets/Dropdown';
+import { FiFilter, FiTrash2, FiSettings } from "react-icons/fi";
+
 
 // Styled Dropdown (no changes to this part)
 const StyledDropdown = ({ options, placeholder, value, onChange, size = "sm", className = "" }) => {
@@ -43,6 +46,8 @@ const StyledDropdown = ({ options, placeholder, value, onChange, size = "sm", cl
     onChange(option.value);
     setIsOpen(false);
   };
+
+
 
   return (
     <div className={`relative ${className}`}>
@@ -113,12 +118,32 @@ export default function Navbar() {
   const { slug } = useParams(); // get slug from URL
   const { project, loading, error } = useProject(slug); // just call the hook
 
+
   // ✅ Pull selectedProject from context
   const { selectedProject } = useProject();
 
   const router = useRouter();
 
   const toggleMenu = () => setIsOpen(!isOpen);
+  const getOptions = () => [
+    {
+      label: "Filters",
+      icon: <FiFilter size={16} />,
+      onClick: () => console.log("Filters clicked"),
+    },
+    {
+      label: "Trash",
+      icon: <FiTrash2 size={16} />,
+      onClick: () => console.log("Trash clicked"),
+      danger: true,
+    },
+    {
+      label: "Settings",
+      icon: <FiSettings size={16} />,
+      onClick: () => console.log("Settings clicked"),
+    },
+  ];
+
 
   // View options
   const viewOptions = [
@@ -216,16 +241,19 @@ export default function Navbar() {
               animate={{ opacity: 1, x: 0 }}
               className="text-xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text"
             >
-              {/* ✅ Use project name from context */}
-              {project?.projectName || "No Project Selected"}
+              {project?.projectName
+                ? project.projectName.length > 15
+                  ? project.projectName.slice(0, 15) + "..."
+                  : project.projectName
+                : "No Project Selected"}
             </motion.h1>
+
           </div>
 
           {/* Search Bar - Desktop */}
           <div className="flex-1 hidden max-w-lg mx-8 md:flex">
             <motion.div
-              className={`relative w-full transition-all duration-300 ${searchFocus ? 'transform scale-105' : ''}`}
-              whileHover={{ scale: 1.02 }}
+              className={`relative w-full transition-all duration-300`}
             >
               <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                 <Search className={`h-5 w-5 transition-colors duration-200 ${searchFocus ? 'text-blue-500' : 'text-gray-400'}`} />
@@ -235,7 +263,7 @@ export default function Navbar() {
                 placeholder="Search..."
                 onFocus={() => setSearchFocus(true)}
                 onBlur={() => setSearchFocus(false)}
-                className="block w-[400px] pl-10 pr-3 py-1.5 border border-blue-200/50 rounded-full bg-white/70 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
+                className="block w-[400px] pl-10 pr-3 py-1.5 border border-blue-200/50 rounded-full bg-white/70 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-900"
               />
             </motion.div>
           </div>
@@ -284,10 +312,9 @@ export default function Navbar() {
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="flex items-center px-4 py-2 space-x-2 text-sm font-medium text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
+              className="flex items-center px-1 py-1 text-sm font-medium text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
             >
-              <Filter className="w-4 h-4" />
-              <span>Filter</span>
+              <ThreeDotsDropdown options={getOptions()} position="middle-left" />
             </motion.button>
           </div>
         </div>

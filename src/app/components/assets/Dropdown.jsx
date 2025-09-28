@@ -4,7 +4,7 @@ import React from 'react';
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Check, MoreVertical, ChevronRight } from 'lucide-react'
+import { Check, MoreVertical, MoreVerticalIcon} from 'lucide-react'
 
 export const Dropdown = ({
   options = [],
@@ -215,145 +215,165 @@ export const Dropdown = ({
 
 
 
+import { GoogleArrowRight } from '../utils/Icon';
 
 export const ThreeDotsDropdown = ({
   options = [],
-  position = 'bottom-right',
+  position = 'auto',
   className = '',
   iconSize = 16,
   dropdownWidth = 'w-48'
 }) => {
-  const [isOpen, setIsOpen] = useState(false)
-  const [actualPosition, setActualPosition] = useState(position)
-  const dropdownRef = useRef(null)
-  const buttonRef = useRef(null)
+  const [isOpen, setIsOpen] = useState(false);
+  const [actualPosition, setActualPosition] = useState(position);
+  const dropdownRef = useRef(null);
+  const buttonRef = useRef(null);
 
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target) &&
         buttonRef.current && !buttonRef.current.contains(event.target)) {
-        setIsOpen(false)
+        setIsOpen(false);
       }
-    }
+    };
 
-    document.addEventListener('mousedown', handleClickOutside)
-    return () => document.removeEventListener('mousedown', handleClickOutside)
-  }, [])
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   // Calculate smart positioning based on screen boundaries
   const calculateSmartPosition = () => {
-    if (!buttonRef.current) return position
+    if (!buttonRef.current) return 'bottom-right';
 
-    const buttonRect = buttonRef.current.getBoundingClientRect()
+    const buttonRect = buttonRef.current.getBoundingClientRect();
     const viewport = {
       width: window.innerWidth,
       height: window.innerHeight
-    }
+    };
 
-    // Estimated dropdown dimensions (you can adjust these based on your needs)
-    const dropdownHeight = Math.max(options.length * 40 + 16, 60) // ~40px per item + padding
-    const dropdownWidth = 192 // w-48 = 12rem = 192px
+    // Estimated dropdown dimensions
+    const dropdownHeight = Math.min(Math.max(options.length * 44 + 8, 60), 400);
+    const dropdownWidthPx = 192; // w-48 = 12rem = 192px
 
-    // Buffer space to consider "near" the edge
-    const edgeBuffer = 20
+    // Calculate button center
+    const buttonCenterX = buttonRect.left + buttonRect.width / 2;
 
     // Calculate available space in all directions
-    const spaceRight = viewport.width - buttonRect.right
-    const spaceLeft = buttonRect.left
-    const spaceBelow = viewport.height - buttonRect.bottom
-    const spaceAbove = buttonRect.top
+    const spaceRight = viewport.width - buttonRect.right;
+    const spaceLeft = buttonRect.left;
+    const spaceBelow = viewport.height - buttonRect.bottom;
+    const spaceAbove = buttonRect.top;
+    const spaceCenterRight = viewport.width - buttonCenterX - dropdownWidthPx / 2;
+    const spaceCenterLeft = buttonCenterX - dropdownWidthPx / 2;
 
-    // Determine horizontal position with edge detection
-    let horizontal = 'right'
-
-    // If near right edge or insufficient space on right, but enough space on left
-    if ((spaceRight < dropdownWidth + edgeBuffer || buttonRect.right + dropdownWidth > viewport.width)
-      && spaceLeft > dropdownWidth) {
-      horizontal = 'left'
+    // Determine horizontal position
+    let horizontal = 'right';
+    
+    // Check if center alignment is possible
+    if (spaceCenterLeft >= 0 && spaceCenterRight >= 0) {
+      horizontal = 'center';
     }
-    // If near left edge, prefer right positioning
-    else if (buttonRect.left < edgeBuffer && spaceRight > dropdownWidth) {
-      horizontal = 'right'
+    // Priority: Check if there's enough space on the right
+    else if (spaceRight >= dropdownWidthPx) {
+      horizontal = 'right';
+    } 
+    // If not enough space on right, check left
+    else if (spaceLeft >= dropdownWidthPx) {
+      horizontal = 'left';
     }
-    // If button is more towards the right side of screen, default to left
-    else if (buttonRect.left > viewport.width * 0.7 && spaceLeft > dropdownWidth) {
-      horizontal = 'left'
+    // If button is in right half of screen, prefer left
+    else if (buttonRect.left > viewport.width / 2) {
+      horizontal = 'left';
     }
-
-    // Determine vertical position with edge detection
-    let vertical = 'bottom'
-
-    // If near bottom edge or insufficient space below, but enough space above
-    if ((spaceBelow < dropdownHeight + edgeBuffer || buttonRect.bottom + dropdownHeight > viewport.height)
-      && spaceAbove > dropdownHeight) {
-      vertical = 'top'
-    }
-    // If near top edge, prefer bottom positioning
-    else if (buttonRect.top < edgeBuffer && spaceBelow > dropdownHeight) {
-      vertical = 'bottom'
-    }
-    // If button is in lower half of screen, prefer opening upward
-    else if (buttonRect.top > viewport.height * 0.6 && spaceAbove > dropdownHeight) {
-      vertical = 'top'
+    // Default to right
+    else {
+      horizontal = 'right';
     }
 
-    // Combine positions
-    const newPosition = `${vertical}-${horizontal}`
+    // Determine vertical position
+    let vertical = 'bottom';
+    
+    // Priority: Check if there's enough space below
+    if (spaceBelow >= dropdownHeight) {
+      vertical = 'bottom';
+    }
+    // If not enough space below, check above
+    else if (spaceAbove >= dropdownHeight) {
+      vertical = 'top';
+    }
+    // If button is in bottom half of screen, prefer top
+    else if (buttonRect.top > viewport.height / 2) {
+      vertical = 'top';
+    }
+    // Default to bottom
+    else {
+      vertical = 'bottom';
+    }
 
-    // Log for debugging (remove in production)
-    console.log(`Smart positioning: ${newPosition}`, {
-      buttonRect,
+    const newPosition = `${vertical}-${horizontal}`;
+
+    console.log('Smart Positioning Calculation:', {
+      buttonPosition: { 
+        top: Math.round(buttonRect.top), 
+        right: Math.round(buttonRect.right),
+        bottom: Math.round(buttonRect.bottom),
+        left: Math.round(buttonRect.left),
+        centerX: Math.round(buttonCenterX)
+      },
       viewport,
-      spaces: { spaceRight, spaceLeft, spaceBelow, spaceAbove },
-      dropdownDimensions: { dropdownWidth, dropdownHeight }
-    })
+      availableSpace: { 
+        right: Math.round(spaceRight), 
+        left: Math.round(spaceLeft), 
+        below: Math.round(spaceBelow), 
+        above: Math.round(spaceAbove),
+        centerRight: Math.round(spaceCenterRight),
+        centerLeft: Math.round(spaceCenterLeft)
+      },
+      dropdownSize: { width: dropdownWidthPx, height: dropdownHeight },
+      chosenPosition: newPosition
+    });
 
-    return newPosition
-  }
+    return newPosition;
+  };
 
   // Update position when opening dropdown
   useEffect(() => {
     if (isOpen) {
-      const smartPosition = calculateSmartPosition()
-      setActualPosition(smartPosition)
+      const smartPosition = position === 'auto' ? calculateSmartPosition() : position;
+      setActualPosition(smartPosition);
     }
-  }, [isOpen, options.length])
+  }, [isOpen, options.length, position]);
 
   const getPositionClasses = () => {
     switch (actualPosition) {
       case 'bottom-left':
-        return 'top-full left-0 mt-1'
+        return 'top-full left-0 mt-1';
       case 'bottom-right':
-        return 'top-full right-0 mt-1'
+        return 'top-full right-0 mt-1';
+      case 'bottom-center':
+        return 'top-full left-1/2 -translate-x-1/2 mt-1';
       case 'top-left':
-        return 'bottom-full left-0 mb-1'
+        return 'bottom-full left-0 mb-1';
       case 'top-right':
-        return 'bottom-full right-0 mb-1'
+        return 'bottom-full right-0 mb-1';
+      case 'top-center':
+        return 'bottom-full left-1/2 -translate-x-1/2 mb-1';
       default:
-        return 'top-full right-0 mt-1'
+        return 'top-full right-0 mt-1';
     }
-  }
-
-  const getAnimationDirection = () => {
-    const isTop = actualPosition.startsWith('top')
-    return {
-      initial: { opacity: 0, scale: 0.95, y: isTop ? 10 : -10 },
-      animate: { opacity: 1, scale: 1, y: 0 },
-      exit: { opacity: 0, scale: 0.95, y: isTop ? 10 : -10 }
-    }
-  }
+  };
 
   const handleOptionClick = (option) => {
     if (option.onClick) {
-      option.onClick()
+      option.onClick();
     }
-    setIsOpen(false)
-  }
+    setIsOpen(false);
+  };
 
   const handleToggle = () => {
-    setIsOpen(!isOpen)
-  }
+    setIsOpen(!isOpen);
+  };
 
   return (
     <div className={`relative inline-block ${className}`}>
@@ -368,76 +388,71 @@ export const ThreeDotsDropdown = ({
       </button>
 
       {/* Dropdown menu */}
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            ref={dropdownRef}
-            {...getAnimationDirection()}
-            transition={{ duration: 0.15, ease: 'easeOut' }}
-            className={`absolute z-50 ${getPositionClasses()} ${dropdownWidth}`}
-          >
-            <div className="py-1 overflow-hidden bg-white border border-gray-200 rounded-lg shadow-lg dark:bg-gray-900 dark:border-gray-700">
-              {options.map((option, index) => (
-                <motion.button
-                  key={option.id || index}
-                  onClick={() => handleOptionClick(option)}
-                  disabled={option.disabled}
-                  className={`
-                    w-full px-4 py-2 text-left flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150
-                    ${option.disabled
-                      ? 'text-gray-400 cursor-not-allowed'
-                      : 'text-gray-700 dark:text-gray-300 cursor-pointer'
-                    }
-                    ${option.destructive
-                      ? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
-                      : ''
-                    }
-                  `}
-                  whileHover={!option.disabled ? { x: 2 } : {}}
-                  whileTap={!option.disabled ? { scale: 0.98 } : {}}
-                >
-                  {/* Icon */}
-                  {option.icon && (
-                    <span className="flex-shrink-0">
-                      {React.cloneElement(option.icon, { size: 16 })}
-                    </span>
-                  )}
+      {isOpen && (
+        <div
+          ref={dropdownRef}
+          className={`absolute z-50 ${getPositionClasses()} ${dropdownWidth} animate-in fade-in-0 zoom-in-95 duration-100`}
+        >
+          <div className="py-1 overflow-hidden bg-white border border-gray-200 rounded-lg shadow-lg dark:bg-gray-900 dark:border-gray-700">
+            {options.map((option, index) => (
+              <button
+                key={option.id || index}
+                onClick={() => handleOptionClick(option)}
+                disabled={option.disabled}
+                className={`
+                  w-full px-4 py-2.5 text-left flex items-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors duration-150
+                  ${option.disabled
+                    ? 'text-gray-400 cursor-not-allowed'
+                    : 'text-gray-700 dark:text-gray-300 cursor-pointer'
+                  }
+                  ${option.destructive
+                    ? 'text-red-600 hover:bg-red-50 dark:text-red-400 dark:hover:bg-red-900/20'
+                    : ''
+                  }
+                `}
+              >
+                {/* Icon */}
+                {option.icon && (
+                  <span className="flex-shrink-0">
+                    {React.cloneElement(option.icon, { size: 16 })}
+                  </span>
+                )}
 
-                  {/* Label and description */}
-                  <div className="flex-1 min-w-0">
-                    <div className="text-sm font-medium truncate">
-                      {option.label}
-                    </div>
-                    {option.description && (
-                      <div className="text-xs text-gray-500 truncate dark:text-gray-400">
-                        {option.description}
-                      </div>
-                    )}
+                {/* Label and description */}
+                <div className="flex-1 min-w-0">
+                  <div className="text-sm font-medium truncate">
+                    {option.label}
                   </div>
-
-                  {/* Arrow for submenu or external link indicator */}
-                  {option.hasSubmenu && (
-                    <ChevronRight size={14} className="text-gray-400" />
+                  {option.description && (
+                    <div className="text-xs text-gray-500 truncate dark:text-gray-400">
+                      {option.description}
+                    </div>
                   )}
-
-                  {/* Badge or shortcut */}
-                  {option.badge && (
-                    <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400">
-                      {option.badge}
-                    </span>
-                  )}
-                </motion.button>
-              ))}
-
-              {options.length === 0 && (
-                <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
-                  No options available
                 </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+                {/* Arrow for submenu */}
+                {option.hasSubmenu && (
+                  <ChevronRight size={14} className="text-gray-400" />
+                )}
+
+                {/* Badge */}
+                {option.badge && (
+                  <span className="px-2 py-0.5 text-xs bg-gray-100 dark:bg-gray-700 rounded text-gray-600 dark:text-gray-400">
+                    {option.badge}
+                  </span>
+                )}
+              </button>
+            ))}
+
+            {options.length === 0 && (
+              <div className="px-4 py-3 text-sm text-gray-500 dark:text-gray-400">
+                No options available
+              </div>
+            )}
+          </div>
+        </div>
+      )}
     </div>
-  )
-}
+  );
+};
+
