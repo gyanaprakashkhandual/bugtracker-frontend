@@ -17,6 +17,7 @@ import { GoogleArrowDown } from '@/app/components/utils/Icon';
 import UserManagementDashboard from '../Modules/User-Management/App';
 import ProjectConfiguration from '../Modules/Project-Management/App';
 import UserProfileInterface from '../Modules/User/App';
+import TestTypeManagement from '../Modules/Test-Type-Management/App';
 import { useRouter } from 'next/navigation';
 
 const TestTypeConfiguration = () => (
@@ -192,7 +193,7 @@ const AppNavbar = () => {
             case 'ProjectConfiguration':
                 return <ProjectConfiguration />
             case 'TestTypeConfiguration':
-                return <TestTypeConfiguration />
+                return <TestTypeManagement />
             case 'UserManagement':
                 return <UserManagementDashboard />
             case 'Notifications':
