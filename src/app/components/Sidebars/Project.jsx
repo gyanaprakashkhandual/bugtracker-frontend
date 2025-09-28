@@ -11,6 +11,7 @@ import { GoogleArrowLeft, Folder, GoogleArrowUp } from "@/app/components/utils/I
 import { useProject } from "@/app/script/Project.context";
 import { useAlert } from "@/app/script/Alert.context";
 import { useConfirm } from "@/app/script/Confirm.context";
+import ProjectModal from "../Modals/Add-Project";
 
 const ProjectSidebar = () => {
     const [isOpen, setIsOpen] = useState(true);
@@ -18,6 +19,7 @@ const ProjectSidebar = () => {
     const [hoveredProject, setHoveredProject] = useState(null);
     const [userData, setUserData] = useState(null);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
+    const [isLoading, setIsLoading] = useState(true);
 
     const { showAlert } = useAlert();
     const { showConfirm } = useConfirm();
@@ -36,12 +38,17 @@ const ProjectSidebar = () => {
 
     // Get token from localStorage
     const getToken = () => {
-        return localStorage.getItem("token");
+        if (typeof window !== "undefined") {
+            return localStorage.getItem("token");
+        }
+        return null;
     };
 
     // Store project ID in localStorage
     const storeProjectId = (projectId) => {
-        localStorage.setItem('currentProjectId', projectId);
+        if (typeof window !== "undefined") {
+            localStorage.setItem('currentProjectId', projectId);
+        }
     };
 
     // Fetch user data with token
@@ -74,12 +81,14 @@ const ProjectSidebar = () => {
 
     // Fetch projects with token
     const fetchProjects = async () => {
+        setIsLoading(true);
         const token = getToken();
         if (!token) {
             showAlert({
                 type: "error",
                 message: "Authentication token not found"
             });
+            setIsLoading(false);
             return;
         }
 
@@ -97,6 +106,8 @@ const ProjectSidebar = () => {
                 type: "error",
                 message: "Failed to fetch projects"
             });
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -104,8 +115,6 @@ const ProjectSidebar = () => {
         fetchUserData();
         fetchProjects();
     }, []);
-
-    // Add this useEffect after your existing useEffects in the ProjectSidebar component
 
     useEffect(() => {
         // Restore selected project from localStorage after projects are loaded
@@ -121,7 +130,7 @@ const ProjectSidebar = () => {
                 }
             }
         }
-    }, [projects]); // Run when projects array changes
+    }, [projects]);
 
     // Handle project click - store in context and localStorage
     const handleProjectClick = (project) => {
@@ -130,13 +139,11 @@ const ProjectSidebar = () => {
     };
 
     // Delete project with confirmation
-    // Delete project with confirmation
     const deleteProject = async (projectId) => {
         const project = projects.find(p => p._id === projectId);
         if (!project) return;
 
         try {
-            // showConfirm should return a promise with the result
             const result = await showConfirm({
                 title: `Delete "${project.projectName}"?`,
                 message: "This action cannot be undone. All project data will be permanently lost.",
@@ -145,7 +152,6 @@ const ProjectSidebar = () => {
                 type: "danger",
             });
 
-            // Check if user confirmed the action
             if (!result || !result.isConfirmed) {
                 return;
             }
@@ -188,13 +194,11 @@ const ProjectSidebar = () => {
         } catch (err) {
             console.error("Error deleting project", err);
 
-            // Handle different types of errors
             if (err.response?.status === 401) {
                 showAlert({
                     type: "error",
                     message: "Authentication failed. Please login again."
                 });
-                // Redirect to login or handle auth failure
             } else {
                 showAlert({
                     type: "error",
@@ -203,6 +207,7 @@ const ProjectSidebar = () => {
             }
         }
     };
+
     // Handle logout
     const handleLogout = async () => {
         const result = await showConfirm({
@@ -251,6 +256,7 @@ const ProjectSidebar = () => {
     // Refresh projects after modal operations
     const handleModalSuccess = () => {
         fetchProjects();
+        closeModal();
     };
 
     // Animation variants
@@ -269,13 +275,34 @@ const ProjectSidebar = () => {
         tap: { scale: 0.98 }
     };
 
+    // Loading animation variants
+    const loadingVariants = {
+        initial: { opacity: 0, y: 10 },
+        animate: { opacity: 1, y: 0 },
+        exit: { opacity: 0, y: -10 }
+    };
+
     // Dropdown options for project actions
     const getProjectOptions = (project) => [
-        {
-            label: "Edit",
-            icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5 3 21l1.5-4L16.5 3.5z" /></svg>,
-            onClick: () => openEditModal(project),
+       {
+        label: "Edit",
+        icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5 3 21l1.5-4L16.5 3.5z" /></svg>,
+        onClick: () => {
+            // Set the selected project first
+            setSelectedProject(project);
+            // Then open the modal - check if openEditModal exists, otherwise use a fallback
+            if (typeof openEditModal === 'function') {
+                openEditModal(project);
+            } else {
+                // Fallback: manually set modal state
+                console.log("Edit project:", project);
+                // You might need to set your modal state directly here
+                // For example, if you have a way to open the modal directly:
+                // setIsModalOpen(true);
+                // setModalMode('edit');
+            }
         },
+    },
         {
             label: "Workspace",
             icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h6v6H9z" /></svg>,
@@ -288,6 +315,27 @@ const ProjectSidebar = () => {
             danger: true
         }
     ];
+
+    // Loading skeleton component
+    const LoadingSkeleton = () => (
+        <div className="space-y-2 mx-2">
+            {[1, 2, 3].map((item) => (
+                <motion.div
+                    key={item}
+                    variants={loadingVariants}
+                    initial="initial"
+                    animate="animate"
+                    exit="exit"
+                    className="flex items-center px-4 py-3 rounded-xl border border-slate-200/60 bg-white"
+                >
+                    <div className="w-5 h-5 bg-slate-200 rounded-lg animate-pulse mr-3"></div>
+                    <div className="flex-1">
+                        <div className="h-4 bg-slate-200 rounded animate-pulse w-3/4"></div>
+                    </div>
+                </motion.div>
+            ))}
+        </div>
+    );
 
     return (
         <>
@@ -341,73 +389,88 @@ const ProjectSidebar = () => {
 
                 {/* Projects List */}
                 <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
-                    <AnimatePresence>
-                        {projects.map((project) => (
-                            <motion.div
-                                key={project._id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                exit={{ opacity: 0, x: -100 }}
-                                whileHover="hover"
-                                whileTap="tap"
-                                onHoverStart={() => setHoveredProject(project._id)}
-                                onHoverEnd={() => setHoveredProject(null)}
-                                className={`mx-2 my-1 rounded-xl border transition-all duration-200 ${selectedProject?._id === project._id
-                                    ? 'border-blue-300 bg-blue-50'
-                                    : 'border-transparent hover:border-slate-200/60'
-                                    }`}
-                            >
-                                {isOpen ? (
-                                    <div className="flex items-center justify-between px-4 py-3">
+                    <AnimatePresence mode="wait">
+                        {isLoading ? (
+                            <LoadingSkeleton />
+                        ) : projects.length > 0 ? (
+                            projects.map((project) => (
+                                <motion.div
+                                    key={project._id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    exit={{ opacity: 0, x: -100 }}
+                                    whileHover="hover"
+                                    whileTap="tap"
+                                    variants={projectItemVariants}
+                                    onHoverStart={() => setHoveredProject(project._id)}
+                                    onHoverEnd={() => setHoveredProject(null)}
+                                    className={`mx-2 my-1 rounded-xl border transition-all duration-200 ${selectedProject?._id === project._id
+                                        ? 'border-blue-300 bg-blue-50'
+                                        : 'border-transparent hover:border-slate-200/60'
+                                        }`}
+                                >
+                                    {isOpen ? (
+                                        <div className="flex items-center justify-between px-4 py-3">
+                                            <div
+                                                className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                                                onClick={() => handleProjectClick(project)}
+                                            >
+                                                <motion.div className="flex-shrink-0">
+                                                    <Folder size={18} className={
+                                                        selectedProject?._id === project._id
+                                                            ? "text-blue-600"
+                                                            : "text-blue-500"
+                                                    } />
+                                                </motion.div>
+                                                <span className={`font-medium truncate ${selectedProject?._id === project._id
+                                                    ? 'text-blue-700'
+                                                    : 'text-slate-700'
+                                                    }`}>
+                                                    {project.projectName}
+                                                </span>
+                                            </div>
+
+                                            <motion.div
+                                                initial={{ opacity: 0, scale: 0.8 }}
+                                                animate={{
+                                                    opacity: hoveredProject === project._id ? 1 : 0.7,
+                                                    scale: hoveredProject === project._id ? 1 : 0.8
+                                                }}
+                                                transition={{ duration: 0.2 }}
+                                            >
+                                                <ThreeDotsDropdown options={getProjectOptions(project)} />
+                                            </motion.div>
+                                        </div>
+                                    ) : (
                                         <div
-                                            className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
+                                            className="flex items-center justify-center py-4 cursor-pointer"
                                             onClick={() => handleProjectClick(project)}
                                         >
-                                            <motion.div className="flex-shrink-0">
-                                                <Folder size={18} className={
+                                            <motion.div
+                                                whileHover={{ color: "#3b82f6" }}
+                                                data-tooltip={project.projectName}
+                                            >
+                                                <Folder size={20} className={
                                                     selectedProject?._id === project._id
                                                         ? "text-blue-600"
-                                                        : "text-blue-500"
+                                                        : "text-slate-500"
                                                 } />
                                             </motion.div>
-                                            <span className={`font-medium truncate ${selectedProject?._id === project._id
-                                                ? 'text-blue-700'
-                                                : 'text-slate-700'
-                                                }`}>
-                                                {project.projectName}
-                                            </span>
                                         </div>
-
-                                        <motion.div
-                                            initial={{ opacity: 0, scale: 0.8 }}
-                                            animate={{
-                                                opacity: hoveredProject === project._id ? 1 : 0.7,
-                                                scale: hoveredProject === project._id ? 1 : 0.8
-                                            }}
-                                            transition={{ duration: 0.2 }}
-                                        >
-                                            <ThreeDotsDropdown options={getProjectOptions(project)} />
-                                        </motion.div>
-                                    </div>
-                                ) : (
-                                    <div
-                                        className="flex items-center justify-center py-4 cursor-pointer"
-                                        onClick={() => handleProjectClick(project)}
-                                    >
-                                        <motion.div
-                                            whileHover={{ color: "#3b82f6" }}
-                                            data-tooltip={project.projectName}
-                                        >
-                                            <Folder size={20} className={
-                                                selectedProject?._id === project._id
-                                                    ? "text-blue-600"
-                                                    : "text-slate-500"
-                                            } />
-                                        </motion.div>
-                                    </div>
-                                )}
+                                    )}
+                                </motion.div>
+                            ))
+                        ) : (
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                className="flex flex-col items-center justify-center p-8 text-center"
+                            >
+                                <Folder size={48} className="text-slate-300 mb-4" />
+                                <p className="text-slate-500 text-sm">No projects found</p>
+                                <p className="text-slate-400 text-xs mt-1">Create your first project to get started</p>
                             </motion.div>
-                        ))}
+                        )}
                     </AnimatePresence>
                 </div>
 
@@ -524,8 +587,6 @@ const ProjectSidebar = () => {
                                     <div className="text-xs text-slate-500 truncate flex items-center gap-1">
                                         <span>{userData?.email || "user@example.com"}</span>
                                     </div>
-
-
                                 </div>
                             )}
                         </div>
