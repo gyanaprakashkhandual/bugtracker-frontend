@@ -107,7 +107,7 @@ export default function Navbar() {
   const [selectedView, setSelectedView] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
   const [selectedManual, setSelectedManual] = useState(null);
-  const [ selectedData, setSelectedData ] = useState(null);
+  const [selectedData, setSelectedData] = useState(null);
   const [testTypeIsOpen, setTestTypeIsOpen] = useState(false);
   const [settingIsOpen, setSettingIsOpen] = useState(false);
   const { slug } = useParams(); // get slug from URL
@@ -125,7 +125,7 @@ export default function Navbar() {
     { value: 'chart', label: 'Chart View', icon: <BarChart3 className="w-4 h-4" /> },
     { value: 'table', label: 'Table View', icon: <Table className="w-4 h-4" /> },
     { value: 'card', label: 'Card View', icon: <LayoutGrid className="w-4 h-4" /> },
-    { value: 'split', label: 'Split View', icon: <SplitIcon className='w-4 h-4' />}
+    { value: 'split', label: 'Split View', icon: <SplitIcon className='w-4 h-4' /> }
   ];
 
   const reportOptions = [
@@ -134,14 +134,14 @@ export default function Navbar() {
   ];
 
   const manualAddOptions = [
-    { value: 'addBug', label: 'Add Bug', icon: <Plus className="h-4, w-4"/>},
-    { value: 'addTestCase', label: 'Add Test Case', icon: <Plus className="h-4, w-4"/>},
-    { value: 'addData', label: 'Add Data', icon: <Plus className="h-4, w-4"/>},
+    { value: 'addBug', label: 'Add Bug', icon: <Plus className="h-4, w-4" /> },
+    { value: 'addTestCase', label: 'Add Test Case', icon: <Plus className="h-4, w-4" /> },
+    { value: 'addData', label: 'Add Data', icon: <Plus className="h-4, w-4" /> },
   ];
 
   const dataOption = [
-    {value: 'fromVsCode', label: 'From VS Code', icon: <CodeSquareIcon className='h-4, w-4'/> },
-    {value: 'fromManual', label: 'From Manual', icon: <MdReport className='h-4, w-4'/> },
+    { value: 'fromVsCode', label: 'From VS Code', icon: <CodeSquareIcon className='h-4, w-4' /> },
+    { value: 'fromManual', label: 'From Manual', icon: <MdReport className='h-4, w-4' /> },
   ]
   // Prevent body scroll when settings sidebar is open
   useEffect(() => {
@@ -217,171 +217,163 @@ export default function Navbar() {
               className="text-xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text"
             >
               {/* ✅ Use project name from context */}
-              {project.projectName || "No Project Selected"}
+              {project?.projectName || "No Project Selected"}
             </motion.h1>
           </div>
 
-                    {/* Search Bar - Desktop */}
-                    <div className="flex-1 hidden max-w-lg mx-8 md:flex">
-                        <motion.div
-                            className={`relative w-full transition-all duration-300 ${searchFocus ? 'transform scale-105' : ''}`}
-                            whileHover={{ scale: 1.02 }}
-                        >
-                            <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                <Search className={`h-5 w-5 transition-colors duration-200 ${searchFocus ? 'text-blue-500' : 'text-gray-400'}`} />
-                            </div>
-                            <input
-                                type="text"
-                                placeholder="Search..."
-                                onFocus={() => setSearchFocus(true)}
-                                onBlur={() => setSearchFocus(false)}
-                                className="block w-[400px] pl-10 pr-3 py-1.5 border border-blue-200/50 rounded-full bg-white/70 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
-                            />
-                        </motion.div>
-                    </div>
+          {/* Search Bar - Desktop */}
+          <div className="flex-1 hidden max-w-lg mx-8 md:flex">
+            <motion.div
+              className={`relative w-full transition-all duration-300 ${searchFocus ? 'transform scale-105' : ''}`}
+              whileHover={{ scale: 1.02 }}
+            >
+              <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                <Search className={`h-5 w-5 transition-colors duration-200 ${searchFocus ? 'text-blue-500' : 'text-gray-400'}`} />
+              </div>
+              <input
+                type="text"
+                placeholder="Search..."
+                onFocus={() => setSearchFocus(true)}
+                onBlur={() => setSearchFocus(false)}
+                className="block w-[400px] pl-10 pr-3 py-1.5 border border-blue-200/50 rounded-full bg-white/70 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
+              />
+            </motion.div>
+          </div>
 
-                    {/* Desktop Navigation */}
-                    <div className="items-center hidden space-x-3 md:flex">
+          {/* Desktop Navigation */}
+          <div className="items-center hidden space-x-3 md:flex">
 
-                        {/* View Dropdown */}
-                        <StyledDropdown
-                            options={viewOptions}
-                            placeholder="View Options"
-                            value={selectedView}
-                            onChange={setSelectedView}
-                            size="sm"
-                            className="w-40"
-                        />
+            {/* View Dropdown */}
+            <StyledDropdown
+              options={viewOptions}
+              placeholder="View Options"
+              value={selectedView}
+              onChange={setSelectedView}
+              size="sm"
+              className="w-40"
+            />
 
-                        {/* Report Dropdown */}
-                        <StyledDropdown
-                            options={reportOptions}
-                            placeholder="Report Options"
-                            value={selectedReport}
-                            onChange={setSelectedReport}
-                            size="sm"
-                            className="w-40"
-                        />
+            {/* Report Dropdown */}
+            <StyledDropdown
+              options={reportOptions}
+              placeholder="Report Options"
+              value={selectedReport}
+              onChange={setSelectedReport}
+              size="sm"
+              className="w-40"
+            />
 
-                        <StyledDropdown
-                        options={manualAddOptions}
-                        placeholder="Add Manually"
-                        value={selectedManual}
-                        onChange={setSelectedManual}
-                        size='sm'
-                        className='w-40'
-                        />
-<StyledDropdown
-                        options={dataOption}
-                        placeholder="Data From"
-                        value={selectedData}
-                        onChange={setSelectedData}
-                        size='sm'
-                        className='w-40'
-                        />
+            <StyledDropdown
+              options={manualAddOptions}
+              placeholder="Add Manually"
+              value={selectedManual}
+              onChange={setSelectedManual}
+              size='sm'
+              className='w-40'
+            />
+            <StyledDropdown
+              options={dataOption}
+              placeholder="Data From"
+              value={selectedData}
+              onChange={setSelectedData}
+              size='sm'
+              className='w-40'
+            />
 
-                        {/* Action Buttons */}
-                        <motion.button
-                            whileHover={{ scale: 1.05 }}
-                            whileTap={{ scale: 0.95 }}
-                            className="flex items-center px-4 py-2 space-x-2 text-sm font-medium text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
-                        >
-                            <Filter className="w-4 h-4" />
-                            <span>Filter</span>
-                        </motion.button>
-                    </div>
+            {/* Action Buttons */}
+            <motion.button
+              whileHover={{ scale: 1.05 }}
+              whileTap={{ scale: 0.95 }}
+              className="flex items-center px-4 py-2 space-x-2 text-sm font-medium text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
+            >
+              <Filter className="w-4 h-4" />
+              <span>Filter</span>
+            </motion.button>
+          </div>
+        </div>
+
+        {/* Mobile Menu */}
+        <AnimatePresence>
+          {isOpen && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              exit={{ opacity: 0, height: 0 }}
+              transition={{ duration: 0.3 }}
+              className="overflow-hidden md:hidden"
+            >
+              <div className="px-2 pt-2 pb-4 space-y-3">
+
+                {/* Mobile Search */}
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+                    <Search className="w-5 h-5 text-gray-400" />
+                  </div>
+                  <input
+                    type="text"
+                    placeholder="Search..."
+                    className="block w-full pl-10 pr-3 py-2.5 border border-blue-200/50 rounded-lg bg-white/70 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
+                  />
                 </div>
 
-                {/* Settings Sidebar with scroll prevention */}
-                <div style={{ overflow: settingIsOpen ? 'hidden' : 'visible' }}>
-                    <SettingSidebar
-                        isOpen={settingIsOpen}
-                        toggleSidebar={() => setSettingIsOpen((prev) => !prev)}
-                    />
+                {/* Mobile Dropdowns */}
+                <StyledDropdown
+                  options={viewOptions}
+                  placeholder="View Options"
+                  value={selectedView}
+                  onChange={setSelectedView}
+                  size="sm"
+                  className="w-full"
+                />
+
+                <StyledDropdown
+                  options={reportOptions}
+                  placeholder="Report Options"
+                  value={selectedReport}
+                  onChange={setSelectedReport}
+                  size="sm"
+                  className="w-full"
+                />
+
+                {/* Mobile Buttons */}
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
+                >
+                  <Filter className="w-4 h-4" />
+                  <span>Filter</span>
+                </motion.button>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  whileTap={{ scale: 0.98 }}
+                  className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-white transition-all duration-200 rounded-lg shadow-sm bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
+                >
+                  <MessageSquarePlus className="w-4 h-4" />
+                  <span>Add Comment</span>
+                </motion.button>
+                <div className="flex items-center justify-center pt-2 space-x-4">
+                  <motion.button
+                    whileHover={{ scale: 1.1, rotate: 180 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => setSettingIsOpen((prev) => !prev)}
+                    className="p-2 text-gray-600 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
+                  >
+                    <Settings className="w-5 h-5" />
+                  </motion.button>
+                  <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    className="p-2 text-gray-600 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
+                  >
+                    <User className="w-5 h-5" />
+                  </motion.button>
                 </div>
-
-                {/* Mobile Menu */}
-                <AnimatePresence>
-                    {isOpen && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.3 }}
-                            className="overflow-hidden md:hidden"
-                        >
-                            <div className="px-2 pt-2 pb-4 space-y-3">
-
-                                {/* Mobile Search */}
-                                <div className="relative">
-                                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                                        <Search className="w-5 h-5 text-gray-400" />
-                                    </div>
-                                    <input
-                                        type="text"
-                                        placeholder="Search..."
-                                        className="block w-full pl-10 pr-3 py-2.5 border border-blue-200/50 rounded-lg bg-white/70 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
-                                    />
-                                </div>
-
-                                {/* Mobile Dropdowns */}
-                                <StyledDropdown
-                                    options={viewOptions}
-                                    placeholder="View Options"
-                                    value={selectedView}
-                                    onChange={setSelectedView}
-                                    size="sm"
-                                    className="w-full"
-                                />
-
-                                <StyledDropdown
-                                    options={reportOptions}
-                                    placeholder="Report Options"
-                                    value={selectedReport}
-                                    onChange={setSelectedReport}
-                                    size="sm"
-                                    className="w-full"
-                                />
-
-                                {/* Mobile Buttons */}
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
-                                >
-                                    <Filter className="w-4 h-4" />
-                                    <span>Filter</span>
-                                </motion.button>
-                                <motion.button
-                                    whileHover={{ scale: 1.02 }}
-                                    whileTap={{ scale: 0.98 }}
-                                    className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-white transition-all duration-200 rounded-lg shadow-sm bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-                                >
-                                    <MessageSquarePlus className="w-4 h-4" />
-                                    <span>Add Comment</span>
-                                </motion.button>
-                                <div className="flex items-center justify-center pt-2 space-x-4">
-                                    <motion.button
-                                        whileHover={{ scale: 1.1, rotate: 180 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => setSettingIsOpen((prev) => !prev)}
-                                        className="p-2 text-gray-600 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
-                                    >
-                                        <Settings className="w-5 h-5" />
-                                    </motion.button>
-                                    <motion.button
-                                        whileHover={{ scale: 1.1 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        className="p-2 text-gray-600 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
-                                    >
-                                        <User className="w-5 h-5" />
-                                    </motion.button>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
-        </nav>
-    );
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
+    </nav>
+  );
 }
