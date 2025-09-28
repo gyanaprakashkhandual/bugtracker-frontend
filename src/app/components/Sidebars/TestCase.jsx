@@ -9,6 +9,7 @@ import {
     Link,
     File
 } from 'lucide-react';
+import { GoogleArrowDown } from '../utils/Icon';
 
 const TestCaseSidebar = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
@@ -105,7 +106,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                     <p>Start a conversation...</p>
                 </div>
             </div>
-            
+
             {/* Chat input at bottom */}
             <div className="p-6 border-t bg-white">
                 <div className="relative">
@@ -113,7 +114,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         placeholder="Message..."
-                        className="w-full p-4 pr-12 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none bg-gray-50 hover:bg-gray-100 transition-colors"
+                        className="w-full p-4 pr-12 border border-gray-200 rounded-2xl  focus:ring-0.5 focus:ring-blue-900   resize-none bg-gray-50 hover:bg-gray-100 transition-colors"
                         rows="1"
                         style={{ minHeight: '52px', maxHeight: '120px' }}
                         onInput={(e) => {
@@ -148,7 +149,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                     animate={{ rotate: openDropdowns[field] ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
                 >
-                    <ChevronDown size={16} className="text-gray-400" />
+                    <GoogleArrowDown size={16} className="text-gray-400" />
                 </motion.div>
             </button>
 
@@ -192,7 +193,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 {renderDropdown('testCaseType', dropdownOptions.testCaseType)}
                 {renderDropdown('severity', dropdownOptions.severity)}
             </div>
-            
+
             <div className="grid grid-cols-2 gap-3">
                 {renderDropdown('priority', dropdownOptions.priority)}
                 {renderDropdown('status', dropdownOptions.status)}
@@ -204,7 +205,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                     type="text"
                     value={formData.moduleName}
                     onChange={(e) => handleInputChange('moduleName', e.target.value)}
-                    className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 hover:bg-gray-100 transition-all duration-200 font-medium"
+                    className="w-full p-4 border border-gray-200 rounded-xl  focus:ring-0.5 focus:ring-blue-900   bg-gray-50 hover:bg-gray-100 transition-all duration-200 font-medium"
                     placeholder="Module Name"
                 />
             </div>
@@ -214,7 +215,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 <textarea
                     value={formData.testCaseDescription}
                     onChange={(e) => handleInputChange('testCaseDescription', e.target.value)}
-                    className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent h-28 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                    className="w-full p-4 border border-gray-200 rounded-xl  focus:ring-0.5 focus:ring-blue-900   h-28 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200"
                     placeholder="Test Case Description"
                 />
             </div>
@@ -224,7 +225,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 <textarea
                     value={formData.actualResult}
                     onChange={(e) => handleInputChange('actualResult', e.target.value)}
-                    className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent h-28 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                    className="w-full p-4 border border-gray-200 rounded-xl  focus:ring-0.5 focus:ring-blue-900   h-28 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200"
                     placeholder="Actual Result"
                 />
             </div>
@@ -234,7 +235,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 <textarea
                     value={formData.expectedResult}
                     onChange={(e) => handleInputChange('expectedResult', e.target.value)}
-                    className="w-full p-4 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent h-28 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                    className="w-full p-4 border border-gray-200 rounded-xl  focus:ring-0.5 focus:ring-blue-900   h-28 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200"
                     placeholder="Expected Result"
                 />
             </div>
@@ -332,7 +333,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
     );
 
     return (
-        <div className="h-[calc(100vh-4rem)] mt-16 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 w-[28rem] flex flex-col shadow-xl">
+        <div className="h-[calc(100vh-4rem)] fixed right-0 sidebar-scrollbar mt-16 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 w-[28rem] flex flex-col shadow-xl">
             {/* Navigation Header */}
             <div className="border-b border-gray-200 bg-white">
                 <div className="flex">
@@ -343,8 +344,8 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                             whileTap={{ scale: 0.98 }}
                             onClick={() => setActiveTab(item.id)}
                             className={`flex-1 p-4 text-center transition-all duration-200 border-r border-gray-200 last:border-r-0 ${activeTab === item.id
-                                    ? 'bg-blue-50 border-b-2 border-blue-600 text-blue-700'
-                                    : 'text-gray-700 hover:text-gray-900'
+                                ? 'bg-blue-50 border-b-2 border-blue-600 text-blue-700'
+                                : 'text-gray-700 hover:text-gray-900'
                                 }`}
                         >
                             <span className="font-semibold text-sm">{item.label}</span>
