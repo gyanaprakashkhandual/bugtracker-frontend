@@ -3,6 +3,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import TestTypeList from '../Sidebars/TestType';
 import { useProject } from '@/app/utils/Get.project';
 import { useParams } from 'next/navigation';
+import TestCaseSidebar from '../Sidebars/TestCase';
+import BugSidebar from '../Sidebars/Bug';
+import TestDataSidebar from '../Sidebars/Data';
+import FilterSidebar from '../Sidebars/Filter';
 import {
   Menu,
   X,
@@ -35,6 +39,8 @@ const StyledDropdown = ({ options, placeholder, value, onChange, size = "sm", cl
     if (value) {
       const option = options.find(opt => opt.value === value);
       setSelectedOption(option);
+    } else {
+      setSelectedOption(null);
     }
   }, [value, options]);
 
@@ -137,8 +143,8 @@ const ThreeDotsDropdown = ({ options }) => {
                   setIsOpen(false);
                 }}
                 className={`flex items-center w-full px-4 py-3 space-x-2 text-sm transition-colors duration-150 ${option.danger
-                    ? 'text-red-600 hover:bg-red-50/50'
-                    : 'text-gray-700 hover:bg-blue-50/50 hover:text-blue-600'
+                  ? 'text-red-600 hover:bg-red-50/50'
+                  : 'text-gray-700 hover:bg-blue-50/50 hover:text-blue-600'
                   } first:rounded-t-lg last:rounded-b-lg`}
               >
                 {option.icon}
@@ -160,260 +166,6 @@ const ThreeDotsDropdown = ({ options }) => {
 };
 
 // ============================================
-// SIDEBAR COMPONENT
-// ============================================
-const Sidebar = ({ isOpen, onClose, title, children }) => {
-  useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      const timer = setTimeout(() => {
-        document.body.style.overflow = 'unset';
-      }, 300);
-      return () => clearTimeout(timer);
-    }
-    return () => {
-      document.body.style.overflow = 'unset';
-    };
-  }, [isOpen]);
-
-  return (
-    <AnimatePresence>
-      {isOpen && (
-        <>
-          {/* Backdrop */}
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.3 }}
-            className="fixed inset-0 z-40 bg-black/50 backdrop-blur-sm"
-            onClick={onClose}
-          />
-
-          {/* Sidebar */}
-          <motion.div
-            initial={{ x: '100%' }}
-            animate={{ x: 0 }}
-            exit={{ x: '100%' }}
-            transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-            className="fixed top-0 right-0 z-50 w-full h-full overflow-y-auto bg-white shadow-2xl sm:w-96"
-          >
-            {/* Header */}
-            <div className="sticky top-0 z-10 flex items-center justify-between p-6 border-b bg-gradient-to-r from-blue-100 via-sky-50 to-blue-100 border-blue-200/30">
-              <h2 className="text-xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text">
-                {title}
-              </h2>
-              <motion.button
-                whileHover={{ scale: 1.1, rotate: 90 }}
-                whileTap={{ scale: 0.9 }}
-                onClick={onClose}
-                className="p-2 transition-colors duration-200 rounded-lg hover:bg-blue-100/50"
-              >
-                <X className="w-6 h-6 text-gray-700" />
-              </motion.button>
-            </div>
-
-            {/* Content */}
-            <div className="p-6">
-              {children}
-            </div>
-          </motion.div>
-        </>
-      )}
-    </AnimatePresence>
-  );
-};
-
-// ============================================
-// SIDEBAR CONTENT COMPONENTS
-// ============================================
-const AddTestCaseSidebar = ({ isOpen, onClose }) => (
-  <Sidebar isOpen={isOpen} onClose={onClose} title="Add Test Case">
-    <div className="space-y-4">
-      <div>
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Test Case Title
-        </label>
-        <input
-          type="text"
-          placeholder="Enter test case title..."
-          className="w-full px-4 py-2 border rounded-lg border-blue-200/50 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
-        />
-      </div>
-      <div>
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Description
-        </label>
-        <textarea
-          rows={4}
-          placeholder="Enter test case description..."
-          className="w-full px-4 py-2 border rounded-lg border-blue-200/50 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
-        />
-      </div>
-      <div>
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Priority
-        </label>
-        <select className="w-full px-4 py-2 border rounded-lg border-blue-200/50 focus:outline-none focus:ring-2 focus:ring-blue-300/50">
-          <option>Low</option>
-          <option>Medium</option>
-          <option>High</option>
-          <option>Critical</option>
-        </select>
-      </div>
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className="w-full px-4 py-3 text-sm font-medium text-white transition-all duration-200 rounded-lg shadow-sm bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-      >
-        Create Test Case
-      </motion.button>
-    </div>
-  </Sidebar>
-);
-
-const AddBugSidebar = ({ isOpen, onClose }) => (
-  <Sidebar isOpen={isOpen} onClose={onClose} title="Add Bug">
-    <div className="space-y-4">
-      <div>
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Bug Title
-        </label>
-        <input
-          type="text"
-          placeholder="Enter bug title..."
-          className="w-full px-4 py-2 border rounded-lg border-blue-200/50 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
-        />
-      </div>
-      <div>
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Description
-        </label>
-        <textarea
-          rows={4}
-          placeholder="Describe the bug..."
-          className="w-full px-4 py-2 border rounded-lg border-blue-200/50 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
-        />
-      </div>
-      <div>
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Severity
-        </label>
-        <select className="w-full px-4 py-2 border rounded-lg border-blue-200/50 focus:outline-none focus:ring-2 focus:ring-blue-300/50">
-          <option>Minor</option>
-          <option>Major</option>
-          <option>Critical</option>
-          <option>Blocker</option>
-        </select>
-      </div>
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className="w-full px-4 py-3 text-sm font-medium text-white transition-all duration-200 rounded-lg shadow-sm bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700"
-      >
-        Report Bug
-      </motion.button>
-    </div>
-  </Sidebar>
-);
-
-const AddTestDataSidebar = ({ isOpen, onClose }) => (
-  <Sidebar isOpen={isOpen} onClose={onClose} title="Add Test Data">
-    <div className="space-y-4">
-      <div>
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Data Name
-        </label>
-        <input
-          type="text"
-          placeholder="Enter data name..."
-          className="w-full px-4 py-2 border rounded-lg border-blue-200/50 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
-        />
-      </div>
-      <div>
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Data Type
-        </label>
-        <select className="w-full px-4 py-2 border rounded-lg border-blue-200/50 focus:outline-none focus:ring-2 focus:ring-blue-300/50">
-          <option>String</option>
-          <option>Number</option>
-          <option>Boolean</option>
-          <option>Array</option>
-          <option>Object</option>
-        </select>
-      </div>
-      <div>
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Value
-        </label>
-        <textarea
-          rows={4}
-          placeholder="Enter test data value..."
-          className="w-full px-4 py-2 border rounded-lg border-blue-200/50 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
-        />
-      </div>
-      <motion.button
-        whileHover={{ scale: 1.02 }}
-        whileTap={{ scale: 0.98 }}
-        className="w-full px-4 py-3 text-sm font-medium text-white transition-all duration-200 rounded-lg shadow-sm bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700"
-      >
-        Add Test Data
-      </motion.button>
-    </div>
-  </Sidebar>
-);
-
-const FilterSidebar = ({ isOpen, onClose }) => (
-  <Sidebar isOpen={isOpen} onClose={onClose} title="Filters">
-    <div className="space-y-4">
-      <div>
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Status
-        </label>
-        <div className="space-y-2">
-          {['All', 'Active', 'Completed', 'Pending'].map((status) => (
-            <label key={status} className="flex items-center space-x-2">
-              <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-300" />
-              <span className="text-sm text-gray-700">{status}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-      <div>
-        <label className="block mb-2 text-sm font-medium text-gray-700">
-          Priority
-        </label>
-        <div className="space-y-2">
-          {['Low', 'Medium', 'High', 'Critical'].map((priority) => (
-            <label key={priority} className="flex items-center space-x-2">
-              <input type="checkbox" className="rounded text-blue-600 focus:ring-blue-300" />
-              <span className="text-sm text-gray-700">{priority}</span>
-            </label>
-          ))}
-        </div>
-      </div>
-      <div className="flex gap-2">
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 transition-all duration-200 border rounded-lg border-blue-200/50 hover:bg-blue-50/50"
-        >
-          Reset
-        </motion.button>
-        <motion.button
-          whileHover={{ scale: 1.02 }}
-          whileTap={{ scale: 0.98 }}
-          className="flex-1 px-4 py-2 text-sm font-medium text-white transition-all duration-200 rounded-lg shadow-sm bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700"
-        >
-          Apply
-        </motion.button>
-      </div>
-    </div>
-  </Sidebar>
-);
-
-// ============================================
 // MAIN NAVBAR COMPONENT
 // ============================================
 export default function Navbar() {
@@ -423,8 +175,6 @@ export default function Navbar() {
   const [selectedReport, setSelectedReport] = useState(null);
   const [selectedManual, setSelectedManual] = useState(null);
   const [selectedData, setSelectedData] = useState(null);
-
-
 
   // Sidebar states
   const [testTypeSidebarOpen, setTestTypeSidebarOpen] = useState(false);
@@ -436,26 +186,109 @@ export default function Navbar() {
   const { slug } = useParams(); // get slug from /project/[slug] route
   const { project, loading, error } = useProject(slug);
 
-
   const toggleMenu = () => setIsOpen(!isOpen);
+
+  // Close all sidebars
+  const closeAllSidebars = () => {
+    setTestTypeSidebarOpen(false);
+    setTestCaseSidebarOpen(false);
+    setBugSidebarOpen(false);
+    setTestDataSidebarOpen(false);
+    setFilterSidebarOpen(false);
+  };
+
+  // Handle manual add selection with proper state management
+  const handleManualAdd = (value) => {
+    // If clicking the same option that's already selected, close the sidebar
+    if (selectedManual === value) {
+      closeAllSidebars();
+      setSelectedManual(null);
+      return;
+    }
+
+    closeAllSidebars(); // Close all first
+    setSelectedManual(value); // Set the selected value
+
+    switch (value) {
+      case 'addBug':
+        setBugSidebarOpen(true);
+        break;
+      case 'addTestCase':
+        setTestCaseSidebarOpen(true);
+        break;
+      case 'addData':
+        setTestDataSidebarOpen(true);
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Handle filter opening
+  const handleFilterOpen = () => {
+    // If filter is already open, close it
+    if (filterSidebarOpen) {
+      setFilterSidebarOpen(false);
+      return;
+    }
+
+    closeAllSidebars();
+    setFilterSidebarOpen(true);
+  };
+
+  // Handle test type sidebar
+  const handleTestTypeToggle = () => {
+    // If test type sidebar is already open, close it
+    if (testTypeSidebarOpen) {
+      setTestTypeSidebarOpen(false);
+      return;
+    }
+
+    closeAllSidebars();
+    setTestTypeSidebarOpen(true);
+  };
+
+  // Handle view change - close sidebars when changing view
+  const handleViewChange = (value) => {
+    closeAllSidebars();
+    setSelectedView(value);
+  };
+
+  // Handle report change - close sidebars when changing report
+  const handleReportChange = (value) => {
+    closeAllSidebars();
+    setSelectedReport(value);
+  };
+
+  // Handle data source change - close sidebars when changing data source
+  const handleDataChange = (value) => {
+    closeAllSidebars();
+    setSelectedData(value);
+  };
 
   // Three dots dropdown options
   const getOptions = () => [
     {
       label: "Filters",
       icon: <FiFilter size={16} />,
-      onClick: () => setFilterSidebarOpen(true),
+      onClick: handleFilterOpen,
     },
     {
       label: "Trash",
       icon: <FiTrash2 size={16} />,
-      onClick: () => console.log("Trash clicked"),
+      onClick: () => {
+        closeAllSidebars();
+        console.log("Trash clicked");
+      },
       danger: true,
     },
     {
       label: "Settings",
       icon: <FiSettings size={16} />,
-      onClick: () => console.log("Settings clicked"),
+      onClick: () => {
+        closeAllSidebars();
+        console.log("Settings clicked");
+      },
     },
   ];
 
@@ -476,7 +309,7 @@ export default function Navbar() {
   // Manual add options with sidebar handlers
   const manualAddOptions = [
     { value: 'addBug', label: 'Add Bug', icon: <Plus className="h-4 w-4" /> },
-    { value: 'addTestCase', label: 'Add Test Case', icon: <Plus className="h-4 w-4" /> },
+    { value: 'addTestCase', label: 'Add Case', icon: <Plus className="h-4 w-4" /> },
     { value: 'addData', label: 'Add Data', icon: <Plus className="h-4 w-4" /> },
   ];
 
@@ -486,27 +319,10 @@ export default function Navbar() {
     { value: 'fromManual', label: 'From Manual', icon: <FileText className='h-4 w-4' /> },
   ];
 
-  // Handle manual add selection
-  const handleManualAdd = (value) => {
-    setSelectedManual(value);
-    switch (value) {
-      case 'addBug':
-        setBugSidebarOpen(true);
-        break;
-      case 'addTestCase':
-        setTestCaseSidebarOpen(true);
-        break;
-      case 'addData':
-        setTestDataSidebarOpen(true);
-        break;
-      default:
-        break;
-    }
-  };
-
   return (
     <>
-      <nav className="sticky top-0 z-50 border-b bg-gradient-to-r from-blue-100 via-sky-50 to-blue-100 backdrop-blur-md border-blue-200/30">
+      {/* Fixed navbar with proper z-index */}
+      <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-gradient-to-r from-blue-100 via-sky-50 to-blue-100 backdrop-blur-md border-blue-200/30">
         <div className="w-full px-4 mx-auto sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 gap-4">
 
@@ -516,7 +332,7 @@ export default function Navbar() {
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setTestTypeSidebarOpen(!testTypeSidebarOpen)}
+                onClick={handleTestTypeToggle}
                 className="hidden md:block p-1 transition-colors duration-200 rounded-md cursor-pointer hover:bg-blue-100/50"
               >
                 <Menu className="w-6 h-6 text-black" />
@@ -577,7 +393,6 @@ export default function Navbar() {
                       : project.projectName
                     : "No Project Selected"}
                 </motion.h1>
-
               )}
             </div>
 
@@ -604,7 +419,7 @@ export default function Navbar() {
                 options={viewOptions}
                 placeholder="View Options"
                 value={selectedView}
-                onChange={setSelectedView}
+                onChange={handleViewChange}
                 size="sm"
                 className="w-40"
               />
@@ -614,7 +429,7 @@ export default function Navbar() {
                 options={reportOptions}
                 placeholder="Report Options"
                 value={selectedReport}
-                onChange={setSelectedReport}
+                onChange={handleReportChange}
                 size="sm"
                 className="w-40"
               />
@@ -634,7 +449,7 @@ export default function Navbar() {
                 options={dataOption}
                 placeholder="Data From"
                 value={selectedData}
-                onChange={setSelectedData}
+                onChange={handleDataChange}
                 size='sm'
                 className='w-40'
               />
@@ -672,7 +487,7 @@ export default function Navbar() {
                     options={viewOptions}
                     placeholder="View Options"
                     value={selectedView}
-                    onChange={setSelectedView}
+                    onChange={handleViewChange}
                     size="sm"
                     className="w-full"
                   />
@@ -681,7 +496,7 @@ export default function Navbar() {
                     options={reportOptions}
                     placeholder="Report Options"
                     value={selectedReport}
-                    onChange={setSelectedReport}
+                    onChange={handleReportChange}
                     size="sm"
                     className="w-full"
                   />
@@ -699,7 +514,7 @@ export default function Navbar() {
                     options={dataOption}
                     placeholder="Data From"
                     value={selectedData}
-                    onChange={setSelectedData}
+                    onChange={handleDataChange}
                     size='sm'
                     className='w-full'
                   />
@@ -708,7 +523,7 @@ export default function Navbar() {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => setFilterSidebarOpen(true)}
+                    onClick={handleFilterOpen}
                     className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
                   >
                     <Filter className="w-4 h-4" />
@@ -738,27 +553,45 @@ export default function Navbar() {
         </div>
       </nav>
 
-      {/* Sidebars */}
+      {/* Imported Sidebars - positioned absolutely */}
       <TestTypeList
         sidebarOpen={testTypeSidebarOpen}
         onClose={() => setTestTypeSidebarOpen(false)}
       />
-      <AddTestCaseSidebar
+
+      <TestCaseSidebar
         isOpen={testCaseSidebarOpen}
-        onClose={() => setTestCaseSidebarOpen(false)}
+        onClose={() => {
+          setTestCaseSidebarOpen(false);
+          setSelectedManual(null);
+        }}
       />
-      <AddBugSidebar
+
+      <BugSidebar
         isOpen={bugSidebarOpen}
-        onClose={() => setBugSidebarOpen(false)}
+        onClose={() => {
+          setBugSidebarOpen(false);
+          setSelectedManual(null);
+        }}
       />
-      <AddTestDataSidebar
+
+      <TestDataSidebar
         isOpen={testDataSidebarOpen}
-        onClose={() => setTestDataSidebarOpen(false)}
+        onClose={() => {
+          setTestDataSidebarOpen(false);
+          setSelectedManual(null);
+        }}
       />
+
       <FilterSidebar
         isOpen={filterSidebarOpen}
         onClose={() => setFilterSidebarOpen(false)}
       />
+
+      {/* Page content starts after navbar - add padding top to ensure scrollbar starts after navbar */}
+      <div className="pt-16">
+        {/* Your page content will go here */}
+      </div>
     </>
   );
 }

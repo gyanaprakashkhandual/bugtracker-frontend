@@ -13,7 +13,8 @@ import {
     File
 } from 'lucide-react';
 
-const AddTestCaseSidebar = () => {
+const TestCaseSidebar = ({ isOpen, onClose }) => {
+    if (!isOpen) return null;
     const [activeTab, setActiveTab] = useState('text-prompt');
     const [formData, setFormData] = useState({
         serialNumber: '',
@@ -62,6 +63,7 @@ const AddTestCaseSidebar = () => {
     const handleSubmit = () => {
         console.log('Form submitted:', formData);
         // Handle form submission logic here
+        if (onClose) onClose();
     };
 
     const handleCancel = () => {
@@ -77,6 +79,7 @@ const AddTestCaseSidebar = () => {
             status: '',
             image: null
         });
+        if (onClose) onClose();
     };
 
     const handlePromptSubmit = () => {
@@ -361,4 +364,4 @@ const AddTestCaseSidebar = () => {
     );
 };
 
-export default AddTestCaseSidebar;
+export default TestCaseSidebar;
