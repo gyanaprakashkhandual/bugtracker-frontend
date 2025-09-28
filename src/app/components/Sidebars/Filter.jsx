@@ -285,7 +285,7 @@ const FilterSidebar = ({ isOpen, onClose }) => {
     );
 
     return (
-        <div className="h-[calc(100vh-4rem)] fixed right-0 sidebar-scrollbar mt-10 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 w-[28rem] flex flex-col shadow-xl">
+        <div className="h-[calc(100vh-4rem)] fixed right-0 sidebar-scrollbar mt-14 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 w-[28rem] flex flex-col shadow-xl">
             {/* Header with Close Icon */}
             <div className="flex items-center justify-between p-6 border-b border-gray-200 bg-white">
                 <h2 className="text-xl font-bold text-gray-800">Filters</h2>
