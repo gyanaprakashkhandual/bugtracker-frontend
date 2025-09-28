@@ -315,8 +315,8 @@ export default function Navbar() {
 
   // Data options
   const dataOption = [
-    { value: 'fromVsCode', label: 'From VS Code', icon: <CodeSquareIcon className='h-4 w-4' /> },
-    { value: 'fromManual', label: 'From Manual', icon: <FileText className='h-4 w-4' /> },
+    { value: 'fromVsCode', label: 'VS Code', icon: <CodeSquareIcon className='h-4 w-4' /> },
+    { value: 'fromManual', label: 'Manual', icon: <FileText className='h-4 w-4' /> },
   ];
 
   return (
