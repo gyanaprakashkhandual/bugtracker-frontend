@@ -74,7 +74,7 @@ const ProjectSidebar = () => {
             console.error("Error fetching user data", err);
             showAlert({
                 type: "error",
-                message: "Failed to fetch user data"
+                message: "Please Report a Bug"
             });
         }
     };
@@ -104,7 +104,7 @@ const ProjectSidebar = () => {
             setProjects([]);
             showAlert({
                 type: "error",
-                message: "Failed to fetch projects"
+                message: "Please Report a Bug"
             });
         } finally {
             setIsLoading(false);

@@ -33,6 +33,8 @@ import EditUserModal from './Edit';
 import DeleteModal from './Delete';
 import { apiCall } from './api';
 import Dropdown from './Dropdown';
+import { useAlert } from '@/app/script/Alert.context';
+import { useConfirm } from '@/app/script/Confirm.context';
 
 const UserManagementDashboard = () => {
   const [users, setUsers] = useState([]);
@@ -58,6 +60,53 @@ const UserManagementDashboard = () => {
   const roleDropdownRef = useRef(null);
   const statusDropdownRef = useRef(null);
 
+  const { showAlert } = useAlert();
+  const { showConfirm } = useConfirm();
+
+  // Get token from localStorage
+  const getToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token');
+    }
+    return null;
+  };
+
+  // Enhanced API call with token
+  const apiCallWithToken = async (endpoint, options = {}) => {
+    const token = getToken();
+    if (!token) {
+      showAlert({
+        type: "error",
+        message: "Authentication required. Please login again."
+      });
+      return null;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/v1${endpoint}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        ...options,
+      });
+
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      showAlert({
+        type: "error",
+        message: error.message || "Something went wrong"
+      });
+      return null;
+    }
+  };
+
   // Fetch users
   const fetchUsers = async () => {
     try {
@@ -69,11 +118,17 @@ const UserManagementDashboard = () => {
       queryParams.append('page', filters.page);
       queryParams.append('limit', filters.limit);
 
-      const data = await apiCall(`/admin/users?${queryParams}`);
-      setUsers(data.users);
-      setPagination(data.pagination);
+      const data = await apiCallWithToken(`/admin/users?${queryParams}`);
+      if (data) {
+        setUsers(data.users);
+        setPagination(data.pagination);
+      }
     } catch (error) {
       console.error('Error fetching users:', error);
+      showAlert({
+        type: "error",
+        message: "Failed to fetch users"
+      });
     } finally {
       setLoading(false);
     }
@@ -82,82 +137,181 @@ const UserManagementDashboard = () => {
   // Fetch stats
   const fetchStats = async () => {
     try {
-      const data = await apiCall('/admin/users/stats');
-      setStats(data.stats);
+      const data = await apiCallWithToken('/admin/users/stats');
+      if (data) {
+        setStats(data.stats);
+      }
     } catch (error) {
       console.error('Error fetching stats:', error);
+      showAlert({
+        type: "error",
+        message: "Please Report a Bug"
+      });
     }
   };
 
   // Create user
   const createUser = async (userData) => {
     try {
-      await apiCall('/admin/users', {
+      const result = await apiCallWithToken('/admin/users', {
         method: 'POST',
         body: JSON.stringify(userData),
       });
-      setShowCreateModal(false);
-      fetchUsers();
-      fetchStats();
+
+      if (result) {
+        showAlert({
+          type: "success",
+          message: "User Created Successfully"
+        });
+        setShowCreateModal(false);
+        fetchUsers();
+        fetchStats();
+      }
     } catch (error) {
       console.error('Error creating user:', error);
+      showAlert({
+        type: "error",
+        message: "Failed to create user"
+      });
     }
   };
 
   // Update user
   const updateUser = async (userId, userData) => {
     try {
-      await apiCall(`/admin/users/${userId}`, {
+      const result = await apiCallWithToken(`/admin/users/${userId}`, {
         method: 'PUT',
         body: JSON.stringify(userData),
       });
-      setShowEditModal(false);
-      setSelectedUser(null);
-      fetchUsers();
+
+      if (result) {
+        showAlert({
+          type: "success",
+          message: "User Updated Successfully"
+        });
+        setShowEditModal(false);
+        setSelectedUser(null);
+        fetchUsers();
+      }
     } catch (error) {
       console.error('Error updating user:', error);
+      showAlert({
+        type: "error",
+        message: "Failed to update user"
+      });
     }
   };
 
-  // Delete user
-  const deleteUser = async (userId) => {
-    try {
-      await apiCall(`/admin/users/${userId}`, {
-        method: 'DELETE',
-      });
-      setShowDeleteModal(false);
-      setSelectedUser(null);
-      fetchUsers();
-      fetchStats();
-    } catch (error) {
-      console.error('Error deleting user:', error);
+  // Delete user with confirmation
+  const handleDeleteUser = async (user) => {
+    const result = await showConfirm({
+      title: `Delete "${user.name}"?`,
+      message: "This action cannot be undone. All user data will be permanently removed from the system.",
+      confirmText: "Delete User",
+      cancelText: "Keep User",
+      type: "danger",
+    });
+
+    if (result) {
+      try {
+        const deleteResult = await apiCallWithToken(`/admin/users/${user._id}`, {
+          method: 'DELETE',
+        });
+
+        if (deleteResult) {
+          showAlert({
+            type: "success",
+            message: "User Deleted Successfully"
+          });
+          setSelectedUser(null);
+          fetchUsers();
+          fetchStats();
+        }
+      } catch (error) {
+        console.error('Error deleting user:', error);
+        showAlert({
+          type: "error",
+          message: "Failed to delete user"
+        });
+      }
     }
   };
 
-  // Toggle user status
-  const toggleUserStatus = async (userId) => {
-    try {
-      await apiCall(`/admin/users/${userId}/status`, {
-        method: 'PATCH',
-      });
-      fetchUsers();
-      fetchStats();
-    } catch (error) {
-      console.error('Error toggling user status:', error);
+  // Toggle user status with confirmation
+  const handleToggleUserStatus = async (user) => {
+    const action = user.isActive ? 'deactivate' : 'activate';
+    const result = await showConfirm({
+      title: `${action === 'deactivate' ? 'Deactivate' : 'Activate'} "${user.name}"?`,
+      message: `This will ${action} the user's account. ${action === 'deactivate' ? 'They will not be able to access the system.' : 'They will be able to access the system again.'}`,
+      confirmText: action === 'deactivate' ? "Deactivate User" : "Activate User",
+      cancelText: "Cancel",
+      type: action === 'deactivate' ? "warning" : "success",
+    });
+
+    if (result) {
+      try {
+        const toggleResult = await apiCallWithToken(`/admin/users/${user._id}/status`, {
+          method: 'PATCH',
+        });
+
+        if (toggleResult) {
+          showAlert({
+            type: "success",
+            message: `User ${action}d successfully`
+          });
+          fetchUsers();
+          fetchStats();
+        }
+      } catch (error) {
+        console.error('Error toggling user status:', error);
+        showAlert({
+          type: "error",
+          message: `Failed to ${action} user`
+        });
+      }
     }
   };
 
-  // Update user role
-  const updateUserRole = async (userId, role) => {
-    try {
-      await apiCall(`/admin/users/${userId}/role`, {
-        method: 'PATCH',
-        body: JSON.stringify({ role }),
-      });
-      fetchUsers();
-    } catch (error) {
-      console.error('Error updating user role:', error);
+  // Update user role with confirmation
+  const handleUpdateUserRole = async (user, newRole) => {
+    const result = await showConfirm({
+      title: `Change ${user.name}'s Role?`,
+      message: `Are you sure you want to change ${user.name}'s role from ${user.role} to ${newRole}?`,
+      confirmText: "Change Role",
+      cancelText: "Keep Current Role",
+      type: "warning",
+    });
+
+    if (result) {
+      try {
+        const roleResult = await apiCallWithToken(`/admin/users/${user._id}/role`, {
+          method: 'PATCH',
+          body: JSON.stringify({ role: newRole }),
+        });
+
+        if (roleResult) {
+          showAlert({
+            type: "success",
+            message: `User role updated to ${newRole}`
+          });
+          fetchUsers();
+        }
+      } catch (error) {
+        console.error('Error updating user role:', error);
+        showAlert({
+          type: "error",
+          message: "Failed to update user role"
+        });
+      }
     }
+  };
+
+  // Quick role change handler for dropdown
+  const handleQuickRoleChange = async (user, newRole) => {
+    if (user.role === newRole) return;
+
+    await handleUpdateUserRole(user, newRole);
+    setActiveDropdown(null);
   };
 
   useEffect(() => {
@@ -182,7 +336,6 @@ const UserManagementDashboard = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
-
   return (
     <div className="min-h-screen bg-gray-50 p-6 flex-1 overflow-auto">
       <div className="max-w-7xl mx-auto">
@@ -447,8 +600,8 @@ const UserManagementDashboard = () => {
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                                user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
-                                  'bg-green-100 text-green-800'
+                              user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
+                                'bg-green-100 text-green-800'
                               }`}>
                               {user.role}
                             </span>
@@ -564,12 +717,7 @@ const UserManagementDashboard = () => {
           onSubmit={updateUser}
           selectedUser={selectedUser}
         />
-        <DeleteModal
-          isOpen={showDeleteModal}
-          onClose={() => setShowDeleteModal(false)}
-          onDelete={deleteUser}
-          selectedUser={selectedUser}
-        />
+
       </div>
     </div>
   );
