@@ -427,7 +427,7 @@ const TestTypeManagement = () => {
                 placeholder="Search test types..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
               />
             </div>
           </div>
@@ -668,7 +668,7 @@ const TestTypeManagement = () => {
                     type="text"
                     value={formData.testTypeName}
                     onChange={(e) => setFormData({...formData, testTypeName: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="Enter test type name"
                   />
                 </div>
@@ -680,7 +680,7 @@ const TestTypeManagement = () => {
                   <textarea
                     value={formData.testTypeDesc}
                     onChange={(e) => setFormData({...formData, testTypeDesc: e.target.value})}
-                    className="w-full resize-none px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full resize-none px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
                     rows={3}
                     placeholder="Enter description"
                   />
@@ -694,7 +694,7 @@ const TestTypeManagement = () => {
                     <button
                       type="button"
                       onClick={() => setCreateFrameworkDropdown(!createFrameworkDropdown)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-center gap-2">
                         <GitBranch size={16} className="text-gray-500" />
@@ -794,7 +794,7 @@ const TestTypeManagement = () => {
                     type="text"
                     value={formData.testTypeName}
                     onChange={(e) => setFormData({...formData, testTypeName: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="Enter test type name"
                   />
                 </div>
@@ -806,7 +806,7 @@ const TestTypeManagement = () => {
                   <textarea
                     value={formData.testTypeDesc}
                     onChange={(e) => setFormData({...formData, testTypeDesc: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
                     rows={3}
                     placeholder="Enter description"
                   />
@@ -820,7 +820,7 @@ const TestTypeManagement = () => {
                     <button
                       type="button"
                       onClick={() => setEditFrameworkDropdown(!editFrameworkDropdown)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
                     >
                       <div className="flex items-center gap-2">
                         <GitBranch size={16} className="text-gray-500" />

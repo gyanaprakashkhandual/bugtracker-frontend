@@ -142,7 +142,7 @@ const TestCaseDashboard = () => {
                             placeholder="Search test cases..."
                             value={searchQuery}
                             onChange={(e) => setSearchQuery(e.target.value)}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50 hover:bg-white transition-all duration-200"
+                            className="w-full pl-10 pr-4 py-3 border border-gray-200 rounded-xl focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50 hover:bg-white transition-all duration-200"
                         />
                     </div>
                 </div>

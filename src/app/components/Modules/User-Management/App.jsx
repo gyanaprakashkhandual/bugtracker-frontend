@@ -246,13 +246,13 @@ const UserManagementDashboard = () => {
                 placeholder="Search users..."
                 value={filters.search}
                 onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
               />
             </div>
             <select
               value={filters.role}
               onChange={(e) => setFilters({ ...filters, role: e.target.value, page: 1 })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
             >
               <option value="">All Roles</option>
               <option value="admin">Admin</option>
@@ -262,7 +262,7 @@ const UserManagementDashboard = () => {
             <select
               value={filters.isActive}
               onChange={(e) => setFilters({ ...filters, isActive: e.target.value, page: 1 })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
             >
               <option value="">All Status</option>
               <option value="true">Active</option>

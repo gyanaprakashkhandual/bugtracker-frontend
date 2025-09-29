@@ -111,7 +111,7 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit }) => {
             required
             value={formData.name}
             onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all"
             placeholder="Enter user name"
           />
         </div>
@@ -123,7 +123,7 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit }) => {
             required
             value={formData.email}
             onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all"
             placeholder="Enter email address"
           />
         </div>
@@ -134,7 +134,7 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit }) => {
             <button
               type="button"
               onClick={() => setIsRoleDropdownOpen(!isRoleDropdownOpen)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-left flex items-center justify-between hover:border-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-white text-left flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all"
             >
               <div className="flex items-center gap-2">
                 <div className={`p-1 rounded ${selectedRole.color}`}>
@@ -193,7 +193,7 @@ const CreateUserModal = ({ isOpen, onClose, onSubmit }) => {
             type="password"
             value={formData.password}
             onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all"
             placeholder="Leave empty for default password"
           />
         </div>

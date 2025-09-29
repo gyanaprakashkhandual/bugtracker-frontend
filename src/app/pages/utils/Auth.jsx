@@ -486,7 +486,7 @@ const AuthPage = () => {
                             name="name"
                             value={formData.name}
                             onChange={handleInputChange}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all"
                             placeholder="Enter your full name"
                             required
                           />
@@ -505,7 +505,7 @@ const AuthPage = () => {
                             name="email"
                             value={formData.email}
                             onChange={handleInputChange}
-                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all"
                             placeholder="Enter your email"
                             required
                           />
@@ -524,7 +524,7 @@ const AuthPage = () => {
                             name="password"
                             value={formData.password}
                             onChange={handleInputChange}
-                            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                            className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all"
                             placeholder="Create a password"
                             required
                           />
@@ -634,7 +634,7 @@ const AuthPage = () => {
                           name="otp"
                           value={formData.otp}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-lg font-mono tracking-widest focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-lg font-mono tracking-widest focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all"
                           placeholder="Enter 6-digit code"
                           maxLength="6"
                           required
@@ -692,7 +692,7 @@ const AuthPage = () => {
                           name="email"
                           value={formData.email}
                           onChange={handleInputChange}
-                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all"
                           placeholder="Enter your email"
                           required
                         />
@@ -711,7 +711,7 @@ const AuthPage = () => {
                           name="password"
                           value={formData.password}
                           onChange={handleInputChange}
-                          className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                          className="w-full pl-10 pr-12 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all"
                           placeholder="Enter your password"
                           required
                         />
