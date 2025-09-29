@@ -51,8 +51,12 @@ const UserManagementDashboard = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [activeDropdown, setActiveDropdown] = useState(null);
   const [pagination, setPagination] = useState({});
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
 
   const dropdownRef = useRef(null);
+  const roleDropdownRef = useRef(null);
+  const statusDropdownRef = useRef(null);
 
   // Fetch users
   const fetchUsers = async () => {
@@ -161,11 +165,17 @@ const UserManagementDashboard = () => {
     fetchStats();
   }, [filters]);
 
-  // Close dropdown when clicking outside
+  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
         setActiveDropdown(null);
+      }
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target)) {
+        setShowRoleDropdown(false);
+      }
+      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target)) {
+        setShowStatusDropdown(false);
       }
     };
 
@@ -224,7 +234,7 @@ const UserManagementDashboard = () => {
               color="purple"
             />
             <StatCard
-              title="Recent Signups"
+              title="Recent Signup"
               value={stats.recentUsers.length}
               icon={Star}
               color="orange"
@@ -246,28 +256,143 @@ const UserManagementDashboard = () => {
                 placeholder="Search users..."
                 value={filters.search}
                 onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
+                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
-            <select
-              value={filters.role}
-              onChange={(e) => setFilters({ ...filters, role: e.target.value, page: 1 })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
-            >
-              <option value="">All Roles</option>
-              <option value="admin">Admin</option>
-              <option value="developer">Developer</option>
-              <option value="manager">Manager</option>
-            </select>
-            <select
-              value={filters.isActive}
-              onChange={(e) => setFilters({ ...filters, isActive: e.target.value, page: 1 })}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
-            >
-              <option value="">All Status</option>
-              <option value="true">Active</option>
-              <option value="false">Inactive</option>
-            </select>
+
+            <div className="flex items-center space-x-4">
+              {/* Role Filter Dropdown */}
+              <div className="relative" ref={roleDropdownRef}>
+                <button
+                  onClick={() => {
+                    setShowRoleDropdown(!showRoleDropdown);
+                    setShowStatusDropdown(false);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                >
+                  <span>{filters.role ? `Role: ${filters.role}` : 'All Roles'}</span>
+                  <motion.svg
+                    animate={{ rotate: showRoleDropdown ? 180 : 0 }}
+                    className="h-4 w-4 text-gray-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </motion.svg>
+                </button>
+
+                <AnimatePresence>
+                  {showRoleDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1"
+                    >
+                      <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                        Filter by Role
+                      </div>
+                      {[
+                        { value: '', label: 'All Roles' },
+                        { value: 'admin', label: 'Admin' },
+                        { value: 'developer', label: 'Developer' },
+                        { value: 'manager', label: 'Manager' }
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            setFilters({ ...filters, role: option.value, page: 1 });
+                            setShowRoleDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm flex items-center space-x-2 hover:bg-gray-50 transition-colors ${filters.role === option.value ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
+                            }`}
+                        >
+                          {filters.role === option.value && (
+                            <svg className="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          <span className={filters.role === option.value ? 'font-medium' : ''}>
+                            {option.label}
+                          </span>
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+
+              {/* Status Filter Dropdown */}
+              <div className="relative" ref={statusDropdownRef}>
+                <button
+                  onClick={() => {
+                    setShowStatusDropdown(!showStatusDropdown);
+                    setShowRoleDropdown(false);
+                  }}
+                  className="flex items-center space-x-2 px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                >
+                  <span>
+                    {filters.isActive === 'true'
+                      ? 'Status: Active'
+                      : filters.isActive === 'false'
+                        ? 'Status: Inactive'
+                        : 'All Status'
+                    }
+                  </span>
+                  <motion.svg
+                    animate={{ rotate: showStatusDropdown ? 180 : 0 }}
+                    className="h-4 w-4 text-gray-500"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                  </motion.svg>
+                </button>
+
+                <AnimatePresence>
+                  {showStatusDropdown && (
+                    <motion.div
+                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                      transition={{ duration: 0.2 }}
+                      className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1"
+                    >
+                      <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
+                        Filter by Status
+                      </div>
+                      {[
+                        { value: '', label: 'All Status' },
+                        { value: 'true', label: 'Active' },
+                        { value: 'false', label: 'Inactive' }
+                      ].map((option) => (
+                        <button
+                          key={option.value}
+                          onClick={() => {
+                            setFilters({ ...filters, isActive: option.value, page: 1 });
+                            setShowStatusDropdown(false);
+                          }}
+                          className={`w-full text-left px-3 py-2 text-sm flex items-center space-x-2 hover:bg-gray-50 transition-colors ${filters.isActive === option.value ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
+                            }`}
+                        >
+                          {filters.isActive === option.value && (
+                            <svg className="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
+                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                            </svg>
+                          )}
+                          <span className={filters.isActive === option.value ? 'font-medium' : ''}>
+                            {option.label}
+                          </span>
+                        </button>
+                      ))}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
           </div>
         </motion.div>
 
@@ -321,22 +446,19 @@ const UserManagementDashboard = () => {
                             </div>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${
-                              user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                              user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
-                              'bg-green-100 text-green-800'
-                            }`}>
+                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
+                                user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
+                                  'bg-green-100 text-green-800'
+                              }`}>
                               {user.role}
                             </span>
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap">
                             <div className="flex items-center">
-                              <div className={`h-2 w-2 rounded-full mr-2 ${
-                                user.isActive ? 'bg-green-400' : 'bg-red-400'
-                              }`}></div>
-                              <span className={`text-sm ${
-                                user.isActive ? 'text-green-600' : 'text-red-600'
-                              }`}>
+                              <div className={`h-2 w-2 rounded-full mr-2 ${user.isActive ? 'bg-green-400' : 'bg-red-400'
+                                }`}></div>
+                              <span className={`text-sm ${user.isActive ? 'text-green-600' : 'text-red-600'
+                                }`}>
                                 {user.isActive ? 'Active' : 'Inactive'}
                               </span>
                             </div>
@@ -345,49 +467,50 @@ const UserManagementDashboard = () => {
                             {new Date(user.createdAt).toLocaleDateString()}
                           </td>
                           <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <Dropdown
-                              trigger={
-                                <div className="p-1 rounded-md hover:bg-gray-100 transition-colors">
-                                  <MoreVertical className="w-4 h-4 text-gray-500" />
-                                </div>
-                              }
-                              isOpen={activeDropdown === user._id}
-                              onToggle={() => setActiveDropdown(activeDropdown === user._id ? null : user._id)}
-                              ref={dropdownRef}
-                            >
-                              <button
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setShowEditModal(true);
-                                  setActiveDropdown(null);
-                                }}
-                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                            <div ref={dropdownRef}>
+                              <Dropdown
+                                trigger={
+                                  <div className="p-1 rounded-md hover:bg-gray-100 transition-colors">
+                                    <MoreVertical className="w-4 h-4 text-gray-500" />
+                                  </div>
+                                }
+                                isOpen={activeDropdown === user._id}
+                                onToggle={() => setActiveDropdown(activeDropdown === user._id ? null : user._id)}
                               >
-                                <Edit3 className="w-4 h-4" />
-                                Edit
-                              </button>
-                              <button
-                                onClick={() => {
-                                  toggleUserStatus(user._id);
-                                  setActiveDropdown(null);
-                                }}
-                                className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                              >
-                                {user.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                                {user.isActive ? 'Deactivate' : 'Activate'}
-                              </button>
-                              <button
-                                onClick={() => {
-                                  setSelectedUser(user);
-                                  setShowDeleteModal(true);
-                                  setActiveDropdown(null);
-                                }}
-                                className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                              >
-                                <Trash2 className="w-4 h-4" />
-                                Delete
-                              </button>
-                            </Dropdown>
+                                <button
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setShowEditModal(true);
+                                    setActiveDropdown(null);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                >
+                                  <Edit3 className="w-4 h-4" />
+                                  Edit
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    toggleUserStatus(user._id);
+                                    setActiveDropdown(null);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                >
+                                  {user.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
+                                  {user.isActive ? 'Deactivate' : 'Activate'}
+                                </button>
+                                <button
+                                  onClick={() => {
+                                    setSelectedUser(user);
+                                    setShowDeleteModal(true);
+                                    setActiveDropdown(null);
+                                  }}
+                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                >
+                                  <Trash2 className="w-4 h-4" />
+                                  Delete
+                                </button>
+                              </Dropdown>
+                            </div>
                           </td>
                         </motion.tr>
                       ))}
@@ -430,18 +553,18 @@ const UserManagementDashboard = () => {
         </motion.div>
 
         {/* Modals */}
-        <CreateUserModal 
+        <CreateUserModal
           isOpen={showCreateModal}
           onClose={() => setShowCreateModal(false)}
           onSubmit={createUser}
         />
-        <EditUserModal 
+        <EditUserModal
           isOpen={showEditModal}
           onClose={() => setShowEditModal(false)}
           onSubmit={updateUser}
           selectedUser={selectedUser}
         />
-        <DeleteModal 
+        <DeleteModal
           isOpen={showDeleteModal}
           onClose={() => setShowDeleteModal(false)}
           onDelete={deleteUser}
