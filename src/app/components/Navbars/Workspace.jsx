@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TestTypeList from '../Sidebars/TestType';
 import { useProject } from '@/app/utils/Get.project';
+import { useTestType } from '@/app/script/TestType.context';
 import { useParams } from 'next/navigation';
 import TestCaseSidebar from '../Sidebars/TestCase';
 import BugSidebar from '../Sidebars/Bug';

@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import Navbar from '@/app/components/Navbars/Workspace';
 import TestCaseDashboard from '@/app/pages/app/Split';
+import TestCasesMain from '@/app/view/Split/Main';
 
 export default function TokenDebugger() {
   const [token, setToken] = useState('');
@@ -51,7 +52,7 @@ export default function TokenDebugger() {
       <div>
         <Navbar />
       </div>
-      <TestCaseDashboard/>
+      <TestCasesMain />
     </div>
   );
 }
