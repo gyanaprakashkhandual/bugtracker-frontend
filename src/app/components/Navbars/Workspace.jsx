@@ -331,6 +331,8 @@ export default function Navbar() {
             <div className="flex items-center gap-3 flex-shrink-0">
               {/* Desktop Menu Icon */}
               <motion.button
+              tooltip-data="Open Test Types"
+                tooltip-placement="right"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleTestTypeToggle}
@@ -385,6 +387,8 @@ export default function Navbar() {
               ) : (
                 <motion.h1
                   initial={{ opacity: 0, x: -20 }}
+                  tooltip-data={project.projectName}
+                  tooltip-placement="right"
                   animate={{ opacity: 1, x: 0 }}
                   className="text-xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text"
                 >
