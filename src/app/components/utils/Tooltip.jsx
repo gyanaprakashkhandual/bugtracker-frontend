@@ -1,11 +1,12 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useTooltip } from '@/app/script/Tooltip.context';
 
 export default function Tooltip() {
   const { tooltip, showTooltip, hideTooltip } = useTooltip();
+  const tooltipRef = useRef(null);
 
   useEffect(() => {
     const handleMouseOver = (e) => {
@@ -16,41 +17,41 @@ export default function Tooltip() {
         const rect = target.getBoundingClientRect();
         
         let x = rect.left + rect.width / 2;
-        let y = rect.top;
+        let y = rect.top + rect.height / 2; // Changed to center of element
         
         // Calculate position based on placement
         switch(placement) {
           case 'top':
             x = rect.left + rect.width / 2;
-            y = rect.top - 10;
+            y = rect.top + rect.height / 2;
             break;
           case 'bottom':
             x = rect.left + rect.width / 2;
-            y = rect.bottom + 10;
+            y = rect.bottom + 8;
             break;
           case 'left':
-            x = rect.left - 10;
+            x = rect.left - 8;
             y = rect.top + rect.height / 2;
             break;
           case 'right':
-            x = rect.right + 10;
+            x = rect.right + 8;
             y = rect.top + rect.height / 2;
             break;
           case 'top-left':
             x = rect.left;
-            y = rect.top - 10;
+            y = rect.top + rect.height / 2;
             break;
           case 'top-right':
             x = rect.right;
-            y = rect.top - 10;
+            y = rect.top + rect.height / 2;
             break;
           case 'bottom-left':
             x = rect.left;
-            y = rect.bottom + 10;
+            y = rect.bottom + 8;
             break;
           case 'bottom-right':
             x = rect.right;
-            y = rect.bottom + 10;
+            y = rect.bottom + 8;
             break;
         }
         
@@ -79,7 +80,7 @@ export default function Tooltip() {
     
     switch(placement) {
       case 'top':
-        return 'translateX(-50%) translateY(-100%)';
+        return 'translateX(-50%) translateY(calc(-100% - 12px))'; // Added gap from element
       case 'bottom':
         return 'translateX(-50%) translateY(0%)';
       case 'left':
@@ -87,15 +88,15 @@ export default function Tooltip() {
       case 'right':
         return 'translateX(0%) translateY(-50%)';
       case 'top-left':
-        return 'translateX(0%) translateY(-100%)';
+        return 'translateX(0%) translateY(calc(-100% - 12px))';
       case 'top-right':
-        return 'translateX(-100%) translateY(-100%)';
+        return 'translateX(-100%) translateY(calc(-100% - 12px))';
       case 'bottom-left':
         return 'translateX(0%) translateY(0%)';
       case 'bottom-right':
         return 'translateX(-100%) translateY(0%)';
       default:
-        return 'translateX(-50%) translateY(-100%)';
+        return 'translateX(-50%) translateY(calc(-100% - 12px))';
     }
   };
 
@@ -146,6 +147,7 @@ export default function Tooltip() {
     <AnimatePresence>
       {tooltip.visible && (
         <motion.div
+          ref={tooltipRef}
           initial={{ opacity: 0, scale: 0.95 }}
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.95 }}

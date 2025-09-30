@@ -474,7 +474,6 @@ const TestCaseSidebar = ({
                     transition={{ type: 'spring', damping: 20, stiffness: 200 }}
                     onClick={() => setIsOpen(true)}
                     className="fixed left-0 top-1/2 transform -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-r-lg shadow-lg transition-colors z-50"
-                    title="Open sidebar"
                 >
                     <GoogleArrowRight size={20} />
                 </motion.button>
