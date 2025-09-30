@@ -8,7 +8,7 @@ export const useTestTypeName = () => {
   const [error, setError] = useState(null);
 
   useEffect(() => {
-    const projectId = localStorage.getItem("selectedProjectId");
+    const projectId = localStorage.getItem("currentProjectId");
     const testTypeId = localStorage.getItem("selectedTestTypeId");
     const token = localStorage.getItem("token");
 
