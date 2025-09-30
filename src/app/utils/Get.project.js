@@ -1,4 +1,4 @@
-// Updated Get.project.js with debugging
+// Updated Get.project.js with more detailed debugging
 'use client';
 import { useState, useEffect } from 'react';
 import axios from 'axios';
@@ -18,7 +18,8 @@ export const useProject = (slug) => {
     
     if (!slug) {
       console.log('❌ No slug provided, returning early');
-      setLoading(false); // Set loading to false when no slug
+      setLoading(false);
+      setError('No slug provided');
       return;
     }
 
@@ -26,9 +27,14 @@ export const useProject = (slug) => {
       try {
         console.log('🚀 Fetching project for slug:', slug);
         setLoading(true);
+        setError(null);
         const token = localStorage.getItem('token');
         console.log('🔑 Token exists:', !!token);
         
+        if (!token) {
+          throw new Error('No authentication token found');
+        }
+
         const url = `http://localhost:5000/api/v1/project/slug/${slug}`;
         console.log('🌐 API URL:', url);
         
@@ -36,12 +42,19 @@ export const useProject = (slug) => {
           headers: { Authorization: `Bearer ${token}` },
         });
         
-        console.log('✅ Project fetched successfully:', response.data);
-        setProject(response.data.project);
+        console.log('✅ Project API Response:', response.data);
+        
+        if (response.data.project) {
+          console.log('📦 Project data received:', response.data.project);
+          setProject(response.data.project);
+        } else {
+          console.log('❌ No project data in response');
+          setError('No project data received');
+        }
       } catch (err) {
         console.error('❌ Error fetching project:', err);
         console.error('📄 Error response:', err.response?.data);
-        setError(err.response?.data?.message || err.message);
+        setError(err.response?.data?.message || err.message || 'Failed to fetch project');
       } finally {
         console.log('🏁 Setting project loading to false');
         setLoading(false);
@@ -50,6 +63,15 @@ export const useProject = (slug) => {
 
     fetchProject();
   }, [slug]);
+
+  // Log when the hook returns values
+  useEffect(() => {
+    console.log('🔄 useProject state update:', {
+      project: project?._id,
+      loading,
+      error
+    });
+  }, [project, loading, error]);
 
   return { project, loading, error };
 };

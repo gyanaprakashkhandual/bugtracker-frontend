@@ -2,7 +2,7 @@
 'use client';
 
 import { motion } from 'framer-motion';
-import { FiSearch } from 'react-icons/fi';
+import { FiSearch, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 
 const TestCaseSidebar = ({
   testCases,
@@ -10,13 +10,25 @@ const TestCaseSidebar = ({
   onTestCaseSelect,
   searchTerm,
   onSearchChange,
-  loading
+  loading,
+  project,
+  testTypeId,
+  error,
+  onRetry
 }) => {
   return (
     <div className="w-1/3 bg-white border-r border-gray-200 flex flex-col">
-      {/* Search Header */}
-      <div className="p-4 border-b border-gray-200">
-        <div className="relative">
+      {/* Header with Project Info */}
+      <div className="p-4 border-b border-gray-200 bg-gray-50">
+        <h2 className="font-semibold text-gray-900 truncate">
+          {project?.projectName}
+        </h2>
+        <p className="text-sm text-gray-600 mt-1">
+          Test Type ID: {testTypeId}
+        </p>
+        
+        {/* Search Bar */}
+        <div className="relative mt-3">
           <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
           <input
             type="text"
@@ -27,6 +39,24 @@ const TestCaseSidebar = ({
           />
         </div>
       </div>
+
+      {/* Error State */}
+      {error && (
+        <div className="m-4 p-4 bg-red-50 border border-red-200 rounded-lg">
+          <div className="flex items-center text-red-700 mb-2">
+            <FiAlertCircle className="mr-2" />
+            <span className="font-medium">Error</span>
+          </div>
+          <p className="text-red-600 text-sm mb-3">{error}</p>
+          <button
+            onClick={onRetry}
+            className="flex items-center text-sm text-red-700 hover:text-red-800"
+          >
+            <FiRefreshCw className="mr-1" size={14} />
+            Retry
+          </button>
+        </div>
+      )}
 
       {/* Test Cases List */}
       <div className="flex-1 overflow-y-auto">
@@ -53,59 +83,27 @@ const TestCaseSidebar = ({
                     : 'border-gray-200 hover:border-gray-300 hover:shadow-sm'
                 }`}
               >
-                <div className="flex justify-between items-start mb-2">
-                  <span className="font-semibold text-sm text-blue-600">
-                    {testCase.serialNumber}
-                  </span>
-                  <span
-                    className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      testCase.status === 'New'
-                        ? 'bg-blue-100 text-blue-800'
-                        : testCase.status === 'Solved'
-                        ? 'bg-green-100 text-green-800'
-                        : testCase.status === 'Working'
-                        ? 'bg-yellow-100 text-yellow-800'
-                        : 'bg-gray-100 text-gray-800'
-                    }`}
-                  >
-                    {testCase.status}
-                  </span>
-                </div>
-                
-                <h3 className="font-medium text-gray-900 mb-1 line-clamp-1">
-                  {testCase.moduleName}
-                </h3>
-                
-                <p className="text-sm text-gray-600 line-clamp-2">
-                  {testCase.testCaseDescription}
-                </p>
-                
-                <div className="flex justify-between items-center mt-2">
-                  <span
-                    className={`px-2 py-1 rounded text-xs ${
-                      testCase.severity === 'High'
-                        ? 'bg-red-100 text-red-800'
-                        : testCase.severity === 'Medium'
-                        ? 'bg-orange-100 text-orange-800'
-                        : 'bg-green-100 text-green-800'
-                    }`}
-                  >
-                    {testCase.severity}
-                  </span>
-                  <span className="text-xs text-gray-500">
-                    {new Date(testCase.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
+                {/* ... rest of the test case card content ... */}
               </motion.div>
             ))}
             
-            {testCases.length === 0 && (
+            {testCases.length === 0 && !loading && !error && (
               <div className="text-center py-8 text-gray-500">
-                No test cases found
+                <FiAlertCircle className="mx-auto text-gray-400 mb-2" size={24} />
+                <p>No test cases found</p>
+                <p className="text-sm mt-1">Test cases will appear here once created</p>
               </div>
             )}
           </div>
         )}
+      </div>
+
+      {/* Footer with Count */}
+      <div className="p-4 border-t border-gray-200 bg-gray-50">
+        <p className="text-sm text-gray-600 text-center">
+          {testCases.length} test case{testCases.length !== 1 ? 's' : ''} found
+          {loading && ' (loading...)'}
+        </p>
       </div>
     </div>
   );

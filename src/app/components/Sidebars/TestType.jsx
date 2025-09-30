@@ -250,7 +250,7 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
     }, [params?.slug, actualSlug, project, projectLoading, projectError]);
     
     // Get test type context
-    const { selectTestType, selectedTestType, openEditModal, openViewModal, openDeleteModal, openDuplicateModal } = useTestType();
+    const { selectTestType, selectedTestType, testTypeId, openEditModal, openViewModal, openDeleteModal, openDuplicateModal } = useTestType();
 
     const fetchTestTypes = async () => {
         console.log('🔄 fetchTestTypes called');
@@ -321,10 +321,11 @@ export default function TestTypeList({ sidebarOpen, onClose }) {
         }
     }, [sidebarOpen, project, projectLoading]);
 
-    // Handle test type selection
+    // Handle test type selection with localStorage
     const handleTestTypeClick = (testType) => {
         selectTestType(testType);
         console.log('Selected test type:', testType);
+        console.log('Test Type ID saved to localStorage:', testType._id);
     };
 
     // Dropdown action handlers with API integration
