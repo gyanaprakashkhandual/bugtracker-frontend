@@ -547,7 +547,7 @@ const AuthPage = () => {
                           <button
                             type="button"
                             onClick={() => setIsDropdownOpen(!isDropdownOpen)}
-                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg flex items-center justify-between hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+                            className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg flex items-center justify-between hover:bg-gray-50 focus:outline-none focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all"
                           >
                             <div className="flex items-center gap-3 text-gray-700">
                               {roles.find(role => role.value === selectedRole)?.icon}

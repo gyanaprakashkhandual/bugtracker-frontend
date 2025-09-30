@@ -1,9 +1,11 @@
-// app/components/TestCases/TestCaseSidebar.jsx
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
 import { FiSearch, FiAlertCircle, FiRefreshCw, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
 import { useState, useRef, useEffect } from 'react';
+import { GoogleArrowLeft, GoogleArrowRight } from '@/app/components/utils/Icon';
+import { useTestType } from '@/app/script/TestType.context';
+
 
 const TestCaseSidebar = ({
     testCases,
@@ -21,6 +23,8 @@ const TestCaseSidebar = ({
     const [sidebarWidth, setSidebarWidth] = useState(384); // 96 * 4 = 384px (w-96)
     const [isResizing, setIsResizing] = useState(false);
     const sidebarRef = useRef(null);
+
+    const { selectedTestType } = useTestType();
 
     const minWidth = 280;
     const maxWidth = 600;
@@ -67,20 +71,20 @@ const TestCaseSidebar = ({
                         exit={{ x: -400, opacity: 0 }}
                         transition={{ type: 'spring', damping: 25, stiffness: 200 }}
                         style={{ width: sidebarWidth }}
-                        className="bg-white border-r border-gray-200 flex flex-col shadow-lg relative"
+                        className="bg-white border-r border-gray-200 flex flex-col relative sidebar-scrollbar"
                     >
                         {/* Header with Search */}
                         <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="font-bold text-gray-900 text-xl truncate flex-1">
-                                    Test Cases
+                                    {selectedTestType?.testTypeName}
                                 </h2>
                                 <button
                                     onClick={() => setIsOpen(false)}
                                     className="ml-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                     title="Close sidebar"
                                 >
-                                    <FiChevronLeft className="text-gray-600" size={20} />
+                                    <GoogleArrowLeft className="text-gray-600" size={20} />
                                 </button>
                             </div>
 
@@ -92,7 +96,7 @@ const TestCaseSidebar = ({
                                     placeholder="Search test cases..."
                                     value={searchTerm}
                                     onChange={(e) => onSearchChange(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all text-sm"
+                                    className="w-full pl-10 pr-4 py-2.5 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all text-sm"
                                 />
                             </div>
                         </div>
@@ -163,8 +167,8 @@ const TestCaseSidebar = ({
                                             whileTap={{ scale: 0.98 }}
                                             onClick={() => onTestCaseSelect(testCase)}
                                             className={`p-4 border rounded-xl cursor-pointer transition-all duration-200 ${selectedTestCase?._id === testCase._id
-                                                    ? 'border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-200'
-                                                    : 'border-gray-200 hover:border-blue-300 hover:shadow-sm bg-white'
+                                                ? 'border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-200'
+                                                : 'border-gray-200 hover:border-blue-300 hover:shadow-sm bg-white'
                                                 }`}
                                         >
                                             {/* Serial Number */}
@@ -189,10 +193,10 @@ const TestCaseSidebar = ({
                                                 {/* Severity */}
                                                 <span
                                                     className={`px-2.5 py-1 rounded-md text-xs font-semibold ${testCase.severity === 'High' || testCase.severity === 'Critical'
-                                                            ? 'bg-red-100 text-red-700'
-                                                            : testCase.severity === 'Medium'
-                                                                ? 'bg-orange-100 text-orange-700'
-                                                                : 'bg-green-100 text-green-700'
+                                                        ? 'bg-red-100 text-red-700'
+                                                        : testCase.severity === 'Medium'
+                                                            ? 'bg-orange-100 text-orange-700'
+                                                            : 'bg-green-100 text-green-700'
                                                         }`}
                                                 >
                                                     {testCase.severity || 'Medium'}
@@ -201,10 +205,10 @@ const TestCaseSidebar = ({
                                                 {/* Priority */}
                                                 <span
                                                     className={`px-2.5 py-1 rounded-md text-xs font-semibold ${testCase.priority === 'High' || testCase.priority === 'Critical'
-                                                            ? 'bg-red-100 text-red-700'
-                                                            : testCase.priority === 'Medium'
-                                                                ? 'bg-orange-100 text-orange-700'
-                                                                : 'bg-green-100 text-green-700'
+                                                        ? 'bg-red-100 text-red-700'
+                                                        : testCase.priority === 'Medium'
+                                                            ? 'bg-orange-100 text-orange-700'
+                                                            : 'bg-green-100 text-green-700'
                                                         }`}
                                                 >
                                                     P{testCase.priority?.charAt(0) || 'M'}
@@ -213,20 +217,20 @@ const TestCaseSidebar = ({
                                                 {/* Status */}
                                                 <span
                                                     className={`px-2.5 py-1 rounded-md text-xs font-semibold ${testCase.status === 'New'
-                                                            ? 'bg-blue-100 text-blue-700'
-                                                            : testCase.status === 'Solved'
-                                                                ? 'bg-green-100 text-green-700'
-                                                                : testCase.status === 'Working'
-                                                                    ? 'bg-yellow-100 text-yellow-700'
-                                                                    : testCase.status === 'Closed'
-                                                                        ? 'bg-gray-100 text-gray-700'
-                                                                        : testCase.status === 'Open'
-                                                                            ? 'bg-green-100 text-green-700'
-                                                                            : testCase.status === 'Reopen'
-                                                                                ? 'bg-orange-100 text-orange-700'
-                                                                                : testCase.status === 'Reviewed'
-                                                                                    ? 'bg-purple-100 text-purple-700'
-                                                                                    : 'bg-gray-100 text-gray-700'
+                                                        ? 'bg-blue-100 text-blue-700'
+                                                        : testCase.status === 'Solved'
+                                                            ? 'bg-green-100 text-green-700'
+                                                            : testCase.status === 'Working'
+                                                                ? 'bg-yellow-100 text-yellow-700'
+                                                                : testCase.status === 'Closed'
+                                                                    ? 'bg-gray-100 text-gray-700'
+                                                                    : testCase.status === 'Open'
+                                                                        ? 'bg-green-100 text-green-700'
+                                                                        : testCase.status === 'Reopen'
+                                                                            ? 'bg-orange-100 text-orange-700'
+                                                                            : testCase.status === 'Reviewed'
+                                                                                ? 'bg-purple-100 text-purple-700'
+                                                                                : 'bg-gray-100 text-gray-700'
                                                         }`}
                                                 >
                                                     {testCase.status || 'Unknown'}
@@ -278,7 +282,7 @@ const TestCaseSidebar = ({
                         {/* Resize Handle */}
                         <div
                             onMouseDown={handleMouseDown}
-                            className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-blue-400 transition-colors ${isResizing ? 'bg-blue-500' : 'bg-transparent'
+                            className={`absolute top-0 right-0 w-[1px] h-full cursor-col-resize hover:bg-blue-400 transition-colors ${isResizing ? 'bg-blue-500' : 'bg-transparent'
                                 }`}
                             style={{ touchAction: 'none' }}
                         >
@@ -300,7 +304,7 @@ const TestCaseSidebar = ({
                     className="fixed left-0 top-1/2 transform -translate-y-1/2 bg-blue-500 hover:bg-blue-600 text-white p-3 rounded-r-lg shadow-lg transition-colors z-50"
                     title="Open sidebar"
                 >
-                    <FiChevronRight size={20} />
+                    <GoogleArrowRight size={20} />
                 </motion.button>
             )}
         </>
