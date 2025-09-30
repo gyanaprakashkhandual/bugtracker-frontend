@@ -170,8 +170,10 @@ const TestCaseSidebar = ({
 
                                 <button
                                     onClick={() => setIsOpen(false)}
+                                    tooltip-data="Close Sidebar"
+                                    tooltip-placement="right"
                                     className="ml-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                                    title="Close sidebar"
+                                    
                                 >
                                     <GoogleArrowLeft className="text-gray-600" size={20} />
                                 </button>
@@ -190,6 +192,8 @@ const TestCaseSidebar = ({
                                     />
                                     <button
                                         onClick={() => setShowDateFilter(!showDateFilter)}
+                                        tooltip-data="Filter By Calendar"
+                                        tooltip-placement="right"
                                         className={`absolute right-3 top-1/2 transform -translate-y-1/2 p-1.5 rounded-lg transition-colors ${startDate ? 'text-blue-600 bg-blue-100' : 'text-gray-400 hover:text-gray-600'
                                             }`}
                                         title="Filter by date"

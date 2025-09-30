@@ -5,6 +5,8 @@ import { AlertProvider } from "./script/Alert.context";
 import { ConfirmProvider } from "./script/Confirm.context";
 import { LoaderProvider } from "./script/Loader.context";
 import { TestTypeProvider } from "./script/TestType.context";
+import { TooltipProvider } from "./script/Tooltip.context";
+import Tooltip from "./components/utils/Tooltip";
 
 
 const geistSans = Geist({
@@ -28,18 +30,20 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-      
+      <TooltipProvider>
           <ProjectProvider>
             <TestTypeProvider>
             <AlertProvider>
               <ConfirmProvider>
                 <LoaderProvider>
                   {children}
+                  <Tooltip /> {/* ADD THIS LINE */}
                 </LoaderProvider>
               </ConfirmProvider>
             </AlertProvider>
             </TestTypeProvider>
           </ProjectProvider>
+          </TooltipProvider>
       </body>
     </html>
   );
