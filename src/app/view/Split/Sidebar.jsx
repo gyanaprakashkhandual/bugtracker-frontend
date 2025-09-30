@@ -1,11 +1,11 @@
 'use client';
 
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiSearch, FiAlertCircle, FiRefreshCw, FiChevronLeft, FiChevronRight } from 'react-icons/fi';
+import { FiSearch, FiAlertCircle, FiRefreshCw } from 'react-icons/fi';
 import { useState, useRef, useEffect } from 'react';
 import { GoogleArrowLeft, GoogleArrowRight } from '@/app/components/utils/Icon';
 import { useTestType } from '@/app/script/TestType.context';
-
+import { useTestTypeName } from '@/app/hooks/GetTestType';
 
 const TestCaseSidebar = ({
     testCases,
@@ -25,6 +25,9 @@ const TestCaseSidebar = ({
     const sidebarRef = useRef(null);
 
     const { selectedTestType } = useTestType();
+
+    // ✅ renamed destructured keys to avoid prop conflicts
+    const { testTypeName, loading: testTypeLoading, error: testTypeError } = useTestTypeName();
 
     const minWidth = 280;
     const maxWidth = 600;
@@ -77,8 +80,13 @@ const TestCaseSidebar = ({
                         <div className="p-6 border-b border-gray-200 bg-gradient-to-r from-gray-50 to-white">
                             <div className="flex items-center justify-between mb-4">
                                 <h2 className="font-bold text-gray-900 text-xl truncate flex-1">
-                                    {selectedTestType?.testTypeName}
+                                    {testTypeLoading
+                                        ? "Loading..."
+                                        : testTypeError
+                                            ? "Error loading test type"
+                                            : testTypeName || selectedTestType?.testTypeName || "Unnamed Test Type"}
                                 </h2>
+
                                 <button
                                     onClick={() => setIsOpen(false)}
                                     className="ml-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
