@@ -284,25 +284,25 @@ const ProjectSidebar = () => {
 
     // Dropdown options for project actions
     const getProjectOptions = (project) => [
-       {
-        label: "Edit",
-        icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5 3 21l1.5-4L16.5 3.5z" /></svg>,
-        onClick: () => {
-            // Set the selected project first
-            setSelectedProject(project);
-            // Then open the modal - check if openEditModal exists, otherwise use a fallback
-            if (typeof openEditModal === 'function') {
-                openEditModal(project);
-            } else {
-                // Fallback: manually set modal state
-                console.log("Edit project:", project);
-                // You might need to set your modal state directly here
-                // For example, if you have a way to open the modal directly:
-                // setIsModalOpen(true);
-                // setModalMode('edit');
-            }
+        {
+            label: "Edit",
+            icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path d="M12 20h9" /><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5 3 21l1.5-4L16.5 3.5z" /></svg>,
+            onClick: () => {
+                // Set the selected project first
+                setSelectedProject(project);
+                // Then open the modal - check if openEditModal exists, otherwise use a fallback
+                if (typeof openEditModal === 'function') {
+                    openEditModal(project);
+                } else {
+                    // Fallback: manually set modal state
+                    console.log("Edit project:", project);
+                    // You might need to set your modal state directly here
+                    // For example, if you have a way to open the modal directly:
+                    // setIsModalOpen(true);
+                    // setModalMode('edit');
+                }
+            },
         },
-    },
         {
             label: "Workspace",
             icon: <svg width="16" height="16" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><rect x="3" y="3" width="18" height="18" rx="2" /><path d="M9 9h6v6H9z" /></svg>,
@@ -450,7 +450,8 @@ const ProjectSidebar = () => {
                                                 whileHover={{ color: "#3b82f6" }}
                                                 data-tooltip={project.projectName}
                                             >
-                                                <Folder size={20} className={
+                                                <Folder size={20} tooltip-data={project.projectName}
+                tooltip-placement="right"  className={
                                                     selectedProject?._id === project._id
                                                         ? "text-blue-600"
                                                         : "text-slate-500"
