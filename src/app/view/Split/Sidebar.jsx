@@ -328,7 +328,12 @@ const TestCaseSidebar = ({
                                             }}
                                             whileHover={{ scale: 1.02 }}
                                             whileTap={{ scale: 0.98 }}
-                                            onClick={() => onTestCaseSelect(testCase)}
+                                            onClick={() => {
+                                                if (typeof window !== 'undefined' && testCase._id) {
+                                                    localStorage.setItem('currentTestCaseId', testCase._id);
+                                                }
+                                                onTestCaseSelect(testCase);
+                                            }}
                                             className={`p-4 border rounded-xl cursor-pointer transition-all duration-200 ${selectedTestCase?._id === testCase._id
                                                 ? 'border-blue-500 bg-blue-50 shadow-md ring-2 ring-blue-200'
                                                 : 'border-gray-200 hover:border-blue-300 hover:shadow-sm bg-white'

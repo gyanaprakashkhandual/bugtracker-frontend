@@ -3,7 +3,7 @@
 
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { FiChevronDown } from 'react-icons/fi';
+import { GoogleArrowDown } from '@/app/components/utils/Icon';
 
 const DropdownField = ({ value, onSave, options, isEditing }) => {
   const [isOpen, setIsOpen] = useState(false);
@@ -45,7 +45,7 @@ const DropdownField = ({ value, onSave, options, isEditing }) => {
         className={`inline-flex items-center px-3 py-1 rounded-full border text-sm font-medium ${getColorClass(value)} hover:shadow-sm transition-shadow`}
       >
         {value}
-        <FiChevronDown className="ml-1" size={14} />
+        <GoogleArrowDown className="ml-1" size={14} />
       </button>
 
       <AnimatePresence>

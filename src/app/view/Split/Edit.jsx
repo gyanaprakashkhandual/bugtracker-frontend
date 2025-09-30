@@ -45,7 +45,7 @@ const EditableField = ({ value, onSave, className, isEditing, multiline = false 
         onChange={(e) => setEditedValue(e.target.value)}
         onBlur={handleSave}
         onKeyDown={handleKeyPress}
-        className={`w-full border-2 border-blue-500 rounded-lg p-2 focus:outline-none focus:ring-2 focus:ring-blue-500 ${className}`}
+        className={`w-full border-2 border-blue-500 rounded-lg p-2 focus:outline-none focus:ring-1 focus:ring-blue-900 ${className}`}
         rows={4}
         autoFocus
       />
