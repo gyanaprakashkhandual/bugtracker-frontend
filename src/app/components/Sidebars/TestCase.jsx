@@ -8,6 +8,7 @@ import {
     Link,
     File
 } from 'lucide-react';
+import { useAlert } from '@/app/script/Alert.context';
 import { GoogleArrowDown } from '../utils/Icon';
 
 const TestCaseSidebar = ({ isOpen, onClose }) => {
@@ -27,6 +28,8 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
     const [prompt, setPrompt] = useState('');
     const [openDropdowns, setOpenDropdowns] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const {showAlert} = useAlert();
 
     const BASE_URL = 'http://localhost:5000/api/v1/test-case';
 
@@ -144,6 +147,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
 
             console.log('Test case created successfully:', responseData);
             
+            
             // Reset form and close sidebar
             setFormData({
                 moduleName: '',
@@ -158,7 +162,11 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             });
             
             if (onClose) onClose();
-            alert('Test case created successfully!');
+            showAlert({
+                type: "success",
+                message: "Testcase added successfully"
+            });
+            
             
         } catch (error) {
             console.error('Error creating test case:', error);
