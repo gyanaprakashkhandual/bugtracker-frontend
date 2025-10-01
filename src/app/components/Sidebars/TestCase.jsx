@@ -64,18 +64,21 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('upload_preset', 'test_case_images'); // You'll need to set this up in your Cloudinary account
-
-            const response = await fetch('https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload', {
+            formData.append('upload_preset', 'test_case_preset'); // Make sure this preset exists in your Cloudinary
+            formData.append('cloud_name', 'dvytvjplt'); // Added cloud_name parameter
+            
+            const response = await fetch('https://api.cloudinary.com/v1_1/dvytvjplt/image/upload', {
                 method: 'POST',
                 body: formData
             });
 
+            const data = await response.json();
+
             if (!response.ok) {
-                throw new Error('Image upload failed');
+                console.error('Cloudinary error details:', data);
+                throw new Error(data.error?.message || 'Image upload failed');
             }
 
-            const data = await response.json();
             return data.secure_url;
         } catch (error) {
             console.error('Error uploading image to Cloudinary:', error);
@@ -86,7 +89,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
     const handleSubmit = async () => {
         try {
             setIsSubmitting(true);
-
+            
             const token = localStorage.getItem("token");
             const projectId = localStorage.getItem("currentProjectId");
             const testTypeId = localStorage.getItem("selectedTestTypeId");
@@ -99,25 +102,30 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             let imageUrl = '';
             if (formData.image) {
                 try {
+                    console.log('Uploading image to Cloudinary:', formData.image);
                     imageUrl = await uploadImageToCloudinary(formData.image);
+                    console.log('Image uploaded successfully:', imageUrl);
                 } catch (error) {
                     console.error('Failed to upload image:', error);
-                    alert('Failed to upload image. Please try again.');
-                    return;
+                    // Continue without image if upload fails
+                    alert('Image upload failed. Submitting without image.');
+                    imageUrl = 'No image provided';
                 }
             }
 
             const payload = {
-                moduleName: formData.moduleName,
-                testCaseType: formData.testCaseType,
-                testCaseDescription: formData.testCaseDescription,
-                actualResult: formData.actualResult,
-                expectedResult: formData.expectedResult,
-                severity: formData.severity,
-                priority: formData.priority,
-                status: formData.status,
+                moduleName: formData.moduleName || 'General',
+                testCaseType: formData.testCaseType || 'Functional',
+                testCaseDescription: formData.testCaseDescription || 'No description provided',
+                actualResult: formData.actualResult || 'Not executed',
+                expectedResult: formData.expectedResult || 'Expected behavior not defined',
+                severity: formData.severity || 'Medium',
+                priority: formData.priority || 'Medium',
+                status: formData.status || 'New',
                 image: imageUrl || 'No image provided'
             };
+
+            console.log('Submitting test case:', payload);
 
             const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases`, {
                 method: 'POST',
@@ -128,14 +136,14 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 body: JSON.stringify(payload)
             });
 
+            const responseData = await response.json();
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to create test case');
+                throw new Error(responseData.message || `Failed to create test case: ${response.status}`);
             }
 
-            const result = await response.json();
-            console.log('Test case created successfully:', result);
-
+            console.log('Test case created successfully:', responseData);
+            
             // Reset form and close sidebar
             setFormData({
                 moduleName: '',
@@ -148,13 +156,13 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 status: '',
                 image: null
             });
-
+            
             if (onClose) onClose();
             alert('Test case created successfully!');
-
+            
         } catch (error) {
             console.error('Error creating test case:', error);
-            alert(error.message || 'Failed to create test case');
+            alert(error.message || 'Failed to create test case. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
@@ -178,9 +186,9 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
     const handlePromptSubmit = async () => {
         try {
             if (!prompt.trim()) return;
-
+            
             setIsSubmitting(true);
-
+            
             const token = localStorage.getItem("token");
             const projectId = localStorage.getItem("currentProjectId");
             const testTypeId = localStorage.getItem("selectedTestTypeId");
@@ -194,6 +202,8 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 rawText: prompt.trim()
             };
 
+            console.log('Submitting AI test case with text:', payload);
+
             const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/ai-text`, {
                 method: 'POST',
                 headers: {
@@ -203,21 +213,21 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 body: JSON.stringify(payload)
             });
 
+            const responseData = await response.json();
+
             if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || 'Failed to create test case from text');
+                throw new Error(responseData.message || `Failed to create test case from text: ${response.status}`);
             }
 
-            const result = await response.json();
-            console.log('AI test case created successfully:', result);
-
+            console.log('AI test case created successfully:', responseData);
+            
             setPrompt('');
             if (onClose) onClose();
             alert('Test case created successfully from text!');
-
+            
         } catch (error) {
             console.error('Error creating AI test case:', error);
-            alert(error.message || 'Failed to create test case from text');
+            alert(error.message || 'Failed to create test case from text. Please try again.');
         } finally {
             setIsSubmitting(false);
         }
