@@ -1,37 +1,95 @@
-'use client';
+"use client";
 
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback } from "react";
 
 const TooltipContext = createContext();
 
 export const useTooltip = () => {
   const context = useContext(TooltipContext);
   if (!context) {
-    throw new Error('useTooltip must be used within TooltipProvider');
+    throw new Error("useTooltip must be used within TooltipProvider");
   }
   return context;
 };
 
-export function TooltipProvider({ children }) {
+export const TooltipProvider = ({ children }) => {
   const [tooltip, setTooltip] = useState({
     visible: false,
-    text: '',
-    x: 0,
-    y: 0,
-    placement: 'top'
+    content: "",
+    position: null,
+    targetRect: null,
+    placement: "bottom",
+    customClass: "",
   });
 
-  const showTooltip = (text, x, y, placement = 'top') => {
-    setTooltip({ visible: true, text, x, y, placement });
-  };
+  const [hoverTimeout, setHoverTimeout] = useState(null);
 
-  const hideTooltip = () => {
-    setTooltip({ visible: false, text: '', x: 0, y: 0, placement: 'top' });
-  };
+  const showTooltip = useCallback((content, targetRect, placement = "bottom", customClass = "") => {
+    setTooltip({
+      visible: true,
+      content,
+      position: { x: 0, y: 0 },
+      targetRect,
+      placement,
+      customClass,
+    });
+  }, []);
+
+  const hideTooltip = useCallback(() => {
+    setTooltip((prev) => ({ ...prev, visible: false }));
+    if (hoverTimeout) {
+      clearTimeout(hoverTimeout);
+      setHoverTimeout(null);
+    }
+  }, [hoverTimeout]);
+
+  useEffect(() => {
+    const handleMouseOver = (e) => {
+      const target = e.target.closest("[tooltip-data]");
+      if (!target) return;
+
+      const content = target.getAttribute("tooltip-data");
+      const placement = target.getAttribute("tooltip-placement") || "bottom";
+      const customClass = target.getAttribute("tooltip-class") || "";
+
+      if (!content) return;
+
+      // Clear any existing timeout
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+      }
+
+      // Delay showing tooltip by 500ms (Google Meet style)
+      const timeout = setTimeout(() => {
+        const rect = target.getBoundingClientRect();
+        showTooltip(content, rect, placement, customClass);
+      }, 500);
+
+      setHoverTimeout(timeout);
+    };
+
+    const handleMouseOut = (e) => {
+      const target = e.target.closest("[tooltip-data]");
+      if (!target) return;
+
+      hideTooltip();
+    };
+
+    document.addEventListener("mouseover", handleMouseOver);
+    document.addEventListener("mouseout", handleMouseOut);
+
+    return () => {
+      document.removeEventListener("mouseover", handleMouseOver);
+      document.removeEventListener("mouseout", handleMouseOut);
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+      }
+    };
+  }, [showTooltip, hideTooltip, hoverTimeout]);
 
   return (
     <TooltipContext.Provider value={{ tooltip, showTooltip, hideTooltip }}>
       {children}
     </TooltipContext.Provider>
   );
-}
+};

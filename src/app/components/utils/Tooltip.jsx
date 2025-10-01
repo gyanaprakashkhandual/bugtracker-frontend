@@ -1,173 +1,100 @@
-'use client';
+"use client";
 
-import { useEffect, useRef } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { useTooltip } from '@/app/script/Tooltip.context';
+import { useEffect, useRef, useState } from "react";
+import { motion, AnimatePresence } from "framer-motion";
+import { useTooltip } from "../../script/Tooltip.context";
 
-export default function Tooltip() {
-  const { tooltip, showTooltip, hideTooltip } = useTooltip();
+const Tooltip = () => {
+  const { tooltip, hideTooltip } = useTooltip();
   const tooltipRef = useRef(null);
+  const [position, setPosition] = useState({ top: 0, left: 0 });
 
   useEffect(() => {
-    const handleMouseOver = (e) => {
-      const target = e.target.closest('[tooltip-data]');
-      if (target) {
-        const text = target.getAttribute('tooltip-data');
-        const placement = target.getAttribute('tooltip-placement') || 'top';
-        const rect = target.getBoundingClientRect();
-        
-        let x = rect.left + rect.width / 2;
-        let y = rect.top + rect.height / 2; // Changed to center of element
-        
-        // Calculate position based on placement
-        switch(placement) {
-          case 'top':
-            x = rect.left + rect.width / 2;
-            y = rect.top + rect.height / 2;
-            break;
-          case 'bottom':
-            x = rect.left + rect.width / 2;
-            y = rect.bottom + 8;
-            break;
-          case 'left':
-            x = rect.left - 8;
-            y = rect.top + rect.height / 2;
-            break;
-          case 'right':
-            x = rect.right + 8;
-            y = rect.top + rect.height / 2;
-            break;
-          case 'top-left':
-            x = rect.left;
-            y = rect.top + rect.height / 2;
-            break;
-          case 'top-right':
-            x = rect.right;
-            y = rect.top + rect.height / 2;
-            break;
-          case 'bottom-left':
-            x = rect.left;
-            y = rect.bottom + 8;
-            break;
-          case 'bottom-right':
-            x = rect.right;
-            y = rect.bottom + 8;
-            break;
-        }
-        
-        showTooltip(text, x, y, placement);
-      }
-    };
-
-    const handleMouseOut = (e) => {
-      const target = e.target.closest('[tooltip-data]');
-      if (target) {
+    const handleScroll = () => {
+      if (tooltip.visible) {
         hideTooltip();
       }
     };
 
-    document.addEventListener('mouseover', handleMouseOver);
-    document.addEventListener('mouseout', handleMouseOut);
+    window.addEventListener("scroll", handleScroll, true);
+    return () => window.removeEventListener("scroll", handleScroll, true);
+  }, [tooltip.visible, hideTooltip]);
 
-    return () => {
-      document.removeEventListener('mouseover', handleMouseOver);
-      document.removeEventListener('mouseout', handleMouseOut);
+  useEffect(() => {
+    if (!tooltip.visible || !tooltip.targetRect || !tooltipRef.current) {
+      return;
+    }
+
+    const calculatePosition = () => {
+      const tooltipRect = tooltipRef.current.getBoundingClientRect();
+      const { targetRect, placement } = tooltip;
+      const gap = 8;
+
+      let top = 0;
+      let left = 0;
+
+      switch (placement) {
+        case "top":
+          top = targetRect.top - tooltipRect.height - gap;
+          left = targetRect.left + targetRect.width / 2 - tooltipRect.width / 2;
+          break;
+        case "bottom":
+          top = targetRect.bottom + gap;
+          left = targetRect.left + targetRect.width / 2 - tooltipRect.width / 2;
+          break;
+        case "left":
+          top = targetRect.top + targetRect.height / 2 - tooltipRect.height / 2;
+          left = targetRect.left - tooltipRect.width - gap;
+          break;
+        case "right":
+          top = targetRect.top + targetRect.height / 2 - tooltipRect.height / 2;
+          left = targetRect.right + gap;
+          break;
+        default:
+          top = targetRect.bottom + gap;
+          left = targetRect.left + targetRect.width / 2 - tooltipRect.width / 2;
+      }
+
+      // Keep tooltip within viewport
+      const padding = 8;
+      if (left < padding) left = padding;
+      if (left + tooltipRect.width > window.innerWidth - padding) {
+        left = window.innerWidth - tooltipRect.width - padding;
+      }
+      if (top < padding) top = padding;
+      if (top + tooltipRect.height > window.innerHeight - padding) {
+        top = window.innerHeight - tooltipRect.height - padding;
+      }
+
+      setPosition({ top, left });
     };
-  }, [showTooltip, hideTooltip]);
 
-  const getTransformStyle = () => {
-    const placement = tooltip.placement || 'top';
-    
-    switch(placement) {
-      case 'top':
-        return 'translateX(-50%) translateY(calc(-100% - 12px))'; // Added gap from element
-      case 'bottom':
-        return 'translateX(-50%) translateY(0%)';
-      case 'left':
-        return 'translateX(-100%) translateY(-50%)';
-      case 'right':
-        return 'translateX(0%) translateY(-50%)';
-      case 'top-left':
-        return 'translateX(0%) translateY(calc(-100% - 12px))';
-      case 'top-right':
-        return 'translateX(-100%) translateY(calc(-100% - 12px))';
-      case 'bottom-left':
-        return 'translateX(0%) translateY(0%)';
-      case 'bottom-right':
-        return 'translateX(-100%) translateY(0%)';
-      default:
-        return 'translateX(-50%) translateY(calc(-100% - 12px))';
-    }
-  };
-
-  const getArrowStyle = () => {
-    const placement = tooltip.placement || 'top';
-    
-    switch(placement) {
-      case 'top':
-        return {
-          className: 'absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 bg-gray-900 rotate-45'
-        };
-      case 'bottom':
-        return {
-          className: 'absolute left-1/2 -translate-x-1/2 -top-1 w-2 h-2 bg-gray-900 rotate-45'
-        };
-      case 'left':
-        return {
-          className: 'absolute top-1/2 -translate-y-1/2 -right-1 w-2 h-2 bg-gray-900 rotate-45'
-        };
-      case 'right':
-        return {
-          className: 'absolute top-1/2 -translate-y-1/2 -left-1 w-2 h-2 bg-gray-900 rotate-45'
-        };
-      case 'top-left':
-        return {
-          className: 'absolute left-4 -bottom-1 w-2 h-2 bg-gray-900 rotate-45'
-        };
-      case 'top-right':
-        return {
-          className: 'absolute right-4 -bottom-1 w-2 h-2 bg-gray-900 rotate-45'
-        };
-      case 'bottom-left':
-        return {
-          className: 'absolute left-4 -top-1 w-2 h-2 bg-gray-900 rotate-45'
-        };
-      case 'bottom-right':
-        return {
-          className: 'absolute right-4 -top-1 w-2 h-2 bg-gray-900 rotate-45'
-        };
-      default:
-        return {
-          className: 'absolute left-1/2 -translate-x-1/2 -bottom-1 w-2 h-2 bg-gray-900 rotate-45'
-        };
-    }
-  };
+    // Calculate position after render
+    requestAnimationFrame(calculatePosition);
+  }, [tooltip.visible, tooltip.targetRect, tooltip.placement]);
 
   return (
     <AnimatePresence>
-      {tooltip.visible && (
+      {tooltip.visible && tooltip.content && (
         <motion.div
           ref={tooltipRef}
-          initial={{ opacity: 0, scale: 0.95 }}
+          initial={{ opacity: 0, scale: 0.85 }}
           animate={{ opacity: 1, scale: 1 }}
-          exit={{ opacity: 0, scale: 0.95 }}
-          transition={{ duration: 0.15, ease: 'easeOut' }}
-          className="fixed z-[9999] pointer-events-none"
+          exit={{ opacity: 0, scale: 0.85 }}
+          transition={{ duration: 0.1, ease: "easeOut" }}
+          className={`fixed z-[99999] pointer-events-none ${tooltip.customClass || ""}`}
           style={{
-            left: `${tooltip.x}px`,
-            top: `${tooltip.y}px`,
-            transform: getTransformStyle()
+            top: `${position.top}px`,
+            left: `${position.left}px`,
           }}
         >
-          <div className="relative">
-            <div className="bg-gray-900 text-white text-sm px-3 py-1.5 rounded-lg shadow-lg whitespace-nowrap">
-              {tooltip.text}
-            </div>
-            {/* Arrow */}
-            <div className={getArrowStyle().className} />
+          <div className="bg-[#3c4043] text-white text-[13px] leading-[18px] px-2.5 py-1.5 rounded shadow-[0_2px_8px_rgba(0,0,0,0.26)] whitespace-nowrap font-normal">
+            {tooltip.content}
           </div>
         </motion.div>
       )}
     </AnimatePresence>
   );
-}
+};
+
+export default Tooltip;

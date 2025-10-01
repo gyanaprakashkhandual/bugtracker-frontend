@@ -231,7 +231,7 @@ const TestCaseDetails = ({ testCase, project, testTypeId, selectedTestType, onTe
       <motion.div 
         initial={{ opacity: 0, y: -10 }}
         animate={{ opacity: 1, y: 0 }}
-        className="border-b border-gray-200 bg-white sticky top-0 z-10 shadow-sm"
+        className="border-b border-gray-200 bg-white sticky top-0 z-10"
       >
         <div className="px-6 py-4">
           <div className="flex items-center justify-between gap-4 flex-wrap">
@@ -298,7 +298,7 @@ const TestCaseDetails = ({ testCase, project, testTypeId, selectedTestType, onTe
                     : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100'
                 }`}
                 tooltip-data={isEditing ? "Save Changes" : "Edit Test Case"}
-                tooltip-placement="bottom"
+                tooltip-placement="top"
               >
                 <FiEdit2 size={18} />
               </button>
@@ -308,7 +308,7 @@ const TestCaseDetails = ({ testCase, project, testTypeId, selectedTestType, onTe
                   onClick={() => setShowDropdown(!showDropdown)}
                   className="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
                   tooltip-data="More Options"
-                  tooltip-placement="bottom"
+                  tooltip-placement="top"
                 >
                   <FiMoreVertical size={18} />
                 </button>

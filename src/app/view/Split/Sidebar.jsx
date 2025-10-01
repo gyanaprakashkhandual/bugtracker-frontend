@@ -171,7 +171,8 @@ const TestCaseSidebar = ({
                                 <button
                                     onClick={() => setIsOpen(false)}
                                     tooltip-data="Close Sidebar"
-                                    tooltip-placement="right"
+                                    tooltip-placement="top"
+                                    tooltip-class=""
                                     className="ml-2 p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                     
                                 >
