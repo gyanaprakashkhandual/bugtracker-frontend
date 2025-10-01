@@ -7,10 +7,31 @@ import {
   FiChevronLeft, FiChevronRight, FiEye, FiUser,
   FiBarChart2, FiFolder, FiHome, FiUsers, FiSettings
 } from 'react-icons/fi';
-import { toast } from 'react-toastify';
 import { useAlert } from '@/app/script/Alert.context';
 import { useConfirm } from '@/app/script/Confirm.context';
 
+// Project Events - Emit custom events for project changes
+export const PROJECT_EVENTS = {
+  CREATED: 'project:created',
+  UPDATED: 'project:updated',
+  DELETED: 'project:deleted',
+  CHANGED: 'project:changed', // Generic change event
+};
+
+const emitProjectEvent = (eventType, projectData = null) => {
+  if (typeof window !== 'undefined') {
+    const event = new CustomEvent(eventType, {
+      detail: { project: projectData, timestamp: Date.now() }
+    });
+    window.dispatchEvent(event);
+
+    // Also emit generic change event
+    const changeEvent = new CustomEvent(PROJECT_EVENTS.CHANGED, {
+      detail: { type: eventType, project: projectData, timestamp: Date.now() }
+    });
+    window.dispatchEvent(changeEvent);
+  }
+};
 
 const ProjectManagement = () => {
   const [projects, setProjects] = useState([]);
@@ -19,9 +40,9 @@ const ProjectManagement = () => {
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [saving, setSaving] = useState(false);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -50,7 +71,10 @@ const ProjectManagement = () => {
   const apiCall = async (endpoint, options = {}) => {
     const token = getToken();
     if (!token) {
-      toast.error('Please login first');
+      showAlert({
+        type: 'error',
+        message: 'Please login first'
+      });
       return null;
     }
 
@@ -71,7 +95,10 @@ const ProjectManagement = () => {
       return await response.json();
     } catch (error) {
       console.error('API Error:', error);
-      toast.error(error.message);
+      showAlert({
+        type: 'error',
+        message: error.message
+      });
       return null;
     }
   };
@@ -104,50 +131,83 @@ const ProjectManagement = () => {
     }
   };
 
-  // Create project
-  const createProject = async (e) => {
+  // Create or Update project
+  const handleSubmitProject = async (e) => {
     e.preventDefault();
-    const result = await apiCall('/', {
-      method: 'POST',
-      body: JSON.stringify(formData)
-    });
+    setSaving(true);
 
-    if (result) {
-      toast.success('Project created successfully!');
-      setShowCreateModal(false);
-      setFormData({ projectName: '', projectDesc: '' });
-      fetchProjects();
-      fetchStats();
+    try {
+      let result;
+      if (selectedProject) {
+        // Update existing project
+        result = await apiCall(`/${selectedProject._id}`, {
+          method: 'PUT',
+          body: JSON.stringify(formData)
+        });
+
+        if (result) {
+          showAlert({
+            type: 'success',
+            message: `"${formData.projectName}" updated successfully`
+          });
+        }
+      } else {
+        // Create new project
+        result = await apiCall('/', {
+          method: 'POST',
+          body: JSON.stringify(formData)
+        });
+
+        if (result) {
+          showAlert({
+            type: 'success',
+            message: `"${formData.projectName}" created successfully`
+          });
+
+          // Emit project created event
+          emitProjectEvent(PROJECT_EVENTS.CREATED, result.project || formData);
+        }
+      }
+
+      if (result) {
+        setShowCreateModal(false);
+        setSelectedProject(null);
+        setFormData({ projectName: '', projectDesc: '' });
+        fetchProjects();
+        fetchStats();
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Delete project
-  const deleteProject = async () => {
-    if (!selectedProject) return;
-
-    const result = await apiCall(`/${selectedProject._id}`, {
-      method: 'DELETE'
+  // Delete project with confirmation
+  const handleDeleteProject = async (project) => {
+    const result = await showConfirm({
+      title: `Delete "${project.projectName}"?`,
+      message: "This action cannot be undone. All project data will be permanently lost.",
+      confirmText: "Delete Project",
+      cancelText: "Keep Project",
+      type: "danger",
     });
 
     if (result) {
-      toast.success('Project deleted successfully!');
-      setShowDeleteModal(false);
-      setSelectedProject(null);
-      fetchProjects();
-      fetchStats();
-    }
-  };
+      const apiResult = await apiCall(`/${project._id}`, {
+        method: 'DELETE'
+      });
 
-  // Update project
-  const updateProject = async (projectId, data) => {
-    const result = await apiCall(`/${projectId}`, {
-      method: 'PUT',
-      body: JSON.stringify(data)
-    });
+      if (apiResult) {
+        showAlert({
+          type: "success",
+          message: `"${project.projectName}" deleted successfully`,
+        });
 
-    if (result) {
-      toast.success('Project updated successfully!');
-      fetchProjects();
+        // Emit project deleted event
+        emitProjectEvent(PROJECT_EVENTS.DELETED, project);
+
+        fetchProjects();
+        fetchStats();
+      }
     }
   };
 
@@ -170,9 +230,7 @@ const ProjectManagement = () => {
 
   return (
     <div className="bg-gray-50">
-
       <div className="max-w-full mx-auto">
-
         {/* Main Content */}
         <div className="bg-white rounded-sm">
           {/* Tabs and Search */}
@@ -235,10 +293,7 @@ const ProjectManagement = () => {
                   });
                   setShowCreateModal(true);
                 }}
-                onDelete={(project) => {
-                  setSelectedProject(project);
-                  setShowDeleteModal(true);
-                }}
+                onDelete={handleDeleteProject}
               />
             )}
           </div>
@@ -256,7 +311,7 @@ const ProjectManagement = () => {
               setFormData({ projectName: '', projectDesc: '' });
             }}
           >
-            <form onSubmit={createProject} className="space-y-4">
+            <form onSubmit={handleSubmitProject} className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Project Name
@@ -268,6 +323,7 @@ const ProjectManagement = () => {
                   onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
                   className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
                   placeholder="Enter project name"
+                  disabled={saving}
                 />
               </div>
               <div>
@@ -280,6 +336,7 @@ const ProjectManagement = () => {
                   rows="4"
                   className="w-full resize-none px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
                   placeholder="Enter project description"
+                  disabled={saving}
                 />
               </div>
               <div className="flex justify-end space-x-3 pt-4">
@@ -291,57 +348,26 @@ const ProjectManagement = () => {
                     setFormData({ projectName: '', projectDesc: '' });
                   }}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={saving}
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                  disabled={saving}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 min-w-[120px] justify-center"
                 >
-                  {selectedProject ? 'Update' : 'Create'} Project
+                  {saving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>{selectedProject ? 'Updating...' : 'Creating...'}</span>
+                    </>
+                  ) : (
+                    <span>{selectedProject ? 'Update' : 'Create'} Project</span>
+                  )}
                 </button>
               </div>
             </form>
-          </Modal>
-        )}
-      </AnimatePresence>
-
-      {/* Delete Confirmation Modal */}
-      <AnimatePresence>
-        {showDeleteModal && (
-          <Modal
-            title="Delete Project"
-            onClose={() => {
-              setShowDeleteModal(false);
-              setSelectedProject(null);
-            }}
-          >
-            <div className="text-center">
-              <FiTrash2 className="h-12 w-12 text-red-500 mx-auto mb-4" />
-              <h3 className="text-lg font-medium text-gray-900 mb-2">
-                Delete Project
-              </h3>
-              <p className="text-gray-500 mb-6">
-                Are you sure you want to delete "{selectedProject?.projectName}"? This action cannot be undone.
-              </p>
-              <div className="flex justify-center space-x-3">
-                <button
-                  onClick={() => {
-                    setShowDeleteModal(false);
-                    setSelectedProject(null);
-                  }}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={deleteProject}
-                  className="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors"
-                >
-                  Delete Project
-                </button>
-              </div>
-            </div>
           </Modal>
         )}
       </AnimatePresence>
@@ -436,12 +462,16 @@ const ProjectCard = ({ project, index, onEdit, onDelete }) => {
         </div>
         <div className="flex space-x-2">
           <button
+          tooltip-data="Edit"
+          tooltip-placement="bottom"
             onClick={() => onEdit(project)}
             className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
           >
             <FiEdit className="h-4 w-4" />
           </button>
           <button
+          tooltip-data="Delete"
+          tooltip-placement="bottom"
             onClick={() => onDelete(project)}
             className="p-2 text-gray-400 hover:text-red-600 transition-colors"
           >
@@ -530,7 +560,6 @@ const StatsView = ({ stats }) => {
           </div>
         </div>
       </motion.div>
-
 
       {/* Recent Projects */}
       <div>
