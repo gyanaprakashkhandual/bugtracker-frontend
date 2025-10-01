@@ -462,16 +462,16 @@ const ProjectCard = ({ project, index, onEdit, onDelete }) => {
         </div>
         <div className="flex space-x-2">
           <button
-          tooltip-data="Edit"
-          tooltip-placement="bottom"
+            tooltip-data="Edit"
+            tooltip-placement="bottom"
             onClick={() => onEdit(project)}
             className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
           >
             <FiEdit className="h-4 w-4" />
           </button>
           <button
-          tooltip-data="Delete"
-          tooltip-placement="bottom"
+            tooltip-data="Delete"
+            tooltip-placement="bottom"
             onClick={() => onDelete(project)}
             className="p-2 text-gray-400 hover:text-red-600 transition-colors"
           >

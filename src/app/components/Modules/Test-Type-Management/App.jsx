@@ -1,1217 +1,718 @@
 'use client';
 
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { 
-  Plus, Search, Filter, MoreHorizontal, Edit2, Trash2, 
-  RefreshCw, BarChart3, FolderOpen, GitBranch, 
-  ChevronDown, X, AlertCircle, CheckCircle, 
-  ArrowLeft, ArrowRight, Settings, Eye, Check
-} from 'lucide-react';
+import {
+  FiPlus, FiEdit, FiTrash2, FiSearch, FiFilter,
+  FiChevronLeft, FiChevronRight, FiEye, FiUser,
+  FiBarChart2, FiFolder, FiHome, FiUsers, FiSettings,
+  FiGitBranch
+} from 'react-icons/fi';
+import { useAlert } from '@/app/script/Alert.context';
+import { useConfirm } from '@/app/script/Confirm.context';
 import { useProject } from '@/app/script/Project.context';
 
 const TestTypeManagement = () => {
-  // Get project from context
   const { selectedProject } = useProject();
-  
-  // State management
   const [testTypes, setTestTypes] = useState([]);
-  const [filteredTestTypes, setFilteredTestTypes] = useState([]);
+  const [myTestTypes, setMyTestTypes] = useState([]);
+  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
-  
-  // UI state
+  const [activeTab, setActiveTab] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showTrashModal, setShowTrashModal] = useState(false);
-  const [showStatsModal, setShowStatsModal] = useState(false);
-  const [editingTestType, setEditingTestType] = useState(null);
   const [selectedTestType, setSelectedTestType] = useState(null);
-  
-  // Filter and pagination state
-  const [currentPage, setCurrentPage] = useState(1);
-  const [totalPages, setTotalPages] = useState(1);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedFramework, setSelectedFramework] = useState('');
-  const [showFilters, setShowFilters] = useState(false);
-  const [viewMode, setViewMode] = useState('grid'); // grid or list
-  
-  // Dropdown states
-  const [activeDropdown, setActiveDropdown] = useState(null);
-  const [frameworkDropdown, setFrameworkDropdown] = useState(false);
-  const [createFrameworkDropdown, setCreateFrameworkDropdown] = useState(false);
-  const [editFrameworkDropdown, setEditFrameworkDropdown] = useState(false);
-  
-  // Form state
+  const [saving, setSaving] = useState(false);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalTestTypes: 0,
+    hasNext: false,
+    hasPrev: false
+  });
+
   const [formData, setFormData] = useState({
     testTypeName: '',
     testTypeDesc: '',
     testFramework: 'Selenium'
   });
 
-  // Stats state
-  const [stats, setStats] = useState(null);
-  const [trashItems, setTrashItems] = useState([]);
+  const { showAlert } = useAlert();
+  const { showConfirm } = useConfirm();
 
   const frameworks = ['Selenium', 'Cypress', 'Playwright', 'Jest', 'Mocha', 'JUnit', 'TestNG', 'PyTest'];
 
-  // API calls
-  const API_BASE = 'http://localhost:5000/api/v1/test-type';
-  
-  const getHeaders = () => {
-    const token = localStorage.getItem('token');
-    return {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`
-    };
+  // Get token from localStorage
+  const getToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token');
+    }
+    return null;
   };
 
-  const fetchTestTypes = async (page = 1, search = '', framework = '') => {
+  // API call function
+  const apiCall = async (endpoint, options = {}) => {
+    const token = getToken();
+    if (!token) {
+      showAlert({
+        type: 'error',
+        message: 'Please login first'
+      });
+      return null;
+    }
+
+    try {
+      const response = await fetch(`http://localhost:5000/api/v1/test-type${endpoint}`, {
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json',
+          ...options.headers,
+        },
+        ...options,
+      });
+
+      if (!response.ok) {
+        throw new Error(`API call failed: ${response.status}`);
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('API Error:', error);
+      showAlert({
+        type: 'error',
+        message: error.message
+      });
+      return null;
+    }
+  };
+
+  // Fetch test types based on active tab
+  const fetchTestTypes = async (page = 1, search = '') => {
     if (!selectedProject?._id) {
-      setError('No project selected');
+      showAlert({
+        type: 'error',
+        message: 'Please select a project first'
+      });
       return;
     }
 
     setLoading(true);
-    try {
-      let url = `${API_BASE}/projects/${selectedProject._id}/test-types?page=${page}&limit=12`;
-      if (search) url += `&search=${encodeURIComponent(search)}`;
-      if (framework) url += `&framework=${encodeURIComponent(framework)}`;
+    const endpoint = activeTab === 'my'
+      ? `/my-test-types?page=${page}&limit=8&search=${search}`
+      : `/projects/${selectedProject._id}/test-types?page=${page}&limit=8&search=${search}`;
 
-      const response = await fetch(url, { headers: getHeaders() });
-      const data = await response.json();
+    const result = await apiCall(endpoint);
 
-      if (response.ok) {
-        setTestTypes(data.testTypes);
-        setFilteredTestTypes(data.testTypes);
-        setTotalPages(data.pagination.totalPages);
-        setCurrentPage(data.pagination.currentPage);
+    if (result) {
+      if (activeTab === 'my') {
+        setMyTestTypes(result.testTypes || []);
       } else {
-        setError(data.message || 'Failed to fetch test types');
+        setTestTypes(result.testTypes || []);
       }
-    } catch (error) {
-      setError('Network error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const createTestType = async () => {
-    if (!selectedProject?._id) {
-      setError('No project selected');
-      return;
-    }
-
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE}/projects/${selectedProject._id}/test-types`, {
-        method: 'POST',
-        headers: getHeaders(),
-        body: JSON.stringify(formData)
+      setPagination(result.pagination || {
+        currentPage: 1,
+        totalPages: 1,
+        totalTestTypes: 0,
+        hasNext: false,
+        hasPrev: false
       });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccess('Test type created successfully');
-        setShowCreateModal(false);
-        resetForm();
-        fetchTestTypes(currentPage, searchTerm, selectedFramework);
-      } else {
-        setError(data.message || 'Failed to create test type');
-      }
-    } catch (error) {
-      setError('Network error occurred');
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
-  const getTestTypeById = async (id) => {
-    try {
-      const response = await fetch(`${API_BASE}/test-types/${id}`, {
-        headers: getHeaders()
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSelectedTestType(data.testType);
-      } else {
-        setError(data.message || 'Failed to fetch test type');
-      }
-    } catch (error) {
-      setError('Network error occurred');
-    }
-  };
-
-  const updateTestType = async () => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE}/test-types/${editingTestType._id}`, {
-        method: 'PUT',
-        headers: getHeaders(),
-        body: JSON.stringify(formData)
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccess('Test type updated successfully');
-        setShowEditModal(false);
-        setEditingTestType(null);
-        resetForm();
-        fetchTestTypes(currentPage, searchTerm, selectedFramework);
-      } else {
-        setError(data.message || 'Failed to update test type');
-      }
-    } catch (error) {
-      setError('Network error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const moveToTrash = async (id) => {
-    setLoading(true);
-    try {
-      const response = await fetch(`${API_BASE}/test-types/${id}/trash`, {
-        method: 'PATCH',
-        headers: getHeaders()
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setSuccess('Test type moved to trash');
-        fetchTestTypes(currentPage, searchTerm, selectedFramework);
-      } else {
-        setError(data.message || 'Failed to move to trash');
-      }
-    } catch (error) {
-      setError('Network error occurred');
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // Fetch statistics
   const fetchStats = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/test-types/stats`, {
-        headers: getHeaders()
-      });
-
-      const data = await response.json();
-      if (response.ok) {
-        setStats(data.stats);
-      }
-    } catch (error) {
-      console.error('Failed to fetch stats');
+    const result = await apiCall('/stats');
+    if (result) {
+      setStats(result.stats);
     }
   };
 
-  const fetchTrashItems = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/test-types/trash`, {
-        headers: getHeaders()
+  // Create or Update test type
+  const handleSubmitTestType = async (e) => {
+    e.preventDefault();
+    if (!selectedProject?._id) {
+      showAlert({
+        type: 'error',
+        message: 'Please select a project first'
       });
+      return;
+    }
 
-      const data = await response.json();
-      if (response.ok) {
-        setTrashItems(data.trashItems);
+    setSaving(true);
+
+    try {
+      let result;
+      if (selectedTestType) {
+        // Update existing test type
+        result = await apiCall(`/test-types/${selectedTestType._id}`, {
+          method: 'PUT',
+          body: JSON.stringify(formData)
+        });
+
+        if (result) {
+          showAlert({
+            type: 'success',
+            message: `"${formData.testTypeName}" updated successfully`
+          });
+        }
+      } else {
+        // Create new test type
+        result = await apiCall(`/projects/${selectedProject._id}/test-types`, {
+          method: 'POST',
+          body: JSON.stringify(formData)
+        });
+
+        if (result) {
+          showAlert({
+            type: 'success',
+            message: `"${formData.testTypeName}" created successfully`
+          });
+        }
       }
-    } catch (error) {
-      console.error('Failed to fetch trash items');
+
+      if (result) {
+        setShowCreateModal(false);
+        setSelectedTestType(null);
+        setFormData({ testTypeName: '', testTypeDesc: '', testFramework: 'Selenium' });
+        fetchTestTypes();
+        fetchStats();
+      }
+    } finally {
+      setSaving(false);
     }
   };
 
-  const restoreFromTrash = async (id) => {
-    try {
-      const response = await fetch(`${API_BASE}/test-types/${id}/restore`, {
-        method: 'PATCH',
-        headers: getHeaders()
-      });
-
-      if (response.ok) {
-        setSuccess('Test type restored successfully');
-        fetchTrashItems();
-        fetchTestTypes(currentPage, searchTerm, selectedFramework);
-      }
-    } catch (error) {
-      setError('Failed to restore test type');
-    }
-  };
-
-  const deleteTestType = async (id) => {
-    try {
-      const response = await fetch(`${API_BASE}/test-types/${id}`, {
-        method: 'DELETE',
-        headers: getHeaders()
-      });
-
-      if (response.ok) {
-        setSuccess('Test type deleted permanently');
-        fetchTrashItems();
-      }
-    } catch (error) {
-      setError('Failed to delete test type');
-    }
-  };
-
-  const emptyTrash = async () => {
-    try {
-      const response = await fetch(`${API_BASE}/test-types/trash/empty`, {
-        method: 'DELETE',
-        headers: getHeaders()
-      });
-
-      if (response.ok) {
-        setSuccess('Trash emptied successfully');
-        setTrashItems([]);
-      }
-    } catch (error) {
-      setError('Failed to empty trash');
-    }
-  };
-
-  const resetForm = () => {
-    setFormData({
-      testTypeName: '',
-      testTypeDesc: '',
-      testFramework: 'Selenium'
+  // Delete test type with confirmation
+  const handleDeleteTestType = async (testType) => {
+    const result = await showConfirm({
+      title: `Delete "${testType.testTypeName}"?`,
+      message: "This action cannot be undone. All test type data will be permanently lost.",
+      confirmText: "Delete Test Type",
+      cancelText: "Keep Test Type",
+      type: "danger",
     });
-    setCreateFrameworkDropdown(false);
-    setEditFrameworkDropdown(false);
+
+    if (result) {
+      const apiResult = await apiCall(`/test-types/${testType._id}`, {
+        method: 'DELETE'
+      });
+
+      if (apiResult) {
+        showAlert({
+          type: "success",
+          message: `"${testType.testTypeName}" deleted successfully`,
+        });
+        fetchTestTypes();
+        fetchStats();
+      }
+    }
   };
 
-  // Effects
+  // Move to trash
+  const handleMoveToTrash = async (testType) => {
+    const result = await showConfirm({
+      title: `Move "${testType.testTypeName}" to trash?`,
+      message: "You can restore it from trash later.",
+      confirmText: "Move to Trash",
+      cancelText: "Keep",
+      type: "warning",
+    });
+
+    if (result) {
+      const apiResult = await apiCall(`/test-types/${testType._id}/trash`, {
+        method: 'PATCH'
+      });
+
+      if (apiResult) {
+        showAlert({
+          type: "success",
+          message: `"${testType.testTypeName}" moved to trash`,
+        });
+        fetchTestTypes();
+        fetchStats();
+      }
+    }
+  };
+
+  // Initial data fetch
   useEffect(() => {
     if (selectedProject?._id) {
       fetchTestTypes();
+      fetchStats();
     }
-  }, [selectedProject]);
+  }, [activeTab, selectedProject]);
 
+  // Handle search
   useEffect(() => {
-    const timer = setTimeout(() => {
-      if (selectedProject?._id && (searchTerm !== '' || selectedFramework !== '')) {
-        fetchTestTypes(1, searchTerm, selectedFramework);
-      }
-    }, 500);
-    return () => clearTimeout(timer);
-  }, [searchTerm, selectedFramework, selectedProject]);
+    if (selectedProject?._id) {
+      const delayDebounceFn = setTimeout(() => {
+        fetchTestTypes(1, searchTerm);
+      }, 500);
 
-  useEffect(() => {
-    if (error || success) {
-      const timer = setTimeout(() => {
-        setError('');
-        setSuccess('');
-      }, 5000);
-      return () => clearTimeout(timer);
+      return () => clearTimeout(delayDebounceFn);
     }
-  }, [error, success]);
+  }, [searchTerm, activeTab, selectedProject]);
 
-  // Close dropdowns when clicking outside
-  useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (!event.target.closest('.dropdown-container')) {
-        setActiveDropdown(null);
-        setFrameworkDropdown(false);
-        setCreateFrameworkDropdown(false);
-        setEditFrameworkDropdown(false);
-      }
-    };
+  const currentTestTypes = activeTab === 'my' ? myTestTypes : testTypes;
 
-    document.addEventListener('click', handleClickOutside);
-    return () => document.removeEventListener('click', handleClickOutside);
-  }, []);
+  if (!selectedProject) {
+    return (
+      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <FiFolder className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">No Project Selected</h3>
+          <p className="text-gray-500">Please select a project to manage test types</p>
+        </div>
+      </div>
+    );
+  }
 
-  // GitHub-style Dropdown Component
-  const Dropdown = ({ isOpen, onToggle, children, className = '' }) => (
-    <div className={`relative ${className}`}>
+  return (
+    <div className="bg-gray-50">
+      <div className="max-w-full mx-auto">
+        {/* Main Content */}
+        <div className="bg-white rounded-sm">
+          {/* Tabs and Search */}
+          <div className="border-b border-gray-200">
+            <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+              <div className="flex space-x-4">
+                {['all', 'my', 'stats'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === tab
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                  >
+                    {tab === 'all' && 'All Test Types'}
+                    {tab === 'my' && 'My Test Types'}
+                    {tab === 'stats' && 'Statistics'}
+                  </button>
+                ))}
+              </div>
+
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <input
+                    type="text"
+                    placeholder="Search test types..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 w-64"
+                  />
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowCreateModal(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+                >
+                  <FiPlus className="h-5 w-5" />
+                  <span>New Test Type</span>
+                </motion.button>
+              </div>
+            </div>
+          </div>
+
+          {/* Content Area */}
+          <div className="p-6">
+            {activeTab === 'stats' ? (
+              <StatsView stats={stats} />
+            ) : (
+              <TestTypesView
+                testTypes={currentTestTypes}
+                loading={loading}
+                pagination={pagination}
+                onPageChange={fetchTestTypes}
+                onEdit={(testType) => {
+                  setSelectedTestType(testType);
+                  setFormData({
+                    testTypeName: testType.testTypeName,
+                    testTypeDesc: testType.testTypeDesc,
+                    testFramework: testType.testFramework
+                  });
+                  setShowCreateModal(true);
+                }}
+                onDelete={handleDeleteTestType}
+                onMoveToTrash={handleMoveToTrash}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Create/Edit Test Type Modal */}
       <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -10 }}
-            transition={{ duration: 0.2 }}
-            className="absolute z-50 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg py-1"
+        {showCreateModal && (
+          <Modal
+            title={selectedTestType ? 'Edit Test Type' : 'Create New Test Type'}
+            onClose={() => {
+              setShowCreateModal(false);
+              setSelectedTestType(null);
+              setFormData({ testTypeName: '', testTypeDesc: '', testFramework: 'Selenium' });
+            }}
           >
-            {children}
-          </motion.div>
+            <form onSubmit={handleSubmitTestType} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Test Type Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.testTypeName}
+                  onChange={(e) => setFormData({ ...formData, testTypeName: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  placeholder="Enter test type name"
+                  disabled={saving}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Description
+                </label>
+                <textarea
+                  value={formData.testTypeDesc}
+                  onChange={(e) => setFormData({ ...formData, testTypeDesc: e.target.value })}
+                  rows="4"
+                  className="w-full resize-none px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  placeholder="Enter test type description"
+                  disabled={saving}
+                />
+              </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Test Framework
+                </label>
+                <select
+                  value={formData.testFramework}
+                  onChange={(e) => setFormData({ ...formData, testFramework: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  disabled={saving}
+                >
+                  {frameworks.map((framework) => (
+                    <option key={framework} value={framework}>
+                      {framework}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setSelectedTestType(null);
+                    setFormData({ testTypeName: '', testTypeDesc: '', testFramework: 'Selenium' });
+                  }}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 min-w-[120px] justify-center"
+                >
+                  {saving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>{selectedTestType ? 'Updating...' : 'Creating...'}</span>
+                    </>
+                  ) : (
+                    <span>{selectedTestType ? 'Update' : 'Create'} Test Type</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </Modal>
         )}
       </AnimatePresence>
     </div>
   );
+};
+
+// Test Types View Component
+const TestTypesView = ({ testTypes, loading, pagination, onPageChange, onEdit, onDelete, onMoveToTrash }) => {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="bg-gray-100 rounded-xl h-48 animate-pulse"></div>
+        ))}
+      </div>
+    );
+  }
+
+  if (testTypes.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <FiFolder className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No test types found</h3>
+        <p className="text-gray-500">Get started by creating your first test type.</p>
+      </div>
+    );
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-4">
-      {/* Alert Messages */}
-      <AnimatePresence>
-        {error && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="fixed top-4 right-4 z-50 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg flex items-center gap-2"
-          >
-            <AlertCircle size={20} />
-            {error}
-            <button onClick={() => setError('')} className="ml-2">
-              <X size={16} />
-            </button>
-          </motion.div>
-        )}
-        
-        {success && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="fixed top-4 right-4 z-50 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg flex items-center gap-2"
-          >
-            <CheckCircle size={20} />
-            {success}
-            <button onClick={() => setSuccess('')} className="ml-2">
-              <X size={16} />
-            </button>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+        {testTypes.map((testType, index) => (
+          <TestTypeCard
+            key={testType._id}
+            testType={testType}
+            index={index}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onMoveToTrash={onMoveToTrash}
+          />
+        ))}
+      </div>
 
-      {/* Header */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 mb-6">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">Test Types</h1>
-            <p className="text-gray-600 mt-1">Manage your test types and frameworks</p>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => {fetchStats(); setShowStatsModal(true);}}
-              className="inline-flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <BarChart3 size={16} />
-              Stats
-            </button>
-            
-            <button
-              onClick={() => {fetchTrashItems(); setShowTrashModal(true);}}
-              className="inline-flex items-center gap-2 px-4 py-2 text-gray-700 bg-gray-100 hover:bg-gray-200 rounded-lg transition-colors"
-            >
-              <Trash2 size={16} />
-              Trash
-            </button>
-            
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
-            >
-              <Plus size={16} />
-              New Test Type
-            </button>
-          </div>
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-center items-center space-x-4 mt-8">
+          <button
+            onClick={() => onPageChange(pagination.currentPage - 1)}
+            disabled={!pagination.hasPrev}
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+          >
+            <FiChevronLeft className="h-5 w-5" />
+            <span>Previous</span>
+          </button>
+
+          <span className="text-sm text-gray-600">
+            Page {pagination.currentPage} of {pagination.totalPages}
+          </span>
+
+          <button
+            onClick={() => onPageChange(pagination.currentPage + 1)}
+            disabled={!pagination.hasNext}
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+          >
+            <span>Next</span>
+            <FiChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+    </>
+  );
+};
+
+// Test Type Card Component
+const TestTypeCard = ({ testType, index, onEdit, onDelete, onMoveToTrash }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+      whileHover={{ y: -4 }}
+      className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300"
+    >
+      <div className="flex justify-between items-start mb-4">
+        <div>
+          <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-1">
+            {testType.testTypeName}
+          </h3>
+          <p className="text-sm text-gray-500 mb-2">
+            by {testType.user?.name || 'Unknown User'}
+          </p>
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => onEdit(testType)}
+            className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+          >
+            <FiEdit className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => onMoveToTrash(testType)}
+            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+          >
+            <FiTrash2 className="h-4 w-4" />
+          </button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 mb-6">
-        <div className="flex flex-col lg:flex-row gap-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={16} />
-              <input
-                type="text"
-                placeholder="Search test types..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
-              />
-            </div>
-          </div>
-          
-          <div className="flex items-center gap-3">
-            {/* Framework Filter */}
-            <Dropdown
-              isOpen={frameworkDropdown}
-              onToggle={() => setFrameworkDropdown(!frameworkDropdown)}
-            >
-              <button
-                onClick={() => setFrameworkDropdown(!frameworkDropdown)}
-                className="inline-flex items-center gap-2 px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
-              >
-                <GitBranch size={16} />
-                {selectedFramework || 'All Frameworks'}
-                <ChevronDown size={14} />
-              </button>
-              
-              <div className="py-1">
-                <button
-                  onClick={() => {setSelectedFramework(''); setFrameworkDropdown(false);}}
-                  className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${!selectedFramework ? 'bg-blue-50 text-blue-600' : ''}`}
-                >
-                  All Frameworks
-                </button>
-                {frameworks.map((framework) => (
-                  <button
-                    key={framework}
-                    onClick={() => {setSelectedFramework(framework); setFrameworkDropdown(false);}}
-                    className={`w-full text-left px-4 py-2 text-sm hover:bg-gray-100 ${selectedFramework === framework ? 'bg-blue-50 text-blue-600' : ''}`}
-                  >
-                    {framework}
-                  </button>
-                ))}
-              </div>
-            </Dropdown>
+      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+        {testType.testTypeDesc || 'No description provided'}
+      </p>
 
-            {/* View Mode Toggle */}
-            <div className="flex border border-gray-300 rounded-lg">
-              <button
-                onClick={() => setViewMode('grid')}
-                className={`p-2 ${viewMode === 'grid' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-50'}`}
-              >
-                <div className="w-4 h-4 grid grid-cols-2 gap-0.5">
-                  <div className="bg-current w-1.5 h-1.5 rounded-sm"></div>
-                  <div className="bg-current w-1.5 h-1.5 rounded-sm"></div>
-                  <div className="bg-current w-1.5 h-1.5 rounded-sm"></div>
-                  <div className="bg-current w-1.5 h-1.5 rounded-sm"></div>
-                </div>
-              </button>
-              <button
-                onClick={() => setViewMode('list')}
-                className={`p-2 border-l border-gray-300 ${viewMode === 'list' ? 'bg-blue-100 text-blue-600' : 'hover:bg-gray-50'}`}
-              >
-                <div className="w-4 h-4 flex flex-col gap-0.5">
-                  <div className="bg-current h-0.5 w-full rounded"></div>
-                  <div className="bg-current h-0.5 w-full rounded"></div>
-                  <div className="bg-current h-0.5 w-full rounded"></div>
-                  <div className="bg-current h-0.5 w-full rounded"></div>
-                </div>
-              </button>
-            </div>
-          </div>
-        </div>
+      <div className="flex items-center justify-between">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+          <FiGitBranch className="h-3 w-3 mr-1" />
+          {testType.testFramework}
+        </span>
+        <span className="text-xs text-gray-500">
+          {new Date(testType.createdAt).toLocaleDateString()}
+        </span>
       </div>
+    </motion.div>
+  );
+};
 
-      {/* Content */}
-      {loading && testTypes.length === 0 ? (
-        <div className="flex items-center justify-center py-12">
-          <RefreshCw className="animate-spin text-blue-600" size={24} />
-          <span className="ml-2 text-gray-600">Loading test types...</span>
-        </div>
-      ) : (
-        <>
-          {/* Grid/List View */}
-          <div className={viewMode === 'grid' ? 'grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-6' : 'space-y-3 mb-6'}>
-            <AnimatePresence>
-              {testTypes.map((testType, index) => (
-                <motion.div
-                  key={testType._id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -20 }}
-                  transition={{ duration: 0.3, delay: index * 0.1 }}
-                  className={`bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-all ${
-                    viewMode === 'list' ? 'flex items-center justify-between' : ''
-                  }`}
-                >
-                  <div className={viewMode === 'list' ? 'flex items-center space-x-4' : ''}>
-                    <div className={`${viewMode === 'list' ? '' : 'mb-3'}`}>
-                      <h3 className="font-semibold text-gray-900 text-lg">{testType.testTypeName}</h3>
-                      <p className="text-gray-600 text-sm mt-1">{testType.testTypeDesc}</p>
-                    </div>
-                    
-                    <div className={`flex items-center gap-2 ${viewMode === 'list' ? '' : 'mb-3'}`}>
-                      <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                        <GitBranch size={12} className="mr-1" />
-                        {testType.testFramework}
-                      </span>
-                    </div>
+// Statistics View Component
+const StatsView = ({ stats }) => {
+  if (!stats) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+      </div>
+    );
+  }
 
-                    {viewMode === 'grid' && (
-                      <div className="text-xs text-gray-500 mb-3">
-                        Created by {testType.user?.name || 'Unknown'}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex items-center gap-2">
-                    <Dropdown
-                      isOpen={activeDropdown === testType._id}
-                      onToggle={() => setActiveDropdown(activeDropdown === testType._id ? null : testType._id)}
-                    >
-                      <button
-                        onClick={() => setActiveDropdown(activeDropdown === testType._id ? null : testType._id)}
-                        className="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                      >
-                        <MoreHorizontal size={16} />
-                      </button>
-                      
-                      <div className="py-1 -ml-20">
-                        <button
-                          onClick={() => {
-                            setEditingTestType(testType);
-                            setFormData({
-                              testTypeName: testType.testTypeName,
-                              testTypeDesc: testType.testTypeDesc,
-                              testFramework: testType.testFramework
-                            });
-                            setShowEditModal(true);
-                            setActiveDropdown(null);
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-                        >
-                          <Edit2 size={14} />
-                          Edit
-                        </button>
-                        <button
-                          onClick={() => {
-                            getTestTypeById(testType._id);
-                            setActiveDropdown(null);
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 flex items-center gap-2"
-                        >
-                          <Eye size={14} />
-                          View Details
-                        </button>
-                        <hr className="my-1" />
-                        <button
-                          onClick={() => {
-                            moveToTrash(testType._id);
-                            setActiveDropdown(null);
-                          }}
-                          className="w-full text-left px-4 py-2 text-sm hover:bg-gray-100 text-red-600 flex items-center gap-2"
-                        >
-                          <Trash2 size={14} />
-                          Move to Trash
-                        </button>
-                      </div>
-                    </Dropdown>
-                  </div>
-                </motion.div>
-              ))}
-            </AnimatePresence>
-          </div>
-
-          {/* Pagination */}
-          {totalPages > 1 && (
-            <div className="flex items-center justify-center space-x-2">
-              <button
-                onClick={() => {
-                  if (currentPage > 1) {
-                    setCurrentPage(currentPage - 1);
-                    fetchTestTypes(currentPage - 1, searchTerm, selectedFramework);
-                  }
-                }}
-                disabled={currentPage === 1}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                <ArrowLeft size={16} />
-                Previous
-              </button>
-              
-              <span className="px-4 py-2 text-sm text-gray-700">
-                Page {currentPage} of {totalPages}
-              </span>
-              
-              <button
-                onClick={() => {
-                  if (currentPage < totalPages) {
-                    setCurrentPage(currentPage + 1);
-                    fetchTestTypes(currentPage + 1, searchTerm, selectedFramework);
-                  }
-                }}
-                disabled={currentPage === totalPages}
-                className="flex items-center gap-2 px-3 py-2 text-sm text-gray-500 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                Next
-                <ArrowRight size={16} />
-              </button>
+  return (
+    <div className="space-y-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+      >
+        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total Test Types</p>
+              <p className="text-4xl font-bold text-gray-900 mt-3 mb-1">
+                {stats?.totalTestTypes || 0}
+              </p>
             </div>
-          )}
-        </>
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
+              <FiFolder className="h-7 w-7 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Active Frameworks</p>
+              <p className="text-4xl font-bold text-gray-900 mt-3">
+                {stats?.testTypesByFramework?.length || 0}
+              </p>
+              <p className="text-xs font-medium text-gray-400 mt-2 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Different frameworks
+              </p>
+            </div>
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
+              <FiGitBranch className="h-7 w-7 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Recent Test Types</p>
+              <p className="text-4xl font-bold text-gray-900 mt-3 mb-1">
+                {stats?.recentTestTypes?.length || 0}
+              </p>
+            </div>
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-purple-500/30 group-hover:scale-110 transition-transform duration-300">
+              <FiBarChart2 className="h-7 w-7 text-white" />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Framework Distribution */}
+      {stats.testTypesByFramework && stats.testTypesByFramework.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Framework Distribution</h3>
+          <div className="bg-gray-50 rounded-lg p-6">
+            {stats.testTypesByFramework.map((item, index) => (
+              <motion.div
+                key={item._id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="flex items-center justify-between py-3 border-b border-gray-200 last:border-b-0"
+              >
+                <div className="flex items-center">
+                  <FiGitBranch className="h-4 w-4 text-gray-500 mr-3" />
+                  <span className="font-medium text-gray-900">{item._id}</span>
+                </div>
+                <span className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-sm font-medium">
+                  {item.count} test types
+                </span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
       )}
 
-      {/* Create Modal */}
-      <AnimatePresence>
-        {showCreateModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 backdrop:blur-md shadow-2xl"
-          >
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-white rounded-lg p-6 w-full max-w-md"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Create New Test Type</h2>
-                <button
-                  onClick={() => {setShowCreateModal(false); resetForm();}}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div className="space-y-4">
+      {/* Recent Test Types */}
+      {stats.recentTestTypes && stats.recentTestTypes.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Test Types</h3>
+          <div className="bg-gray-50 rounded-lg p-6">
+            {stats.recentTestTypes.map((testType, index) => (
+              <motion.div
+                key={testType._id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="flex items-center justify-between py-3 border-b border-gray-200 last:border-b-0"
+              >
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Test Type Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.testTypeName}
-                    onChange={(e) => setFormData({...formData, testTypeName: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
-                    placeholder="Enter test type name"
-                  />
+                  <p className="font-medium text-gray-900">{testType.testTypeName}</p>
+                  <p className="text-sm text-gray-500">by {testType.user?.name} • {testType.project?.projectName}</p>
                 </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    value={formData.testTypeDesc}
-                    onChange={(e) => setFormData({...formData, testTypeDesc: e.target.value})}
-                    className="w-full resize-none px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
-                    rows={3}
-                    placeholder="Enter description"
-                  />
-                </div>
-                
-                <div className="dropdown-container">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Test Framework
-                  </label>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setCreateFrameworkDropdown(!createFrameworkDropdown)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <GitBranch size={16} className="text-gray-500" />
-                        {formData.testFramework}
-                      </div>
-                      <ChevronDown size={16} className={`text-gray-400 transition-transform ${createFrameworkDropdown ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    <AnimatePresence>
-                      {createFrameworkDropdown && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.2 }}
-                          className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg py-1 max-h-60 overflow-y-auto"
-                        >
-                          {frameworks.map((framework) => (
-                            <button
-                              key={framework}
-                              type="button"
-                              onClick={() => {
-                                setFormData({...formData, testFramework: framework});
-                                setCreateFrameworkDropdown(false);
-                              }}
-                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center justify-between transition-colors ${
-                                formData.testFramework === framework ? 'bg-blue-50 text-blue-600' : 'text-gray-900'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <GitBranch size={14} className="text-gray-500" />
-                                {framework}
-                              </div>
-                              {formData.testFramework === framework && (
-                                <Check size={14} className="text-blue-600" />
-                              )}
-                            </button>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  onClick={() => {setShowCreateModal(false); resetForm();}}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={createTestType}
-                  disabled={!formData.testTypeName.trim() || loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {loading ? 'Creating...' : 'Create'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Edit Modal */}
-      <AnimatePresence>
-        {showEditModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
-          >
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-white rounded-lg p-6 w-full max-w-md"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Edit Test Type</h2>
-                <button
-                  onClick={() => {setShowEditModal(false); setEditingTestType(null); resetForm();}}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Test Type Name *
-                  </label>
-                  <input
-                    type="text"
-                    value={formData.testTypeName}
-                    onChange={(e) => setFormData({...formData, testTypeName: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
-                    placeholder="Enter test type name"
-                  />
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description
-                  </label>
-                  <textarea
-                    value={formData.testTypeDesc}
-                    onChange={(e) => setFormData({...formData, testTypeDesc: e.target.value})}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
-                    rows={3}
-                    placeholder="Enter description"
-                  />
-                </div>
-                
-                <div className="dropdown-container">
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Test Framework
-                  </label>
-                  <div className="relative">
-                    <button
-                      type="button"
-                      onClick={() => setEditFrameworkDropdown(!editFrameworkDropdown)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-                    >
-                      <div className="flex items-center gap-2">
-                        <GitBranch size={16} className="text-gray-500" />
-                        {formData.testFramework}
-                      </div>
-                      <ChevronDown size={16} className={`text-gray-400 transition-transform ${editFrameworkDropdown ? 'rotate-180' : ''}`} />
-                    </button>
-                    
-                    <AnimatePresence>
-                      {editFrameworkDropdown && (
-                        <motion.div
-                          initial={{ opacity: 0, y: -10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0, y: -10 }}
-                          transition={{ duration: 0.2 }}
-                          className="absolute z-50 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg py-1 max-h-60 overflow-y-auto"
-                        >
-                          {frameworks.map((framework) => (
-                            <button
-                              key={framework}
-                              type="button"
-                              onClick={() => {
-                                setFormData({...formData, testFramework: framework});
-                                setEditFrameworkDropdown(false);
-                              }}
-                              className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 flex items-center justify-between transition-colors ${
-                                formData.testFramework === framework ? 'bg-blue-50 text-blue-600' : 'text-gray-900'
-                              }`}
-                            >
-                              <div className="flex items-center gap-2">
-                                <GitBranch size={14} className="text-gray-500" />
-                                {framework}
-                              </div>
-                              {formData.testFramework === framework && (
-                                <Check size={14} className="text-blue-600" />
-                              )}
-                            </button>
-                          ))}
-                        </motion.div>
-                      )}
-                    </AnimatePresence>
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  onClick={() => {setShowEditModal(false); setEditingTestType(null); resetForm();}}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={updateTestType}
-                  disabled={!formData.testTypeName.trim() || loading}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50"
-                >
-                  {loading ? 'Updating...' : 'Update'}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Test Type Details Modal */}
-      <AnimatePresence>
-        {selectedTestType && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
-          >
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-white rounded-lg p-6 w-full max-w-lg"
-            >
-              <div className="flex items-center justify-between mb-4">
-                <h2 className="text-xl font-semibold">Test Type Details</h2>
-                <button
-                  onClick={() => setSelectedTestType(null)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              <div className="space-y-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Name</label>
-                  <div className="text-gray-900 font-medium">{selectedTestType.testTypeName}</div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-                  <div className="text-gray-700">{selectedTestType.testTypeDesc || 'No description provided'}</div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Framework</label>
+                <div className="flex items-center space-x-4">
                   <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    <GitBranch size={12} className="mr-1" />
-                    {selectedTestType.testFramework}
+                    <FiGitBranch className="h-3 w-3 mr-1" />
+                    {testType.testFramework}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    {new Date(testType.createdAt).toLocaleDateString()}
                   </span>
                 </div>
-                
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Created By</label>
-                    <div className="text-gray-700">{selectedTestType.user?.name || 'Unknown'}</div>
-                  </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Project</label>
-                    <div className="text-gray-700">{selectedTestType.project?.projectName || 'Unknown'}</div>
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Created Date</label>
-                  <div className="text-gray-700">
-                    {new Date(selectedTestType.createdAt).toLocaleDateString('en-US', {
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric',
-                      hour: '2-digit',
-                      minute: '2-digit'
-                    })}
-                  </div>
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-3 mt-6">
-                <button
-                  onClick={() => setSelectedTestType(null)}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  Close
-                </button>
-                <button
-                  onClick={() => {
-                    setEditingTestType(selectedTestType);
-                    setFormData({
-                      testTypeName: selectedTestType.testTypeName,
-                      testTypeDesc: selectedTestType.testTypeDesc,
-                      testFramework: selectedTestType.testFramework
-                    });
-                    setSelectedTestType(null);
-                    setShowEditModal(true);
-                  }}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Edit
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Stats Modal */}
-      <AnimatePresence>
-        {showStatsModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
-          >
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-white rounded-lg p-6 w-full max-w-2xl max-h-[80vh] overflow-y-auto"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold">Test Type Statistics</h2>
-                <button
-                  onClick={() => setShowStatsModal(false)}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <X size={20} />
-                </button>
-              </div>
-              
-              {stats && (
-                <div className="space-y-6">
-                  {/* Overview Stats */}
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div className="bg-blue-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-blue-600">{stats.totalTestTypes}</div>
-                      <div className="text-sm text-blue-800">Total Test Types</div>
-                    </div>
-                    <div className="bg-green-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-green-600">
-                        {stats.testTypesByFramework?.length || 0}
-                      </div>
-                      <div className="text-sm text-green-800">Active Frameworks</div>
-                    </div>
-                    <div className="bg-purple-50 p-4 rounded-lg">
-                      <div className="text-2xl font-bold text-purple-600">
-                        {stats.recentTestTypes?.length || 0}
-                      </div>
-                      <div className="text-sm text-purple-800">Recent Items</div>
-                    </div>
-                  </div>
-
-                  {/* Framework Distribution */}
-                  {stats.testTypesByFramework && stats.testTypesByFramework.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3">Framework Distribution</h3>
-                      <div className="space-y-2">
-                        {stats.testTypesByFramework.map((item, index) => (
-                          <div key={item._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div className="flex items-center gap-2">
-                              <GitBranch size={16} className="text-gray-600" />
-                              <span className="font-medium">{item._id}</span>
-                            </div>
-                            <span className="bg-blue-100 text-blue-800 px-2 py-1 rounded-full text-sm font-medium">
-                              {item.count}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Recent Test Types */}
-                  {stats.recentTestTypes && stats.recentTestTypes.length > 0 && (
-                    <div>
-                      <h3 className="text-lg font-semibold mb-3">Recent Test Types</h3>
-                      <div className="space-y-2">
-                        {stats.recentTestTypes.map((testType) => (
-                          <div key={testType._id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div>
-                              <div className="font-medium">{testType.testTypeName}</div>
-                              <div className="text-sm text-gray-600">
-                                by {testType.user?.name} • {testType.project?.projectName}
-                              </div>
-                            </div>
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                              {testType.testFramework}
-                            </span>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              <div className="flex justify-end mt-6">
-                <button
-                  onClick={() => setShowStatsModal(false)}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-                >
-                  Close
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Trash Modal */}
-      <AnimatePresence>
-        {showTrashModal && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black bg-opacity-50"
-          >
-            <motion.div
-              initial={{ scale: 0.95 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.95 }}
-              className="bg-white rounded-lg p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto"
-            >
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold">Trash</h2>
-                <div className="flex items-center gap-2">
-                  {trashItems.length > 0 && (
-                    <button
-                      onClick={() => {
-                        if (confirm('Are you sure you want to permanently delete all items in trash?')) {
-                          emptyTrash();
-                        }
-                      }}
-                      className="px-3 py-1 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700"
-                    >
-                      Empty Trash
-                    </button>
-                  )}
-                  <button
-                    onClick={() => setShowTrashModal(false)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <X size={20} />
-                  </button>
-                </div>
-              </div>
-              
-              {trashItems.length === 0 ? (
-                <div className="text-center py-12">
-                  <Trash2 size={48} className="mx-auto text-gray-300 mb-4" />
-                  <p className="text-gray-500">Trash is empty</p>
-                </div>
-              ) : (
-                <div className="space-y-3">
-                  {trashItems.map((item) => (
-                    <div key={item._id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                      <div className="flex-1">
-                        <h3 className="font-medium text-gray-900">{item.testTypeName}</h3>
-                        <p className="text-sm text-gray-600">{item.testTypeDesc}</p>
-                        <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
-                          <span className="inline-flex items-center gap-1">
-                            <GitBranch size={12} />
-                            {item.testFramework}
-                          </span>
-                          <span>by {item.user?.name}</span>
-                          <span>
-                            Deleted: {new Date(item.updatedAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                      
-                      <div className="flex items-center gap-2 ml-4">
-                        <button
-                          onClick={() => restoreFromTrash(item._id)}
-                          className="px-3 py-1 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700"
-                        >
-                          Restore
-                        </button>
-                        <button
-                          onClick={() => {
-                            if (confirm('Are you sure you want to permanently delete this test type?')) {
-                              deleteTestType(item._id);
-                            }
-                          }}
-                          className="px-3 py-1 bg-red-600 text-white text-sm rounded-lg hover:bg-red-700"
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              )}
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* No Project Selected */}
-      {!selectedProject && (
-        <div className="text-center py-12">
-          <FolderOpen size={48} className="mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Project Selected</h3>
-          <p className="text-gray-500">
-            Please select a project to view and manage test types
-          </p>
-        </div>
-      )}
-
-      {/* Empty State */}
-      {selectedProject && !loading && testTypes.length === 0 && (
-        <div className="text-center py-12">
-          <FolderOpen size={48} className="mx-auto text-gray-300 mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No test types found</h3>
-          <p className="text-gray-500 mb-4">
-            {searchTerm || selectedFramework 
-              ? 'Try adjusting your search filters' 
-              : 'Get started by creating your first test type'
-            }
-          </p>
-          {!searchTerm && !selectedFramework && (
-            <button
-              onClick={() => setShowCreateModal(true)}
-              className="inline-flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              <Plus size={16} />
-              Create Test Type
-            </button>
-          )}
+              </motion.div>
+            ))}
+          </div>
         </div>
       )}
     </div>
+  );
+};
+
+// Modal Component
+const Modal = ({ title, children, onClose }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <FiEye className="h-6 w-6" />
+          </button>
+        </div>
+        <div className="p-6">{children}</div>
+      </motion.div>
+    </motion.div>
   );
 };
 
