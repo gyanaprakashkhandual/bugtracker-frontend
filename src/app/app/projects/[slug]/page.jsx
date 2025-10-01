@@ -5,6 +5,7 @@ import Navbar from '@/app/components/Navbars/Workspace';
 import TestCaseDashboard from '@/app/pages/app/Split';
 import TestCasesMain from '@/app/view/Split/Main';
 import TestCasesTable from '@/app/view/Table/App';
+import TestCasesCardView from '@/app/view/Card/App';
 
 export default function TokenDebugger() {
   const [token, setToken] = useState('');
@@ -53,7 +54,7 @@ export default function TokenDebugger() {
       <div>
         <Navbar />
       </div>
-      <TestCasesTable/>
+      <TestCasesCardView/>
     </div>
   );
 }
