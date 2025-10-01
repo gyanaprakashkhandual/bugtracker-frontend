@@ -45,7 +45,9 @@ const TestTypeManagement = () => {
   // Get token from localStorage
   const getToken = () => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('token');
+      const token = localStorage.getItem('token');
+      console.log('Token from localStorage:', token ? 'Token exists' : 'No token found');
+      return token;
     }
     return null;
   };
@@ -53,10 +55,13 @@ const TestTypeManagement = () => {
   // API call function
   const apiCall = async (endpoint, options = {}) => {
     const token = getToken();
+    console.log('Making API call to:', endpoint);
+    console.log('Token available:', !!token);
+
     if (!token) {
       showAlert({
         type: 'error',
-        message: 'Please login first'
+        message: 'Please login first. Token not found in localStorage.'
       });
       return null;
     }
@@ -71,8 +76,12 @@ const TestTypeManagement = () => {
         ...options,
       });
 
+      console.log('Response status:', response.status);
+
       if (!response.ok) {
-        throw new Error(`API call failed: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        console.error('API Error:', errorData);
+        throw new Error(errorData.message || `API call failed: ${response.status}`);
       }
 
       return await response.json();
