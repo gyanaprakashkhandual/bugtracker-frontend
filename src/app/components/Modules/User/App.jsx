@@ -13,12 +13,16 @@ import {
   Crown,
   Activity
 } from 'lucide-react';
-
+import { useAlert } from '@/app/script/Alert.context';
+import { useConfirm } from '@/app/script/Confirm.context';
 const UserProfileInterface = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState(null);
+  
+  const {showAlert} = useAlert();
+  const {showConfirm} = useConfirm();
 
   // Get token from localStorage
   const getToken = () => {
@@ -74,48 +78,73 @@ const UserProfileInterface = () => {
     }
   };
 
-  // Logout function
-  const handleLogout = async () => {
+  // Logout function with confirmation and alerts
+const handleLogout = async () => {
     try {
-      setLoggingOut(true);
+        const result = await showConfirm({
+            title: "Logout Confirmation",
+            message: "Are you sure you want to log out? You will need to log in again to continue using the app.",
+            confirmText: "Logout",
+            cancelText: "Stay Logged In",
+            type: "warning",
+        });
 
-      const token = getToken();
-
-      if (!token) {
-        setError('No authentication token found');
-        return;
-      }
-
-      const response = await fetch('http://localhost:5000/api/v1/auth/logout', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
+        if (!result || !result.isConfirmed) {
+            return;
         }
-      });
 
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
+        setLoggingOut(true);
 
-      // Clear token from localStorage
-      localStorage.removeItem('token');
+        const token = getToken();
 
-      // Clear user data
-      setUser(null);
+        if (!token) {
+            showAlert({
+                type: "error",
+                message: "No authentication token found. Please login again.",
+            });
+            return;
+        }
 
-      alert('Logged out successfully!');
+        showAlert({
+            type: "info",
+            message: "Logging out...",
+            duration: 0, // show until replaced
+        });
 
-      // In a real Next.js app, you would redirect:
-      // window.location.href = '/login';
+        const response = await fetch("http://localhost:5000/api/v1/auth/logout", {
+            method: "POST",
+            headers: {
+                "Authorization": `Bearer ${token}`,
+                "Content-Type": "application/json",
+            },
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        // Clear token and user data
+        localStorage.removeItem("token");
+        setUser(null);
+
+        showAlert({
+            type: "success",
+            message: "You have been logged out successfully.",
+        });
+
+        // Optional: redirect to login page
+        // window.location.href = "/login";
 
     } catch (err) {
-      console.error('Error during logout:', err);
-      setError('Failed to logout: ' + (err.message || 'Unknown error'));
+        console.error("Error during logout:", err);
+        showAlert({
+            type: "error",
+            message: "Failed to logout: " + (err.message || "Unknown error"),
+        });
     } finally {
-      setLoggingOut(false);
+        setLoggingOut(false);
     }
-  };
+};
 
   useEffect(() => {
     fetchUserData();
@@ -220,7 +249,7 @@ const UserProfileInterface = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white overflow-hidden"
+          className="bg-white overflow-hidden h-[calc(100vh-70px)]"
         >
           {/* Profile Header */}
           <div className="bg-[radial-gradient(circle_at_top_left,_#3b82f6,_#8b5cf6,_#ec4899)] px-8 py-12 text-white relative overflow-hidden">

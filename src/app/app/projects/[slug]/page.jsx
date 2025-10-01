@@ -51,7 +51,6 @@ export default function TokenDebugger() {
       <div>
         <Navbar />
       </div>
-      <TestCaseDashboard/>
     </div>
   );
 }

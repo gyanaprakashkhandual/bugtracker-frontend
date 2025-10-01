@@ -116,6 +116,8 @@ const ThreeDotsDropdown = ({ options }) => {
   return (
     <div className="relative">
       <motion.button
+      tooltip-data="More Options"
+      tooltip-placement="bottom"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
