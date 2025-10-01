@@ -1,6 +1,7 @@
 'use client';
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useRouter } from 'next/navigation';
 import {
   Eye,
   EyeOff,
@@ -37,6 +38,7 @@ import { useAlert } from '@/app/script/Alert.context';
 import { GoogleArrowDown } from '@/app/components/utils/Icon';
 
 const AuthPage = () => {
+  const router = useRouter();
   const [isLogin, setIsLogin] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
@@ -93,41 +95,22 @@ const AuthPage = () => {
   // Check for existing token on component mount
   useEffect(() => {
     const token = localStorage.getItem('token');
-    if (token) {
+    const user = localStorage.getItem('user');
+
+    if (token && user) {
       setShowLoginModal(true);
-      verifyToken(token);
-    }
-  }, []);
 
-  const verifyToken = async (token) => {
-    try {
-      const response = await fetch('http://localhost:5000/api/v1/auth/verify-token', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-      });
-
-      const data = await response.json();
-
-      if (response.ok) {
-        setTimeout(() => {
-          setShowLoginModal(false);
-          showAlert('Login successful! Welcome back.', 'success');
-          window.location.href = '/app';
-        }, 2000);
-      } else {
+      // Simulate authentication delay for better UX
+      setTimeout(() => {
         setShowLoginModal(false);
-        localStorage.removeItem('token');
-        localStorage.removeItem('user');
-      }
-    } catch (error) {
-      setShowLoginModal(false);
-      localStorage.removeItem('token');
-      localStorage.removeItem('user');
+        showAlert({
+          type: "success",
+          message: "Welcome to Caffetest"
+        })
+        router.push('/app');
+      }, 2000);
     }
-  };
+  }, [router, showAlert]);
 
   const handleInputChange = (e) => {
     setFormData({
@@ -157,7 +140,10 @@ const AuthPage = () => {
 
       if (response.ok) {
         setShowOTPForm(true);
-        showAlert('OTP sent to your email successfully!', 'success');
+        showAlert({
+          type: "success",
+          message: "OTP Sent successfully to Your Email"
+        })
       } else {
         showAlert(data.message || 'Failed to send OTP', 'error');
       }
@@ -248,7 +234,7 @@ const AuthPage = () => {
 
         // Redirect to app after successful login
         setTimeout(() => {
-          window.location.href = '/app';
+          router.push('/app');
         }, 2000);
       } else {
         showAlert(data.message || 'Login failed', 'error');
@@ -329,7 +315,7 @@ const AuthPage = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-opacity-50 flex items-center justify-center z-50"
           >
             <motion.div
               initial={{ opacity: 0, scale: 0.9 }}
