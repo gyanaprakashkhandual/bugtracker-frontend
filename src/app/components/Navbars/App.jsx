@@ -321,6 +321,8 @@ const AppNavbar = () => {
                         <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                             {/* Bell Icon */}
                             <motion.button
+                            tooltip-data="Notification"
+                            tooltip-placement="bottom"
                                 onClick={() => handleComponentChange('Notifications')}
                                 className={`p-2 rounded-lg transition-all relative ${activeComponent === 'Notifications'
                                     ? 'bg-blue-50 text-blue-700'
@@ -335,6 +337,8 @@ const AppNavbar = () => {
 
                             {/* Message Icon */}
                             <motion.button
+                            tooltip-data="Chats"
+                            tooltip-placement="bottom"
                                 onClick={() => handleComponentChange('Messages')}
                                 className={`p-2 rounded-lg transition-all relative ${activeComponent === 'Messages'
                                     ? 'bg-blue-50 text-blue-700'

@@ -8,6 +8,9 @@ import {
   FiBarChart2, FiFolder, FiHome, FiUsers, FiSettings
 } from 'react-icons/fi';
 import { toast } from 'react-toastify';
+import { useAlert } from '@/app/script/Alert.context';
+import { useConfirm } from '@/app/script/Confirm.context';
+
 
 const ProjectManagement = () => {
   const [projects, setProjects] = useState([]);
@@ -31,6 +34,9 @@ const ProjectManagement = () => {
     projectName: '',
     projectDesc: ''
   });
+
+  const { showAlert } = useAlert();
+  const { showConfirm } = useConfirm();
 
   // Get token from localStorage
   const getToken = () => {
@@ -163,80 +169,12 @@ const ProjectManagement = () => {
   const currentProjects = activeTab === 'my' ? myProjects : projects;
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <motion.header
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        className="bg-white shadow-sm border-b"
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center space-x-3">
-              <FiFolder className="h-8 w-8 text-blue-600" />
-              <h1 className="text-2xl font-bold text-gray-900">Project Management</h1>
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowCreateModal(true)}
-              className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
-            >
-              <FiPlus className="h-5 w-5" />
-              <span>New Project</span>
-            </motion.button>
-          </div>
-        </div>
-      </motion.header>
+    <div className="bg-gray-50">
 
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        {/* Stats Overview */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
-        >
-          <div className="bg-white rounded-xl shadow-sm p-6 border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Total Projects</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {stats?.totalProjects || 0}
-                </p>
-              </div>
-              <FiFolder className="h-8 w-8 text-blue-600" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Recent Projects</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {stats?.recentProjectsCount || 0}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">Last 30 days</p>
-              </div>
-              <FiBarChart2 className="h-8 w-8 text-green-600" />
-            </div>
-          </div>
-
-          <div className="bg-white rounded-xl shadow-sm p-6 border">
-            <div className="flex items-center justify-between">
-              <div>
-                <p className="text-sm font-medium text-gray-600">Top Contributors</p>
-                <p className="text-3xl font-bold text-gray-900 mt-2">
-                  {stats?.projectsByUser?.length || 0}
-                </p>
-              </div>
-              <FiUsers className="h-8 w-8 text-purple-600" />
-            </div>
-          </div>
-        </motion.div>
+      <div className="max-w-full mx-auto">
 
         {/* Main Content */}
-        <div className="bg-white rounded-xl shadow-sm border">
+        <div className="bg-white rounded-sm">
           {/* Tabs and Search */}
           <div className="border-b border-gray-200">
             <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
@@ -267,6 +205,15 @@ const ProjectManagement = () => {
                   className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 w-64"
                 />
               </div>
+              <motion.button
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => setShowCreateModal(true)}
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+              >
+                <FiPlus className="h-5 w-5" />
+                <span>New Project</span>
+              </motion.button>
             </div>
           </div>
 
@@ -331,7 +278,7 @@ const ProjectManagement = () => {
                   value={formData.projectDesc}
                   onChange={(e) => setFormData({ ...formData, projectDesc: e.target.value })}
                   rows="4"
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  className="w-full resize-none px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
                   placeholder="Enter project description"
                 />
               </div>
@@ -508,7 +455,6 @@ const ProjectCard = ({ project, index, onEdit, onDelete }) => {
       </p>
 
       <div className="flex justify-between items-center text-xs text-gray-500">
-        <span>Slug: {project.slug}</span>
         <span>
           {new Date(project.createdAt).toLocaleDateString()}
         </span>
@@ -529,34 +475,62 @@ const StatsView = ({ stats }) => {
 
   return (
     <div className="space-y-8">
-      {/* Top Contributors */}
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Top Contributors</h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-          {stats.projectsByUser?.map((user, index) => (
-            <motion.div
-              key={user._id}
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="bg-gray-50 rounded-lg p-4 flex items-center justify-between"
-            >
-              <div className="flex items-center space-x-3">
-                <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-                  <FiUser className="h-5 w-5 text-blue-600" />
-                </div>
-                <div>
-                  <p className="font-medium text-gray-900">{user.userName}</p>
-                  <p className="text-sm text-gray-500">{user.userEmail}</p>
-                </div>
-              </div>
-              <span className="bg-blue-600 text-white px-3 py-1 rounded-full text-sm font-medium">
-                {user.projectCount} projects
-              </span>
-            </motion.div>
-          ))}
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+      >
+        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total Projects</p>
+              <p className="text-4xl font-bold text-gray-900 mt-3 mb-1">
+                {stats?.totalProjects || 0}
+              </p>
+            </div>
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600  shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
+              <FiFolder className="h-7 w-7 text-white" />
+            </div>
+          </div>
         </div>
-      </div>
+
+        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Recent Projects</p>
+              <p className="text-4xl font-bold text-gray-900 mt-3">
+                {stats?.recentProjectsCount || 0}
+              </p>
+              <p className="text-xs font-medium text-gray-400 mt-2 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                Last 30 days
+              </p>
+            </div>
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600  shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
+              <FiBarChart2 className="h-7 w-7 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Top Contributors</p>
+              <p className="text-4xl font-bold text-gray-900 mt-3 mb-1">
+                {stats?.projectsByUser?.length || 0}
+              </p>
+            </div>
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600  shadow-purple-500/30 group-hover:scale-110 transition-transform duration-300">
+              <FiUsers className="h-7 w-7 text-white" />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
 
       {/* Recent Projects */}
       <div>
@@ -592,7 +566,7 @@ const Modal = ({ title, children, onClose }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center p-4 z-50"
       onClick={onClose}
     >
       <motion.div
