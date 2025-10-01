@@ -26,6 +26,9 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
     });
     const [prompt, setPrompt] = useState('');
     const [openDropdowns, setOpenDropdowns] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const BASE_URL = 'http://localhost:5000/api/v1/test-case';
 
     const navItems = [
         { id: 'text-prompt', label: 'Text Prompt' },
@@ -56,9 +59,105 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
         setOpenDropdowns(prev => ({ ...prev, [field]: !prev[field] }));
     };
 
-    const handleSubmit = () => {
-        console.log('Form submitted:', formData);
-        if (onClose) onClose();
+    // Function to upload image to Cloudinary
+    const uploadImageToCloudinary = async (file) => {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'test_case_images'); // You'll need to set this up in your Cloudinary account
+
+            const response = await fetch('https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/image/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Image upload failed');
+            }
+
+            const data = await response.json();
+            return data.secure_url;
+        } catch (error) {
+            console.error('Error uploading image to Cloudinary:', error);
+            throw error;
+        }
+    };
+
+    const handleSubmit = async () => {
+        try {
+            setIsSubmitting(true);
+
+            const token = localStorage.getItem("token");
+            const projectId = localStorage.getItem("currentProjectId");
+            const testTypeId = localStorage.getItem("selectedTestTypeId");
+
+            if (!token || !projectId || !testTypeId) {
+                alert('Missing required information. Please make sure you have selected a project and test type.');
+                return;
+            }
+
+            let imageUrl = '';
+            if (formData.image) {
+                try {
+                    imageUrl = await uploadImageToCloudinary(formData.image);
+                } catch (error) {
+                    console.error('Failed to upload image:', error);
+                    alert('Failed to upload image. Please try again.');
+                    return;
+                }
+            }
+
+            const payload = {
+                moduleName: formData.moduleName,
+                testCaseType: formData.testCaseType,
+                testCaseDescription: formData.testCaseDescription,
+                actualResult: formData.actualResult,
+                expectedResult: formData.expectedResult,
+                severity: formData.severity,
+                priority: formData.priority,
+                status: formData.status,
+                image: imageUrl || 'No image provided'
+            };
+
+            const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to create test case');
+            }
+
+            const result = await response.json();
+            console.log('Test case created successfully:', result);
+
+            // Reset form and close sidebar
+            setFormData({
+                moduleName: '',
+                testCaseType: '',
+                testCaseDescription: '',
+                actualResult: '',
+                expectedResult: '',
+                severity: '',
+                priority: '',
+                status: '',
+                image: null
+            });
+
+            if (onClose) onClose();
+            alert('Test case created successfully!');
+
+        } catch (error) {
+            console.error('Error creating test case:', error);
+            alert(error.message || 'Failed to create test case');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const handleCancel = () => {
@@ -76,9 +175,52 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
         if (onClose) onClose();
     };
 
-    const handlePromptSubmit = () => {
-        console.log('Prompt submitted:', prompt);
-        setPrompt('');
+    const handlePromptSubmit = async () => {
+        try {
+            if (!prompt.trim()) return;
+
+            setIsSubmitting(true);
+
+            const token = localStorage.getItem("token");
+            const projectId = localStorage.getItem("currentProjectId");
+            const testTypeId = localStorage.getItem("selectedTestTypeId");
+
+            if (!token || !projectId || !testTypeId) {
+                alert('Missing required information. Please make sure you have selected a project and test type.');
+                return;
+            }
+
+            const payload = {
+                rawText: prompt.trim()
+            };
+
+            const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/ai-text`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(payload)
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to create test case from text');
+            }
+
+            const result = await response.json();
+            console.log('AI test case created successfully:', result);
+
+            setPrompt('');
+            if (onClose) onClose();
+            alert('Test case created successfully from text!');
+
+        } catch (error) {
+            console.error('Error creating AI test case:', error);
+            alert(error.message || 'Failed to create test case from text');
+        } finally {
+            setIsSubmitting(false);
+        }
     };
 
     const getDropdownPlaceholder = (field) => {
@@ -125,7 +267,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={handlePromptSubmit}
-                        disabled={!prompt.trim()}
+                        disabled={!prompt.trim() || isSubmitting}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Send size={16} />
@@ -279,15 +421,17 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleSubmit}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    disabled={isSubmitting}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Submit
+                    {isSubmitting ? 'Submitting...' : 'Submit'}
                 </motion.button>
                 <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleCancel}
-                    className="flex-1 bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200"
+                    disabled={isSubmitting}
+                    className="flex-1 bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Cancel
                 </motion.button>
