@@ -89,7 +89,7 @@ export default function CaffetestLanding() {
                   <motion.a
                     key={item}
                     onClick={() => openPage(item.toLowerCase())}
-                    className="text-gray-600 hover:text-sky-600 transition-colors duration-200 font-medium text-sm"
+                    className="text-gray-600 hover:text-sky-600 transition-colors duration-200 font-medium text-sm cursor-pointer"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.5, delay: index * 0.1 }}
