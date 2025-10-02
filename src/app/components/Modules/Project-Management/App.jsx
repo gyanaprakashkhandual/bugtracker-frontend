@@ -252,7 +252,7 @@ const ProjectManagement = () => {
                   </button>
                 ))}
               </div>
-
+<div className="flex items-center space-x-4">
               <div className="relative">
                 <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
                 <input
@@ -272,6 +272,7 @@ const ProjectManagement = () => {
                 <FiPlus className="h-5 w-5" />
                 <span>New Project</span>
               </motion.button>
+            </div>
             </div>
           </div>
 

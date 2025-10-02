@@ -191,7 +191,7 @@ const UserManagement = () => {
       type: "danger"
     });
 
-    if (result) {
+    if (result && result.isConfirmed) {
       const apiResult = await apiCall(`/admin/users/${user._id}`, {
         method: 'DELETE'
       });
