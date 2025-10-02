@@ -3,10 +3,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FiPlus, FiEdit, FiTrash2, FiSearch, FiFilter,
-  FiChevronLeft, FiChevronRight, FiEye, FiUser,
-  FiBarChart2, FiFolder, FiHome, FiUsers, FiSettings,
-  FiGitBranch
+  FiPlus, FiEdit, FiTrash2, FiSearch,
+  FiChevronLeft, FiChevronRight, FiEye,
+  FiBarChart2, FiFolder, FiGitBranch, FiChevronDown, FiCheck
 } from 'react-icons/fi';
 import { useAlert } from '@/app/script/Alert.context';
 import { useConfirm } from '@/app/script/Confirm.context';
@@ -15,7 +14,6 @@ import { useProject } from '@/app/script/Project.context';
 const TestTypeManagement = () => {
   const { selectedProject } = useProject();
   const [testTypes, setTestTypes] = useState([]);
-  const [myTestTypes, setMyTestTypes] = useState([]);
   const [projectTestTypes, setProjectTestTypes] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -37,6 +35,7 @@ const TestTypeManagement = () => {
     testTypeDesc: '',
     testFramework: 'Selenium'
   });
+  const [frameworkDropdownOpen, setFrameworkDropdownOpen] = useState(false);
 
   const { showAlert } = useAlert();
   const { showConfirm } = useConfirm();
@@ -47,18 +46,7 @@ const TestTypeManagement = () => {
   const getToken = () => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
-      console.log('Token from localStorage:', token ? 'Token exists' : 'No token found');
       return token;
-    }
-    return null;
-  };
-
-  // Get project ID from localStorage
-  const getProjectId = () => {
-    if (typeof window !== 'undefined') {
-      const projectId = localStorage.getItem('currentProjectId');
-      console.log('Project ID from localStorage:', projectId || 'No project ID found');
-      return projectId;
     }
     return null;
   };
@@ -66,13 +54,11 @@ const TestTypeManagement = () => {
   // API call function
   const apiCall = async (endpoint, options = {}) => {
     const token = getToken();
-    console.log('Making API call to:', endpoint);
-    console.log('Token available:', !!token);
 
     if (!token) {
       showAlert({
         type: 'error',
-        message: 'Please login first. Token not found in localStorage.'
+        message: 'Please login first. Token not found.'
       });
       return null;
     }
@@ -87,17 +73,13 @@ const TestTypeManagement = () => {
         ...options,
       });
 
-      console.log('Response status:', response.status);
-
       if (!response.ok) {
         const errorData = await response.json().catch(() => ({}));
-        console.error('API Error:', errorData);
         throw new Error(errorData.message || `API call failed: ${response.status}`);
       }
 
       return await response.json();
     } catch (error) {
-      console.error('API Error:', error);
       showAlert({
         type: 'error',
         message: error.message
@@ -125,29 +107,9 @@ const TestTypeManagement = () => {
     setLoading(false);
   };
 
-  // Fetch my test types (for "My Test Types" tab)
-  const fetchMyTestTypes = async (page = 1, search = '') => {
-    setLoading(true);
-    const endpoint = `/my-test-types?page=${page}&limit=8&search=${search}`;
-    const result = await apiCall(endpoint);
-
-    if (result) {
-      setMyTestTypes(result.testTypes || []);
-      setPagination(result.pagination || {
-        currentPage: 1,
-        totalPages: 1,
-        totalTestTypes: 0,
-        hasNext: false,
-        hasPrev: false
-      });
-    }
-    setLoading(false);
-  };
-
   // Fetch project-specific test types (for "Project Test Types" tab)
   const fetchProjectTestTypes = async (page = 1, search = '') => {
-    const projectId = getProjectId();
-    if (!projectId) {
+    if (!selectedProject || !selectedProject.id) {
       showAlert({
         type: 'error',
         message: 'Please select a project first'
@@ -156,7 +118,7 @@ const TestTypeManagement = () => {
     }
 
     setLoading(true);
-    const endpoint = `/projects/${projectId}/test-types?page=${page}&limit=8&search=${search}`;
+    const endpoint = `/projects/${selectedProject.id}/test-types?page=${page}&limit=8&search=${search}`;
     const result = await apiCall(endpoint);
 
     if (result) {
@@ -174,9 +136,7 @@ const TestTypeManagement = () => {
 
   // Fetch test types based on active tab
   const fetchTestTypes = async (page = 1, search = '') => {
-    if (activeTab === 'my') {
-      await fetchMyTestTypes(page, search);
-    } else if (activeTab === 'project') {
+    if (activeTab === 'project') {
       await fetchProjectTestTypes(page, search);
     } else {
       await fetchAllTestTypes(page, search);
@@ -194,8 +154,8 @@ const TestTypeManagement = () => {
   // Create test type
   const handleCreateTestType = async (e) => {
     e.preventDefault();
-    const projectId = getProjectId();
-    if (!projectId) {
+
+    if (!selectedProject || !selectedProject.id) {
       showAlert({
         type: 'error',
         message: 'Please select a project first'
@@ -206,7 +166,7 @@ const TestTypeManagement = () => {
     setSaving(true);
 
     try {
-      const result = await apiCall(`/projects/${projectId}/test-types`, {
+      const result = await apiCall(`/projects/${selectedProject.id}/test-types`, {
         method: 'POST',
         body: JSON.stringify(formData)
       });
@@ -320,6 +280,13 @@ const TestTypeManagement = () => {
     fetchStats();
   }, [activeTab]);
 
+  // Fetch project test types when selectedProject changes
+  useEffect(() => {
+    if (selectedProject && activeTab === 'project') {
+      fetchProjectTestTypes(1, searchTerm);
+    }
+  }, [selectedProject]);
+
   // Handle search
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -329,12 +296,9 @@ const TestTypeManagement = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm, activeTab]);
 
-  const currentTestTypes =
-    activeTab === 'my' ? myTestTypes :
-      activeTab === 'project' ? projectTestTypes :
-        testTypes;
+  const currentTestTypes = activeTab === 'project' ? projectTestTypes : testTypes;
 
-  if (!getProjectId()) {
+  if (!selectedProject || !selectedProject.id) {
     return (
       <div className="bg-gray-50 min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -355,7 +319,7 @@ const TestTypeManagement = () => {
           <div className="border-b border-gray-200">
             <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
               <div className="flex space-x-4">
-                {['all', 'my', 'project', 'stats'].map((tab) => (
+                {['all', 'project', 'stats'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -365,7 +329,6 @@ const TestTypeManagement = () => {
                       }`}
                   >
                     {tab === 'all' && 'All Test Types'}
-                    {tab === 'my' && 'My Test Types'}
                     {tab === 'project' && 'Project Test Types'}
                     {tab === 'stats' && 'Statistics'}
                   </button>
@@ -432,6 +395,7 @@ const TestTypeManagement = () => {
               setShowCreateModal(false);
               setSelectedTestType(null);
               setFormData({ testTypeName: '', testTypeDesc: '', testFramework: 'Selenium' });
+              setFrameworkDropdownOpen(false);
             }}
           >
             <form onSubmit={handleSubmitTestType} className="space-y-4">
@@ -466,18 +430,49 @@ const TestTypeManagement = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Test Framework
                 </label>
-                <select
-                  value={formData.testFramework}
-                  onChange={(e) => setFormData({ ...formData, testFramework: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
-                  disabled={saving}
-                >
-                  {frameworks.map((framework) => (
-                    <option key={framework} value={framework}>
-                      {framework}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setFrameworkDropdownOpen(!frameworkDropdownOpen)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 bg-white text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    disabled={saving}
+                  >
+                    <span className="text-gray-900">{formData.testFramework}</span>
+                    <FiChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${frameworkDropdownOpen ? 'transform rotate-180' : ''}`} />
+                  </button>
+
+                  <AnimatePresence>
+                    {frameworkDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute z-50 w-full bottom-full mb-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
+                      >
+                        {frameworks.map((framework) => (
+                          <button
+                            key={framework}
+                            type="button"
+                            onClick={() => {
+                              setFormData({ ...formData, testFramework: framework });
+                              setFrameworkDropdownOpen(false);
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-100 transition-colors flex items-center justify-between group"
+                            disabled={saving}
+                          >
+                            <span className={`text-sm ${formData.testFramework === framework ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                              {framework}
+                            </span>
+                            {formData.testFramework === framework && (
+                              <FiCheck className="h-4 w-4 text-blue-600" />
+                            )}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
@@ -486,6 +481,7 @@ const TestTypeManagement = () => {
                     setShowCreateModal(false);
                     setSelectedTestType(null);
                     setFormData({ testTypeName: '', testTypeDesc: '', testFramework: 'Selenium' });
+                    setFrameworkDropdownOpen(false);
                   }}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                   disabled={saving}
