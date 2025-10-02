@@ -20,9 +20,9 @@ const UserProfileInterface = () => {
   const [loading, setLoading] = useState(true);
   const [loggingOut, setLoggingOut] = useState(false);
   const [error, setError] = useState(null);
-  
-  const {showAlert} = useAlert();
-  const {showConfirm} = useConfirm();
+
+  const { showAlert } = useAlert();
+  const { showConfirm } = useConfirm();
 
   // Get token from localStorage
   const getToken = () => {
@@ -79,72 +79,72 @@ const UserProfileInterface = () => {
   };
 
   // Logout function with confirmation and alerts
-const handleLogout = async () => {
+  const handleLogout = async () => {
     try {
-        const result = await showConfirm({
-            title: "Logout Confirmation",
-            message: "Are you sure you want to log out? You will need to log in again to continue using the app.",
-            confirmText: "Logout",
-            cancelText: "Stay Logged In",
-            type: "warning",
-        });
+      const result = await showConfirm({
+        title: "Logout Confirmation",
+        message: "Are you sure you want to log out? You will need to log in again to continue using the app.",
+        confirmText: "Logout",
+        cancelText: "Stay Logged In",
+        type: "warning",
+      });
 
-        if (!result || !result.isConfirmed) {
-            return;
-        }
+      if (!result || !result.isConfirmed) {
+        return;
+      }
 
-        setLoggingOut(true);
+      setLoggingOut(true);
 
-        const token = getToken();
+      const token = getToken();
 
-        if (!token) {
-            showAlert({
-                type: "error",
-                message: "No authentication token found. Please login again.",
-            });
-            return;
-        }
-
+      if (!token) {
         showAlert({
-            type: "info",
-            message: "Logging out...",
-            duration: 0, // show until replaced
+          type: "error",
+          message: "No authentication token found. Please login again.",
         });
+        return;
+      }
 
-        const response = await fetch("http://localhost:5000/api/v1/auth/logout", {
-            method: "POST",
-            headers: {
-                "Authorization": `Bearer ${token}`,
-                "Content-Type": "application/json",
-            },
-        });
+      showAlert({
+        type: "info",
+        message: "Logging out...",
+        duration: 0, // show until replaced
+      });
 
-        if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
-        }
+      const response = await fetch("http://localhost:5000/api/v1/auth/logout", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${token}`,
+          "Content-Type": "application/json",
+        },
+      });
 
-        // Clear token and user data
-        localStorage.removeItem("token");
-        setUser(null);
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
 
-        showAlert({
-            type: "success",
-            message: "You have been logged out successfully.",
-        });
+      // Clear token and user data
+      localStorage.removeItem("token");
+      setUser(null);
 
-        // Optional: redirect to login page
-        // window.location.href = "/login";
+      showAlert({
+        type: "success",
+        message: "You have been logged out successfully.",
+      });
+
+      // Optional: redirect to login page
+      // window.location.href = "/login";
 
     } catch (err) {
-        console.error("Error during logout:", err);
-        showAlert({
-            type: "error",
-            message: "Failed to logout: " + (err.message || "Unknown error"),
-        });
+      console.error("Error during logout:", err);
+      showAlert({
+        type: "error",
+        message: "Failed to logout: " + (err.message || "Unknown error"),
+      });
     } finally {
-        setLoggingOut(false);
+      setLoggingOut(false);
     }
-};
+  };
 
   useEffect(() => {
     fetchUserData();

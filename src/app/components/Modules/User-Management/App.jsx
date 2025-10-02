@@ -1,89 +1,75 @@
 'use client';
 
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Users,
-  Search,
-  Filter,
-  Plus,
-  Edit3,
-  Trash2,
-  Shield,
-  MoreVertical,
-  ChevronDown,
-  ChevronLeft,
-  ChevronRight,
-  UserCheck,
-  UserX,
-  Mail,
-  Calendar,
-  Activity,
-  Eye,
-  X,
-  Check,
-  AlertTriangle,
-  Star,
-  Settings
-} from 'lucide-react';
+  FiPlus, FiEdit, FiTrash2, FiSearch,
+  FiChevronLeft, FiChevronRight, FiEye,
+  FiBarChart2, FiUsers, FiShield, FiChevronDown, FiCheck, FiPower
+} from 'react-icons/fi';
 
-import StatCard from './StartCard';
-import CreateUserModal from './Create';
-import EditUserModal from './Edit';
-import DeleteModal from './Delete';
-import { apiCall } from './api';
-import Dropdown from './Dropdown';
-import { useAlert } from '@/app/script/Alert.context';
-import { useConfirm } from '@/app/script/Confirm.context';
-
-const UserManagementDashboard = () => {
+const UserManagement = () => {
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [filters, setFilters] = useState({
-    search: '',
-    role: '',
-    isActive: '',
-    page: 1,
-    limit: 10
-  });
+  const [loading, setLoading] = useState(false);
+  const [activeTab, setActiveTab] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
-  const [showEditModal, setShowEditModal] = useState(false);
-  const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
-  const [activeDropdown, setActiveDropdown] = useState(null);
-  const [pagination, setPagination] = useState({});
-  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
-  const [showStatusDropdown, setShowStatusDropdown] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [saving, setSaving] = useState(false);
+  const [pagination, setPagination] = useState({
+    currentPage: 1,
+    totalPages: 1,
+    totalUsers: 0,
+    hasNext: false,
+    hasPrev: false
+  });
 
-  const dropdownRef = useRef(null);
-  const roleDropdownRef = useRef(null);
-  const statusDropdownRef = useRef(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    password: '',
+    role: 'developer'
+  });
+  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
 
-  const { showAlert } = useAlert();
-  const { showConfirm } = useConfirm();
+  const roles = ['admin', 'manager', 'developer', 'tester'];
+
+  // Alert state
+  const [alert, setAlert] = useState(null);
+  const showAlert = (type, message) => {
+    setAlert({ type, message });
+    setTimeout(() => setAlert(null), 3000);
+  };
+
+  // Confirm state
+  const [confirm, setConfirm] = useState(null);
+  const showConfirm = (title, message, confirmText, cancelText, type) => {
+    return new Promise((resolve) => {
+      setConfirm({ title, message, confirmText, cancelText, type, resolve });
+    });
+  };
 
   // Get token from localStorage
   const getToken = () => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('token');
+      const token = localStorage.getItem('token');
+      return token;
     }
     return null;
   };
 
-  // Enhanced API call with token
-  const apiCallWithToken = async (endpoint, options = {}) => {
+  // API call function
+  const apiCall = async (endpoint, options = {}) => {
     const token = getToken();
+
     if (!token) {
-      showAlert({
-        type: "error",
-        message: "Authentication required. Please login again."
-      });
+      showAlert('error', 'Please login first. Token not found.');
       return null;
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1${endpoint}`, {
+      const response = await fetch(`http://localhost:5000/api/v1/auth${endpoint}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',
@@ -93,634 +79,734 @@ const UserManagementDashboard = () => {
       });
 
       if (!response.ok) {
-        throw new Error(`API call failed: ${response.status}`);
+        const errorData = await response.json().catch(() => ({}));
+        throw new Error(errorData.message || `API call failed: ${response.status}`);
       }
 
       return await response.json();
     } catch (error) {
-      console.error('API Error:', error);
-      showAlert({
-        type: "error",
-        message: error.message || "Something went wrong"
-      });
+      showAlert('error', error.message);
       return null;
     }
   };
 
-  // Fetch users
-  const fetchUsers = async () => {
-    try {
-      setLoading(true);
-      const queryParams = new URLSearchParams();
-      if (filters.search) queryParams.append('search', filters.search);
-      if (filters.role) queryParams.append('role', filters.role);
-      if (filters.isActive !== '') queryParams.append('isActive', filters.isActive);
-      queryParams.append('page', filters.page);
-      queryParams.append('limit', filters.limit);
+  // Fetch all users
+  const fetchAllUsers = async (page = 1, search = '') => {
+    setLoading(true);
+    const endpoint = `/admin/users?page=${page}&limit=8&search=${search}`;
+    const result = await apiCall(endpoint);
 
-      const data = await apiCallWithToken(`/admin/users?${queryParams}`);
-      if (data) {
-        setUsers(data.users);
-        setPagination(data.pagination);
-      }
-    } catch (error) {
-      console.error('Error fetching users:', error);
-      showAlert({
-        type: "error",
-        message: "Failed to fetch users"
+    if (result) {
+      setUsers(result.users || []);
+      setPagination(result.pagination || {
+        currentPage: 1,
+        totalPages: 1,
+        totalUsers: 0,
+        hasNext: false,
+        hasPrev: false
       });
-    } finally {
-      setLoading(false);
     }
+    setLoading(false);
   };
 
-  // Fetch stats
+  // Fetch statistics
   const fetchStats = async () => {
-    try {
-      const data = await apiCallWithToken('/admin/users/stats');
-      if (data) {
-        setStats(data.stats);
-      }
-    } catch (error) {
-      console.error('Error fetching stats:', error);
-      showAlert({
-        type: "error",
-        message: "Please Report a Bug"
-      });
+    const result = await apiCall('/admin/users/stats');
+    if (result) {
+      setStats(result.stats || result);
     }
   };
 
   // Create user
-  const createUser = async (userData) => {
+  const handleCreateUser = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+
     try {
-      const result = await apiCallWithToken('/admin/users', {
+      const result = await apiCall('/admin/users', {
         method: 'POST',
-        body: JSON.stringify(userData),
+        body: JSON.stringify(formData)
       });
 
       if (result) {
-        showAlert({
-          type: "success",
-          message: "User Created Successfully"
-        });
+        showAlert('success', `"${formData.name}" created successfully`);
         setShowCreateModal(false);
-        fetchUsers();
+        setFormData({ name: '', email: '', password: '', role: 'developer' });
+        fetchAllUsers();
         fetchStats();
       }
-    } catch (error) {
-      console.error('Error creating user:', error);
-      showAlert({
-        type: "error",
-        message: "Failed to create user"
-      });
+    } finally {
+      setSaving(false);
     }
   };
 
   // Update user
-  const updateUser = async (userId, userData) => {
+  const handleUpdateUser = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+
     try {
-      const result = await apiCallWithToken(`/admin/users/${userId}`, {
+      const updateData = {
+        name: formData.name,
+        role: formData.role,
+        isActive: formData.isActive
+      };
+
+      const result = await apiCall(`/admin/users/${selectedUser._id}`, {
         method: 'PUT',
-        body: JSON.stringify(userData),
+        body: JSON.stringify(updateData)
       });
 
       if (result) {
-        showAlert({
-          type: "success",
-          message: "User Updated Successfully"
-        });
-        setShowEditModal(false);
+        showAlert('success', `"${formData.name}" updated successfully`);
+        setShowCreateModal(false);
         setSelectedUser(null);
-        fetchUsers();
+        setFormData({ name: '', email: '', password: '', role: 'developer' });
+        fetchAllUsers();
+        fetchStats();
       }
-    } catch (error) {
-      console.error('Error updating user:', error);
-      showAlert({
-        type: "error",
-        message: "Failed to update user"
-      });
+    } finally {
+      setSaving(false);
     }
   };
 
-  // Delete user with confirmation
+  // Handle form submission (create or update)
+  const handleSubmitUser = async (e) => {
+    if (selectedUser) {
+      await handleUpdateUser(e);
+    } else {
+      await handleCreateUser(e);
+    }
+  };
+
+  // Delete user permanently
   const handleDeleteUser = async (user) => {
-    const result = await showConfirm({
-      title: `Delete "${user.name}"?`,
-      message: "This action cannot be undone. All user data will be permanently removed from the system.",
-      confirmText: "Delete User",
-      cancelText: "Keep User",
-      type: "danger",
-    });
+    const result = await showConfirm(
+      `Delete "${user.name}"?`,
+      "This action cannot be undone. All user data will be permanently lost.",
+      "Delete User",
+      "Keep User",
+      "danger"
+    );
 
     if (result) {
-      try {
-        const deleteResult = await apiCallWithToken(`/admin/users/${user._id}`, {
-          method: 'DELETE',
-        });
+      const apiResult = await apiCall(`/admin/users/${user._id}`, {
+        method: 'DELETE'
+      });
 
-        if (deleteResult) {
-          showAlert({
-            type: "success",
-            message: "User Deleted Successfully"
-          });
-          setSelectedUser(null);
-          fetchUsers();
-          fetchStats();
-        }
-      } catch (error) {
-        console.error('Error deleting user:', error);
-        showAlert({
-          type: "error",
-          message: "Failed to delete user"
-        });
+      if (apiResult) {
+        showAlert('success', `"${user.name}" deleted successfully`);
+        fetchAllUsers();
+        fetchStats();
       }
     }
   };
 
-  // Toggle user status with confirmation
-  const handleToggleUserStatus = async (user) => {
-    const action = user.isActive ? 'deactivate' : 'activate';
-    const result = await showConfirm({
-      title: `${action === 'deactivate' ? 'Deactivate' : 'Activate'} "${user.name}"?`,
-      message: `This will ${action} the user's account. ${action === 'deactivate' ? 'They will not be able to access the system.' : 'They will be able to access the system again.'}`,
-      confirmText: action === 'deactivate' ? "Deactivate User" : "Activate User",
-      cancelText: "Cancel",
-      type: action === 'deactivate' ? "warning" : "success",
-    });
+  // Toggle user status
+  const handleToggleStatus = async (user) => {
+    const result = await showConfirm(
+      `${user.isActive ? 'Deactivate' : 'Activate'} "${user.name}"?`,
+      `User will be ${user.isActive ? 'deactivated' : 'activated'}.`,
+      user.isActive ? 'Deactivate' : 'Activate',
+      "Cancel",
+      "warning"
+    );
 
     if (result) {
-      try {
-        const toggleResult = await apiCallWithToken(`/admin/users/${user._id}/status`, {
-          method: 'PATCH',
-        });
+      const apiResult = await apiCall(`/admin/users/${user._id}/status`, {
+        method: 'PATCH'
+      });
 
-        if (toggleResult) {
-          showAlert({
-            type: "success",
-            message: `User ${action}d successfully`
-          });
-          fetchUsers();
-          fetchStats();
-        }
-      } catch (error) {
-        console.error('Error toggling user status:', error);
-        showAlert({
-          type: "error",
-          message: `Failed to ${action} user`
-        });
+      if (apiResult) {
+        showAlert('success', `"${user.name}" ${user.isActive ? 'deactivated' : 'activated'} successfully`);
+        fetchAllUsers();
+        fetchStats();
       }
     }
   };
 
-  // Update user role with confirmation
-  const handleUpdateUserRole = async (user, newRole) => {
-    const result = await showConfirm({
-      title: `Change ${user.name}'s Role?`,
-      message: `Are you sure you want to change ${user.name}'s role from ${user.role} to ${newRole}?`,
-      confirmText: "Change Role",
-      cancelText: "Keep Current Role",
-      type: "warning",
-    });
-
-    if (result) {
-      try {
-        const roleResult = await apiCallWithToken(`/admin/users/${user._id}/role`, {
-          method: 'PATCH',
-          body: JSON.stringify({ role: newRole }),
-        });
-
-        if (roleResult) {
-          showAlert({
-            type: "success",
-            message: `User role updated to ${newRole}`
-          });
-          fetchUsers();
-        }
-      } catch (error) {
-        console.error('Error updating user role:', error);
-        showAlert({
-          type: "error",
-          message: "Failed to update user role"
-        });
-      }
-    }
-  };
-
-  // Quick role change handler for dropdown
-  const handleQuickRoleChange = async (user, newRole) => {
-    if (user.role === newRole) return;
-
-    await handleUpdateUserRole(user, newRole);
-    setActiveDropdown(null);
-  };
-
+  // Initial data fetch
   useEffect(() => {
-    fetchUsers();
+    fetchAllUsers();
     fetchStats();
-  }, [filters]);
+  }, [activeTab]);
 
-  // Close dropdowns when clicking outside
+  // Handle search
   useEffect(() => {
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setActiveDropdown(null);
-      }
-      if (roleDropdownRef.current && !roleDropdownRef.current.contains(event.target)) {
-        setShowRoleDropdown(false);
-      }
-      if (statusDropdownRef.current && !statusDropdownRef.current.contains(event.target)) {
-        setShowStatusDropdown(false);
-      }
-    };
+    const delayDebounceFn = setTimeout(() => {
+      fetchAllUsers(1, searchTerm);
+    }, 500);
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm]);
+
   return (
-    <div className="min-h-screen bg-gray-50 p-6 flex-1 overflow-auto">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="flex items-center justify-between mb-8"
-        >
-          <div>
-            <h1 className="text-3xl font-bold text-gray-900 flex items-center gap-3">
-              <Users className="w-8 h-8 text-blue-600" />
-              User Management
-            </h1>
-            <p className="text-gray-600 mt-1">Manage users, roles, and permissions</p>
-          </div>
-          <motion.button
-            whileHover={{ scale: 1.05 }}
-            whileTap={{ scale: 0.95 }}
-            onClick={() => setShowCreateModal(true)}
-            className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2 hover:bg-blue-700 transition-colors"
+    <div className="bg-gray-50 min-h-screen">
+      {/* Alert */}
+      <AnimatePresence>
+        {alert && (
+          <motion.div
+            initial={{ opacity: 0, y: -50 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -50 }}
+            className="fixed top-4 right-4 z-50"
           >
-            <Plus className="w-4 h-4" />
-            Add User
-          </motion.button>
-        </motion.div>
-
-        {/* Stats Cards */}
-        {stats && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-            <StatCard
-              title="Total Users"
-              value={stats.totalUsers}
-              icon={Users}
-              color="blue"
-            />
-            <StatCard
-              title="Active Users"
-              value={stats.activeUsers}
-              subtitle={`${stats.inactiveUsers} inactive`}
-              icon={UserCheck}
-              color="green"
-            />
-            <StatCard
-              title="Verified Users"
-              value={stats.verifiedUsers}
-              subtitle={`${stats.unverifiedUsers} unverified`}
-              icon={Shield}
-              color="purple"
-            />
-            <StatCard
-              title="Recent Signup"
-              value={stats.recentUsers.length}
-              icon={Star}
-              color="orange"
-            />
-          </div>
+            <div className={`px-4 py-3 rounded-lg shadow-lg ${alert.type === 'success' ? 'bg-green-500' : 'bg-red-500'
+              } text-white`}>
+              {alert.message}
+            </div>
+          </motion.div>
         )}
+      </AnimatePresence>
 
-        {/* Filters */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl p-6 mb-6 shadow-sm border border-gray-100"
-        >
-          <div className="flex flex-col md:flex-row gap-4">
-            <div className="flex-1 relative">
-              <Search className="absolute left-3 top-3 w-4 h-4 text-gray-400" />
-              <input
-                type="text"
-                placeholder="Search users..."
-                value={filters.search}
-                onChange={(e) => setFilters({ ...filters, search: e.target.value, page: 1 })}
-                className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-              />
-            </div>
-
-            <div className="flex items-center space-x-4">
-              {/* Role Filter Dropdown */}
-              <div className="relative" ref={roleDropdownRef}>
+      {/* Confirm Dialog */}
+      <AnimatePresence>
+        {confirm && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50"
+            onClick={() => {
+              confirm.resolve(false);
+              setConfirm(null);
+            }}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <h3 className="text-lg font-semibold text-gray-900 mb-2">{confirm.title}</h3>
+              <p className="text-gray-600 mb-6">{confirm.message}</p>
+              <div className="flex justify-end space-x-3">
                 <button
                   onClick={() => {
-                    setShowRoleDropdown(!showRoleDropdown);
-                    setShowStatusDropdown(false);
+                    confirm.resolve(false);
+                    setConfirm(null);
                   }}
-                  className="flex items-center space-x-2 px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
                 >
-                  <span>{filters.role ? `Role: ${filters.role}` : 'All Roles'}</span>
-                  <motion.svg
-                    animate={{ rotate: showRoleDropdown ? 180 : 0 }}
-                    className="h-4 w-4 text-gray-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </motion.svg>
+                  {confirm.cancelText}
                 </button>
+                <button
+                  onClick={() => {
+                    confirm.resolve(true);
+                    setConfirm(null);
+                  }}
+                  className={`px-4 py-2 rounded-lg text-white ${confirm.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-600 hover:bg-yellow-700'
+                    }`}
+                >
+                  {confirm.confirmText}
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-                <AnimatePresence>
-                  {showRoleDropdown && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1"
-                    >
-                      <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                        Filter by Role
-                      </div>
-                      {[
-                        { value: '', label: 'All Roles' },
-                        { value: 'admin', label: 'Admin' },
-                        { value: 'developer', label: 'Developer' },
-                        { value: 'manager', label: 'Manager' }
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => {
-                            setFilters({ ...filters, role: option.value, page: 1 });
-                            setShowRoleDropdown(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 text-sm flex items-center space-x-2 hover:bg-gray-50 transition-colors ${filters.role === option.value ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
-                            }`}
-                        >
-                          {filters.role === option.value && (
-                            <svg className="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                          <span className={filters.role === option.value ? 'font-medium' : ''}>
-                            {option.label}
-                          </span>
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+      <div className="max-w-full mx-auto">
+        {/* Main Content */}
+        <div className="bg-white rounded-sm">
+          {/* Tabs and Search */}
+          <div className="border-b border-gray-200">
+            <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
+              <div className="flex space-x-4">
+                {['all', 'stats'].map((tab) => (
+                  <button
+                    key={tab}
+                    onClick={() => setActiveTab(tab)}
+                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === tab
+                      ? 'bg-blue-100 text-blue-700'
+                      : 'text-gray-600 hover:text-gray-900'
+                      }`}
+                  >
+                    {tab === 'all' && 'All Users'}
+                    {tab === 'stats' && 'Statistics'}
+                  </button>
+                ))}
               </div>
 
-              {/* Status Filter Dropdown */}
-              <div className="relative" ref={statusDropdownRef}>
-                <button
-                  onClick={() => {
-                    setShowStatusDropdown(!showStatusDropdown);
-                    setShowRoleDropdown(false);
-                  }}
-                  className="flex items-center space-x-2 px-4 py-2 text-sm border border-gray-300 rounded-lg bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors"
+              <div className="flex items-center space-x-4">
+                <div className="relative">
+                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <input
+                    type="text"
+                    placeholder="Search users..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 w-64"
+                  />
+                </div>
+                <motion.button
+                  whileHover={{ scale: 1.05 }}
+                  whileTap={{ scale: 0.95 }}
+                  onClick={() => setShowCreateModal(true)}
+                  className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
                 >
-                  <span>
-                    {filters.isActive === 'true'
-                      ? 'Status: Active'
-                      : filters.isActive === 'false'
-                        ? 'Status: Inactive'
-                        : 'All Status'
-                    }
-                  </span>
-                  <motion.svg
-                    animate={{ rotate: showStatusDropdown ? 180 : 0 }}
-                    className="h-4 w-4 text-gray-500"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                  >
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                  </motion.svg>
-                </button>
-
-                <AnimatePresence>
-                  {showStatusDropdown && (
-                    <motion.div
-                      initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                      animate={{ opacity: 1, y: 0, scale: 1 }}
-                      exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                      transition={{ duration: 0.2 }}
-                      className="absolute top-full left-0 mt-2 w-48 bg-white border border-gray-200 rounded-lg shadow-lg z-50 py-1"
-                    >
-                      <div className="px-3 py-2 text-xs font-medium text-gray-500 uppercase tracking-wider border-b border-gray-100">
-                        Filter by Status
-                      </div>
-                      {[
-                        { value: '', label: 'All Status' },
-                        { value: 'true', label: 'Active' },
-                        { value: 'false', label: 'Inactive' }
-                      ].map((option) => (
-                        <button
-                          key={option.value}
-                          onClick={() => {
-                            setFilters({ ...filters, isActive: option.value, page: 1 });
-                            setShowStatusDropdown(false);
-                          }}
-                          className={`w-full text-left px-3 py-2 text-sm flex items-center space-x-2 hover:bg-gray-50 transition-colors ${filters.isActive === option.value ? 'text-blue-600 bg-blue-50' : 'text-gray-700'
-                            }`}
-                        >
-                          {filters.isActive === option.value && (
-                            <svg className="h-4 w-4 text-blue-600" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                          )}
-                          <span className={filters.isActive === option.value ? 'font-medium' : ''}>
-                            {option.label}
-                          </span>
-                        </button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
+                  <FiPlus className="h-5 w-5" />
+                  <span>New User</span>
+                </motion.button>
               </div>
             </div>
           </div>
-        </motion.div>
 
-        {/* Users Table */}
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden"
-        >
-          {loading ? (
-            <div className="p-12 text-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-              <p className="text-gray-500 mt-4">Loading users...</p>
-            </div>
-          ) : (
-            <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead className="bg-gray-50 border-b border-gray-200">
-                    <tr>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                      <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                      <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody className="bg-white divide-y divide-gray-200">
-                    <AnimatePresence>
-                      {users.map((user, index) => (
-                        <motion.tr
-                          key={user._id}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: index * 0.05 }}
-                          className="hover:bg-gray-50 transition-colors"
-                        >
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className="flex-shrink-0 h-10 w-10">
-                                <div className="h-10 w-10 rounded-full bg-blue-100 flex items-center justify-center">
-                                  <span className="text-blue-600 font-medium text-sm">
-                                    {user.name?.charAt(0)?.toUpperCase()}
-                                  </span>
-                                </div>
-                              </div>
-                              <div className="ml-4">
-                                <div className="text-sm font-medium text-gray-900">{user.name}</div>
-                                <div className="text-sm text-gray-500">{user.email}</div>
-                              </div>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <span className={`inline-flex px-2 py-1 text-xs font-semibold rounded-full ${user.role === 'admin' ? 'bg-purple-100 text-purple-800' :
-                              user.role === 'manager' ? 'bg-blue-100 text-blue-800' :
-                                'bg-green-100 text-green-800'
-                              }`}>
-                              {user.role}
-                            </span>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap">
-                            <div className="flex items-center">
-                              <div className={`h-2 w-2 rounded-full mr-2 ${user.isActive ? 'bg-green-400' : 'bg-red-400'
-                                }`}></div>
-                              <span className={`text-sm ${user.isActive ? 'text-green-600' : 'text-red-600'
-                                }`}>
-                                {user.isActive ? 'Active' : 'Inactive'}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                            {new Date(user.createdAt).toLocaleDateString()}
-                          </td>
-                          <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                            <div ref={dropdownRef}>
-                              <Dropdown
-                                trigger={
-                                  <div className="p-1 rounded-md hover:bg-gray-100 transition-colors">
-                                    <MoreVertical className="w-4 h-4 text-gray-500" />
-                                  </div>
-                                }
-                                isOpen={activeDropdown === user._id}
-                                onToggle={() => setActiveDropdown(activeDropdown === user._id ? null : user._id)}
-                              >
-                                <button
-                                  onClick={() => {
-                                    setSelectedUser(user);
-                                    setShowEditModal(true);
-                                    setActiveDropdown(null);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                                >
-                                  <Edit3 className="w-4 h-4" />
-                                  Edit
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    toggleUserStatus(user._id);
-                                    setActiveDropdown(null);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                                >
-                                  {user.isActive ? <UserX className="w-4 h-4" /> : <UserCheck className="w-4 h-4" />}
-                                  {user.isActive ? 'Deactivate' : 'Activate'}
-                                </button>
-                                <button
-                                  onClick={() => {
-                                    setSelectedUser(user);
-                                    setShowDeleteModal(true);
-                                    setActiveDropdown(null);
-                                  }}
-                                  className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2"
-                                >
-                                  <Trash2 className="w-4 h-4" />
-                                  Delete
-                                </button>
-                              </Dropdown>
-                            </div>
-                          </td>
-                        </motion.tr>
-                      ))}
-                    </AnimatePresence>
-                  </tbody>
-                </table>
+          {/* Content Area */}
+          <div className="p-6">
+            {activeTab === 'stats' ? (
+              <StatsView stats={stats} />
+            ) : (
+              <UsersView
+                users={users}
+                loading={loading}
+                pagination={pagination}
+                onPageChange={fetchAllUsers}
+                onEdit={(user) => {
+                  setSelectedUser(user);
+                  setFormData({
+                    name: user.name,
+                    email: user.email,
+                    password: '',
+                    role: user.role,
+                    isActive: user.isActive
+                  });
+                  setShowCreateModal(true);
+                }}
+                onDelete={handleDeleteUser}
+                onToggleStatus={handleToggleStatus}
+              />
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Create/Edit User Modal */}
+      <AnimatePresence>
+        {showCreateModal && (
+          <Modal
+            title={selectedUser ? 'Edit User' : 'Create New User'}
+            onClose={() => {
+              setShowCreateModal(false);
+              setSelectedUser(null);
+              setFormData({ name: '', email: '', password: '', role: 'developer' });
+              setRoleDropdownOpen(false);
+            }}
+          >
+            <form onSubmit={handleSubmitUser} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={formData.name}
+                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  placeholder="Enter user name"
+                  disabled={saving}
+                />
               </div>
-
-              {/* Pagination */}
-              {pagination && pagination.totalPages > 1 && (
-                <div className="bg-gray-50 px-6 py-3 flex items-center justify-between border-t border-gray-200">
-                  <div className="text-sm text-gray-700">
-                    Showing {((pagination.currentPage - 1) * filters.limit) + 1} to{' '}
-                    {Math.min(pagination.currentPage * filters.limit, pagination.totalUsers)} of{' '}
-                    {pagination.totalUsers} results
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => setFilters({ ...filters, page: filters.page - 1 })}
-                      disabled={!pagination.hasPrev}
-                      className="p-2 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
-                    >
-                      <ChevronLeft className="w-4 h-4" />
-                    </button>
-                    <span className="px-3 py-2 text-sm font-medium">
-                      Page {pagination.currentPage} of {pagination.totalPages}
-                    </span>
-                    <button
-                      onClick={() => setFilters({ ...filters, page: filters.page + 1 })}
-                      disabled={!pagination.hasNext}
-                      className="p-2 rounded-md border border-gray-300 disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-100 transition-colors"
-                    >
-                      <ChevronRight className="w-4 h-4" />
-                    </button>
-                  </div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Email
+                </label>
+                <input
+                  type="email"
+                  required={!selectedUser}
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  placeholder="Enter email address"
+                  disabled={saving || selectedUser}
+                />
+              </div>
+              {!selectedUser && (
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Password (Optional)
+                  </label>
+                  <input
+                    type="password"
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    placeholder="Leave blank for default password"
+                    disabled={saving}
+                  />
                 </div>
               )}
-            </>
-          )}
-        </motion.div>
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Role
+                </label>
+                <div className="relative">
+                  <button
+                    type="button"
+                    onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 bg-white text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    disabled={saving}
+                  >
+                    <span className="text-gray-900 capitalize">{formData.role}</span>
+                    <FiChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${roleDropdownOpen ? 'transform rotate-180' : ''}`} />
+                  </button>
 
-        {/* Modals */}
-        <CreateUserModal
-          isOpen={showCreateModal}
-          onClose={() => setShowCreateModal(false)}
-          onSubmit={createUser}
-        />
-        <EditUserModal
-          isOpen={showEditModal}
-          onClose={() => setShowEditModal(false)}
-          onSubmit={updateUser}
-          selectedUser={selectedUser}
-        />
-
-      </div>
+                  <AnimatePresence>
+                    {roleDropdownOpen && (
+                      <motion.div
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: 10 }}
+                        transition={{ duration: 0.2 }}
+                        className="absolute z-50 w-full bottom-full mb-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
+                      >
+                        {roles.map((role) => (
+                          <button
+                            key={role}
+                            type="button"
+                            onClick={() => {
+                              setFormData({ ...formData, role });
+                              setRoleDropdownOpen(false);
+                            }}
+                            className="w-full px-3 py-2 text-left hover:bg-gray-100 transition-colors flex items-center justify-between group"
+                            disabled={saving}
+                          >
+                            <span className={`text-sm capitalize ${formData.role === role ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
+                              {role}
+                            </span>
+                            {formData.role === role && (
+                              <FiCheck className="h-4 w-4 text-blue-600" />
+                            )}
+                          </button>
+                        ))}
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </div>
+              <div className="flex justify-end space-x-3 pt-4">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setShowCreateModal(false);
+                    setSelectedUser(null);
+                    setFormData({ name: '', email: '', password: '', role: 'developer' });
+                    setRoleDropdownOpen(false);
+                  }}
+                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  disabled={saving}
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={saving}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 min-w-[120px] justify-center"
+                >
+                  {saving ? (
+                    <>
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                      <span>{selectedUser ? 'Updating...' : 'Creating...'}</span>
+                    </>
+                  ) : (
+                    <span>{selectedUser ? 'Update' : 'Create'} User</span>
+                  )}
+                </button>
+              </div>
+            </form>
+          </Modal>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
 
-export default UserManagementDashboard;
+// Users View Component
+const UsersView = ({ users, loading, pagination, onPageChange, onEdit, onDelete, onToggleStatus }) => {
+  if (loading) {
+    return (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        {[...Array(6)].map((_, i) => (
+          <div key={i} className="bg-gray-100 rounded-xl h-48 animate-pulse"></div>
+        ))}
+      </div>
+    );
+  }
+
+  if (users.length === 0) {
+    return (
+      <div className="text-center py-12">
+        <FiUsers className="h-16 w-16 text-gray-400 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
+        <p className="text-gray-500">Get started by creating your first user.</p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+        {users.map((user, index) => (
+          <UserCard
+            key={user._id}
+            user={user}
+            index={index}
+            onEdit={onEdit}
+            onDelete={onDelete}
+            onToggleStatus={onToggleStatus}
+          />
+        ))}
+      </div>
+
+      {/* Pagination */}
+      {pagination.totalPages > 1 && (
+        <div className="flex justify-center items-center space-x-4 mt-8">
+          <button
+            onClick={() => onPageChange(pagination.currentPage - 1)}
+            disabled={!pagination.hasPrev}
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+          >
+            <FiChevronLeft className="h-5 w-5" />
+            <span>Previous</span>
+          </button>
+
+          <span className="text-sm text-gray-600">
+            Page {pagination.currentPage} of {pagination.totalPages}
+          </span>
+
+          <button
+            onClick={() => onPageChange(pagination.currentPage + 1)}
+            disabled={!pagination.hasNext}
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+          >
+            <span>Next</span>
+            <FiChevronRight className="h-5 w-5" />
+          </button>
+        </div>
+      )}
+    </>
+  );
+};
+
+// User Card Component
+const UserCard = ({ user, index, onEdit, onDelete, onToggleStatus }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ delay: index * 0.1 }}
+      whileHover={{ y: -4 }}
+      className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300"
+    >
+      <div className="flex justify-between items-start mb-4">
+        <div className="flex-1">
+          <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-1">
+            {user.name}
+          </h3>
+          <p className="text-sm text-gray-500 mb-2 line-clamp-1">
+            {user.email}
+          </p>
+        </div>
+        <div className="flex space-x-2">
+          <button
+            onClick={() => onEdit(user)}
+            className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+          >
+            <FiEdit className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => onToggleStatus(user)}
+            className={`p-2 transition-colors ${user.isActive ? 'text-gray-400 hover:text-yellow-600' : 'text-gray-400 hover:text-green-600'}`}
+          >
+            <FiPower className="h-4 w-4" />
+          </button>
+          <button
+            onClick={() => onDelete(user)}
+            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+          >
+            <FiTrash2 className="h-4 w-4" />
+          </button>
+        </div>
+      </div>
+
+      <div className="flex items-center justify-between">
+        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
+          <FiShield className="h-3 w-3 mr-1" />
+          {user.role}
+        </span>
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
+          {user.isActive ? 'Active' : 'Inactive'}
+        </span>
+      </div>
+
+      <div className="mt-3 text-xs text-gray-500">
+        Created {new Date(user.createdAt).toLocaleDateString()}
+      </div>
+    </motion.div>
+  );
+};
+
+// Statistics View Component
+const StatsView = ({ stats }) => {
+  if (!stats) {
+    return (
+      <div className="text-center py-12">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-8">
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1 }}
+        className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
+      >
+        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total Users</p>
+              <p className="text-4xl font-bold text-gray-900 mt-3 mb-1">
+                {stats?.totalUsers || 0}
+              </p>
+            </div>
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
+              <FiUsers className="h-7 w-7 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Active Users</p>
+              <p className="text-4xl font-bold text-gray-900 mt-3">
+                {stats?.activeUsers || 0}
+              </p>
+              <p className="text-xs font-medium text-gray-400 mt-2 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+                {stats?.inactiveUsers || 0} inactive
+              </p>
+            </div>
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
+              <FiShield className="h-7 w-7 text-white" />
+            </div>
+          </div>
+        </div>
+
+        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+          <div className="relative flex items-center justify-between">
+            <div className="flex-1">
+              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Verified Users</p>
+              <p className="text-4xl font-bold text-gray-900 mt-3 mb-1">
+                {stats?.verifiedUsers || 0}
+              </p>
+            </div>
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-purple-500/30 group-hover:scale-110 transition-transform duration-300">
+              <FiBarChart2 className="h-7 w-7 text-white" />
+            </div>
+          </div>
+        </div>
+      </motion.div>
+
+      {/* Users by Role */}
+      {stats.usersByRole && stats.usersByRole.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Users by Role</h3>
+          <div className="bg-gray-50 rounded-lg p-6">
+            {stats.usersByRole.map((item, index) => (
+              <motion.div
+                key={item._id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="flex items-center justify-between py-3 border-b border-gray-200 last:border-b-0"
+              >
+                <div className="flex items-center">
+                  <FiShield className="h-4 w-4 text-gray-500 mr-3" />
+                  <span className="font-medium text-gray-900 capitalize">{item._id}</span>
+                </div>
+                <span className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-sm font-medium">
+                  {item.count} users
+                </span>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {/* Recent Users */}
+      {stats.recentUsers && stats.recentUsers.length > 0 && (
+        <div>
+          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Users</h3>
+          <div className="bg-gray-50 rounded-lg p-6">
+            {stats.recentUsers.map((user, index) => (
+              <motion.div
+                key={user._id}
+                initial={{ opacity: 0, y: 10 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ delay: index * 0.1 }}
+                className="flex items-center justify-between py-3 border-b border-gray-200 last:border-b-0"
+              >
+                <div>
+                  <p className="font-medium text-gray-900">{user.name}</p>
+                  <p className="text-sm text-gray-500">{user.email}</p>
+                </div>
+                <div className="flex items-center space-x-4">
+                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
+                    <FiShield className="h-3 w-3 mr-1" />
+                    {user.role}
+                  </span>
+                  <span className="text-sm text-gray-500">
+                    {new Date(user.createdAt).toLocaleDateString()}
+                  </span>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+};
+
+// Modal Component
+const Modal = ({ title, children, onClose }) => {
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center p-4 z-50"
+      onClick={onClose}
+    >
+      <motion.div
+        initial={{ opacity: 0, scale: 0.9 }}
+        animate={{ opacity: 1, scale: 1 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex justify-between items-center p-6 border-b border-gray-200">
+          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+          <button
+            onClick={onClose}
+            className="text-gray-400 hover:text-gray-600 transition-colors"
+          >
+            <FiEye className="h-6 w-6" />
+          </button>
+        </div>
+        <div className="p-6">{children}</div>
+      </motion.div>
+    </motion.div>
+  );
+};
+
+export default UserManagement;
