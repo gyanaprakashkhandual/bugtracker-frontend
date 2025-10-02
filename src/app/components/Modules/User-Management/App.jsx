@@ -7,8 +7,13 @@ import {
   FiChevronLeft, FiChevronRight, FiEye,
   FiBarChart2, FiUsers, FiShield, FiChevronDown, FiCheck, FiPower
 } from 'react-icons/fi';
+import { useAlert } from '@/app/script/Alert.context';
+import { useConfirm } from '@/app/script/Confirm.context';
 
 const UserManagement = () => {
+  const { showAlert } = useAlert();
+  const { showConfirm } = useConfirm();
+
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -35,21 +40,6 @@ const UserManagement = () => {
 
   const roles = ['admin', 'manager', 'developer', 'tester'];
 
-  // Alert state
-  const [alert, setAlert] = useState(null);
-  const showAlert = (type, message) => {
-    setAlert({ type, message });
-    setTimeout(() => setAlert(null), 3000);
-  };
-
-  // Confirm state
-  const [confirm, setConfirm] = useState(null);
-  const showConfirm = (title, message, confirmText, cancelText, type) => {
-    return new Promise((resolve) => {
-      setConfirm({ title, message, confirmText, cancelText, type, resolve });
-    });
-  };
-
   // Get token from localStorage
   const getToken = () => {
     if (typeof window !== 'undefined') {
@@ -64,7 +54,10 @@ const UserManagement = () => {
     const token = getToken();
 
     if (!token) {
-      showAlert('error', 'Please login first. Token not found.');
+      showAlert({
+        type: 'error',
+        message: 'Please login first. Token not found.'
+      });
       return null;
     }
 
@@ -85,7 +78,10 @@ const UserManagement = () => {
 
       return await response.json();
     } catch (error) {
-      showAlert('error', error.message);
+      showAlert({
+        type: 'error',
+        message: error.message
+      });
       return null;
     }
   };
@@ -129,7 +125,10 @@ const UserManagement = () => {
       });
 
       if (result) {
-        showAlert('success', `"${formData.name}" created successfully`);
+        showAlert({
+          type: 'success',
+          message: `"${formData.name}" created successfully`
+        });
         setShowCreateModal(false);
         setFormData({ name: '', email: '', password: '', role: 'developer' });
         fetchAllUsers();
@@ -158,7 +157,10 @@ const UserManagement = () => {
       });
 
       if (result) {
-        showAlert('success', `"${formData.name}" updated successfully`);
+        showAlert({
+          type: 'success',
+          message: `"${formData.name}" updated successfully`
+        });
         setShowCreateModal(false);
         setSelectedUser(null);
         setFormData({ name: '', email: '', password: '', role: 'developer' });
@@ -181,13 +183,13 @@ const UserManagement = () => {
 
   // Delete user permanently
   const handleDeleteUser = async (user) => {
-    const result = await showConfirm(
-      `Delete "${user.name}"?`,
-      "This action cannot be undone. All user data will be permanently lost.",
-      "Delete User",
-      "Keep User",
-      "danger"
-    );
+    const result = await showConfirm({
+      title: `Delete "${user.name}"?`,
+      message: "This action cannot be undone. All user data will be permanently lost.",
+      confirmText: "Delete User",
+      cancelText: "Keep User",
+      type: "danger"
+    });
 
     if (result) {
       const apiResult = await apiCall(`/admin/users/${user._id}`, {
@@ -195,7 +197,10 @@ const UserManagement = () => {
       });
 
       if (apiResult) {
-        showAlert('success', `"${user.name}" deleted successfully`);
+        showAlert({
+          type: 'success',
+          message: `"${user.name}" deleted successfully`
+        });
         fetchAllUsers();
         fetchStats();
       }
@@ -204,13 +209,13 @@ const UserManagement = () => {
 
   // Toggle user status
   const handleToggleStatus = async (user) => {
-    const result = await showConfirm(
-      `${user.isActive ? 'Deactivate' : 'Activate'} "${user.name}"?`,
-      `User will be ${user.isActive ? 'deactivated' : 'activated'}.`,
-      user.isActive ? 'Deactivate' : 'Activate',
-      "Cancel",
-      "warning"
-    );
+    const result = await showConfirm({
+      title: `${user.isActive ? 'Deactivate' : 'Activate'} "${user.name}"?`,
+      message: `User will be ${user.isActive ? 'deactivated' : 'activated'}.`,
+      confirmText: user.isActive ? 'Deactivate' : 'Activate',
+      cancelText: "Cancel",
+      type: "warning"
+    });
 
     if (result) {
       const apiResult = await apiCall(`/admin/users/${user._id}/status`, {
@@ -218,7 +223,10 @@ const UserManagement = () => {
       });
 
       if (apiResult) {
-        showAlert('success', `"${user.name}" ${user.isActive ? 'deactivated' : 'activated'} successfully`);
+        showAlert({
+          type: 'success',
+          message: `"${user.name}" ${user.isActive ? 'deactivated' : 'activated'} successfully`
+        });
         fetchAllUsers();
         fetchStats();
       }
@@ -242,71 +250,6 @@ const UserManagement = () => {
 
   return (
     <div className="bg-gray-50 min-h-screen">
-      {/* Alert */}
-      <AnimatePresence>
-        {alert && (
-          <motion.div
-            initial={{ opacity: 0, y: -50 }}
-            animate={{ opacity: 1, y: 0 }}
-            exit={{ opacity: 0, y: -50 }}
-            className="fixed top-4 right-4 z-50"
-          >
-            <div className={`px-4 py-3 rounded-lg shadow-lg ${alert.type === 'success' ? 'bg-green-500' : 'bg-red-500'
-              } text-white`}>
-              {alert.message}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {/* Confirm Dialog */}
-      <AnimatePresence>
-        {confirm && (
-          <motion.div
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center p-4 z-50"
-            onClick={() => {
-              confirm.resolve(false);
-              setConfirm(null);
-            }}
-          >
-            <motion.div
-              initial={{ scale: 0.9 }}
-              animate={{ scale: 1 }}
-              exit={{ scale: 0.9 }}
-              className="bg-white rounded-xl shadow-xl max-w-md w-full p-6"
-              onClick={(e) => e.stopPropagation()}
-            >
-              <h3 className="text-lg font-semibold text-gray-900 mb-2">{confirm.title}</h3>
-              <p className="text-gray-600 mb-6">{confirm.message}</p>
-              <div className="flex justify-end space-x-3">
-                <button
-                  onClick={() => {
-                    confirm.resolve(false);
-                    setConfirm(null);
-                  }}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-                >
-                  {confirm.cancelText}
-                </button>
-                <button
-                  onClick={() => {
-                    confirm.resolve(true);
-                    setConfirm(null);
-                  }}
-                  className={`px-4 py-2 rounded-lg text-white ${confirm.type === 'danger' ? 'bg-red-600 hover:bg-red-700' : 'bg-yellow-600 hover:bg-yellow-700'
-                    }`}
-                >
-                  {confirm.confirmText}
-                </button>
-              </div>
-            </motion.div>
-          </motion.div>
-        )}
-      </AnimatePresence>
-
       <div className="max-w-full mx-auto">
         {/* Main Content */}
         <div className="bg-white rounded-sm">
@@ -609,26 +552,6 @@ const UserCard = ({ user, index, onEdit, onDelete, onToggleStatus }) => {
             {user.email}
           </p>
         </div>
-        <div className="flex space-x-2">
-          <button
-            onClick={() => onEdit(user)}
-            className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-          >
-            <FiEdit className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => onToggleStatus(user)}
-            className={`p-2 transition-colors ${user.isActive ? 'text-gray-400 hover:text-yellow-600' : 'text-gray-400 hover:text-green-600'}`}
-          >
-            <FiPower className="h-4 w-4" />
-          </button>
-          <button
-            onClick={() => onDelete(user)}
-            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-          >
-            <FiTrash2 className="h-4 w-4" />
-          </button>
-        </div>
       </div>
 
       <div className="flex items-center justify-between">
@@ -641,8 +564,33 @@ const UserCard = ({ user, index, onEdit, onDelete, onToggleStatus }) => {
         </span>
       </div>
 
-      <div className="mt-3 text-xs text-gray-500">
+      <div className="flex gap-6 align-middle items-center mt-3 text-xs text-gray-500">
         Created {new Date(user.createdAt).toLocaleDateString()}
+        <div>
+          <div className="flex space-x-2">
+            <button
+              tooltip-data="Edit"
+              onClick={() => onEdit(user)}
+              className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+            >
+              <FiEdit className="h-4 w-4" />
+            </button>
+            <button
+              tooltip-data="Change Status"
+              onClick={() => onToggleStatus(user)}
+              className={`p-2 transition-colors ${user.isActive ? 'text-gray-400 hover:text-yellow-600' : 'text-gray-400 hover:text-green-600'}`}
+            >
+              <FiPower className="h-4 w-4" />
+            </button>
+            <button
+              tooltip-data="Remove"
+              onClick={() => onDelete(user)}
+              className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+            >
+              <FiTrash2 className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
       </div>
     </motion.div>
   );
