@@ -16,6 +16,7 @@ const TestTypeManagement = () => {
   const { selectedProject } = useProject();
   const [testTypes, setTestTypes] = useState([]);
   const [myTestTypes, setMyTestTypes] = useState([]);
+  const [projectTestTypes, setProjectTestTypes] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
@@ -48,6 +49,16 @@ const TestTypeManagement = () => {
       const token = localStorage.getItem('token');
       console.log('Token from localStorage:', token ? 'Token exists' : 'No token found');
       return token;
+    }
+    return null;
+  };
+
+  // Get project ID from localStorage
+  const getProjectId = () => {
+    if (typeof window !== 'undefined') {
+      const projectId = localStorage.getItem('currentProjectId');
+      console.log('Project ID from localStorage:', projectId || 'No project ID found');
+      return projectId;
     }
     return null;
   };
@@ -95,29 +106,14 @@ const TestTypeManagement = () => {
     }
   };
 
-  // Fetch test types based on active tab
-  const fetchTestTypes = async (page = 1, search = '') => {
-    if (!selectedProject?._id) {
-      showAlert({
-        type: 'error',
-        message: 'Please select a project first'
-      });
-      return;
-    }
-
+  // Fetch all test types (for "All Test Types" tab)
+  const fetchAllTestTypes = async (page = 1, search = '') => {
     setLoading(true);
-    const endpoint = activeTab === 'my'
-      ? `/my-test-types?page=${page}&limit=8&search=${search}`
-      : `/projects/${selectedProject._id}/test-types?page=${page}&limit=8&search=${search}`;
-
+    const endpoint = `/test-types?page=${page}&limit=8&search=${search}`;
     const result = await apiCall(endpoint);
 
     if (result) {
-      if (activeTab === 'my') {
-        setMyTestTypes(result.testTypes || []);
-      } else {
-        setTestTypes(result.testTypes || []);
-      }
+      setTestTypes(result.testTypes || []);
       setPagination(result.pagination || {
         currentPage: 1,
         totalPages: 1,
@@ -129,18 +125,77 @@ const TestTypeManagement = () => {
     setLoading(false);
   };
 
-  // Fetch statistics
-  const fetchStats = async () => {
-    const result = await apiCall('/stats');
+  // Fetch my test types (for "My Test Types" tab)
+  const fetchMyTestTypes = async (page = 1, search = '') => {
+    setLoading(true);
+    const endpoint = `/my-test-types?page=${page}&limit=8&search=${search}`;
+    const result = await apiCall(endpoint);
+
     if (result) {
-      setStats(result.stats);
+      setMyTestTypes(result.testTypes || []);
+      setPagination(result.pagination || {
+        currentPage: 1,
+        totalPages: 1,
+        totalTestTypes: 0,
+        hasNext: false,
+        hasPrev: false
+      });
+    }
+    setLoading(false);
+  };
+
+  // Fetch project-specific test types (for "Project Test Types" tab)
+  const fetchProjectTestTypes = async (page = 1, search = '') => {
+    const projectId = getProjectId();
+    if (!projectId) {
+      showAlert({
+        type: 'error',
+        message: 'Please select a project first'
+      });
+      return;
+    }
+
+    setLoading(true);
+    const endpoint = `/projects/${projectId}/test-types?page=${page}&limit=8&search=${search}`;
+    const result = await apiCall(endpoint);
+
+    if (result) {
+      setProjectTestTypes(result.testTypes || []);
+      setPagination(result.pagination || {
+        currentPage: 1,
+        totalPages: 1,
+        totalTestTypes: 0,
+        hasNext: false,
+        hasPrev: false
+      });
+    }
+    setLoading(false);
+  };
+
+  // Fetch test types based on active tab
+  const fetchTestTypes = async (page = 1, search = '') => {
+    if (activeTab === 'my') {
+      await fetchMyTestTypes(page, search);
+    } else if (activeTab === 'project') {
+      await fetchProjectTestTypes(page, search);
+    } else {
+      await fetchAllTestTypes(page, search);
     }
   };
 
-  // Create or Update test type
-  const handleSubmitTestType = async (e) => {
+  // Fetch statistics
+  const fetchStats = async () => {
+    const result = await apiCall('/test-types/stats');
+    if (result) {
+      setStats(result.stats || result);
+    }
+  };
+
+  // Create test type
+  const handleCreateTestType = async (e) => {
     e.preventDefault();
-    if (!selectedProject?._id) {
+    const projectId = getProjectId();
+    if (!projectId) {
       showAlert({
         type: 'error',
         message: 'Please select a project first'
@@ -151,36 +206,42 @@ const TestTypeManagement = () => {
     setSaving(true);
 
     try {
-      let result;
-      if (selectedTestType) {
-        // Update existing test type
-        result = await apiCall(`/test-types/${selectedTestType._id}`, {
-          method: 'PUT',
-          body: JSON.stringify(formData)
-        });
-
-        if (result) {
-          showAlert({
-            type: 'success',
-            message: `"${formData.testTypeName}" updated successfully`
-          });
-        }
-      } else {
-        // Create new test type
-        result = await apiCall(`/projects/${selectedProject._id}/test-types`, {
-          method: 'POST',
-          body: JSON.stringify(formData)
-        });
-
-        if (result) {
-          showAlert({
-            type: 'success',
-            message: `"${formData.testTypeName}" created successfully`
-          });
-        }
-      }
+      const result = await apiCall(`/projects/${projectId}/test-types`, {
+        method: 'POST',
+        body: JSON.stringify(formData)
+      });
 
       if (result) {
+        showAlert({
+          type: 'success',
+          message: `"${formData.testTypeName}" created successfully`
+        });
+        setShowCreateModal(false);
+        setFormData({ testTypeName: '', testTypeDesc: '', testFramework: 'Selenium' });
+        fetchTestTypes();
+        fetchStats();
+      }
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  // Update test type
+  const handleUpdateTestType = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+
+    try {
+      const result = await apiCall(`/test-types/${selectedTestType._id}`, {
+        method: 'PUT',
+        body: JSON.stringify(formData)
+      });
+
+      if (result) {
+        showAlert({
+          type: 'success',
+          message: `"${formData.testTypeName}" updated successfully`
+        });
         setShowCreateModal(false);
         setSelectedTestType(null);
         setFormData({ testTypeName: '', testTypeDesc: '', testFramework: 'Selenium' });
@@ -192,7 +253,16 @@ const TestTypeManagement = () => {
     }
   };
 
-  // Delete test type with confirmation
+  // Handle form submission (create or update)
+  const handleSubmitTestType = async (e) => {
+    if (selectedTestType) {
+      await handleUpdateTestType(e);
+    } else {
+      await handleCreateTestType(e);
+    }
+  };
+
+  // Delete test type permanently
   const handleDeleteTestType = async (testType) => {
     const result = await showConfirm({
       title: `Delete "${testType.testTypeName}"?`,
@@ -246,26 +316,25 @@ const TestTypeManagement = () => {
 
   // Initial data fetch
   useEffect(() => {
-    if (selectedProject?._id) {
-      fetchTestTypes();
-      fetchStats();
-    }
-  }, [activeTab, selectedProject]);
+    fetchTestTypes();
+    fetchStats();
+  }, [activeTab]);
 
   // Handle search
   useEffect(() => {
-    if (selectedProject?._id) {
-      const delayDebounceFn = setTimeout(() => {
-        fetchTestTypes(1, searchTerm);
-      }, 500);
+    const delayDebounceFn = setTimeout(() => {
+      fetchTestTypes(1, searchTerm);
+    }, 500);
 
-      return () => clearTimeout(delayDebounceFn);
-    }
-  }, [searchTerm, activeTab, selectedProject]);
+    return () => clearTimeout(delayDebounceFn);
+  }, [searchTerm, activeTab]);
 
-  const currentTestTypes = activeTab === 'my' ? myTestTypes : testTypes;
+  const currentTestTypes =
+    activeTab === 'my' ? myTestTypes :
+      activeTab === 'project' ? projectTestTypes :
+        testTypes;
 
-  if (!selectedProject) {
+  if (!getProjectId()) {
     return (
       <div className="bg-gray-50 min-h-screen flex items-center justify-center">
         <div className="text-center">
@@ -286,7 +355,7 @@ const TestTypeManagement = () => {
           <div className="border-b border-gray-200">
             <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
               <div className="flex space-x-4">
-                {['all', 'my', 'stats'].map((tab) => (
+                {['all', 'my', 'project', 'stats'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -297,6 +366,7 @@ const TestTypeManagement = () => {
                   >
                     {tab === 'all' && 'All Test Types'}
                     {tab === 'my' && 'My Test Types'}
+                    {tab === 'project' && 'Project Test Types'}
                     {tab === 'stats' && 'Statistics'}
                   </button>
                 ))}
