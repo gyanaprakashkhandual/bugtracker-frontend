@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save } from 'lucide-react';
+import { useAlert } from '@/app/script/Alert.context';
 
 const BugCardView = () => {
     const [bugs, setBugs] = useState([]);
@@ -22,6 +23,23 @@ const BugCardView = () => {
         bugRequirement: '',
         refLink: ''
     });
+    const {showAlert} = useAlert();
+
+    const copyText = (text) => {
+  navigator.clipboard.writeText(text).then(() => {
+    showAlert({
+      type: "success",
+      message: `Copied: ${text}`
+    });
+  }).catch(() => {
+    showAlert({
+      type: "error",
+      message: "Failed to copy!"
+    });
+  });
+};
+
+
 
     const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
     const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
@@ -417,7 +435,7 @@ const BugCardView = () => {
                             >
                                 {/* Header */}
                                 <div className="flex items-center justify-between gap-2 mb-2">
-                                    <span className="text-xs font-semibold text-gray-500">#{bug.serialNumber}</span>
+                                    <span className="text-xs font-semibold text-gray-500">{bug.serialNumber}</span>
                                     <div className="flex items-center gap-1.5">
                                         <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getBugTypeColor(bug.bugType)}`}>
                                             {bug.bugType}
@@ -429,7 +447,7 @@ const BugCardView = () => {
                                 </div>
 
                                 {/* Description */}
-                                <p className="text-xs text-gray-700 mb-2 line-clamp-2 min-h-[2rem]">
+                                <p content-data={bug.bugDesc} content-placement="top" className="text-xs text-gray-700 mb-2 line-clamp-2 min-h-[2rem]">
                                     {bug.bugDesc || 'No description'}
                                 </p>
 
@@ -506,7 +524,9 @@ const BugCardView = () => {
                             {/* Modal Header */}
                             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
                                 <div className="flex items-center gap-3">
-                                    <h2 className="text-sm font-semibold text-gray-800">Bug #{selectedBug.serialNumber}</h2>
+                                    <h2 
+                                    onClick={() => copyText(selectedBug.serialNumber)}
+                                     className="text-sm font-semibold text-gray-800 cursor-pointer">{selectedBug.serialNumber}</h2>
                                     <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getBugTypeColor(selectedBug.bugType)}`}>
                                         {selectedBug.bugType}
                                     </span>

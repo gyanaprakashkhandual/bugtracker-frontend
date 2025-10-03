@@ -101,9 +101,8 @@ export default function Alert({
             setIsDisintegrating(true);
             createParticles();
 
-            // Hide completely after particles animation
             setTimeout(() => setShow(false), 1500);
-        }, 5000);
+        }, 2000);
 
         return () => clearTimeout(timer);
     }, []);
