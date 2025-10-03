@@ -457,7 +457,7 @@ const BugSplitView = () => {
                 initial={{ x: 0 }}
                 animate={{ x: isSidebarOpen ? 0 : -sidebarWidth }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="bg-white border-r border-gray-200 flex flex-col shadow-xl"
+                className="bg-white border-r border-gray-200 flex flex-col sidebar-scrollbar"
                 style={{ width: sidebarWidth, minWidth: isSidebarOpen ? sidebarWidth : 0 }}
             >
                 {/* Sidebar Header */}
