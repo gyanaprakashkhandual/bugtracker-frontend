@@ -397,9 +397,8 @@ const BugSpreadsheet = () => {
                                         <button
                                             key={option}
                                             onClick={() => handleDropdownSelect(bugId, column.key, option)}
-                                            className={`w-full px-3 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${
-                                                value === option ? 'bg-blue-50' : ''
-                                            }`}
+                                            className={`w-full px-3 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50' : ''
+                                                }`}
                                         >
                                             <span className={`px-3 py-1 rounded-md text-xs font-semibold border ${optionBadgeClass}`}>
                                                 {option}
@@ -439,14 +438,17 @@ const BugSpreadsheet = () => {
                     <button
                         onClick={() => moveBugToTrash(bug._id)}
                         className="p-2 text-orange-600 hover:bg-orange-50 rounded transition-colors"
-                        title="Move to Trash"
+                        tooltip-data="Move to Trash"
+                        tooltip-placement="left"
                     >
                         <Archive size={16} />
                     </button>
                     <button
                         onClick={() => deleteBugPermanently(bug._id)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                        title="Delete Permanently"
+                        tooltip-data="Delete Permanently"
+                        tooltip-placement="left"
+
                     >
                         <Trash2 size={16} />
                     </button>
@@ -493,7 +495,8 @@ const BugSpreadsheet = () => {
             <div
                 className={`w-full h-full px-3 py-2 flex items-center ${column.editable ? 'cursor-pointer hover:bg-gray-50' : ''}`}
                 onClick={() => column.editable && startEditing(bugId, column.key, value)}
-                title={displayValue}
+                tooltip-data={displayValue}
+                tooltip-placement="top"
             >
                 <span className={`truncate ${!value && isNewRow ? 'text-gray-400 italic text-sm' : ''}`}>
                     {value ? truncatedValue : (isNewRow ? 'Click to edit' : '')}
@@ -520,51 +523,14 @@ const BugSpreadsheet = () => {
     }
 
     return (
-        <div className="w-full h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
-            {/* Header */}
-            <div className="bg-white border-b shadow-sm">
-                <div className="px-6 py-4">
-                    <div className="flex items-center justify-between">
-                        <div>
-                            <h1 className="text-2xl font-bold text-gray-900">Bug Tracker</h1>
-                            <p className="text-sm text-gray-500 mt-1">Manage and track project bugs</p>
-                        </div>
-                        
-                        <div className="flex items-center space-x-4">
-                            <div className="relative">
-                                <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
-                                <input
-                                    type="text"
-                                    placeholder="Search bugs..."
-                                    value={searchTerm}
-                                    onChange={(e) => setSearchTerm(e.target.value)}
-                                    className="pl-10 pr-4 py-2.5 w-80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                />
-                            </div>
-                            
-                            <button
-                                onClick={fetchBugs}
-                                className="flex items-center space-x-2 px-4 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                            >
-                                <RefreshCw size={16} />
-                                <span>Refresh</span>
-                            </button>
-
-                            <div className="text-sm px-4 py-2.5 bg-blue-50 text-blue-700 rounded-lg font-medium">
-                                Total: {filteredBugs.length}
-                            </div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
+        <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
             {/* Spreadsheet */}
-            <div className="flex-1 overflow-auto px-6 py-4">
-                <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
+            <div className="flex-1 overflow-auto">
+                <div className="bg-white border border-gray-200 overflow-hidden">
                     <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
                         <div className="inline-block min-w-full">
                             {/* Header */}
-                            <div className="flex sticky top-0 z-20 shadow-sm">
+                            <div className="flex sticky top-0 z-20 border-b border-gray-900">
                                 {columns.map((column) => (
                                     <div
                                         key={column.key}
@@ -588,10 +554,10 @@ const BugSpreadsheet = () => {
                                     <div
                                         key={`new-${column.key}`}
                                         className="border-r border-gray-200 last:border-r-0"
-                                        style={{ 
-                                            width: columnWidths[column.key], 
+                                        style={{
+                                            width: columnWidths[column.key],
                                             minWidth: columnWidths[column.key],
-                                            height: rowHeights['new'] || rowHeights.default 
+                                            height: rowHeights['new'] || rowHeights.default
                                         }}
                                     >
                                         {renderCellContent(null, column, true)}
@@ -610,8 +576,8 @@ const BugSpreadsheet = () => {
                                         <div
                                             key={`${bug._id}-${column.key}`}
                                             className="border-r border-gray-200 last:border-r-0 relative"
-                                            style={{ 
-                                                width: columnWidths[column.key], 
+                                            style={{
+                                                width: columnWidths[column.key],
                                                 minWidth: columnWidths[column.key],
                                                 height: rowHeights[bug._id] || rowHeights.default
                                             }}
@@ -636,31 +602,6 @@ const BugSpreadsheet = () => {
                                 </div>
                             )}
                         </div>
-                    </div>
-                </div>
-            </div>
-
-            {/* Footer */}
-            <div className="bg-white border-t px-6 py-3">
-                <div className="flex items-center justify-between text-sm text-gray-600">
-                    <div className="flex items-center space-x-4">
-                        <span className="flex items-center space-x-2">
-                            <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
-                            <span>Auto-save enabled</span>
-                        </span>
-                        <span className="text-gray-400">•</span>
-                        <span>Resize columns and rows like Google Sheets</span>
-                    </div>
-                    <div className="flex items-center space-x-4">
-                        <span className="flex items-center space-x-2">
-                            <Archive size={14} className="text-orange-600" />
-                            <span>Trash</span>
-                        </span>
-                        <span className="text-gray-400">•</span>
-                        <span className="flex items-center space-x-2">
-                            <Trash2 size={14} className="text-red-600" />
-                            <span>Delete</span>
-                        </span>
                     </div>
                 </div>
             </div>
