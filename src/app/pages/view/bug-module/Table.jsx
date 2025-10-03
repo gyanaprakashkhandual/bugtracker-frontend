@@ -34,7 +34,7 @@ const BugSpreadsheet = () => {
     const resizeStartWidth = useRef(0);
     const resizeStartHeight = useRef(0);
     const dropdownButtonRefs = useRef({});
-    const commentButtonRefs = useRef({}); // Add this line - moved from inside renderCellContent
+    const commentButtonRefs = useRef({});
 
     const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
     const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
@@ -43,16 +43,16 @@ const BugSpreadsheet = () => {
     const BASE_URL = 'http://localhost:5000/api/v1/bug';
 
     const columns = [
-        { key: 'serialNumber', label: 'S.No', width: 90, editable: false, color: 'bg-purple-50', sticky: true },
-        { key: 'bugType', label: 'Type', width: 160, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'], color: 'bg-blue-50', sticky: true },
-        { key: 'moduleName', label: 'Module', width: 180, editable: true, color: 'bg-green-50', sticky: true },
-        { key: 'bugDesc', label: 'Description', width: 350, editable: true, color: 'bg-yellow-50', sticky: true },
-        { key: 'bugRequirement', label: 'Requirement', width: 220, editable: true, color: 'bg-pink-50' },
-        { key: 'refLink', label: 'Link', width: 80, editable: true, color: 'bg-indigo-50' },
-        { key: 'priority', label: 'Priority', width: 140, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
-        { key: 'severity', label: 'Severity', width: 140, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50' },
-        { key: 'status', label: 'Status', width: 160, editable: true, type: 'select', options: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'], color: 'bg-teal-50' },
-        { key: 'actions', label: 'Actions', width: 150, editable: false, color: 'bg-gray-100' }
+        { key: 'serialNumber', label: 'S.No', width: 80, editable: false, color: 'bg-purple-50', sticky: true },
+        { key: 'bugType', label: 'Type', width: 140, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'], color: 'bg-blue-50', sticky: true },
+        { key: 'moduleName', label: 'Module', width: 160, editable: true, color: 'bg-green-50', sticky: true },
+        { key: 'bugDesc', label: 'Description', width: 320, editable: true, color: 'bg-yellow-50', sticky: true },
+        { key: 'bugRequirement', label: 'Requirement', width: 200, editable: true, color: 'bg-pink-50' },
+        { key: 'refLink', label: 'Link', width: 70, editable: true, color: 'bg-indigo-50' },
+        { key: 'priority', label: 'Priority', width: 120, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
+        { key: 'severity', label: 'Severity', width: 120, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50' },
+        { key: 'status', label: 'Status', width: 140, editable: true, type: 'select', options: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'], color: 'bg-teal-50' },
+        { key: 'actions', label: 'Actions', width: 130, editable: false, color: 'bg-gray-100' }
     ];
 
     useEffect(() => {
@@ -62,7 +62,7 @@ const BugSpreadsheet = () => {
             initialWidths[col.key] = col.width;
         });
         setColumnWidths(initialWidths);
-        setRowHeights({ default: 52 });
+        setRowHeights({ default: 48 });
     }, []);
 
     useEffect(() => {
@@ -367,11 +367,11 @@ const BugSpreadsheet = () => {
 
         if (resizing.type === 'column') {
             const diff = e.clientX - resizeStartX.current;
-            const newWidth = Math.max(80, resizeStartWidth.current + diff);
+            const newWidth = Math.max(70, resizeStartWidth.current + diff);
             setColumnWidths(prev => ({ ...prev, [resizing.key]: newWidth }));
         } else if (resizing.type === 'row') {
             const diff = e.clientY - resizeStartY.current;
-            const newHeight = Math.max(40, resizeStartHeight.current + diff);
+            const newHeight = Math.max(36, resizeStartHeight.current + diff);
             setRowHeights(prev => ({ ...prev, [resizing.key]: newHeight }));
         }
     }, [resizing]);
@@ -472,26 +472,26 @@ const BugSpreadsheet = () => {
                         if (el) dropdownButtonRefs.current[cellKey] = el;
                     }}
                     onClick={() => handleDropdownClick(cellKey)}
-                    className="w-full h-full px-3 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors group"
+                    className="w-full h-full px-2 py-1.5 flex items-center justify-between hover:bg-gray-50 transition-colors group"
                 >
-                    <span className={`w-30 px-3 py-1.5 rounded-md text-xs font-semibold border ${badgeClass}`}>
+                    <span className={`px-2 py-1 rounded text-xs font-medium border ${badgeClass}`}>
                         {value || 'Select'}
                     </span>
-                    <div className='bg-gray-50 p-1 rounded-sm border border-gray-200'>
-                        <GoogleArrowDown size={14} className={`text-gray-500 transition-transform ml-1 group-hover:text-gray-700 ${isActive ? 'rotate-180' : ''}`} />
+                    <div className='bg-gray-50 p-0.5 rounded border border-gray-200'>
+                        <GoogleArrowDown size={12} className={`text-gray-500 transition-transform ml-0.5 group-hover:text-gray-700 ${isActive ? 'rotate-180' : ''}`} />
                     </div>
                 </button>
 
                 <AnimatePresence>
                     {isActive && (
                         <motion.div
-                            initial={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
+                            initial={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
+                            exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className={`absolute ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-56 bg-white border border-gray-200 rounded-lg shadow-2xl z-50 overflow-hidden`}
+                            className={`absolute ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden`}
                         >
-                            <div className="py-1 max-h-72 overflow-y-auto">
+                            <div className="py-1 max-h-64 overflow-y-auto">
                                 {column.options.map((option) => {
                                     let optionBadgeClass = '';
                                     if (column.key === 'priority' || column.key === 'severity') {
@@ -506,14 +506,14 @@ const BugSpreadsheet = () => {
                                         <button
                                             key={option}
                                             onClick={() => handleDropdownSelect(bugId, column.key, option)}
-                                            className={`w-full px-3 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50' : ''
+                                            className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50' : ''
                                                 }`}
                                         >
-                                            <span className={`px-3 py-1 rounded-md text-xs font-semibold border ${optionBadgeClass}`}>
+                                            <span className={`px-2 py-1 rounded text-xs font-medium border ${optionBadgeClass}`}>
                                                 {option}
                                             </span>
                                             {value === option && (
-                                                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                                                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
                                             )}
                                         </button>
                                     );
@@ -540,28 +540,28 @@ const BugSpreadsheet = () => {
         return (
             <motion.div
                 ref={commentModalRef}
-                initial={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
+                initial={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                 animate={{ opacity: 1, y: 0, scale: 1 }}
-                exit={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
+                exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-96 bg-white border border-gray-200 rounded-lg shadow-2xl z-50`}
-                style={{ maxHeight: '400px' }}
+                className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50`}
+                style={{ maxHeight: '360px' }}
             >
-                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
-                    <div className="flex items-center gap-2">
-                        <MessageSquare size={18} className="text-gray-600" />
-                        <h3 className="font-semibold text-gray-800">Comments</h3>
+                <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
+                    <div className="flex items-center gap-1.5">
+                        <MessageSquare size={16} className="text-gray-600" />
+                        <h3 className="font-semibold text-gray-800 text-sm">Comments</h3>
                     </div>
                     <button
                         onClick={() => setActiveCommentModal(null)}
                         className="text-gray-400 hover:text-gray-600 transition-colors"
                     >
-                        <X size={18} />
+                        <X size={16} />
                     </button>
                 </div>
 
-                <div className="px-4 py-3 border-b border-gray-200">
-                    <div className="flex gap-2">
+                <div className="px-3 py-2 border-b border-gray-200">
+                    <div className="flex gap-1.5">
                         <input
                             type="text"
                             value={newComment}
@@ -573,48 +573,48 @@ const BugSpreadsheet = () => {
                                 }
                             }}
                             placeholder="Add a comment..."
-                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                             disabled={submittingComment}
                         />
                         <button
                             onClick={() => submitComment(bugId)}
                             disabled={!newComment.trim() || submittingComment}
-                            className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-2 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
-                            {submittingComment ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                            {submittingComment ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                         </button>
                     </div>
                 </div>
 
-                <div className="overflow-y-auto" style={{ maxHeight: '250px' }}>
+                <div className="overflow-y-auto" style={{ maxHeight: '220px' }}>
                     {isLoading ? (
-                        <div className="flex items-center justify-center py-8">
-                            <Loader2 size={24} className="animate-spin text-blue-600" />
+                        <div className="flex items-center justify-center py-6">
+                            <Loader2 size={20} className="animate-spin text-blue-600" />
                         </div>
                     ) : bugComments.length === 0 ? (
-                        <div className="text-center py-8 text-gray-500 text-sm">
+                        <div className="text-center py-6 text-gray-500 text-xs">
                             No comments yet. Be the first to comment!
                         </div>
                     ) : (
                         <div className="divide-y divide-gray-100">
                             {bugComments.map((comment, index) => (
-                                <div key={index} className="px-4 py-3">
-                                    <div className="flex items-start gap-3">
-                                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                            <span className="text-sm font-semibold text-blue-600">
+                                <div key={index} className="px-3 py-2">
+                                    <div className="flex items-start gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                            <span className="text-xs font-semibold text-blue-600">
                                                 {comment.commentBy?.charAt(0).toUpperCase() || 'U'}
                                             </span>
                                         </div>
                                         <div className="flex-1 min-w-0">
-                                            <div className="flex items-center gap-2 mb-1">
-                                                <span className="text-sm font-semibold text-gray-800">
+                                            <div className="flex items-center gap-1.5 mb-0.5">
+                                                <span className="text-xs font-semibold text-gray-800">
                                                     {comment.commentBy || 'Unknown User'}
                                                 </span>
                                                 <span className="text-xs text-gray-500">
                                                     {new Date(comment.createdAt).toLocaleDateString()}
                                                 </span>
                                             </div>
-                                            <p className="text-sm text-gray-700 break-words">{comment.comment}</p>
+                                            <p className="text-xs text-gray-700 break-words">{comment.comment}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -648,7 +648,7 @@ const BugSpreadsheet = () => {
                                 setEditValue('');
                             }
                         }}
-                        className="w-full h-full border-2 border-blue-500 outline-none bg-white px-3 py-2 text-sm"
+                        className="w-full h-full border border-blue-500 outline-none bg-white px-2 py-1.5 text-xs"
                         autoFocus
                         placeholder="Enter link URL"
                     />
@@ -657,7 +657,10 @@ const BugSpreadsheet = () => {
 
             if (value && !isNewRow) {
                 return (
-                    <div className="w-full h-full px-3 py-2 flex items-center justify-center">
+                    <div
+                        className="w-full h-full px-2 py-1.5 flex items-center justify-center cursor-pointer hover:bg-gray-50"
+                        onDoubleClick={() => column.editable && startEditing(bugId, column.key, value)}
+                    >
                         <a
                             href={value}
                             target="_blank"
@@ -665,7 +668,7 @@ const BugSpreadsheet = () => {
                             className="text-blue-600 hover:text-blue-800 transition-colors"
                             onClick={(e) => e.stopPropagation()}
                         >
-                            <ExternalLink size={18} />
+                            <ExternalLink size={14} />
                         </a>
                     </div>
                 );
@@ -673,7 +676,7 @@ const BugSpreadsheet = () => {
 
             return (
                 <div
-                    className="w-full h-full px-3 py-2 flex items-center justify-center cursor-pointer hover:bg-gray-50"
+                    className="w-full h-full px-2 py-1.5 flex items-center justify-center cursor-pointer hover:bg-gray-50"
                     onDoubleClick={() => column.editable && startEditing(bugId, column.key, value)}
                 >
                     <span className="text-gray-400 text-xs italic">
@@ -687,16 +690,15 @@ const BugSpreadsheet = () => {
             if (isNewRow) {
                 return (
                     <div className="flex items-center justify-center h-full">
-                        {isCreatingBug && <Loader2 size={16} className="animate-spin text-blue-500" />}
+                        {isCreatingBug && <Loader2 size={14} className="animate-spin text-blue-500" />}
                     </div>
                 );
             }
 
-            // Use the pre-defined ref from outside
             const commentButtonRef = commentButtonRefs.current;
 
             return (
-                <div className="flex items-center justify-center h-full space-x-1 relative">
+                <div className="flex items-center justify-center h-full space-x-0.5 relative">
                     <button
                         ref={(el) => {
                             if (el) commentButtonRefs.current[bug._id] = el;
@@ -710,21 +712,21 @@ const BugSpreadsheet = () => {
                                 fetchComments(bug._id);
                             }
                         }}
-                        className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
                     >
-                        <MessageSquare size={16} />
+                        <MessageSquare size={14} />
                     </button>
                     <button
                         onClick={() => moveBugToTrash(bug._id)}
-                        className="p-2 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                        className="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition-colors"
                     >
-                        <Archive size={16} />
+                        <Archive size={14} />
                     </button>
                     <button
                         onClick={() => deleteBugPermanently(bug._id)}
-                        className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                     >
-                        <Trash2 size={16} />
+                        <Trash2 size={14} />
                     </button>
                     {renderCommentModal(bug._id, commentButtonRefs.current[bug._id])}
                 </div>
@@ -733,14 +735,13 @@ const BugSpreadsheet = () => {
 
         if (column.key === 'serialNumber' && !isNewRow) {
             return (
-                <div className="flex items-center justify-center h-full px-3 font-semibold text-gray-700">
+                <div className="flex items-center justify-center h-full px-2 font-medium text-gray-700 text-xs">
                     {value}
                 </div>
             );
         }
 
         if (column.type === 'select') {
-            // Make bugType dropdown editable, selectable, and saveable
             return renderDropdown(bugId, column, value);
         }
 
@@ -758,7 +759,7 @@ const BugSpreadsheet = () => {
                             setEditValue('');
                         }
                     }}
-                    className="w-full h-full border-2 border-blue-500 outline-none bg-white px-3 py-2"
+                    className="w-full h-full border border-blue-500 outline-none bg-white px-2 py-1.5 text-xs"
                     autoFocus
                 />
             );
@@ -769,16 +770,16 @@ const BugSpreadsheet = () => {
 
         return (
             <div
-                className={`w-full h-full px-3 py-2 flex items-center ${column.editable ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+                className={`w-full h-full px-2 py-1.5 flex items-center text-xs ${column.editable ? 'cursor-pointer hover:bg-gray-50' : ''}`}
                 onClick={() => column.editable && startEditing(bugId, column.key, value)}
                 content-data={displayValue}
                 content-placement="top"
             >
-                <span className={`truncate ${!value && isNewRow ? 'text-gray-400 italic text-sm' : ''}`}>
+                <span className={`truncate ${!value && isNewRow ? 'text-gray-400 italic' : ''}`}>
                     {value ? truncatedValue : (isNewRow ? 'Click to edit' : '')}
                 </span>
-                {isSaving && <Loader2 size={14} className="ml-2 animate-spin text-blue-500 flex-shrink-0" />}
-                {hasError && <AlertCircle size={14} className="ml-2 text-red-500 flex-shrink-0" />}
+                {isSaving && <Loader2 size={12} className="ml-1 animate-spin text-blue-500 flex-shrink-0" />}
+                {hasError && <AlertCircle size={12} className="ml-1 text-red-500 flex-shrink-0" />}
             </div>
         );
     };
@@ -802,8 +803,8 @@ const BugSpreadsheet = () => {
         return (
             <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
                 <div className="text-center">
-                    <Loader2 size={48} className="animate-spin text-blue-600 mx-auto mb-4" />
-                    <p className="text-gray-600 font-medium">Loading bugs...</p>
+                    <Loader2 size={40} className="animate-spin text-blue-600 mx-auto mb-3" />
+                    <p className="text-gray-600 font-medium text-sm">Loading bugs...</p>
                 </div>
             </div>
         );
@@ -814,23 +815,29 @@ const BugSpreadsheet = () => {
 
             {/* Spreadsheet */}
             <div className="flex-1 overflow-auto relative">
-                <div className="bg-white border border-gray-200 overflow-hidden">
+                <div className="bg-white border border-gray-200 overflow-hidden rounded-lg shadow-sm">
                     <div className="overflow-x-auto overflow-y-auto">
                         <div className="inline-block min-w-full">
-                            {/* Header */}
-                            <div className="flex sticky top-0 z-30 border-b border-gray-900">
+                            {/* Enhanced Header */}
+                            <div className="flex sticky top-0 z-30 border-b border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100">
                                 {columns.map((column) => (
                                     <div
                                         key={column.key}
-                                        className={`${column.color} px-4 py-3 font-bold text-gray-700 text-sm border-r border-gray-300 last:border-r-0 relative group ${column.sticky ? 'sticky z-40 bg-opacity-100' : ''}`}
+                                        className={`px-3 py-2.5 font-semibold text-gray-700 text-xs border-r border-gray-300 last:border-r-0 relative group ${column.sticky ? 'sticky z-40' : ''}`}
                                         style={{
                                             width: columnWidths[column.key],
                                             minWidth: columnWidths[column.key],
-                                            left: column.sticky ? `${getStickyLeftPosition(column.key)}px` : 'auto'
+                                            left: column.sticky ? `${getStickyLeftPosition(column.key)}px` : 'auto',
+                                            background: `linear-gradient(135deg, ${column.color.replace('bg-', '')} 0%, ${column.color.replace('bg-', '').replace('50', '100')} 100%)`
                                         }}
                                     >
                                         <div className="flex items-center justify-between">
-                                            {column.label}
+                                            <span className="text-xs font-semibold text-gray-700 tracking-wide uppercase">
+                                                {column.label}
+                                            </span>
+                                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <GripVertical size={10} className="text-gray-400" />
+                                            </div>
                                         </div>
                                         <div
                                             className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 group-hover:bg-blue-300 transition-colors"
@@ -887,11 +894,11 @@ const BugSpreadsheet = () => {
                             ))}
 
                             {filteredBugs.length === 0 && (
-                                <div className="flex justify-center items-center py-16 text-gray-500">
+                                <div className="flex justify-center items-center py-12 text-gray-500">
                                     <div className="text-center">
-                                        <AlertCircle size={48} className="mx-auto mb-4 text-gray-400" />
-                                        <p className="text-lg font-medium">No bugs found</p>
-                                        <p className="text-sm mt-2">Start typing in the blank row above to create your first bug</p>
+                                        <AlertCircle size={32} className="mx-auto mb-2 text-gray-400" />
+                                        <p className="text-sm font-medium">No bugs found</p>
+                                        <p className="text-xs mt-1">Start typing in the blank row above to create your first bug</p>
                                     </div>
                                 </div>
                             )}
