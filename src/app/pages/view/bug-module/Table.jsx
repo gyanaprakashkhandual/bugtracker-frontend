@@ -811,108 +811,115 @@ const BugSpreadsheet = () => {
     }
 
     return (
-        <div className="w-full h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+       
+    <div className="w-full h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
 
-            {/* Spreadsheet */}
-            <div className="flex-1 overflow-auto relative">
-                <div className="bg-white border border-gray-200 overflow-hidden rounded-lg shadow-sm">
-                    <div className="overflow-x-auto overflow-y-auto">
-                        <div className="inline-block min-w-full">
-                            {/* Enhanced Header */}
-                            <div className="flex sticky top-0 z-30 border-b border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100">
-                                {columns.map((column) => (
-                                    <div
-                                        key={column.key}
-                                        className={`px-3 py-2.5 font-semibold text-gray-700 text-xs border-r border-gray-300 last:border-r-0 relative group ${column.sticky ? 'sticky z-40' : ''}`}
-                                        style={{
-                                            width: columnWidths[column.key],
-                                            minWidth: columnWidths[column.key],
-                                            left: column.sticky ? `${getStickyLeftPosition(column.key)}px` : 'auto',
-                                            background: `linear-gradient(135deg, ${column.color.replace('bg-', '')} 0%, ${column.color.replace('bg-', '').replace('50', '100')} 100%)`
-                                        }}
-                                    >
-                                        <div className="flex items-center justify-between">
-                                            <span className="text-xs font-semibold text-gray-700 tracking-wide uppercase">
-                                                {column.label}
-                                            </span>
-                                            <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <GripVertical size={10} className="text-gray-400" />
-                                            </div>
-                                        </div>
-                                        <div
-                                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 group-hover:bg-blue-300 transition-colors"
-                                            onMouseDown={(e) => startColumnResize(column.key, e)}
-                                        />
-                                    </div>
-                                ))}
-                            </div>
-
-                            {/* New Row - Always visible */}
-                            <div className="flex border-b border-blue-200 bg-blue-50/50 relative group">
-                                {columns.map((column) => (
-                                    <div
-                                        key={`new-${column.key}`}
-                                        className={`border-r border-gray-200 last:border-r-0 ${column.sticky ? 'sticky z-20 bg-blue-50/50' : ''}`}
-                                        style={{
-                                            width: columnWidths[column.key],
-                                            minWidth: columnWidths[column.key],
-                                            height: rowHeights['new'] || rowHeights.default,
-                                            left: column.sticky ? `${getStickyLeftPosition(column.key)}px` : 'auto'
-                                        }}
-                                    >
-                                        {renderCellContent(null, column, true)}
-                                    </div>
-                                ))}
+        {/* Spreadsheet */}
+        <div className="flex-1 overflow-auto relative">
+            <div className="bg-white border border-gray-200 overflow-hidden rounded-lg shadow-sm">
+                <div className="overflow-x-auto overflow-y-auto">
+                    <div className="inline-block min-w-full">
+                        {/* Enhanced Header */}
+                        <div className="flex sticky top-0 z-30 border-b border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 border-r-0">
+                            {columns.map((column) => (
                                 <div
-                                    className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onMouseDown={(e) => startRowResize('new', e)}
-                                />
-                            </div>
-
-                            {/* Data Rows */}
-                            {filteredBugs.map((bug) => (
-                                <div key={bug._id} className="flex border-b border-gray-200 hover:bg-gray-50 transition-colors relative group">
-                                    {columns.map((column) => (
-                                        <div
-                                            key={`${bug._id}-${column.key}`}
-                                            className={`border-r border-gray-200 last:border-r-0 relative ${column.sticky ? 'sticky z-20 bg-white group-hover:bg-gray-50' : ''}`}
-                                            style={{
-                                                width: columnWidths[column.key],
-                                                minWidth: columnWidths[column.key],
-                                                height: rowHeights[bug._id] || rowHeights.default,
-                                                left: column.sticky ? `${getStickyLeftPosition(column.key)}px` : 'auto'
-                                            }}
-                                        >
-                                            {renderCellContent(bug, column)}
+                                    key={column.key}
+                                    className={`px-3 py-2.5 font-semibold text-gray-700 text-xs border-r border-gray-300 relative group ${column.sticky ? 'sticky z-40' : ''}`}
+                                    style={{
+                                        width: columnWidths[column.key],
+                                        minWidth: columnWidths[column.key],
+                                        left: column.sticky ? `${getStickyLeftPosition(column.key)}px` : 'auto',
+                                        background: `linear-gradient(135deg, ${column.color.replace('bg-', '')} 0%, ${column.color.replace('bg-', '').replace('50', '100')} 100%)`
+                                    }}
+                                >
+                                    <div className="flex items-center justify-between">
+                                        <span className="text-xs font-semibold text-gray-700 tracking-wide uppercase">
+                                            {column.label}
+                                        </span>
+                                        <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <GripVertical size={10} className="text-gray-400" />
                                         </div>
-                                    ))}
+                                    </div>
                                     <div
-                                        className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
-                                        onMouseDown={(e) => startRowResize(bug._id, e)}
+                                        className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 group-hover:bg-blue-300 transition-colors"
+                                        onMouseDown={(e) => startColumnResize(column.key, e)}
                                     />
                                 </div>
                             ))}
-
-                            {filteredBugs.length === 0 && (
-                                <div className="flex justify-center items-center py-12 text-gray-500">
-                                    <div className="text-center">
-                                        <AlertCircle size={32} className="mx-auto mb-2 text-gray-400" />
-                                        <p className="text-sm font-medium">No bugs found</p>
-                                        <p className="text-xs mt-1">Start typing in the blank row above to create your first bug</p>
-                                    </div>
-                                </div>
-                            )}
+                            {/* Add this empty div to ensure full width border */}
+                            <div className="flex-1 border-b border-gray-300 bg-gradient-to-r from-gray-100 to-gray-50"></div>
                         </div>
+
+                        {/* New Row - Always visible */}
+                        <div className="flex border-b border-blue-200 bg-blue-50/50 relative group">
+                            {columns.map((column) => (
+                                <div
+                                    key={`new-${column.key}`}
+                                    className={`border-r border-gray-200 ${column.sticky ? 'sticky z-20 bg-blue-50/50' : ''}`}
+                                    style={{
+                                        width: columnWidths[column.key],
+                                        minWidth: columnWidths[column.key],
+                                        height: rowHeights['new'] || rowHeights.default,
+                                        left: column.sticky ? `${getStickyLeftPosition(column.key)}px` : 'auto'
+                                    }}
+                                >
+                                    {renderCellContent(null, column, true)}
+                                </div>
+                            ))}
+                            {/* Fill remaining space */}
+                            <div className="flex-1 bg-blue-50/50 border-b border-blue-200"></div>
+                            <div
+                                className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                onMouseDown={(e) => startRowResize('new', e)}
+                            />
+                        </div>
+
+                        {/* Data Rows */}
+                        {filteredBugs.map((bug) => (
+                            <div key={bug._id} className="flex border-b border-gray-200 hover:bg-gray-50 transition-colors relative group">
+                                {columns.map((column) => (
+                                    <div
+                                        key={`${bug._id}-${column.key}`}
+                                        className={`border-r border-gray-200 relative ${column.sticky ? 'sticky z-20 bg-white group-hover:bg-gray-50' : ''}`}
+                                        style={{
+                                            width: columnWidths[column.key],
+                                            minWidth: columnWidths[column.key],
+                                            height: rowHeights[bug._id] || rowHeights.default,
+                                            left: column.sticky ? `${getStickyLeftPosition(column.key)}px` : 'auto'
+                                        }}
+                                    >
+                                        {renderCellContent(bug, column)}
+                                    </div>
+                                ))}
+                                {/* Fill remaining space for data rows */}
+                                <div className="flex-1 border-b border-gray-200 group-hover:bg-gray-50"></div>
+                                <div
+                                    className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onMouseDown={(e) => startRowResize(bug._id, e)}
+                                />
+                            </div>
+                        ))}
+
+                        {filteredBugs.length === 0 && (
+                            <div className="flex justify-center items-center py-12 text-gray-500">
+                                <div className="text-center">
+                                    <AlertCircle size={32} className="mx-auto mb-2 text-gray-400" />
+                                    <p className="text-sm font-medium">No bugs found</p>
+                                    <p className="text-xs mt-1">Start typing in the blank row above to create your first bug</p>
+                                </div>
+                            </div>
+                        )}
                     </div>
                 </div>
             </div>
-
-            {/* Resize overlay */}
-            {resizing && (
-                <div className="fixed inset-0 z-50" style={{ cursor: resizing.type === 'column' ? 'col-resize' : 'row-resize' }} />
-            )}
         </div>
-    );
+
+        {/* Resize overlay */}
+        {resizing && (
+            <div className="fixed inset-0 z-50" style={{ cursor: resizing.type === 'column' ? 'col-resize' : 'row-resize' }} />
+        )}
+    </div>
+);
 };
 
 export default BugSpreadsheet;
