@@ -89,7 +89,7 @@ const BugSpreadsheet = () => {
         try {
             setLoading(true);
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs?page=${page}&limit=10`,
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs?page=${page}&limit=1000000`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -118,7 +118,7 @@ const BugSpreadsheet = () => {
 
         try {
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                `http://localhost:5000/api/v1/comment/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -144,7 +144,7 @@ const BugSpreadsheet = () => {
 
         try {
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                `http://localhost:5000/api/v1/comment/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
                 {
                     method: 'POST',
                     headers: {
@@ -740,6 +740,7 @@ const BugSpreadsheet = () => {
         }
 
         if (column.type === 'select') {
+            // Make bugType dropdown editable, selectable, and saveable
             return renderDropdown(bugId, column, value);
         }
 
@@ -770,7 +771,8 @@ const BugSpreadsheet = () => {
             <div
                 className={`w-full h-full px-3 py-2 flex items-center ${column.editable ? 'cursor-pointer hover:bg-gray-50' : ''}`}
                 onClick={() => column.editable && startEditing(bugId, column.key, value)}
-                title={displayValue}
+                content-data={displayValue}
+                content-placement="top"
             >
                 <span className={`truncate ${!value && isNewRow ? 'text-gray-400 italic text-sm' : ''}`}>
                     {value ? truncatedValue : (isNewRow ? 'Click to edit' : '')}
@@ -809,41 +811,6 @@ const BugSpreadsheet = () => {
 
     return (
         <div className="w-full h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
-            {/* Pagination Header */}
-            <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
-                <div className="flex items-center gap-4">
-                    <h2 className="text-lg font-semibold text-gray-800">Bug Tracking</h2>
-                    <span className="text-sm text-gray-600">
-                        Total: {totalBugs} bugs
-                    </span>
-                </div>
-                <div className="flex items-center gap-3">
-                    <button
-                        onClick={() => fetchBugs(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                        <ChevronLeft size={18} />
-                    </button>
-                    <span className="text-sm text-gray-700">
-                        Page {currentPage} of {totalPages}
-                    </span>
-                    <button
-                        onClick={() => fetchBugs(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                    >
-                        <ChevronRight size={18} />
-                    </button>
-                    <button
-                        onClick={() => fetchBugs(currentPage)}
-                        className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
-                    >
-                        <RefreshCw size={16} />
-                        Refresh
-                    </button>
-                </div>
-            </div>
 
             {/* Spreadsheet */}
             <div className="flex-1 overflow-auto relative">
