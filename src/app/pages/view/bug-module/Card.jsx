@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save } from 'lucide-react';
 import { useAlert } from '@/app/script/Alert.context';
 
+
 const BugCardView = () => {
     const [bugs, setBugs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -23,21 +24,21 @@ const BugCardView = () => {
         bugRequirement: '',
         refLink: ''
     });
-    const {showAlert} = useAlert();
+    const { showAlert } = useAlert();
 
     const copyText = (text) => {
-  navigator.clipboard.writeText(text).then(() => {
-    showAlert({
-      type: "success",
-      message: `Copied: ${text}`
-    });
-  }).catch(() => {
-    showAlert({
-      type: "error",
-      message: "Failed to copy!"
-    });
-  });
-};
+        navigator.clipboard.writeText(text).then(() => {
+            showAlert({
+                type: "success",
+                message: `Copied: ${text}`
+            });
+        }).catch(() => {
+            showAlert({
+                type: "error",
+                message: "Failed to copy!"
+            });
+        });
+    };
 
 
 
@@ -524,9 +525,9 @@ const BugCardView = () => {
                             {/* Modal Header */}
                             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
                                 <div className="flex items-center gap-3">
-                                    <h2 
-                                    onClick={() => copyText(selectedBug.serialNumber)}
-                                     className="text-sm font-semibold text-gray-800 cursor-pointer">{selectedBug.serialNumber}</h2>
+                                    <h2
+                                        onClick={() => copyText(selectedBug.serialNumber)}
+                                        className="text-sm font-semibold text-gray-800 cursor-pointer">{selectedBug.serialNumber}</h2>
                                     <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getBugTypeColor(selectedBug.bugType)}`}>
                                         {selectedBug.bugType}
                                     </span>
@@ -609,22 +610,28 @@ const BugCardView = () => {
 
                                     {/* Navigation and Close */}
                                     <button
+                                    tooltip-data="Previous"
+                                    tooltip-placement="bottom"
                                         onClick={goToPreviousBug}
                                         disabled={filteredBugs.findIndex(b => b._id === selectedBug._id) === 0}
-                                        className="p-1.5 hover:bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="p-1.5 hover:bg-gray-200 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <ChevronLeft size={16} />
                                     </button>
                                     <button
+                                    tooltip-data="Next"
+                                    tooltip-placement="bottom"
                                         onClick={goToNextBug}
                                         disabled={filteredBugs.findIndex(b => b._id === selectedBug._id) === filteredBugs.length - 1}
-                                        className="p-1.5 hover:bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="p-1.5 hover:bg-gray-300 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
                                     >
                                         <ChevronRight size={16} />
                                     </button>
                                     <button
+                                    tooltip-data="Close"
+                                    tooltip-placement="bottom"
                                         onClick={() => setSelectedBug(null)}
-                                        className="p-1.5 hover:bg-gray-200 rounded"
+                                        className="p-1.5 hover:bg-gray-300 bg-gray-200 rounded"
                                     >
                                         <X size={16} />
                                     </button>
