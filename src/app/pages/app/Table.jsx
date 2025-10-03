@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical } from 'lucide-react';
+import { GoogleArrowDown } from '@/app/components/utils/Icon';
 
 const BugSpreadsheet = () => {
     const [bugs, setBugs] = useState([]);
@@ -370,7 +371,7 @@ const BugSpreadsheet = () => {
                     <span className={`px-3 py-1.5 rounded-md text-xs font-semibold border ${badgeClass}`}>
                         {value || 'Select'}
                     </span>
-                    <ChevronDown size={14} className={`text-gray-400 transition-transform ml-2 group-hover:text-gray-600 ${isActive ? 'rotate-180' : ''}`} />
+                    <GoogleArrowDown size={14} className={`text-gray-400 transition-transform ml-1 group-hover:text-gray-600 ${isActive ? 'rotate-180' : ''}`} />
                 </button>
 
                 <AnimatePresence>

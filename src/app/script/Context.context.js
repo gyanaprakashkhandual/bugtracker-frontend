@@ -1,6 +1,6 @@
 "use client";
 
-import { createContext, useContext, useState, useEffect, useCallback } from "react";
+import { createContext, useContext, useState, useEffect, useCallback, useRef } from "react";
 
 const ContentContext = createContext();
 
@@ -23,8 +23,17 @@ export const ContentProvider = ({ children }) => {
   });
 
   const [hoverTimeout, setHoverTimeout] = useState(null);
+  const [hideTimeout, setHideTimeout] = useState(null);
+  const isOverTooltip = useRef(false);
+  const isOverTarget = useRef(false);
 
   const showContent = useCallback((text, targetRect, placement = "bottom", customClass = "") => {
+    // Clear any pending hide timeout
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+      setHideTimeout(null);
+    }
+
     setContent({
       visible: true,
       text,
@@ -33,15 +42,40 @@ export const ContentProvider = ({ children }) => {
       placement,
       customClass,
     });
-  }, []);
+  }, [hideTimeout]);
 
   const hideContent = useCallback(() => {
-    setContent((prev) => ({ ...prev, visible: false }));
-    if (hoverTimeout) {
-      clearTimeout(hoverTimeout);
-      setHoverTimeout(null);
+    // Only hide if cursor is neither over target nor tooltip
+    if (!isOverTarget.current && !isOverTooltip.current) {
+      setContent((prev) => ({ ...prev, visible: false }));
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+        setHoverTimeout(null);
+      }
     }
   }, [hoverTimeout]);
+
+  const scheduleHide = useCallback(() => {
+    if (hideTimeout) {
+      clearTimeout(hideTimeout);
+    }
+
+    const timeout = setTimeout(() => {
+      if (!isOverTarget.current && !isOverTooltip.current) {
+        setContent((prev) => ({ ...prev, visible: false }));
+      }
+    }, 100);
+
+    setHideTimeout(timeout);
+  }, [hideTimeout]);
+
+  // Expose tooltip hover state to Context component
+  const setTooltipHover = useCallback((isHovering) => {
+    isOverTooltip.current = isHovering;
+    if (!isHovering) {
+      scheduleHide();
+    }
+  }, [scheduleHide]);
 
   useEffect(() => {
     const handleMouseOver = (e) => {
@@ -53,6 +87,8 @@ export const ContentProvider = ({ children }) => {
       const customClass = target.getAttribute("content-class") || "";
 
       if (!text) return;
+
+      isOverTarget.current = true;
 
       if (hoverTimeout) {
         clearTimeout(hoverTimeout);
@@ -70,7 +106,14 @@ export const ContentProvider = ({ children }) => {
       const target = e.target.closest("[content-data]");
       if (!target) return;
 
-      hideContent();
+      isOverTarget.current = false;
+
+      if (hoverTimeout) {
+        clearTimeout(hoverTimeout);
+        setHoverTimeout(null);
+      }
+
+      scheduleHide();
     };
 
     document.addEventListener("mouseover", handleMouseOver);
@@ -82,11 +125,14 @@ export const ContentProvider = ({ children }) => {
       if (hoverTimeout) {
         clearTimeout(hoverTimeout);
       }
+      if (hideTimeout) {
+        clearTimeout(hideTimeout);
+      }
     };
-  }, [showContent, hideContent, hoverTimeout]);
+  }, [showContent, scheduleHide, hoverTimeout, hideTimeout]);
 
   return (
-    <ContentContext.Provider value={{ content, showContent, hideContent }}>
+    <ContentContext.Provider value={{ content, showContent, hideContent, setTooltipHover }}>
       {children}
     </ContentContext.Provider>
   );

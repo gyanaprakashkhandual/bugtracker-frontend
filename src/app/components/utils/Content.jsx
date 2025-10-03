@@ -5,20 +5,28 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useContent } from "@/app/script/Context.context";
 
 const Context = () => {
-  const { content, hideContent } = useContent();
+  const { content, hideContent, setTooltipHover } = useContent();
   const contextRef = useRef(null);
   const [position, setPosition] = useState({ top: 0, left: 0 });
+  const [copied, setCopied] = useState(false);
 
   useEffect(() => {
     const handleScroll = () => {
       if (content.visible) {
         hideContent();
+        setCopied(false);
       }
     };
 
     window.addEventListener("scroll", handleScroll, true);
     return () => window.removeEventListener("scroll", handleScroll, true);
   }, [content.visible, hideContent]);
+
+  useEffect(() => {
+    if (!content.visible) {
+      setCopied(false);
+    }
+  }, [content.visible]);
 
   useEffect(() => {
     if (!content.visible || !content.targetRect || !contextRef.current) {
@@ -72,6 +80,26 @@ const Context = () => {
     requestAnimationFrame(calculatePosition);
   }, [content.visible, content.targetRect, content.placement]);
 
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(content.text);
+      setCopied(true);
+      setTimeout(() => {
+        setCopied(false);
+      }, 300);
+    } catch (err) {
+      console.error("Failed to copy:", err);
+    }
+  };
+
+  const handleMouseEnter = () => {
+    setTooltipHover(true);
+  };
+
+  const handleMouseLeave = () => {
+    setTooltipHover(false);
+  };
+
   return (
     <AnimatePresence>
       {content.visible && content.text && (
@@ -81,7 +109,9 @@ const Context = () => {
           animate={{ opacity: 1, scale: 1 }}
           exit={{ opacity: 0, scale: 0.85 }}
           transition={{ duration: 0.1, ease: "easeOut" }}
-          className={`fixed z-[99999] pointer-events-none ${content.customClass || ""}`}
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+          className={`fixed z-[99999] ${content.customClass || ""}`}
           style={{
             top: `${position.top}px`,
             left: `${position.left}px`,
@@ -89,8 +119,46 @@ const Context = () => {
             minWidth: "100px",
           }}
         >
-          <div className="bg-white text-gray-800 text-[13px] leading-[18px] px-3 py-2 rounded-lg shadow-[0_2px_12px_rgba(0,0,0,0.15)] border border-gray-200 font-normal">
-            {content.text}
+          <div className="bg-white text-gray-800 text-[13px] leading-[18px] px-3 py-2 rounded-lg shadow-[0_2px_12px_rgba(0,0,0,0.15)] border border-gray-200 font-normal flex items-start gap-2">
+            <span className="flex-1">{content.text}</span>
+            <button
+              onClick={handleCopy}
+              className="pointer-events-auto flex-shrink-0 hover:bg-gray-100 rounded p-1 transition-colors"
+              aria-label="Copy to clipboard"
+            >
+              {copied ? (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-green-600"
+                >
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+              ) : (
+                <svg
+                  xmlns="http://www.w3.org/2000/svg"
+                  width="14"
+                  height="14"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="2"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  className="text-gray-600"
+                >
+                  <rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect>
+                  <path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path>
+                </svg>
+              )}
+            </button>
           </div>
         </motion.div>
       )}
