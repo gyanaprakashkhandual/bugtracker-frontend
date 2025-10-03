@@ -145,7 +145,7 @@ const BugSpreadsheet = () => {
 
         try {
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}`,
+                `${BASE_URL}/bugs/${bugId}`,
                 {
                     method: 'PUT',
                     headers: {
@@ -226,7 +226,7 @@ const BugSpreadsheet = () => {
 
         try {
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/trash`,
+                `${BASE_URL}/bugs/${bugId}/trash`,
                 {
                     method: 'PATCH',
                     headers: {
@@ -249,7 +249,7 @@ const BugSpreadsheet = () => {
 
         try {
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}`,
+                `${BASE_URL}/bugs/${bugId}`,
                 {
                     method: 'DELETE',
                     headers: {
