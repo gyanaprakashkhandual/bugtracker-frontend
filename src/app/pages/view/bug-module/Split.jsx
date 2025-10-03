@@ -2,7 +2,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Menu, ChevronRight as ChevronRightIcon } from 'lucide-react';
-import { useAlert } from '@/app/script/Alert.context';
 
 const BugSplitView = () => {
     const [bugs, setBugs] = useState([]);
@@ -28,19 +27,12 @@ const BugSplitView = () => {
         bugRequirement: '',
         refLink: ''
     });
-    const { showAlert } = useAlert();
 
     const copyText = (text) => {
         navigator.clipboard.writeText(text).then(() => {
-            showAlert({
-                type: "success",
-                message: `Copied: ${text}`
-            });
+            console.log('Copied:', text);
         }).catch(() => {
-            showAlert({
-                type: "error",
-                message: "Failed to copy!"
-            });
+            console.log('Failed to copy');
         });
     };
 
@@ -302,7 +294,6 @@ const BugSplitView = () => {
         }
     };
 
-    // Resize handlers
     const startResizing = useCallback((e) => {
         e.preventDefault();
         setIsResizing(true);
@@ -342,38 +333,37 @@ const BugSplitView = () => {
 
     const getBugTypeColor = (type) => {
         const colors = {
-            'Functional': 'bg-blue-100 text-blue-700 border-blue-300',
-            'User-Interface': 'bg-purple-100 text-purple-700 border-purple-300',
-            'Security': 'bg-red-100 text-red-700 border-red-300',
-            'Database': 'bg-green-100 text-green-700 border-green-300',
-            'Performance': 'bg-orange-100 text-orange-700 border-orange-300'
+            'Functional': 'bg-blue-50 text-blue-700 border-blue-200',
+            'User-Interface': 'bg-purple-50 text-purple-700 border-purple-200',
+            'Security': 'bg-red-50 text-red-700 border-red-200',
+            'Database': 'bg-green-50 text-green-700 border-green-200',
+            'Performance': 'bg-orange-50 text-orange-700 border-orange-200'
         };
-        return colors[type] || 'bg-gray-100 text-gray-700 border-gray-300';
+        return colors[type] || 'bg-gray-50 text-gray-700 border-gray-200';
     };
 
     const getStatusColor = (status) => {
         const colors = {
-            'New': 'bg-blue-100 text-blue-700 border-blue-300',
-            'Open': 'bg-purple-100 text-purple-700 border-purple-300',
-            'In Progress': 'bg-yellow-100 text-yellow-700 border-yellow-300',
-            'In Review': 'bg-orange-100 text-orange-700 border-orange-300',
-            'Closed': 'bg-green-100 text-green-700 border-green-300',
-            'Re Open': 'bg-red-100 text-red-700 border-red-300'
+            'New': 'bg-blue-50 text-blue-700 border-blue-200',
+            'Open': 'bg-purple-50 text-purple-700 border-purple-200',
+            'In Progress': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+            'In Review': 'bg-orange-50 text-orange-700 border-orange-200',
+            'Closed': 'bg-green-50 text-green-700 border-green-200',
+            'Re Open': 'bg-red-50 text-red-700 border-red-200'
         };
-        return colors[status] || 'bg-gray-100 text-gray-700 border-gray-300';
+        return colors[status] || 'bg-gray-50 text-gray-700 border-gray-200';
     };
 
     const getPriorityColor = (priority) => {
         const colors = {
-            'Critical': 'bg-red-100 text-red-700 border-red-300',
-            'High': 'bg-orange-100 text-orange-700 border-orange-300',
-            'Medium': 'bg-yellow-100 text-yellow-700 border-yellow-300',
-            'Low': 'bg-green-100 text-green-700 border-green-300'
+            'Critical': 'bg-red-50 text-red-700 border-red-200',
+            'High': 'bg-orange-50 text-orange-700 border-orange-200',
+            'Medium': 'bg-yellow-50 text-yellow-700 border-yellow-200',
+            'Low': 'bg-green-50 text-green-700 border-green-200'
         };
-        return colors[priority] || 'bg-gray-100 text-gray-700 border-gray-300';
+        return colors[priority] || 'bg-gray-50 text-gray-700 border-gray-200';
     };
 
-    // GitHub-style dropdown component
     const GitHubDropdown = ({ value, options, onChange, label, className = "" }) => {
         const [isOpen, setIsOpen] = useState(false);
         const dropdownRef = useRef(null);
@@ -398,35 +388,43 @@ const BugSplitView = () => {
             <div className={`relative inline-block text-left ${className}`} ref={dropdownRef}>
                 <button
                     type="button"
-                    className="inline-flex justify-between items-center w-full px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="inline-flex justify-between items-center w-full px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
                     onClick={() => setIsOpen(!isOpen)}
                 >
                     <span>{value}</span>
-                    <svg className="-mr-1 ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <motion.svg
+                        className="-mr-1 ml-2 h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        viewBox="0 0 24 24"
+                        animate={{ rotate: isOpen ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </svg>
+                    </motion.svg>
                 </button>
 
                 <AnimatePresence>
                     {isOpen && (
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                            transition={{ duration: 0.1 }}
-                            className="origin-top-right absolute right-0 mt-1 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10"
+                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            transition={{ duration: 0.15 }}
+                            className="origin-top-right absolute right-0 mt-2 w-full rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20 overflow-hidden"
                         >
                             <div className="py-1" role="menu">
                                 {options.map((option) => (
-                                    <button
+                                    <motion.button
                                         key={option}
-                                        className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 ${value === option ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                                        whileHover={{ backgroundColor: 'rgba(59, 130, 246, 0.05)' }}
+                                        className={`block w-full text-left px-3 py-2 text-xs transition-colors ${value === option ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
                                             }`}
                                         onClick={() => handleSelect(option)}
                                         role="menuitem"
                                     >
                                         {option}
-                                    </button>
+                                    </motion.button>
                                 ))}
                             </div>
                         </motion.div>
@@ -438,63 +436,78 @@ const BugSplitView = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-gray-50">
-                <div className="text-center">
+            <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+                <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    className="text-center"
+                >
                     <Loader2 size={40} className="animate-spin text-blue-600 mx-auto mb-3" />
-                    <p className="text-gray-600 text-sm">Loading bugs...</p>
-                </div>
+                    <p className="text-gray-600 text-sm font-medium">Loading bugs...</p>
+                </motion.div>
             </div>
         );
     }
 
     return (
-        <div className="flex h-screen bg-gray-50 overflow-hidden">
+        <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
             {/* Sidebar */}
-            <div
+            <motion.div
                 ref={sidebarRef}
-                className={`bg-white border-r border-gray-200 transition-all duration-200 flex flex-col ${isSidebarOpen ? '' : 'w-0'}`}
-                style={{ width: isSidebarOpen ? sidebarWidth : 0 }}
+                initial={{ x: 0 }}
+                animate={{ x: isSidebarOpen ? 0 : -sidebarWidth }}
+                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                className="bg-white border-r border-gray-200 flex flex-col shadow-xl"
+                style={{ width: sidebarWidth, minWidth: isSidebarOpen ? sidebarWidth : 0 }}
             >
                 {/* Sidebar Header */}
-                <div className="flex items-center justify-between p-3 border-b border-gray-200">
-                    <h2 className="text-sm font-semibold text-gray-800">Bugs</h2>
-                    <button
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <h2 className="text-sm font-bold text-gray-800 tracking-wide">Bug List</h2>
+                    <motion.button
+                        whileHover={{ scale: 1.1 }}
+                        whileTap={{ scale: 0.9 }}
                         onClick={() => setIsSidebarOpen(false)}
-                        className="p-1 hover:bg-gray-100 rounded"
+                        className="p-1.5 hover:bg-white rounded-lg transition-colors"
                     >
-                        <ChevronRightIcon size={16} />
-                    </button>
+                        <ChevronRightIcon size={16} className="text-gray-600" />
+                    </motion.button>
                 </div>
 
                 {/* Search Bar */}
-                <div className="p-3 border-b border-gray-200">
+                <div className="p-4 border-b border-gray-200 bg-white">
                     <div className="relative">
-                        <Search size={16} className="absolute left-2 top-1/2 transform -translate-y-1/2 text-gray-400" />
+                        <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                         <input
                             type="text"
                             placeholder="Search bugs..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-8 pr-3 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="w-full pl-10 pr-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
                         />
                     </div>
                 </div>
 
                 {/* Bugs List */}
-                <div className="flex-1 overflow-y-auto">
+                <div className="flex-1 overflow-y-auto bg-gray-50">
                     {filteredBugs.length === 0 ? (
-                        <div className="flex flex-col items-center justify-center py-8">
-                            <AlertCircle size={32} className="text-gray-400 mb-2" />
-                            <p className="text-gray-600 text-xs">No bugs found</p>
-                        </div>
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            className="flex flex-col items-center justify-center py-12"
+                        >
+                            <AlertCircle size={40} className="text-gray-400 mb-3" />
+                            <p className="text-gray-600 text-xs font-medium">No bugs found</p>
+                        </motion.div>
                     ) : (
-                        <div className="space-y-2 p-2">
-                            {filteredBugs.map((bug) => (
+                        <div className="space-y-2 p-3">
+                            {filteredBugs.map((bug, index) => (
                                 <motion.div
                                     key={bug._id}
-                                    initial={{ opacity: 0, y: 10 }}
+                                    initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className={`bg-white rounded-lg border p-2 hover:shadow-md transition-shadow cursor-pointer ${selectedBug?._id === bug._id ? 'border-blue-500 bg-blue-50' : 'border-gray-200'
+                                    transition={{ delay: index * 0.03 }}
+                                    whileHover={{ y: -2, boxShadow: "0 4px 12px rgba(0,0,0,0.1)" }}
+                                    className={`bg-white rounded-xl border-2 p-3 cursor-pointer transition-all duration-200 ${selectedBug?._id === bug._id ? 'border-blue-500 bg-blue-50 shadow-md' : 'border-gray-200 hover:border-blue-300'
                                         }`}
                                     onClick={() => {
                                         setSelectedBug(bug);
@@ -502,26 +515,26 @@ const BugSplitView = () => {
                                     }}
                                 >
                                     {/* Header */}
-                                    <div className="flex items-center justify-between gap-1 mb-1">
-                                        <span className="text-xs font-semibold text-gray-500">{bug.serialNumber}</span>
-                                        <div className="flex items-center gap-1">
-                                            <span className={`px-1.5 py-0.5 rounded text-xs font-medium border ${getBugTypeColor(bug.bugType)}`}>
+                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                        <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-md">{bug.serialNumber}</span>
+                                        <div className="flex items-center gap-1.5">
+                                            <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border ${getBugTypeColor(bug.bugType)}`}>
                                                 {bug.bugType}
                                             </span>
-                                            <span className={`px-1.5 py-0.5 rounded text-xs font-medium border ${getStatusColor(bug.status)}`}>
+                                            <span className={`px-2 py-0.5 rounded-md text-xs font-semibold border ${getStatusColor(bug.status)}`}>
                                                 {bug.status}
                                             </span>
                                         </div>
                                     </div>
 
                                     {/* Description */}
-                                    <p className="text-xs text-gray-700 mb-1 line-clamp-2 min-h-[2rem]">
+                                    <p className="text-xs text-gray-700 mb-2 line-clamp-2 min-h-[2rem] leading-relaxed">
                                         {bug.bugDesc || 'No description'}
                                     </p>
 
                                     {/* Date */}
-                                    <div className="flex items-center gap-1 text-xs text-gray-500 mb-1">
-                                        <Clock size={10} />
+                                    <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-2">
+                                        <Clock size={12} className="text-gray-400" />
                                         <span>
                                             {bug.updatedAt
                                                 ? `Updated: ${new Date(bug.updatedAt).toLocaleDateString()}`
@@ -531,30 +544,34 @@ const BugSplitView = () => {
                                     </div>
 
                                     {/* Actions */}
-                                    <div className="flex items-center justify-between pt-1 border-t border-gray-100">
-                                        <div className="flex items-center gap-1">
-                                            <button
+                                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
+                                        <div className="flex items-center gap-1.5">
+                                            <motion.button
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.9 }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     moveBugToTrash(bug._id);
                                                 }}
-                                                className="p-0.5 text-orange-600 hover:bg-orange-50 rounded text-xs"
+                                                className="p-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
                                             >
-                                                <Archive size={12} />
-                                            </button>
-                                            <button
+                                                <Archive size={13} />
+                                            </motion.button>
+                                            <motion.button
+                                                whileHover={{ scale: 1.1 }}
+                                                whileTap={{ scale: 0.9 }}
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     deleteBugPermanently(bug._id);
                                                 }}
-                                                className="p-0.5 text-red-600 hover:bg-red-50 rounded text-xs"
+                                                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
                                             >
-                                                <Trash2 size={12} />
-                                            </button>
+                                                <Trash2 size={13} />
+                                            </motion.button>
                                         </div>
-                                        <div className="flex items-center gap-1 text-xs text-gray-500">
-                                            <MessageSquare size={10} />
-                                            <span>{comments.filter(c => c.bugId === bug._id).length}</span>
+                                        <div className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
+                                            <MessageSquare size={12} />
+                                            <span className="font-medium">{comments.filter(c => c.bugId === bug._id).length}</span>
                                         </div>
                                     </div>
                                 </motion.div>
@@ -562,12 +579,13 @@ const BugSplitView = () => {
                         </div>
                     )}
                 </div>
-            </div>
+            </motion.div>
 
             {/* Resize Handle */}
             {isSidebarOpen && (
-                <div
-                    className="w-1 bg-gray-200 hover:bg-blue-500 cursor-col-resize transition-colors"
+                <motion.div
+                    whileHover={{ backgroundColor: 'rgb(59, 130, 246)' }}
+                    className="w-1 bg-gray-200 cursor-col-resize transition-colors"
                     onMouseDown={startResizing}
                 />
             )}
@@ -575,64 +593,82 @@ const BugSplitView = () => {
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Top Bar */}
-                <div className="flex items-center justify-between p-3 border-b border-gray-200 bg-white">
-                    <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white shadow-sm">
+                    <div className="flex items-center gap-3">
                         {!isSidebarOpen && (
-                            <button
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
                                 onClick={() => setIsSidebarOpen(true)}
-                                className="p-1 hover:bg-gray-100 rounded"
+                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                             >
-                                <Menu size={16} />
-                            </button>
+                                <Menu size={18} className="text-gray-700" />
+                            </motion.button>
                         )}
-                        <h1 className="text-sm font-semibold text-gray-800">Bug Details</h1>
+                        <h1 className="text-sm font-bold text-gray-800 tracking-wide">Bug Details</h1>
                     </div>
 
                     {selectedBug && (
-                        <div className="flex items-center gap-2">
+                        <div className="flex items-center gap-3">
                             {/* Bug counter */}
-                            <div className="text-xs text-gray-600 mr-2">
+                            <div className="text-xs text-gray-600 font-medium bg-gray-100 px-3 py-1.5 rounded-lg">
                                 Bug {filteredBugs.findIndex(b => b._id === selectedBug._id) + 1} of {filteredBugs.length}
                             </div>
 
                             {/* Navigation buttons */}
-                            <button
-                                onClick={goToPreviousBug}
-                                disabled={filteredBugs.findIndex(b => b._id === selectedBug._id) === 0}
-                                className="p-1.5 hover:bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <ChevronLeft size={16} />
-                            </button>
-                            <button
-                                onClick={goToNextBug}
-                                disabled={filteredBugs.findIndex(b => b._id === selectedBug._id) === filteredBugs.length - 1}
-                                className="p-1.5 hover:bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <ChevronRight size={16} />
-                            </button>
+                            <div className="flex items-center gap-1">
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={goToPreviousBug}
+                                    disabled={filteredBugs.findIndex(b => b._id === selectedBug._id) === 0}
+                                    className="p-2 hover:bg-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    <ChevronLeft size={18} />
+                                </motion.button>
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={goToNextBug}
+                                    disabled={filteredBugs.findIndex(b => b._id === selectedBug._id) === filteredBugs.length - 1}
+                                    className="p-2 hover:bg-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    <ChevronRight size={18} />
+                                </motion.button>
+                            </div>
                         </div>
                     )}
                 </div>
 
                 {/* Bug Details */}
-                <div className="flex-1 overflow-y-auto p-4">
+                <div className="flex-1 overflow-y-auto p-6">
                     {!selectedBug ? (
-                        <div className="flex flex-col items-center justify-center h-full text-gray-500">
-                            <AlertCircle size={48} className="mb-3" />
-                            <p className="text-sm">Select a bug to view details</p>
-                        </div>
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            className="flex flex-col items-center justify-center h-full text-gray-500"
+                        >
+                            <AlertCircle size={56} className="mb-4 text-gray-400" />
+                            <p className="text-sm font-medium">Select a bug to view details</p>
+                        </motion.div>
                     ) : (
-                        <div className="max-w-4xl mx-auto">
+                        <motion.div
+                            initial={{ opacity: 0, y: 20 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            transition={{ duration: 0.3 }}
+                            className="max-w-5xl mx-auto"
+                        >
                             {/* Header with Serial Number and Dropdowns */}
-                            <div className="flex items-center justify-between mb-4">
+                            <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
                                 <div className="flex items-center gap-3">
-                                    <h2
+                                    <motion.h2
+                                        whileHover={{ scale: 1.02 }}
                                         onClick={() => copyText(selectedBug.serialNumber)}
-                                        className="text-sm font-semibold text-gray-800 cursor-pointer"
+                                        className="text-sm font-bold text-gray-800 cursor-pointer bg-gray-100 px-3 py-2 rounded-lg"
                                     >
                                         {selectedBug.serialNumber}
-                                    </h2>
-                                    <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getBugTypeColor(selectedBug.bugType)}`}>
+                                    </motion.h2>
+                                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getBugTypeColor(selectedBug.bugType)}`}>
                                         {selectedBug.bugType}
                                     </span>
                                 </div>
@@ -644,66 +680,76 @@ const BugSplitView = () => {
                                         options={['Critical', 'High', 'Medium', 'Low']}
                                         onChange={(value) => handleFieldEdit('priority', value)}
                                         label="Priority"
-                                        className="min-w-[100px]"
+                                        className="min-w-[110px]"
                                     />
                                     <GitHubDropdown
                                         value={selectedBug.severity || 'Medium'}
                                         options={['Critical', 'High', 'Medium', 'Low']}
                                         onChange={(value) => handleFieldEdit('severity', value)}
                                         label="Severity"
-                                        className="min-w-[100px]"
+                                        className="min-w-[110px]"
                                     />
                                     <GitHubDropdown
                                         value={selectedBug.status || 'New'}
                                         options={['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open']}
                                         onChange={(value) => handleFieldEdit('status', value)}
                                         label="Status"
-                                        className="min-w-[120px]"
+                                        className="min-w-[130px]"
                                     />
 
                                     {/* Edit/Save buttons */}
                                     {!isEditing ? (
-                                        <button
+                                        <motion.button
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
                                             onClick={handleEditClick}
-                                            className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                            className="flex items-center gap-1.5 px-4 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
                                         >
-                                            <Edit size={12} />
+                                            <Edit size={13} />
                                             Edit
-                                        </button>
+                                        </motion.button>
                                     ) : (
-                                        <div className="flex items-center gap-1">
-                                            <button
+                                        <div className="flex items-center gap-2">
+                                            <motion.button
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
                                                 onClick={handleSaveClick}
-                                                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                                className="flex items-center gap-1.5 px-4 py-2 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm font-medium"
                                             >
-                                                <Save size={12} />
+                                                <Save size={13} />
                                                 Save
-                                            </button>
-                                            <button
+                                            </motion.button>
+                                            <motion.button
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
                                                 onClick={handleCancelClick}
-                                                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
+                                                className="flex items-center gap-1.5 px-4 py-2 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-sm font-medium"
                                             >
-                                                <X size={12} />
+                                                <X size={13} />
                                                 Cancel
-                                            </button>
+                                            </motion.button>
                                         </div>
                                     )}
 
                                     {/* Archive and Delete buttons */}
-                                    <button
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
                                         onClick={() => moveBugToTrash(selectedBug._id)}
-                                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-orange-600 text-white rounded hover:bg-orange-700"
+                                        className="flex items-center gap-1.5 px-4 py-2 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-sm font-medium"
                                     >
-                                        <Archive size={12} />
+                                        <Archive size={13} />
                                         Archive
-                                    </button>
-                                    <button
+                                    </motion.button>
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
                                         onClick={() => deleteBugPermanently(selectedBug._id)}
-                                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                                        className="flex items-center gap-1.5 px-4 py-2 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm font-medium"
                                     >
-                                        <Trash2 size={12} />
+                                        <Trash2 size={13} />
                                         Delete
-                                    </button>
+                                    </motion.button>
                                 </div>
                             </div>
 
@@ -711,177 +757,231 @@ const BugSplitView = () => {
                                 {/* Left Column - Bug Details */}
                                 <div className="lg:col-span-2 space-y-4">
                                     {/* Module Name */}
-                                    <div>
-                                        <label className="text-xs font-semibold text-gray-600 mb-1 block">Module</label>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.1 }}
+                                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+                                    >
+                                        <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">MODULE</label>
                                         {isEditing ? (
                                             <input
                                                 type="text"
                                                 value={editFormData.moduleName}
                                                 onChange={(e) => setEditFormData(prev => ({ ...prev, moduleName: e.target.value }))}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                placeholder="Enter module name..."
                                             />
                                         ) : (
-                                            <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded border">
+                                            <p className="text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200">
                                                 {selectedBug.moduleName || 'No module specified'}
                                             </p>
                                         )}
-                                    </div>
+                                    </motion.div>
 
                                     {/* Description */}
-                                    <div>
-                                        <label className="text-xs font-semibold text-gray-600 mb-1 block">Description</label>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.15 }}
+                                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+                                    >
+                                        <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">DESCRIPTION</label>
                                         {isEditing ? (
                                             <textarea
                                                 value={editFormData.bugDesc}
                                                 onChange={(e) => setEditFormData(prev => ({ ...prev, bugDesc: e.target.value }))}
                                                 rows={4}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                                                placeholder="Enter bug description..."
                                             />
                                         ) : (
-                                            <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded border min-h-[100px]">
+                                            <p className="text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 min-h-[100px] leading-relaxed">
                                                 {selectedBug.bugDesc || 'No description'}
                                             </p>
                                         )}
-                                    </div>
+                                    </motion.div>
 
                                     {/* Requirement */}
-                                    <div>
-                                        <label className="text-xs font-semibold text-gray-600 mb-1 block">Requirement</label>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 }}
+                                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+                                    >
+                                        <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">REQUIREMENT</label>
                                         {isEditing ? (
                                             <textarea
                                                 value={editFormData.bugRequirement}
                                                 onChange={(e) => setEditFormData(prev => ({ ...prev, bugRequirement: e.target.value }))}
                                                 rows={3}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                                                placeholder="Enter bug requirement..."
                                             />
                                         ) : (
-                                            <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded border min-h-[80px]">
+                                            <p className="text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 min-h-[80px] leading-relaxed">
                                                 {selectedBug.bugRequirement || 'No requirement specified'}
                                             </p>
                                         )}
-                                    </div>
+                                    </motion.div>
 
                                     {/* Reference Link */}
-                                    <div>
-                                        <label className="text-xs font-semibold text-gray-600 mb-1 block">Reference Link</label>
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.25 }}
+                                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+                                    >
+                                        <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">REFERENCE LINK</label>
                                         {isEditing ? (
                                             <div className="flex gap-2">
                                                 <input
                                                     type="text"
                                                     value={editFormData.refLink}
                                                     onChange={(e) => setEditFormData(prev => ({ ...prev, refLink: e.target.value }))}
-                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                                     placeholder="https://..."
                                                 />
                                             </div>
                                         ) : (
                                             <div className="flex gap-2">
-                                                <p className="flex-1 text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded border truncate">
+                                                <p className="flex-1 text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 truncate">
                                                     {selectedBug.refLink || 'No reference link'}
                                                 </p>
                                                 {selectedBug.refLink && (
-                                                    <a
+                                                    <motion.a
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
                                                         href={selectedBug.refLink}
                                                         target="_blank"
                                                         rel="noopener noreferrer"
-                                                        className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1 text-xs"
+                                                        className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-xs font-medium shadow-sm transition-colors"
                                                     >
-                                                        <ExternalLink size={12} />
+                                                        <ExternalLink size={13} />
                                                         Open
-                                                    </a>
+                                                    </motion.a>
                                                 )}
                                             </div>
                                         )}
-                                    </div>
+                                    </motion.div>
 
                                     {/* Timestamps */}
-                                    <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200">
-                                        <div>
-                                            <label className="text-xs font-semibold text-gray-600">Created At</label>
-                                            <p className="text-xs text-gray-700 mt-0.5">
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.3 }}
+                                        className="grid grid-cols-2 gap-4 pt-2"
+                                    >
+                                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                                            <label className="text-xs font-bold text-gray-600 mb-1.5 block tracking-wide flex items-center gap-1.5">
+                                                <Calendar size={12} />
+                                                CREATED AT
+                                            </label>
+                                            <p className="text-xs text-gray-700 font-medium">
                                                 {new Date(selectedBug.createdAt).toLocaleString()}
                                             </p>
                                         </div>
                                         {selectedBug.updatedAt && (
-                                            <div>
-                                                <label className="text-xs font-semibold text-gray-600">Updated At</label>
-                                                <p className="text-xs text-gray-700 mt-0.5">
+                                            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                                                <label className="text-xs font-bold text-gray-600 mb-1.5 block tracking-wide flex items-center gap-1.5">
+                                                    <Clock size={12} />
+                                                    UPDATED AT
+                                                </label>
+                                                <p className="text-xs text-gray-700 font-medium">
                                                     {new Date(selectedBug.updatedAt).toLocaleString()}
                                                 </p>
                                             </div>
                                         )}
-                                    </div>
+                                    </motion.div>
                                 </div>
 
                                 {/* Right Column - Comments */}
-                                <div className="lg:col-span-1">
-                                    <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-1.5">
-                                        <MessageSquare size={14} />
-                                        Comments
-                                    </h3>
+                                <motion.div
+                                    initial={{ opacity: 0, x: 20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: 0.2 }}
+                                    className="lg:col-span-1"
+                                >
+                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 sticky top-4">
+                                        <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2 tracking-wide">
+                                            <MessageSquare size={16} className="text-blue-600" />
+                                            COMMENTS
+                                        </h3>
 
-                                    {/* Add Comment */}
-                                    <div className="mb-3">
-                                        <textarea
-                                            value={newComment}
-                                            onChange={(e) => setNewComment(e.target.value)}
-                                            placeholder="Add a comment..."
-                                            rows={2}
-                                            className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 mb-1.5"
-                                        />
-                                        <button
-                                            onClick={() => submitComment(selectedBug._id)}
-                                            disabled={!newComment.trim() || submittingComment}
-                                            className="w-full px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-1"
-                                        >
-                                            {submittingComment ? (
-                                                <>
-                                                    <Loader2 size={12} className="animate-spin" />
-                                                    Posting...
-                                                </>
-                                            ) : (
-                                                <>
-                                                    <Send size={12} />
-                                                    Post Comment
-                                                </>
-                                            )}
-                                        </button>
-                                    </div>
+                                        {/* Add Comment */}
+                                        <div className="mb-4">
+                                            <textarea
+                                                value={newComment}
+                                                onChange={(e) => setNewComment(e.target.value)}
+                                                placeholder="Add a comment..."
+                                                rows={3}
+                                                className="w-full px-3 py-2.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2 transition-all resize-none"
+                                            />
+                                            <motion.button
+                                                whileHover={{ scale: 1.02 }}
+                                                whileTap={{ scale: 0.98 }}
+                                                onClick={() => submitComment(selectedBug._id)}
+                                                disabled={!newComment.trim() || submittingComment}
+                                                className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-2 font-medium shadow-sm transition-colors"
+                                            >
+                                                {submittingComment ? (
+                                                    <>
+                                                        <Loader2 size={13} className="animate-spin" />
+                                                        Posting...
+                                                    </>
+                                                ) : (
+                                                    <>
+                                                        <Send size={13} />
+                                                        Post Comment
+                                                    </>
+                                                )}
+                                            </motion.button>
+                                        </div>
 
-                                    {/* Comments List */}
-                                    <div className="space-y-2 max-h-96 overflow-y-auto">
-                                        {loadingComments ? (
-                                            <div className="flex items-center justify-center py-6">
-                                                <Loader2 size={20} className="animate-spin text-blue-600" />
-                                            </div>
-                                        ) : comments.length === 0 ? (
-                                            <div className="text-center py-6 text-gray-500 text-xs">
-                                                No comments yet
-                                            </div>
-                                        ) : (
-                                            comments.map((comment, index) => (
-                                                <div key={index} className="bg-gray-50 rounded p-2">
-                                                    <div className="flex items-center gap-1.5 mb-1">
-                                                        <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                                            <span className="text-xs font-semibold text-blue-600">
-                                                                {comment.commentBy?.charAt(0).toUpperCase() || 'U'}
-                                                            </span>
-                                                        </div>
-                                                        <span className="text-xs font-semibold text-gray-800">
-                                                            {comment.commentBy || 'Unknown'}
-                                                        </span>
-                                                        <span className="text-xs text-gray-500">
-                                                            {new Date(comment.createdAt).toLocaleDateString()}
-                                                        </span>
-                                                    </div>
-                                                    <p className="text-xs text-gray-700 pl-6">{comment.comment}</p>
+                                        {/* Comments List */}
+                                        <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
+                                            {loadingComments ? (
+                                                <div className="flex items-center justify-center py-8">
+                                                    <Loader2 size={24} className="animate-spin text-blue-600" />
                                                 </div>
-                                            ))
-                                        )}
+                                            ) : comments.length === 0 ? (
+                                                <div className="text-center py-8 text-gray-500 text-xs">
+                                                    <MessageSquare size={32} className="mx-auto mb-2 text-gray-300" />
+                                                    <p className="font-medium">No comments yet</p>
+                                                </div>
+                                            ) : (
+                                                comments.map((comment, index) => (
+                                                    <motion.div
+                                                        key={index}
+                                                        initial={{ opacity: 0, y: 10 }}
+                                                        animate={{ opacity: 1, y: 0 }}
+                                                        transition={{ delay: index * 0.05 }}
+                                                        className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200"
+                                                    >
+                                                        <div className="flex items-center gap-2 mb-2">
+                                                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                                <span className="text-xs font-bold text-white">
+                                                                    {comment.commentBy?.charAt(0).toUpperCase() || 'U'}
+                                                                </span>
+                                                            </div>
+                                                            <div className="flex-1 min-w-0">
+                                                                <span className="text-xs font-bold text-gray-800 block truncate">
+                                                                    {comment.commentBy || 'Unknown'}
+                                                                </span>
+                                                                <span className="text-xs text-gray-500">
+                                                                    {new Date(comment.createdAt).toLocaleDateString()}
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                        <p className="text-xs text-gray-700 leading-relaxed">{comment.comment}</p>
+                                                    </motion.div>
+                                                ))
+                                            )}
+                                        </div>
                                     </div>
-                                </div>
+                                </motion.div>
                             </div>
-                        </div>
+                        </motion.div>
                     )}
                 </div>
             </div>
