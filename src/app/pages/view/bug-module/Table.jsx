@@ -46,8 +46,8 @@ const BugSpreadsheet = () => {
         { key: 'serialNumber', label: 'S.No', width: 80, editable: false, color: 'bg-purple-50', sticky: true },
         { key: 'bugType', label: 'Type', width: 140, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'], color: 'bg-blue-50', sticky: true },
         { key: 'moduleName', label: 'Module', width: 160, editable: true, color: 'bg-green-50', sticky: true },
-        { key: 'bugDesc', label: 'Description', width: 320, editable: true, color: 'bg-yellow-50', sticky: true },
-        { key: 'bugRequirement', label: 'Requirement', width: 200, editable: true, color: 'bg-pink-50' },
+        { key: 'bugDesc', label: 'Description', width: 285, editable: true, color: 'bg-yellow-50', sticky: true },
+        { key: 'bugRequirement', label: 'Requirement', width: 280, editable: true, color: 'bg-pink-50' },
         { key: 'refLink', label: 'Link', width: 70, editable: true, color: 'bg-indigo-50' },
         { key: 'priority', label: 'Priority', width: 120, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
         { key: 'severity', label: 'Severity', width: 120, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50' },
@@ -816,7 +816,7 @@ const BugSpreadsheet = () => {
 
         {/* Spreadsheet */}
         <div className="flex-1 overflow-auto relative">
-            <div className="bg-white border border-gray-200 overflow-hidden rounded-lg shadow-sm">
+            <div className="bg-white border border-gray-200 overflow-hidden">
                 <div className="overflow-x-auto overflow-y-auto">
                     <div className="inline-block min-w-full">
                         {/* Enhanced Header */}
