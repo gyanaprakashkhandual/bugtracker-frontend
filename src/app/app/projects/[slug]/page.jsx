@@ -2,7 +2,6 @@
 
 import { useState, useEffect } from 'react';
 import Navbar from '@/app/components/Navbars/Workspace';
-import BugSpreadsheet from '@/app/pages/view/bug-module/Table';
 
 export default function TokenDebugger() {
   const [token, setToken] = useState('');
@@ -51,7 +50,6 @@ export default function TokenDebugger() {
       <div>
         <Navbar />
       </div>
-      <BugSpreadsheet/>
     </div>
   );
 }
