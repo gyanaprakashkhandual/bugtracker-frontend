@@ -27,6 +27,15 @@ const BugSidebar = ({ isOpen, onClose }) => {
     });
     const [prompt, setPrompt] = useState('');
     const [openDropdowns, setOpenDropdowns] = useState({});
+    const [isSubmitting, setIsSubmitting] = useState(false);
+
+    const { useAlert } = require("../../script/Alert.context");
+    const { showAlert } = useAlert();
+
+    const BASE_URL = 'http://localhost:5000/api/v1/bug';
+    const projectId = localStorage.getItem("currentProjectId");
+    const testTypeId = localStorage.getItem("selectedTestTypeId");
+    const token = localStorage.getItem("token");
 
     const navItems = [
         { id: 'text-prompt', label: 'Text Prompt' },
@@ -56,9 +65,127 @@ const BugSidebar = ({ isOpen, onClose }) => {
         setOpenDropdowns(prev => ({ ...prev, [field]: !prev[field] }));
     };
 
-    const handleSubmit = () => {
-        console.log('Form submitted:', formData);
-        if (onClose) onClose();
+    // API call for traditional bug creation
+    const createTraditionalBug = async () => {
+        try {
+            setIsSubmitting(true);
+
+            const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    bugType: formData.bugType || 'Functional',
+                    moduleName: formData.moduleName || 'No Module',
+                    bugDesc: formData.bugDesc || 'No Bug Description',
+                    bugRequirement: formData.bugRequirement || 'No Requirement',
+                    refLink: formData.refLink || 'No Link Provided',
+                    priority: formData.priority || 'Medium',
+                    severity: formData.severity || 'Medium',
+                    status: formData.status || 'New',
+                    image: formData.image || 'No Image provided'
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to create bug');
+            }
+
+            const data = await response.json();
+
+            showAlert({
+                type: 'success',
+                message: 'Bug created successfully'
+            });
+
+            return data;
+        } catch (error) {
+            console.error('Error creating bug:', error);
+            showAlert({
+                type: 'error',
+                message: error.message || 'Failed to create bug'
+            });
+            throw error;
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    // API call for AI-powered bug creation
+    const createAIBug = async (rawText) => {
+        try {
+            setIsSubmitting(true);
+
+            const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/ai-text`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({
+                    rawText: rawText.trim()
+                })
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to create bug from text');
+            }
+
+            const data = await response.json();
+
+            showAlert({
+                type: 'success',
+                message: 'Bug created successfully from AI text'
+            });
+
+            return data;
+        } catch (error) {
+            console.error('Error creating AI bug:', error);
+            showAlert({
+                type: 'error',
+                message: error.message || 'Failed to create bug from text'
+            });
+            throw error;
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleSubmit = async () => {
+        try {
+            // Validate required fields
+            if (!formData.bugDesc && !formData.testCaseDescription) {
+                showAlert({
+                    type: 'error',
+                    message: 'Bug description is required'
+                });
+                return;
+            }
+
+            await createTraditionalBug();
+
+            // Reset form and close sidebar
+            setFormData({
+                bugType: '',
+                moduleName: '',
+                bugDesc: '',
+                bugRequirement: '',
+                refLink: '',
+                severity: '',
+                priority: '',
+                status: '',
+                image: null
+            });
+
+            if (onClose) onClose();
+        } catch (error) {
+            // Error handling is done in the API function
+            console.error('Submit error:', error);
+        }
     };
 
     const handleCancel = () => {
@@ -76,9 +203,24 @@ const BugSidebar = ({ isOpen, onClose }) => {
         if (onClose) onClose();
     };
 
-    const handlePromptSubmit = () => {
-        console.log('Prompt submitted:', prompt);
-        setPrompt('');
+    const handlePromptSubmit = async () => {
+        if (!prompt.trim()) {
+            showAlert({
+                type: 'error',
+                message: 'Please enter some text'
+            });
+            return;
+        }
+
+        try {
+            await createAIBug(prompt);
+            setPrompt('');
+
+            if (onClose) onClose();
+        } catch (error) {
+            // Error handling is done in the API function
+            console.error('Prompt submit error:', error);
+        }
     };
 
     const getDropdownPlaceholder = (field) => {
@@ -113,24 +255,30 @@ const BugSidebar = ({ isOpen, onClose }) => {
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         placeholder="Message..."
-                        className="w-full p-4 pr-12 border border-gray-200 rounded-2xl   resize-none bg-gray-50 hover:bg-gray-100 transition-colors"
+                        className="w-full p-4 pr-12 border border-gray-200 rounded-2xl resize-none bg-gray-50 hover:bg-gray-100 transition-colors"
                         rows="1"
                         style={{ minHeight: '52px', maxHeight: '120px' }}
                         onInput={(e) => {
                             e.target.style.height = 'auto';
                             e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
                         }}
+                        disabled={isSubmitting}
                     />
                     <motion.button
                         whileHover={{ scale: 1.05 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={handlePromptSubmit}
-                        disabled={!prompt.trim()}
+                        disabled={!prompt.trim() || isSubmitting}
                         className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                         <Send size={16} />
                     </motion.button>
                 </div>
+                {isSubmitting && (
+                    <div className="text-center text-sm text-gray-500 mt-2">
+                        Processing with AI...
+                    </div>
+                )}
             </div>
         </motion.div>
     );
@@ -139,7 +287,8 @@ const BugSidebar = ({ isOpen, onClose }) => {
         <div className="relative flex-1">
             <button
                 onClick={() => toggleDropdown(field)}
-                className="w-full p-3 border border-gray-200 rounded-xl text-left flex items-center justify-between hover:border-gray-300 transition-all duration-200 bg-gray-50 hover:bg-gray-100"
+                disabled={isSubmitting}
+                className="w-full p-3 border border-gray-200 rounded-xl text-left flex items-center justify-between hover:border-gray-300 transition-all duration-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
                 <span className={formData[field] ? 'text-gray-900 font-medium' : 'text-gray-500'}>
                     {formData[field] || getDropdownPlaceholder(field)}
@@ -169,6 +318,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                                     toggleDropdown(field);
                                 }}
                                 className="w-full p-3 text-left hover:bg-gray-50 first:rounded-t-xl last:rounded-b-xl transition-colors font-medium text-gray-700 hover:text-gray-900"
+                                disabled={isSubmitting}
                             >
                                 {option}
                             </button>
@@ -204,45 +354,50 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     type="text"
                     value={formData.moduleName}
                     onChange={(e) => handleInputChange('moduleName', e.target.value)}
-                    className="w-full p-4 border border-gray-200 rounded-xl   bg-gray-50 hover:bg-gray-100 transition-all duration-200 font-medium"
+                    className="w-full p-4 border border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-200 font-medium"
                     placeholder="Module Name"
+                    disabled={isSubmitting}
                 />
             </div>
 
-            {/* Test Case Description */}
+            {/* Bug Description */}
             <div>
                 <textarea
-                    value={formData.testCaseDescription}
-                    onChange={(e) => handleInputChange('testCaseDescription', e.target.value)}
-                    className="w-full p-4 border border-gray-200 rounded-xl   h-28 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200"
-                    placeholder="Test Case Description"
+                    value={formData.bugDesc}
+                    onChange={(e) => handleInputChange('bugDesc', e.target.value)}
+                    className="w-full p-4 border border-gray-200 rounded-xl h-28 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                    placeholder="Bug Description"
+                    disabled={isSubmitting}
                 />
             </div>
 
-            {/* Actual Result */}
+            {/* Bug Requirement */}
             <div>
                 <textarea
-                    value={formData.actualResult}
-                    onChange={(e) => handleInputChange('actualResult', e.target.value)}
-                    className="w-full p-4 border border-gray-200 rounded-xl   h-28 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200"
-                    placeholder="Actual Result"
+                    value={formData.bugRequirement}
+                    onChange={(e) => handleInputChange('bugRequirement', e.target.value)}
+                    className="w-full p-4 border border-gray-200 rounded-xl h-28 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                    placeholder="Bug Requirement"
+                    disabled={isSubmitting}
                 />
             </div>
 
-            {/* Expected Result */}
+            {/* Reference Link */}
             <div>
-                <textarea
-                    value={formData.expectedResult}
-                    onChange={(e) => handleInputChange('expectedResult', e.target.value)}
-                    className="w-full p-4 border border-gray-200 rounded-xl   h-28 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200"
-                    placeholder="Expected Result"
+                <input
+                    type="text"
+                    value={formData.refLink}
+                    onChange={(e) => handleInputChange('refLink', e.target.value)}
+                    className="w-full p-4 border border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-200 font-medium"
+                    placeholder="Reference Link"
+                    disabled={isSubmitting}
                 />
             </div>
 
             {/* Image Upload */}
             <div>
                 <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all duration-200 group">
+                    <label className={`flex flex-col items-center justify-center w-full h-36 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all duration-200 group ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}>
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                             <div className="p-3 bg-white rounded-full mb-4 group-hover:bg-blue-50 transition-colors">
                                 <Upload className="w-6 h-6 text-gray-400 group-hover:text-blue-500" />
@@ -257,6 +412,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                             className="hidden"
                             accept="image/*"
                             onChange={(e) => handleInputChange('image', e.target.files[0])}
+                            disabled={isSubmitting}
                         />
                     </label>
                 </div>
@@ -279,15 +435,17 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleSubmit}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl"
+                    disabled={isSubmitting}
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                    Submit
+                    {isSubmitting ? 'Submitting...' : 'Submit'}
                 </motion.button>
                 <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleCancel}
-                    className="flex-1 bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200"
+                    disabled={isSubmitting}
+                    className="flex-1 bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Cancel
                 </motion.button>
