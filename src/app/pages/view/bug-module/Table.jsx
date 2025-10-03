@@ -43,7 +43,7 @@ const BugSpreadsheet = () => {
     const BASE_URL = 'http://localhost:5000/api/v1/bug';
 
     const columns = [
-        { key: 'serialNumber', label: 'S.No', width: 80, editable: false, color: 'bg-purple-50', sticky: true },
+        { key: 'serialNumber', label: 'S.No', width: 84, editable: false, color: 'bg-purple-50', sticky: true },
         { key: 'bugType', label: 'Type', width: 140, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'], color: 'bg-blue-50', sticky: true },
         { key: 'moduleName', label: 'Module', width: 160, editable: true, color: 'bg-green-50', sticky: true },
         { key: 'bugDesc', label: 'Description', width: 285, editable: true, color: 'bg-yellow-50', sticky: true },
@@ -474,7 +474,7 @@ const BugSpreadsheet = () => {
                     onClick={() => handleDropdownClick(cellKey)}
                     className="w-full h-full px-2 py-1.5 flex items-center justify-between hover:bg-gray-50 transition-colors group"
                 >
-                    <span className={`px-2 py-1 rounded text-xs font-medium border ${badgeClass}`}>
+                    <span className={`px-2 py-1 rounded text-xs font-medium border w-30 ${badgeClass}`}>
                         {value || 'Select'}
                     </span>
                     <div className='bg-gray-50 p-0.5 rounded border border-gray-200'>
@@ -713,16 +713,22 @@ const BugSpreadsheet = () => {
                             }
                         }}
                         className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        tooltip-data="Comments"
+                        tooltip-placement="top"
                     >
                         <MessageSquare size={14} />
                     </button>
                     <button
                         onClick={() => moveBugToTrash(bug._id)}
                         className="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                        tooltip-data="Achieve"
+                        tooltip-placement="top"
                     >
                         <Archive size={14} />
                     </button>
                     <button
+                        tooltip-data="Delete"
+                        tooltip-placement="top"
                         onClick={() => deleteBugPermanently(bug._id)}
                         className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
                     >
@@ -812,7 +818,7 @@ const BugSpreadsheet = () => {
 
     return (
 
-        <div className="w-full h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+        <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
 
             {/* Spreadsheet */}
             <div className="flex-1 overflow-auto relative">
