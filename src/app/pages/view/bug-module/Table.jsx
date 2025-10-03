@@ -35,7 +35,7 @@ const BugSpreadsheet = () => {
         { key: 'moduleName', label: 'Module', width: 180, editable: true, color: 'bg-green-50' },
         { key: 'bugDesc', label: 'Description', width: 350, editable: true, color: 'bg-yellow-50' },
         { key: 'bugRequirement', label: 'Requirement', width: 220, editable: true, color: 'bg-pink-50' },
-        { key: 'refLink', label: 'Reference Link', width: 200, editable: true, color: 'bg-indigo-50' },
+        { key: 'refLink', label: 'Link', width: 50, editable: true, color: 'bg-indigo-50' },
         { key: 'priority', label: 'Priority', width: 140, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
         { key: 'severity', label: 'Severity', width: 140, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50' },
         { key: 'status', label: 'Status', width: 160, editable: true, type: 'select', options: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'], color: 'bg-teal-50' },
@@ -368,10 +368,12 @@ const BugSpreadsheet = () => {
                     onClick={() => setActiveDropdown(isActive ? null : cellKey)}
                     className="w-full h-full px-3 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors group"
                 >
-                    <span className={`px-3 py-1.5 rounded-md text-xs font-semibold border ${badgeClass}`}>
+                    <span className={`w-30 px-3 py-1.5 rounded-md text-xs font-semibold border ${badgeClass}`}>
                         {value || 'Select'}
                     </span>
-                    <GoogleArrowDown size={14} className={`text-gray-400 transition-transform ml-1 group-hover:text-gray-600 ${isActive ? 'rotate-180' : ''}`} />
+                    <div className='bg-gray-100 p-1 rounded-r-sm border-amber-200 border-t-1 border-b-1 border-r-1'>
+                        <GoogleArrowDown size={14} className={`text-gray-400 transition-transform ml-1 group-hover:text-gray-600 ${isActive ? 'rotate-180' : ''}`} />
+                    </div>
                 </button>
 
                 <AnimatePresence>
