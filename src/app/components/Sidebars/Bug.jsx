@@ -28,11 +28,13 @@ const BugSidebar = ({ isOpen, onClose }) => {
     const [prompt, setPrompt] = useState('');
     const [openDropdowns, setOpenDropdowns] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [isUploadingImage, setIsUploadingImage] = useState(false);
 
     const { useAlert } = require("../../script/Alert.context");
     const { showAlert } = useAlert();
 
     const BASE_URL = 'http://localhost:5000/api/v1/bug';
+    const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
     const projectId = localStorage.getItem("currentProjectId");
     const testTypeId = localStorage.getItem("selectedTestTypeId");
     const token = localStorage.getItem("token");
@@ -57,6 +59,36 @@ const BugSidebar = ({ isOpen, onClose }) => {
         { id: 'csv', label: 'Upload CSV', icon: Upload }
     ];
 
+    const uploadImageToCloudinary = async (file) => {
+        try {
+            setIsUploadingImage(true);
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'test_case_preset'); // You may need to change this
+
+            const response = await fetch(CLOUDINARY_URL, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) {
+                throw new Error('Failed to upload image to Cloudinary');
+            }
+
+            const data = await response.json();
+            return data.secure_url;
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            showAlert({
+                type: 'error',
+                message: 'Failed to upload image'
+            });
+            throw error;
+        } finally {
+            setIsUploadingImage(false);
+        }
+    };
+
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
     };
@@ -69,6 +101,11 @@ const BugSidebar = ({ isOpen, onClose }) => {
     const createTraditionalBug = async () => {
         try {
             setIsSubmitting(true);
+
+            let imageUrl = 'No Image provided';
+            if (formData.image) {
+                imageUrl = await uploadImageToCloudinary(formData.image);
+            }
 
             const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs`, {
                 method: 'POST',
@@ -85,7 +122,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     priority: formData.priority || 'Medium',
                     severity: formData.severity || 'Medium',
                     status: formData.status || 'New',
-                    image: formData.image || 'No Image provided'
+                    image: imageUrl
                 })
             });
 
@@ -397,7 +434,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
             {/* Image Upload */}
             <div>
                 <div className="flex items-center justify-center w-full">
-                    <label className={`flex flex-col items-center justify-center w-full h-36 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all duration-200 group ${isSubmitting ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                    <label className={`flex flex-col items-center justify-center w-full h-36 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all duration-200 group ${isSubmitting || isUploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
                         <div className="flex flex-col items-center justify-center pt-5 pb-6">
                             <div className="p-3 bg-white rounded-full mb-4 group-hover:bg-blue-50 transition-colors">
                                 <Upload className="w-6 h-6 text-gray-400 group-hover:text-blue-500" />
@@ -412,7 +449,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                             className="hidden"
                             accept="image/*"
                             onChange={(e) => handleInputChange('image', e.target.files[0])}
-                            disabled={isSubmitting}
+                            disabled={isSubmitting || isUploadingImage}
                         />
                     </label>
                 </div>
@@ -427,6 +464,11 @@ const BugSidebar = ({ isOpen, onClose }) => {
                         </p>
                     </motion.div>
                 )}
+                {isUploadingImage && (
+                    <div className="text-center text-sm text-gray-500 mt-2">
+                        Uploading image to Cloudinary...
+                    </div>
+                )}
             </div>
 
             {/* Action Buttons */}
@@ -435,7 +477,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleSubmit}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isUploadingImage}
                     className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     {isSubmitting ? 'Submitting...' : 'Submit'}
@@ -444,7 +486,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleCancel}
-                    disabled={isSubmitting}
+                    disabled={isSubmitting || isUploadingImage}
                     className="flex-1 bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                     Cancel
