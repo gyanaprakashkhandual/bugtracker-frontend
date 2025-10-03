@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Save, Trash2, Plus, Search, AlertCircle, Check, X, Loader2, RefreshCw, Archive, ChevronDown } from 'lucide-react';
+import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical } from 'lucide-react';
 
 const BugSpreadsheet = () => {
     const [bugs, setBugs] = useState([]);
@@ -10,11 +10,17 @@ const BugSpreadsheet = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [savingCells, setSavingCells] = useState(new Set());
     const [errorCells, setErrorCells] = useState(new Set());
-    const [newRow, setNewRow] = useState(null);
-    const [isCreating, setIsCreating] = useState(false);
+    const [newRowData, setNewRowData] = useState({});
     const [activeDropdown, setActiveDropdown] = useState(null);
-    const [deleteMode, setDeleteMode] = useState(null);
+    const [columnWidths, setColumnWidths] = useState({});
+    const [rowHeights, setRowHeights] = useState({});
+    const [resizing, setResizing] = useState(null);
+    const [isCreatingBug, setIsCreatingBug] = useState(false);
     const dropdownRef = useRef(null);
+    const resizeStartX = useRef(0);
+    const resizeStartY = useRef(0);
+    const resizeStartWidth = useRef(0);
+    const resizeStartHeight = useRef(0);
 
     const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
     const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
@@ -23,17 +29,27 @@ const BugSpreadsheet = () => {
     const BASE_URL = 'http://localhost:5000/api/v1/bug';
 
     const columns = [
-        { key: 'serialNumber', label: 'S.No', width: 80, editable: false },
-        { key: 'bugType', label: 'Type', width: 140, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'] },
-        { key: 'moduleName', label: 'Module', width: 160, editable: true },
-        { key: 'bugDesc', label: 'Description', width: 320, editable: true },
-        { key: 'bugRequirement', label: 'Requirement', width: 200, editable: true },
-        { key: 'refLink', label: 'Reference Link', width: 180, editable: true },
-        { key: 'priority', label: 'Priority', width: 130, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'] },
-        { key: 'severity', label: 'Severity', width: 130, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'] },
-        { key: 'status', label: 'Status', width: 150, editable: true, type: 'select', options: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'] },
-        { key: 'actions', label: 'Actions', width: 100, editable: false }
+        { key: 'serialNumber', label: 'S.No', width: 90, editable: false, color: 'bg-purple-50' },
+        { key: 'bugType', label: 'Type', width: 160, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'], color: 'bg-blue-50' },
+        { key: 'moduleName', label: 'Module', width: 180, editable: true, color: 'bg-green-50' },
+        { key: 'bugDesc', label: 'Description', width: 350, editable: true, color: 'bg-yellow-50' },
+        { key: 'bugRequirement', label: 'Requirement', width: 220, editable: true, color: 'bg-pink-50' },
+        { key: 'refLink', label: 'Reference Link', width: 200, editable: true, color: 'bg-indigo-50' },
+        { key: 'priority', label: 'Priority', width: 140, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
+        { key: 'severity', label: 'Severity', width: 140, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50' },
+        { key: 'status', label: 'Status', width: 160, editable: true, type: 'select', options: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'], color: 'bg-teal-50' },
+        { key: 'actions', label: 'Actions', width: 120, editable: false, color: 'bg-gray-100' }
     ];
+
+    useEffect(() => {
+        const initialWidths = {};
+        const initialHeights = {};
+        columns.forEach(col => {
+            initialWidths[col.key] = col.width;
+        });
+        setColumnWidths(initialWidths);
+        setRowHeights({ default: 52 });
+    }, []);
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -74,6 +90,48 @@ const BugSpreadsheet = () => {
             setLoading(false);
         }
     }, [projectId, testTypeId, token]);
+
+    const createBug = async (bugData) => {
+        if (!token || isCreatingBug) return;
+
+        if (!bugData.moduleName && !bugData.bugDesc) return;
+
+        setIsCreatingBug(true);
+
+        try {
+            const response = await fetch(
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        bugType: bugData.bugType || 'Functional',
+                        moduleName: bugData.moduleName || '',
+                        bugDesc: bugData.bugDesc || '',
+                        bugRequirement: bugData.bugRequirement || '',
+                        refLink: bugData.refLink || '',
+                        priority: bugData.priority || 'Medium',
+                        severity: bugData.severity || 'Medium',
+                        status: bugData.status || 'New',
+                        image: 'No Image provided'
+                    })
+                }
+            );
+
+            if (!response.ok) throw new Error('Failed to create bug');
+
+            const result = await response.json();
+            setBugs(prev => [result.bug, ...prev]);
+            setNewRowData({});
+        } catch (error) {
+            console.error('Error creating bug:', error);
+        } finally {
+            setIsCreatingBug(false);
+        }
+    };
 
     const updateBug = async (bugId, field, value) => {
         const cellKey = `${bugId}-${field}`;
@@ -124,9 +182,21 @@ const BugSpreadsheet = () => {
         updateBug(bugId, columnKey, value);
     };
 
+    const handleNewRowEdit = (columnKey, value) => {
+        const updatedData = { ...newRowData, [columnKey]: value };
+        setNewRowData(updatedData);
+
+        if (updatedData.moduleName || updatedData.bugDesc) {
+            const timeoutId = setTimeout(() => {
+                createBug(updatedData);
+            }, 1500);
+            return () => clearTimeout(timeoutId);
+        }
+    };
+
     const handleDropdownSelect = (bugId, columnKey, value) => {
         if (bugId === 'new') {
-            setNewRow(prev => ({ ...prev, [columnKey]: value }));
+            handleNewRowEdit(columnKey, value);
         } else {
             handleCellEdit(bugId, columnKey, value);
         }
@@ -139,70 +209,15 @@ const BugSpreadsheet = () => {
     };
 
     const stopEditing = () => {
-        if (editingCell && editingCell.bugId !== 'new') {
-            handleCellEdit(editingCell.bugId, editingCell.columnKey, editValue);
-        } else if (editingCell && editingCell.bugId === 'new') {
-            setNewRow(prev => ({ ...prev, [editingCell.columnKey]: editValue }));
+        if (editingCell) {
+            if (editingCell.bugId === 'new') {
+                handleNewRowEdit(editingCell.columnKey, editValue);
+            } else {
+                handleCellEdit(editingCell.bugId, editingCell.columnKey, editValue);
+            }
         }
         setEditingCell(null);
         setEditValue('');
-    };
-
-    const initializeNewRow = () => {
-        setNewRow({
-            bugType: 'Functional',
-            moduleName: '',
-            bugDesc: '',
-            bugRequirement: '',
-            refLink: '',
-            priority: 'Medium',
-            severity: 'Medium',
-            status: 'New'
-        });
-    };
-
-    const createBug = async () => {
-        if (!newRow || !token) return;
-
-        if (!newRow.moduleName || !newRow.bugDesc) {
-            alert('Please fill in at least Module and Description');
-            return;
-        }
-
-        setIsCreating(true);
-
-        try {
-            const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        ...newRow,
-                        image: 'No Image provided'
-                    })
-                }
-            );
-
-            if (!response.ok) throw new Error('Failed to create bug');
-
-            const result = await response.json();
-            setBugs(prev => [result.bug, ...prev]);
-            setNewRow(null);
-        } catch (error) {
-            console.error('Error creating bug:', error);
-            alert('Failed to create bug');
-        } finally {
-            setIsCreating(false);
-        }
-    };
-
-    const cancelNewRow = () => {
-        setNewRow(null);
-        setEditingCell(null);
     };
 
     const moveBugToTrash = async (bugId) => {
@@ -245,12 +260,54 @@ const BugSpreadsheet = () => {
             if (!response.ok) throw new Error('Failed to delete bug permanently');
 
             setBugs(prev => prev.filter(bug => bug._id !== bugId));
-            setDeleteMode(null);
         } catch (error) {
             console.error('Error deleting bug permanently:', error);
             alert('Failed to delete bug permanently');
         }
     };
+
+    const startColumnResize = (columnKey, e) => {
+        e.preventDefault();
+        setResizing({ type: 'column', key: columnKey });
+        resizeStartX.current = e.clientX;
+        resizeStartWidth.current = columnWidths[columnKey];
+    };
+
+    const startRowResize = (rowKey, e) => {
+        e.preventDefault();
+        setResizing({ type: 'row', key: rowKey });
+        resizeStartY.current = e.clientY;
+        resizeStartHeight.current = rowHeights[rowKey] || rowHeights.default;
+    };
+
+    const handleMouseMove = useCallback((e) => {
+        if (!resizing) return;
+
+        if (resizing.type === 'column') {
+            const diff = e.clientX - resizeStartX.current;
+            const newWidth = Math.max(80, resizeStartWidth.current + diff);
+            setColumnWidths(prev => ({ ...prev, [resizing.key]: newWidth }));
+        } else if (resizing.type === 'row') {
+            const diff = e.clientY - resizeStartY.current;
+            const newHeight = Math.max(40, resizeStartHeight.current + diff);
+            setRowHeights(prev => ({ ...prev, [resizing.key]: newHeight }));
+        }
+    }, [resizing]);
+
+    const handleMouseUp = useCallback(() => {
+        setResizing(null);
+    }, []);
+
+    useEffect(() => {
+        if (resizing) {
+            document.addEventListener('mousemove', handleMouseMove);
+            document.addEventListener('mouseup', handleMouseUp);
+            return () => {
+                document.removeEventListener('mousemove', handleMouseMove);
+                document.removeEventListener('mouseup', handleMouseUp);
+            };
+        }
+    }, [resizing, handleMouseMove, handleMouseUp]);
 
     const filteredBugs = bugs.filter(bug =>
         Object.values(bug).some(value =>
@@ -260,83 +317,99 @@ const BugSpreadsheet = () => {
 
     const getPriorityColor = (priority) => {
         const colors = {
-            'Critical': 'bg-red-100 text-red-800 border-red-200',
-            'High': 'bg-orange-100 text-orange-800 border-orange-200',
-            'Medium': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-            'Low': 'bg-green-100 text-green-800 border-green-200'
+            'Critical': 'bg-red-100 text-red-800 border-red-300',
+            'High': 'bg-orange-100 text-orange-800 border-orange-300',
+            'Medium': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+            'Low': 'bg-green-100 text-green-800 border-green-300'
         };
-        return colors[priority] || 'bg-gray-100 text-gray-800 border-gray-200';
+        return colors[priority] || 'bg-gray-100 text-gray-800 border-gray-300';
     };
 
     const getStatusColor = (status) => {
         const colors = {
-            'New': 'bg-blue-100 text-blue-800 border-blue-200',
-            'Open': 'bg-purple-100 text-purple-800 border-purple-200',
-            'In Progress': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-            'In Review': 'bg-orange-100 text-orange-800 border-orange-200',
-            'Closed': 'bg-green-100 text-green-800 border-green-200',
-            'Re Open': 'bg-red-100 text-red-800 border-red-200'
+            'New': 'bg-blue-100 text-blue-800 border-blue-300',
+            'Open': 'bg-purple-100 text-purple-800 border-purple-300',
+            'In Progress': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+            'In Review': 'bg-orange-100 text-orange-800 border-orange-300',
+            'Closed': 'bg-green-100 text-green-800 border-green-300',
+            'Re Open': 'bg-red-100 text-red-800 border-red-300'
         };
-        return colors[status] || 'bg-gray-100 text-gray-800 border-gray-200';
+        return colors[status] || 'bg-gray-100 text-gray-800 border-gray-300';
     };
 
-    const getSeverityColor = (severity) => {
+    const getBugTypeColor = (type) => {
         const colors = {
-            'Critical': 'bg-red-100 text-red-800 border-red-200',
-            'High': 'bg-orange-100 text-orange-800 border-orange-200',
-            'Medium': 'bg-yellow-100 text-yellow-800 border-yellow-200',
-            'Low': 'bg-green-100 text-green-800 border-green-200'
+            'Functional': 'bg-blue-100 text-blue-800 border-blue-300',
+            'User-Interface': 'bg-purple-100 text-purple-800 border-purple-300',
+            'Security': 'bg-red-100 text-red-800 border-red-300',
+            'Database': 'bg-green-100 text-green-800 border-green-300',
+            'Performance': 'bg-orange-100 text-orange-800 border-orange-300'
         };
-        return colors[severity] || 'bg-gray-100 text-gray-800 border-gray-200';
+        return colors[type] || 'bg-gray-100 text-gray-800 border-gray-300';
     };
 
     const renderDropdown = (bugId, column, value) => {
         const cellKey = `${bugId}-${column.key}`;
         const isActive = activeDropdown === cellKey;
 
+        let badgeClass = '';
+        if (column.key === 'priority' || column.key === 'severity') {
+            badgeClass = getPriorityColor(value);
+        } else if (column.key === 'status') {
+            badgeClass = getStatusColor(value);
+        } else if (column.key === 'bugType') {
+            badgeClass = getBugTypeColor(value);
+        }
+
         return (
             <div className="relative w-full h-full" ref={isActive ? dropdownRef : null}>
                 <button
                     onClick={() => setActiveDropdown(isActive ? null : cellKey)}
-                    className="w-full h-full px-3 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    className="w-full h-full px-3 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors group"
                 >
-                    <span className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${column.key === 'priority' ? getPriorityColor(value) :
-                            column.key === 'severity' ? getSeverityColor(value) :
-                                getStatusColor(value)
-                        }`}>
+                    <span className={`px-3 py-1.5 rounded-md text-xs font-semibold border ${badgeClass}`}>
                         {value || 'Select'}
                     </span>
-                    <ChevronDown size={14} className={`text-gray-400 transition-transform ${isActive ? 'rotate-180' : ''}`} />
+                    <ChevronDown size={14} className={`text-gray-400 transition-transform ml-2 group-hover:text-gray-600 ${isActive ? 'rotate-180' : ''}`} />
                 </button>
 
                 <AnimatePresence>
                     {isActive && (
                         <motion.div
-                            initial={{ opacity: 0, y: -10 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -10 }}
+                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className="absolute top-full left-0 mt-1 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden"
+                            className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-2xl z-50 overflow-hidden"
                         >
-                            <div className="py-1 max-h-64 overflow-y-auto">
-                                {column.options.map((option) => (
-                                    <button
-                                        key={option}
-                                        onClick={() => handleDropdownSelect(bugId, column.key, option)}
-                                        className={`w-full px-3 py-2 text-left text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50' : ''
+                            <div className="py-1 max-h-72 overflow-y-auto">
+                                {column.options.map((option) => {
+                                    let optionBadgeClass = '';
+                                    if (column.key === 'priority' || column.key === 'severity') {
+                                        optionBadgeClass = getPriorityColor(option);
+                                    } else if (column.key === 'status') {
+                                        optionBadgeClass = getStatusColor(option);
+                                    } else if (column.key === 'bugType') {
+                                        optionBadgeClass = getBugTypeColor(option);
+                                    }
+
+                                    return (
+                                        <button
+                                            key={option}
+                                            onClick={() => handleDropdownSelect(bugId, column.key, option)}
+                                            className={`w-full px-3 py-2.5 text-left text-sm hover:bg-gray-50 transition-colors flex items-center justify-between ${
+                                                value === option ? 'bg-blue-50' : ''
                                             }`}
-                                    >
-                                        <span className={`px-2.5 py-1 rounded-md text-xs font-semibold border ${column.key === 'priority' ? getPriorityColor(option) :
-                                                column.key === 'severity' ? getSeverityColor(option) :
-                                                    getStatusColor(option)
-                                            }`}>
-                                            {option}
-                                        </span>
-                                        {value === option && (
-                                            <Check size={14} className="text-blue-600" />
-                                        )}
-                                    </button>
-                                ))}
+                                        >
+                                            <span className={`px-3 py-1 rounded-md text-xs font-semibold border ${optionBadgeClass}`}>
+                                                {option}
+                                            </span>
+                                            {value === option && (
+                                                <div className="w-2 h-2 bg-blue-600 rounded-full"></div>
+                                            )}
+                                        </button>
+                                    );
+                                })}
                             </div>
                         </motion.div>
                     )}
@@ -346,8 +419,8 @@ const BugSpreadsheet = () => {
     };
 
     const renderCellContent = (bug, column, isNewRow = false) => {
-        const bugId = isNewRow ? 'new' : bug._id;
-        const value = isNewRow ? newRow?.[column.key] : bug[column.key];
+        const bugId = isNewRow ? 'new' : bug?._id;
+        const value = isNewRow ? newRowData[column.key] : bug?.[column.key];
         const cellKey = `${bugId}-${column.key}`;
         const isSaving = savingCells.has(cellKey);
         const hasError = errorCells.has(cellKey);
@@ -355,23 +428,8 @@ const BugSpreadsheet = () => {
         if (column.key === 'actions') {
             if (isNewRow) {
                 return (
-                    <div className="flex items-center justify-center space-x-2 h-full">
-                        <button
-                            onClick={createBug}
-                            disabled={isCreating}
-                            className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors disabled:opacity-50"
-                            title="Save"
-                        >
-                            {isCreating ? <Loader2 size={16} className="animate-spin" /> : <Check size={16} />}
-                        </button>
-                        <button
-                            onClick={cancelNewRow}
-                            disabled={isCreating}
-                            className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors disabled:opacity-50"
-                            title="Cancel"
-                        >
-                            <X size={16} />
-                        </button>
+                    <div className="flex items-center justify-center h-full">
+                        {isCreatingBug && <Loader2 size={16} className="animate-spin text-blue-500" />}
                     </div>
                 );
             }
@@ -380,14 +438,14 @@ const BugSpreadsheet = () => {
                 <div className="flex items-center justify-center h-full space-x-1">
                     <button
                         onClick={() => moveBugToTrash(bug._id)}
-                        className="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                        className="p-2 text-orange-600 hover:bg-orange-50 rounded transition-colors"
                         title="Move to Trash"
                     >
                         <Archive size={16} />
                     </button>
                     <button
                         onClick={() => deleteBugPermanently(bug._id)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
                         title="Delete Permanently"
                     >
                         <Trash2 size={16} />
@@ -398,33 +456,17 @@ const BugSpreadsheet = () => {
 
         if (column.key === 'serialNumber' && !isNewRow) {
             return (
-                <div className="flex items-center justify-center h-full px-3 font-medium text-gray-600">
+                <div className="flex items-center justify-center h-full px-3 font-semibold text-gray-700">
                     {value}
                 </div>
             );
         }
 
-        if (column.type === 'select' && (column.key === 'priority' || column.key === 'severity' || column.key === 'status')) {
+        if (column.type === 'select') {
             return renderDropdown(bugId, column, value);
         }
 
         if (editingCell?.bugId === bugId && editingCell?.columnKey === column.key) {
-            if (column.type === 'select') {
-                return (
-                    <select
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={stopEditing}
-                        className="w-full h-full border-2 border-blue-500 outline-none bg-white px-3 py-2"
-                        autoFocus
-                    >
-                        {column.options.map(option => (
-                            <option key={option} value={option}>{option}</option>
-                        ))}
-                    </select>
-                );
-            }
-
             return (
                 <input
                     type="text"
@@ -444,24 +486,20 @@ const BugSpreadsheet = () => {
             );
         }
 
-        let displayValue = value || (isNewRow && column.editable ? 'Click to edit' : '');
-        let cellClass = "w-full h-full px-3 py-2 flex items-center overflow-hidden text-ellipsis whitespace-nowrap";
-
-        if (column.editable) {
-            cellClass += " cursor-pointer hover:bg-gray-50";
-        }
+        const displayValue = value || '';
+        const truncatedValue = displayValue.length > 50 ? displayValue.substring(0, 50) + '...' : displayValue;
 
         return (
             <div
-                className={cellClass}
+                className={`w-full h-full px-3 py-2 flex items-center ${column.editable ? 'cursor-pointer hover:bg-gray-50' : ''}`}
                 onClick={() => column.editable && startEditing(bugId, column.key, value)}
-                title={value}
+                title={displayValue}
             >
-                <span className={isNewRow && !value ? 'text-gray-400 italic' : ''}>
-                    {displayValue}
+                <span className={`truncate ${!value && isNewRow ? 'text-gray-400 italic text-sm' : ''}`}>
+                    {value ? truncatedValue : (isNewRow ? 'Click to edit' : '')}
                 </span>
-                {isSaving && <Loader2 size={14} className="ml-2 animate-spin text-blue-500" />}
-                {hasError && <AlertCircle size={14} className="ml-2 text-red-500" />}
+                {isSaving && <Loader2 size={14} className="ml-2 animate-spin text-blue-500 flex-shrink-0" />}
+                {hasError && <AlertCircle size={14} className="ml-2 text-red-500 flex-shrink-0" />}
             </div>
         );
     };
@@ -486,31 +524,13 @@ const BugSpreadsheet = () => {
             {/* Header */}
             <div className="bg-white border-b shadow-sm">
                 <div className="px-6 py-4">
-                    <div className="flex items-center justify-between mb-4">
+                    <div className="flex items-center justify-between">
                         <div>
                             <h1 className="text-2xl font-bold text-gray-900">Bug Tracker</h1>
                             <p className="text-sm text-gray-500 mt-1">Manage and track project bugs</p>
                         </div>
-                        <button
-                            onClick={fetchBugs}
-                            className="flex items-center space-x-2 px-4 py-2 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                        >
-                            <RefreshCw size={16} />
-                            <span>Refresh</span>
-                        </button>
-                    </div>
-
-                    <div className="flex items-center justify-between">
+                        
                         <div className="flex items-center space-x-4">
-                            <button
-                                onClick={initializeNewRow}
-                                disabled={newRow !== null}
-                                className="flex items-center space-x-2 bg-blue-600 text-white px-5 py-2.5 rounded-lg hover:bg-blue-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <Plus size={18} />
-                                <span className="font-medium">Add New Bug</span>
-                            </button>
-
                             <div className="relative">
                                 <Search size={18} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                                 <input
@@ -521,12 +541,17 @@ const BugSpreadsheet = () => {
                                     className="pl-10 pr-4 py-2.5 w-80 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                                 />
                             </div>
-                        </div>
+                            
+                            <button
+                                onClick={fetchBugs}
+                                className="flex items-center space-x-2 px-4 py-2.5 text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
+                            >
+                                <RefreshCw size={16} />
+                                <span>Refresh</span>
+                            </button>
 
-                        <div className="flex items-center space-x-4">
-                            <div className="text-sm">
-                                <span className="text-gray-600">Total:</span>
-                                <span className="ml-2 font-semibold text-gray-900">{filteredBugs.length}</span>
+                            <div className="text-sm px-4 py-2.5 bg-blue-50 text-blue-700 rounded-lg font-medium">
+                                Total: {filteredBugs.length}
                             </div>
                         </div>
                     </div>
@@ -536,70 +561,77 @@ const BugSpreadsheet = () => {
             {/* Spreadsheet */}
             <div className="flex-1 overflow-auto px-6 py-4">
                 <div className="bg-white rounded-lg shadow-md border border-gray-200 overflow-hidden">
-                    <div className="overflow-x-auto">
+                    <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
                         <div className="inline-block min-w-full">
                             {/* Header */}
-                            <div className="flex bg-gradient-to-r from-gray-100 to-gray-50 border-b-2 border-gray-300 sticky top-0 z-20">
+                            <div className="flex sticky top-0 z-20 shadow-sm">
                                 {columns.map((column) => (
                                     <div
                                         key={column.key}
-                                        className="px-4 py-3 font-semibold text-gray-700 text-sm border-r border-gray-300 last:border-r-0"
-                                        style={{ width: column.width, minWidth: column.width }}
+                                        className={`${column.color} px-4 py-3 font-bold text-gray-700 text-sm border-r border-gray-300 last:border-r-0 relative group`}
+                                        style={{ width: columnWidths[column.key], minWidth: columnWidths[column.key] }}
                                     >
-                                        {column.label}
+                                        <div className="flex items-center justify-between">
+                                            {column.label}
+                                        </div>
+                                        <div
+                                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 group-hover:bg-blue-300 transition-colors"
+                                            onMouseDown={(e) => startColumnResize(column.key, e)}
+                                        />
                                     </div>
                                 ))}
                             </div>
 
-                            {/* New Row */}
-                            <AnimatePresence>
-                                {newRow && (
-                                    <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        exit={{ opacity: 0, height: 0 }}
-                                        className="flex border-b-2 border-blue-300 bg-blue-50"
+                            {/* New Row - Always visible */}
+                            <div className="flex border-b border-blue-200 bg-blue-50/50 relative group">
+                                {columns.map((column) => (
+                                    <div
+                                        key={`new-${column.key}`}
+                                        className="border-r border-gray-200 last:border-r-0"
+                                        style={{ 
+                                            width: columnWidths[column.key], 
+                                            minWidth: columnWidths[column.key],
+                                            height: rowHeights['new'] || rowHeights.default 
+                                        }}
                                     >
-                                        {columns.map((column) => (
-                                            <div
-                                                key={`new-${column.key}`}
-                                                className="border-r border-gray-200 last:border-r-0"
-                                                style={{ width: column.width, minWidth: column.width, minHeight: 48 }}
-                                            >
-                                                {renderCellContent(null, column, true)}
-                                            </div>
-                                        ))}
-                                    </motion.div>
-                                )}
-                            </AnimatePresence>
+                                        {renderCellContent(null, column, true)}
+                                    </div>
+                                ))}
+                                <div
+                                    className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    onMouseDown={(e) => startRowResize('new', e)}
+                                />
+                            </div>
 
                             {/* Data Rows */}
-                            {filteredBugs.map((bug, index) => (
-                                <motion.div
-                                    key={bug._id}
-                                    initial={{ opacity: 0 }}
-                                    animate={{ opacity: 1 }}
-                                    transition={{ duration: 0.2 }}
-                                    className="flex border-b border-gray-200 hover:bg-gray-50 transition-colors"
-                                >
+                            {filteredBugs.map((bug) => (
+                                <div key={bug._id} className="flex border-b border-gray-200 hover:bg-gray-50 transition-colors relative group">
                                     {columns.map((column) => (
                                         <div
                                             key={`${bug._id}-${column.key}`}
                                             className="border-r border-gray-200 last:border-r-0 relative"
-                                            style={{ width: column.width, minWidth: column.width, minHeight: 48 }}
+                                            style={{ 
+                                                width: columnWidths[column.key], 
+                                                minWidth: columnWidths[column.key],
+                                                height: rowHeights[bug._id] || rowHeights.default
+                                            }}
                                         >
                                             {renderCellContent(bug, column)}
                                         </div>
                                     ))}
-                                </motion.div>
+                                    <div
+                                        className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        onMouseDown={(e) => startRowResize(bug._id, e)}
+                                    />
+                                </div>
                             ))}
 
-                            {filteredBugs.length === 0 && !newRow && (
+                            {filteredBugs.length === 0 && (
                                 <div className="flex justify-center items-center py-16 text-gray-500">
                                     <div className="text-center">
                                         <AlertCircle size={48} className="mx-auto mb-4 text-gray-400" />
                                         <p className="text-lg font-medium">No bugs found</p>
-                                        <p className="text-sm mt-2">Click "Add New Bug" to create your first bug report</p>
+                                        <p className="text-sm mt-2">Start typing in the blank row above to create your first bug</p>
                                     </div>
                                 </div>
                             )}
@@ -617,21 +649,26 @@ const BugSpreadsheet = () => {
                             <span>Auto-save enabled</span>
                         </span>
                         <span className="text-gray-400">•</span>
+                        <span>Resize columns and rows like Google Sheets</span>
+                    </div>
+                    <div className="flex items-center space-x-4">
                         <span className="flex items-center space-x-2">
                             <Archive size={14} className="text-orange-600" />
-                            <span>Move to trash</span>
+                            <span>Trash</span>
                         </span>
                         <span className="text-gray-400">•</span>
                         <span className="flex items-center space-x-2">
                             <Trash2 size={14} className="text-red-600" />
-                            <span>Delete permanently</span>
+                            <span>Delete</span>
                         </span>
-                    </div>
-                    <div>
-                        Click dropdowns to change • Click cells to edit • Auto-saves on change
                     </div>
                 </div>
             </div>
+
+            {/* Resize overlay */}
+            {resizing && (
+                <div className="fixed inset-0 z-50" style={{ cursor: resizing.type === 'column' ? 'col-resize' : 'row-resize' }} />
+            )}
         </div>
     );
 };
