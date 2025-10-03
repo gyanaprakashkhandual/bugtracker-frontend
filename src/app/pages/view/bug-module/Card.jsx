@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock } from 'lucide-react';
+import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save } from 'lucide-react';
 
 const BugCardView = () => {
     const [bugs, setBugs] = useState([]);
@@ -15,6 +15,13 @@ const BugCardView = () => {
     const [editingField, setEditingField] = useState(null);
     const [editValue, setEditValue] = useState('');
     const [savingField, setSavingField] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [editFormData, setEditFormData] = useState({
+        moduleName: '',
+        bugDesc: '',
+        bugRequirement: '',
+        refLink: ''
+    });
 
     const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
     const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
@@ -120,8 +127,7 @@ const BugCardView = () => {
                     headers: {
                         'Content-Type': 'application/json',
                         'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({ [field]: value })
+                    }
                 }
             );
 
@@ -139,6 +145,37 @@ const BugCardView = () => {
         } catch (error) {
             console.error('Error updating bug:', error);
             setSavingField(null);
+        }
+    };
+
+    const updateBugFields = async (bugId, fields) => {
+        try {
+            const response = await fetch(
+                `${BASE_URL}/bugs/${bugId}`,
+                {
+                    method: 'PUT',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify(fields)
+                }
+            );
+
+            if (!response.ok) throw new Error('Failed to update bug');
+
+            setBugs(prev => prev.map(bug =>
+                bug._id === bugId ? { ...bug, ...fields } : bug
+            ));
+
+            if (selectedBug?._id === bugId) {
+                setSelectedBug(prev => ({ ...prev, ...fields }));
+            }
+
+            return true;
+        } catch (error) {
+            console.error('Error updating bug:', error);
+            return false;
         }
     };
 
@@ -193,8 +230,34 @@ const BugCardView = () => {
     };
 
     const handleFieldEdit = (field, value) => {
-        setEditValue(value);
         updateBug(selectedBug._id, field, value);
+    };
+
+    const handleEditClick = () => {
+        setIsEditing(true);
+        setEditFormData({
+            moduleName: selectedBug.moduleName || '',
+            bugDesc: selectedBug.bugDesc || '',
+            bugRequirement: selectedBug.bugRequirement || '',
+            refLink: selectedBug.refLink || ''
+        });
+    };
+
+    const handleSaveClick = async () => {
+        const success = await updateBugFields(selectedBug._id, editFormData);
+        if (success) {
+            setIsEditing(false);
+        }
+    };
+
+    const handleCancelClick = () => {
+        setIsEditing(false);
+        setEditFormData({
+            moduleName: selectedBug.moduleName || '',
+            bugDesc: selectedBug.bugDesc || '',
+            bugRequirement: selectedBug.bugRequirement || '',
+            refLink: selectedBug.refLink || ''
+        });
     };
 
     const goToNextBug = () => {
@@ -203,6 +266,7 @@ const BugCardView = () => {
             const nextBug = filteredBugs[currentIndex + 1];
             setSelectedBug(nextBug);
             fetchComments(nextBug._id);
+            setIsEditing(false);
         }
     };
 
@@ -212,6 +276,7 @@ const BugCardView = () => {
             const prevBug = filteredBugs[currentIndex - 1];
             setSelectedBug(prevBug);
             fetchComments(prevBug._id);
+            setIsEditing(false);
         }
     };
 
@@ -258,6 +323,69 @@ const BugCardView = () => {
         return colors[priority] || 'bg-gray-100 text-gray-700 border-gray-300';
     };
 
+    // GitHub-style dropdown component
+    const GitHubDropdown = ({ value, options, onChange, label, className = "" }) => {
+        const [isOpen, setIsOpen] = useState(false);
+        const dropdownRef = useRef(null);
+
+        useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+                    setIsOpen(false);
+                }
+            };
+
+            document.addEventListener('mousedown', handleClickOutside);
+            return () => document.removeEventListener('mousedown', handleClickOutside);
+        }, []);
+
+        const handleSelect = (option) => {
+            onChange(option);
+            setIsOpen(false);
+        };
+
+        return (
+            <div className={`relative inline-block text-left ${className}`} ref={dropdownRef}>
+                <button
+                    type="button"
+                    className="inline-flex justify-between items-center w-full px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    onClick={() => setIsOpen(!isOpen)}
+                >
+                    <span>{value}</span>
+                    <svg className="-mr-1 ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
+                    </svg>
+                </button>
+
+                <AnimatePresence>
+                    {isOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                            transition={{ duration: 0.1 }}
+                            className="origin-top-right absolute right-0 mt-1 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10"
+                        >
+                            <div className="py-1" role="menu">
+                                {options.map((option) => (
+                                    <button
+                                        key={option}
+                                        className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 ${value === option ? 'bg-blue-50 text-blue-700' : 'text-gray-700'
+                                            }`}
+                                        onClick={() => handleSelect(option)}
+                                        role="menuitem"
+                                    >
+                                        {option}
+                                    </button>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        );
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-screen bg-gray-50">
@@ -271,34 +399,8 @@ const BugCardView = () => {
 
     return (
         <div className="min-h-screen bg-gray-50 p-4">
-            {/* Header */}
-            <div className="max-w-7xl mx-auto mb-4">
-                <div className="flex items-center justify-between mb-4">
-                    <h1 className="text-xl font-bold text-gray-800">Bug Tracker</h1>
-                    <button
-                        onClick={fetchBugs}
-                        className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs"
-                    >
-                        <RefreshCw size={14} />
-                        Refresh
-                    </button>
-                </div>
-
-                {/* Search */}
-                <div className="relative">
-                    <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400" />
-                    <input
-                        type="text"
-                        placeholder="Search bugs..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="w-full pl-9 pr-3 py-2 border border-gray-300 rounded-lg text-xs focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    />
-                </div>
-            </div>
-
             {/* Bug Cards Grid */}
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-full mx-auto">
                 {filteredBugs.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-16">
                         <AlertCircle size={48} className="text-gray-400 mb-3" />
@@ -391,7 +493,7 @@ const BugCardView = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
                         onClick={() => setSelectedBug(null)}
                     >
                         <motion.div
@@ -399,7 +501,7 @@ const BugCardView = () => {
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white rounded-lg w-full h-full max-w-6xl max-h-[90vh] overflow-hidden flex flex-col"
+                            className="bg-white w-full h-full max-w-full max-h-100vh overflow-hidden flex flex-col sidebar-scrollbar"
                         >
                             {/* Modal Header */}
                             <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
@@ -408,11 +510,84 @@ const BugCardView = () => {
                                     <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getBugTypeColor(selectedBug.bugType)}`}>
                                         {selectedBug.bugType}
                                     </span>
-                                    <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(selectedBug.status)}`}>
-                                        {selectedBug.status}
-                                    </span>
+
+                                    {/* Dropdowns in one line */}
+                                    <div className="flex items-center gap-2">
+                                        <GitHubDropdown
+                                            value={selectedBug.priority || 'Medium'}
+                                            options={['Critical', 'High', 'Medium', 'Low']}
+                                            onChange={(value) => handleFieldEdit('priority', value)}
+                                            label="Priority"
+                                            className="min-w-[100px]"
+                                        />
+                                        <GitHubDropdown
+                                            value={selectedBug.severity || 'Medium'}
+                                            options={['Critical', 'High', 'Medium', 'Low']}
+                                            onChange={(value) => handleFieldEdit('severity', value)}
+                                            label="Severity"
+                                            className="min-w-[100px]"
+                                        />
+                                        <GitHubDropdown
+                                            value={selectedBug.status || 'New'}
+                                            options={['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open']}
+                                            onChange={(value) => handleFieldEdit('status', value)}
+                                            label="Status"
+                                            className="min-w-[120px]"
+                                        />
+                                    </div>
                                 </div>
+
                                 <div className="flex items-center gap-2">
+                                    {/* Bug counter */}
+                                    <div className="text-xs text-gray-600 mr-2">
+                                        Bug {filteredBugs.findIndex(b => b._id === selectedBug._id) + 1} of {filteredBugs.length}
+                                    </div>
+
+                                    {/* Edit/Save buttons */}
+                                    {!isEditing ? (
+                                        <button
+                                            onClick={handleEditClick}
+                                            className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                        >
+                                            <Edit size={12} />
+                                            Edit
+                                        </button>
+                                    ) : (
+                                        <div className="flex items-center gap-1">
+                                            <button
+                                                onClick={handleSaveClick}
+                                                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                            >
+                                                <Save size={12} />
+                                                Save
+                                            </button>
+                                            <button
+                                                onClick={handleCancelClick}
+                                                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
+                                            >
+                                                <X size={12} />
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    )}
+
+                                    {/* Archive and Delete buttons */}
+                                    <button
+                                        onClick={() => moveBugToTrash(selectedBug._id)}
+                                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-orange-600 text-white rounded hover:bg-orange-700"
+                                    >
+                                        <Archive size={12} />
+                                        Archive
+                                    </button>
+                                    <button
+                                        onClick={() => deleteBugPermanently(selectedBug._id)}
+                                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                                    >
+                                        <Trash2 size={12} />
+                                        Delete
+                                    </button>
+
+                                    {/* Navigation and Close */}
                                     <button
                                         onClick={goToPreviousBug}
                                         disabled={filteredBugs.findIndex(b => b._id === selectedBug._id) === 0}
@@ -444,124 +619,85 @@ const BugCardView = () => {
                                         {/* Module Name */}
                                         <div>
                                             <label className="text-xs font-semibold text-gray-600 mb-1 block">Module</label>
-                                            <input
-                                                type="text"
-                                                value={selectedBug.moduleName || ''}
-                                                onChange={(e) => handleFieldEdit('moduleName', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            />
-                                            {savingField === 'moduleName' && (
-                                                <span className="text-xs text-blue-600 flex items-center gap-1 mt-1">
-                                                    <Loader2 size={10} className="animate-spin" />
-                                                    Saving...
-                                                </span>
+                                            {isEditing ? (
+                                                <input
+                                                    type="text"
+                                                    value={editFormData.moduleName}
+                                                    onChange={(e) => setEditFormData(prev => ({ ...prev, moduleName: e.target.value }))}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                            ) : (
+                                                <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded border">
+                                                    {selectedBug.moduleName || 'No module specified'}
+                                                </p>
                                             )}
                                         </div>
 
                                         {/* Description */}
                                         <div>
                                             <label className="text-xs font-semibold text-gray-600 mb-1 block">Description</label>
-                                            <textarea
-                                                value={selectedBug.bugDesc || ''}
-                                                onChange={(e) => handleFieldEdit('bugDesc', e.target.value)}
-                                                rows={4}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            />
-                                            {savingField === 'bugDesc' && (
-                                                <span className="text-xs text-blue-600 flex items-center gap-1 mt-1">
-                                                    <Loader2 size={10} className="animate-spin" />
-                                                    Saving...
-                                                </span>
+                                            {isEditing ? (
+                                                <textarea
+                                                    value={editFormData.bugDesc}
+                                                    onChange={(e) => setEditFormData(prev => ({ ...prev, bugDesc: e.target.value }))}
+                                                    rows={4}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                            ) : (
+                                                <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded border min-h-[100px]">
+                                                    {selectedBug.bugDesc || 'No description'}
+                                                </p>
                                             )}
                                         </div>
 
                                         {/* Requirement */}
                                         <div>
                                             <label className="text-xs font-semibold text-gray-600 mb-1 block">Requirement</label>
-                                            <textarea
-                                                value={selectedBug.bugRequirement || ''}
-                                                onChange={(e) => handleFieldEdit('bugRequirement', e.target.value)}
-                                                rows={3}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            />
-                                            {savingField === 'bugRequirement' && (
-                                                <span className="text-xs text-blue-600 flex items-center gap-1 mt-1">
-                                                    <Loader2 size={10} className="animate-spin" />
-                                                    Saving...
-                                                </span>
+                                            {isEditing ? (
+                                                <textarea
+                                                    value={editFormData.bugRequirement}
+                                                    onChange={(e) => setEditFormData(prev => ({ ...prev, bugRequirement: e.target.value }))}
+                                                    rows={3}
+                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                />
+                                            ) : (
+                                                <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded border min-h-[80px]">
+                                                    {selectedBug.bugRequirement || 'No requirement specified'}
+                                                </p>
                                             )}
-                                        </div>
-
-                                        {/* Priority and Severity */}
-                                        <div className="grid grid-cols-2 gap-3">
-                                            <div>
-                                                <label className="text-xs font-semibold text-gray-600 mb-1 block">Priority</label>
-                                                <select
-                                                    value={selectedBug.priority || 'Medium'}
-                                                    onChange={(e) => handleFieldEdit('priority', e.target.value)}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
-                                                    <option>Critical</option>
-                                                    <option>High</option>
-                                                    <option>Medium</option>
-                                                    <option>Low</option>
-                                                </select>
-                                            </div>
-                                            <div>
-                                                <label className="text-xs font-semibold text-gray-600 mb-1 block">Severity</label>
-                                                <select
-                                                    value={selectedBug.severity || 'Medium'}
-                                                    onChange={(e) => handleFieldEdit('severity', e.target.value)}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                >
-                                                    <option>Critical</option>
-                                                    <option>High</option>
-                                                    <option>Medium</option>
-                                                    <option>Low</option>
-                                                </select>
-                                            </div>
-                                        </div>
-
-                                        {/* Status */}
-                                        <div>
-                                            <label className="text-xs font-semibold text-gray-600 mb-1 block">Status</label>
-                                            <select
-                                                value={selectedBug.status || 'New'}
-                                                onChange={(e) => handleFieldEdit('status', e.target.value)}
-                                                className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                            >
-                                                <option>New</option>
-                                                <option>Open</option>
-                                                <option>In Progress</option>
-                                                <option>In Review</option>
-                                                <option>Closed</option>
-                                                <option>Re Open</option>
-                                            </select>
                                         </div>
 
                                         {/* Reference Link */}
                                         <div>
                                             <label className="text-xs font-semibold text-gray-600 mb-1 block">Reference Link</label>
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={selectedBug.refLink || ''}
-                                                    onChange={(e) => handleFieldEdit('refLink', e.target.value)}
-                                                    className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                    placeholder="https://..."
-                                                />
-                                                {selectedBug.refLink && (
-                                                    <a
-                                                        href={selectedBug.refLink}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1 text-xs"
-                                                    >
-                                                        <ExternalLink size={12} />
-                                                        Open
-                                                    </a>
-                                                )}
-                                            </div>
+                                            {isEditing ? (
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        type="text"
+                                                        value={editFormData.refLink}
+                                                        onChange={(e) => setEditFormData(prev => ({ ...prev, refLink: e.target.value }))}
+                                                        className="flex-1 px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                        placeholder="https://..."
+                                                    />
+                                                </div>
+                                            ) : (
+                                                <div className="flex gap-2">
+                                                    <p className="flex-1 text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded border truncate">
+                                                        {selectedBug.refLink || 'No reference link'}
+                                                    </p>
+                                                    {selectedBug.refLink && (
+                                                        <a
+                                                            href={selectedBug.refLink}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1 text-xs"
+                                                        >
+                                                            <ExternalLink size={12} />
+                                                            Open
+                                                        </a>
+                                                    )}
+                                                </div>
+                                            )}
                                         </div>
 
                                         {/* Timestamps */}
@@ -650,29 +786,6 @@ const BugCardView = () => {
                                             )}
                                         </div>
                                     </div>
-                                </div>
-                            </div>
-
-                            {/* Modal Footer */}
-                            <div className="flex items-center justify-between px-4 py-3 border-t border-gray-200 bg-gray-50">
-                                <div className="flex items-center gap-2">
-                                    <button
-                                        onClick={() => moveBugToTrash(selectedBug._id)}
-                                        className="px-3 py-1.5 bg-orange-600 text-white rounded hover:bg-orange-700 text-xs flex items-center gap-1"
-                                    >
-                                        <Archive size={12} />
-                                        Archive
-                                    </button>
-                                    <button
-                                        onClick={() => deleteBugPermanently(selectedBug._id)}
-                                        className="px-3 py-1.5 bg-red-600 text-white rounded hover:bg-red-700 text-xs flex items-center gap-1"
-                                    >
-                                        <Trash2 size={12} />
-                                        Delete
-                                    </button>
-                                </div>
-                                <div className="text-xs text-gray-600">
-                                    Bug {filteredBugs.findIndex(b => b._id === selectedBug._id) + 1} of {filteredBugs.length}
                                 </div>
                             </div>
                         </motion.div>
