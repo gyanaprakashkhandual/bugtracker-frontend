@@ -1,6 +1,7 @@
+'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical } from 'lucide-react';
+import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight } from 'lucide-react';
 import { GoogleArrowDown } from '@/app/components/utils/Icon';
 
 const BugSpreadsheet = () => {
@@ -13,15 +14,27 @@ const BugSpreadsheet = () => {
     const [errorCells, setErrorCells] = useState(new Set());
     const [newRowData, setNewRowData] = useState({});
     const [activeDropdown, setActiveDropdown] = useState(null);
+    const [dropdownOpenUpward, setDropdownOpenUpward] = useState({});
     const [columnWidths, setColumnWidths] = useState({});
     const [rowHeights, setRowHeights] = useState({});
     const [resizing, setResizing] = useState(null);
     const [isCreatingBug, setIsCreatingBug] = useState(false);
+    const [activeCommentModal, setActiveCommentModal] = useState(null);
+    const [comments, setComments] = useState({});
+    const [loadingComments, setLoadingComments] = useState({});
+    const [newComment, setNewComment] = useState('');
+    const [submittingComment, setSubmittingComment] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalBugs, setTotalBugs] = useState(0);
     const dropdownRef = useRef(null);
+    const commentModalRef = useRef(null);
     const resizeStartX = useRef(0);
     const resizeStartY = useRef(0);
     const resizeStartWidth = useRef(0);
     const resizeStartHeight = useRef(0);
+    const dropdownButtonRefs = useRef({});
+    const commentButtonRefs = useRef({}); // Add this line - moved from inside renderCellContent
 
     const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
     const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
@@ -30,16 +43,16 @@ const BugSpreadsheet = () => {
     const BASE_URL = 'http://localhost:5000/api/v1/bug';
 
     const columns = [
-        { key: 'serialNumber', label: 'S.No', width: 90, editable: false, color: 'bg-purple-50' },
-        { key: 'bugType', label: 'Type', width: 160, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'], color: 'bg-blue-50' },
-        { key: 'moduleName', label: 'Module', width: 180, editable: true, color: 'bg-green-50' },
-        { key: 'bugDesc', label: 'Description', width: 350, editable: true, color: 'bg-yellow-50' },
+        { key: 'serialNumber', label: 'S.No', width: 90, editable: false, color: 'bg-purple-50', sticky: true },
+        { key: 'bugType', label: 'Type', width: 160, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'], color: 'bg-blue-50', sticky: true },
+        { key: 'moduleName', label: 'Module', width: 180, editable: true, color: 'bg-green-50', sticky: true },
+        { key: 'bugDesc', label: 'Description', width: 350, editable: true, color: 'bg-yellow-50', sticky: true },
         { key: 'bugRequirement', label: 'Requirement', width: 220, editable: true, color: 'bg-pink-50' },
-        { key: 'refLink', label: 'Link', width: 50, editable: true, color: 'bg-indigo-50' },
+        { key: 'refLink', label: 'Link', width: 80, editable: true, color: 'bg-indigo-50' },
         { key: 'priority', label: 'Priority', width: 140, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
         { key: 'severity', label: 'Severity', width: 140, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50' },
         { key: 'status', label: 'Status', width: 160, editable: true, type: 'select', options: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'], color: 'bg-teal-50' },
-        { key: 'actions', label: 'Actions', width: 120, editable: false, color: 'bg-gray-100' }
+        { key: 'actions', label: 'Actions', width: 150, editable: false, color: 'bg-gray-100' }
     ];
 
     useEffect(() => {
@@ -57,13 +70,16 @@ const BugSpreadsheet = () => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setActiveDropdown(null);
             }
+            if (commentModalRef.current && !commentModalRef.current.contains(event.target)) {
+                setActiveCommentModal(null);
+            }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const fetchBugs = useCallback(async () => {
+    const fetchBugs = useCallback(async (page = 1) => {
         if (!projectId || !testTypeId || !token) {
             console.error('Missing required data');
             setLoading(false);
@@ -73,7 +89,7 @@ const BugSpreadsheet = () => {
         try {
             setLoading(true);
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs`,
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs?page=${page}&limit=10`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -85,12 +101,77 @@ const BugSpreadsheet = () => {
 
             const data = await response.json();
             setBugs(data.bugs || []);
+            setTotalPages(data.pagination?.totalPages || 1);
+            setTotalBugs(data.pagination?.totalBugs || 0);
+            setCurrentPage(page);
         } catch (error) {
             console.error('Error fetching bugs:', error);
         } finally {
             setLoading(false);
         }
     }, [projectId, testTypeId, token]);
+
+    const fetchComments = async (bugId) => {
+        if (!token || loadingComments[bugId]) return;
+
+        setLoadingComments(prev => ({ ...prev, [bugId]: true }));
+
+        try {
+            const response = await fetch(
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+
+            if (!response.ok) throw new Error('Failed to fetch comments');
+
+            const data = await response.json();
+            setComments(prev => ({ ...prev, [bugId]: data.comments || [] }));
+        } catch (error) {
+            console.error('Error fetching comments:', error);
+        } finally {
+            setLoadingComments(prev => ({ ...prev, [bugId]: false }));
+        }
+    };
+
+    const submitComment = async (bugId) => {
+        if (!newComment.trim() || submittingComment) return;
+
+        setSubmittingComment(true);
+
+        try {
+            const response = await fetch(
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        comment: newComment,
+                        bugId: bugId
+                    })
+                }
+            );
+
+            if (!response.ok) throw new Error('Failed to submit comment');
+
+            const data = await response.json();
+            setComments(prev => ({
+                ...prev,
+                [bugId]: [data.comment, ...(prev[bugId] || [])]
+            }));
+            setNewComment('');
+        } catch (error) {
+            console.error('Error submitting comment:', error);
+        } finally {
+            setSubmittingComment(false);
+        }
+    };
 
     const createBug = async (bugData) => {
         if (!token || isCreatingBug) return;
@@ -349,9 +430,31 @@ const BugSpreadsheet = () => {
         return colors[type] || 'bg-gray-100 text-gray-800 border-gray-300';
     };
 
+    const calculateDropdownPosition = (cellKey) => {
+        const buttonElement = dropdownButtonRefs.current[cellKey];
+        if (!buttonElement) return false;
+
+        const rect = buttonElement.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - rect.bottom;
+        const spaceAbove = rect.top;
+
+        return spaceBelow < 300 && spaceAbove > spaceBelow;
+    };
+
+    const handleDropdownClick = (cellKey) => {
+        if (activeDropdown === cellKey) {
+            setActiveDropdown(null);
+        } else {
+            const shouldOpenUpward = calculateDropdownPosition(cellKey);
+            setDropdownOpenUpward(prev => ({ ...prev, [cellKey]: shouldOpenUpward }));
+            setActiveDropdown(cellKey);
+        }
+    };
+
     const renderDropdown = (bugId, column, value) => {
         const cellKey = `${bugId}-${column.key}`;
         const isActive = activeDropdown === cellKey;
+        const openUpward = dropdownOpenUpward[cellKey] || false;
 
         let badgeClass = '';
         if (column.key === 'priority' || column.key === 'severity') {
@@ -365,25 +468,28 @@ const BugSpreadsheet = () => {
         return (
             <div className="relative w-full h-full" ref={isActive ? dropdownRef : null}>
                 <button
-                    onClick={() => setActiveDropdown(isActive ? null : cellKey)}
+                    ref={(el) => {
+                        if (el) dropdownButtonRefs.current[cellKey] = el;
+                    }}
+                    onClick={() => handleDropdownClick(cellKey)}
                     className="w-full h-full px-3 py-2 flex items-center justify-between hover:bg-gray-50 transition-colors group"
                 >
                     <span className={`w-30 px-3 py-1.5 rounded-md text-xs font-semibold border ${badgeClass}`}>
                         {value || 'Select'}
                     </span>
-                    <div className='bg-gray-100 p-1 rounded-r-sm border-amber-200 border-t-1 border-b-1 border-r-1'>
-                        <GoogleArrowDown size={14} className={`text-gray-400 transition-transform ml-1 group-hover:text-gray-600 ${isActive ? 'rotate-180' : ''}`} />
+                    <div className='bg-gray-50 p-1 rounded-sm border border-gray-200'>
+                        <GoogleArrowDown size={14} className={`text-gray-500 transition-transform ml-1 group-hover:text-gray-700 ${isActive ? 'rotate-180' : ''}`} />
                     </div>
                 </button>
 
                 <AnimatePresence>
                     {isActive && (
                         <motion.div
-                            initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                            initial={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                            exit={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className="absolute top-full left-0 mt-1 w-56 bg-white border border-gray-200 rounded-lg shadow-2xl z-50 overflow-hidden"
+                            className={`absolute ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-56 bg-white border border-gray-200 rounded-lg shadow-2xl z-50 overflow-hidden`}
                         >
                             <div className="py-1 max-h-72 overflow-y-auto">
                                 {column.options.map((option) => {
@@ -420,12 +526,162 @@ const BugSpreadsheet = () => {
         );
     };
 
+    const renderCommentModal = (bugId, buttonRef) => {
+        const isActive = activeCommentModal === bugId;
+        const bugComments = comments[bugId] || [];
+        const isLoading = loadingComments[bugId];
+
+        if (!isActive) return null;
+
+        const rect = buttonRef?.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - (rect?.bottom || 0);
+        const openUpward = spaceBelow < 400;
+
+        return (
+            <motion.div
+                ref={commentModalRef}
+                initial={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: openUpward ? 10 : -10, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-96 bg-white border border-gray-200 rounded-lg shadow-2xl z-50`}
+                style={{ maxHeight: '400px' }}
+            >
+                <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                    <div className="flex items-center gap-2">
+                        <MessageSquare size={18} className="text-gray-600" />
+                        <h3 className="font-semibold text-gray-800">Comments</h3>
+                    </div>
+                    <button
+                        onClick={() => setActiveCommentModal(null)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        <X size={18} />
+                    </button>
+                </div>
+
+                <div className="px-4 py-3 border-b border-gray-200">
+                    <div className="flex gap-2">
+                        <input
+                            type="text"
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    submitComment(bugId);
+                                }
+                            }}
+                            placeholder="Add a comment..."
+                            className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            disabled={submittingComment}
+                        />
+                        <button
+                            onClick={() => submitComment(bugId)}
+                            disabled={!newComment.trim() || submittingComment}
+                            className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            {submittingComment ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="overflow-y-auto" style={{ maxHeight: '250px' }}>
+                    {isLoading ? (
+                        <div className="flex items-center justify-center py-8">
+                            <Loader2 size={24} className="animate-spin text-blue-600" />
+                        </div>
+                    ) : bugComments.length === 0 ? (
+                        <div className="text-center py-8 text-gray-500 text-sm">
+                            No comments yet. Be the first to comment!
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-gray-100">
+                            {bugComments.map((comment, index) => (
+                                <div key={index} className="px-4 py-3">
+                                    <div className="flex items-start gap-3">
+                                        <div className="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                            <span className="text-sm font-semibold text-blue-600">
+                                                {comment.commentBy?.charAt(0).toUpperCase() || 'U'}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-2 mb-1">
+                                                <span className="text-sm font-semibold text-gray-800">
+                                                    {comment.commentBy || 'Unknown User'}
+                                                </span>
+                                                <span className="text-xs text-gray-500">
+                                                    {new Date(comment.createdAt).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <p className="text-sm text-gray-700 break-words">{comment.comment}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </motion.div>
+        );
+    };
+
     const renderCellContent = (bug, column, isNewRow = false) => {
         const bugId = isNewRow ? 'new' : bug?._id;
         const value = isNewRow ? newRowData[column.key] : bug?.[column.key];
         const cellKey = `${bugId}-${column.key}`;
         const isSaving = savingCells.has(cellKey);
         const hasError = errorCells.has(cellKey);
+
+        if (column.key === 'refLink') {
+            if (editingCell?.bugId === bugId && editingCell?.columnKey === column.key) {
+                return (
+                    <input
+                        type="text"
+                        value={editValue}
+                        onChange={(e) => setEditValue(e.target.value)}
+                        onBlur={stopEditing}
+                        onKeyDown={(e) => {
+                            if (e.key === 'Enter') stopEditing();
+                            if (e.key === 'Escape') {
+                                setEditingCell(null);
+                                setEditValue('');
+                            }
+                        }}
+                        className="w-full h-full border-2 border-blue-500 outline-none bg-white px-3 py-2 text-sm"
+                        autoFocus
+                        placeholder="Enter link URL"
+                    />
+                );
+            }
+
+            if (value && !isNewRow) {
+                return (
+                    <div className="w-full h-full px-3 py-2 flex items-center justify-center">
+                        <a
+                            href={value}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <ExternalLink size={18} />
+                        </a>
+                    </div>
+                );
+            }
+
+            return (
+                <div
+                    className="w-full h-full px-3 py-2 flex items-center justify-center cursor-pointer hover:bg-gray-50"
+                    onDoubleClick={() => column.editable && startEditing(bugId, column.key, value)}
+                >
+                    <span className="text-gray-400 text-xs italic">
+                        {isNewRow ? 'Add link' : 'No link'}
+                    </span>
+                </div>
+            );
+        }
 
         if (column.key === 'actions') {
             if (isNewRow) {
@@ -436,25 +692,41 @@ const BugSpreadsheet = () => {
                 );
             }
 
+            // Use the pre-defined ref from outside
+            const commentButtonRef = commentButtonRefs.current;
+
             return (
-                <div className="flex items-center justify-center h-full space-x-1">
+                <div className="flex items-center justify-center h-full space-x-1 relative">
+                    <button
+                        ref={(el) => {
+                            if (el) commentButtonRefs.current[bug._id] = el;
+                        }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (activeCommentModal === bug._id) {
+                                setActiveCommentModal(null);
+                            } else {
+                                setActiveCommentModal(bug._id);
+                                fetchComments(bug._id);
+                            }
+                        }}
+                        className="p-2 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                    >
+                        <MessageSquare size={16} />
+                    </button>
                     <button
                         onClick={() => moveBugToTrash(bug._id)}
                         className="p-2 text-orange-600 hover:bg-orange-50 rounded transition-colors"
-                        tooltip-data="Move to Trash"
-                        tooltip-placement="left"
                     >
                         <Archive size={16} />
                     </button>
                     <button
                         onClick={() => deleteBugPermanently(bug._id)}
                         className="p-2 text-red-600 hover:bg-red-50 rounded transition-colors"
-                        tooltip-data="Delete Permanently"
-                        tooltip-placement="left"
-
                     >
                         <Trash2 size={16} />
                     </button>
+                    {renderCommentModal(bug._id, commentButtonRefs.current[bug._id])}
                 </div>
             );
         }
@@ -498,8 +770,7 @@ const BugSpreadsheet = () => {
             <div
                 className={`w-full h-full px-3 py-2 flex items-center ${column.editable ? 'cursor-pointer hover:bg-gray-50' : ''}`}
                 onClick={() => column.editable && startEditing(bugId, column.key, value)}
-                content-data={displayValue}
-                content-placement="top"
+                title={displayValue}
             >
                 <span className={`truncate ${!value && isNewRow ? 'text-gray-400 italic text-sm' : ''}`}>
                     {value ? truncatedValue : (isNewRow ? 'Click to edit' : '')}
@@ -511,8 +782,19 @@ const BugSpreadsheet = () => {
     };
 
     useEffect(() => {
-        fetchBugs();
+        fetchBugs(1);
     }, [fetchBugs]);
+
+    const getStickyLeftPosition = (columnKey) => {
+        let position = 0;
+        for (const col of columns) {
+            if (col.key === columnKey) break;
+            if (col.sticky) {
+                position += columnWidths[col.key] || col.width;
+            }
+        }
+        return position;
+    };
 
     if (loading) {
         return (
@@ -526,19 +808,59 @@ const BugSpreadsheet = () => {
     }
 
     return (
-        <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+        <div className="w-full h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+            {/* Pagination Header */}
+            <div className="bg-white border-b border-gray-200 px-6 py-3 flex items-center justify-between">
+                <div className="flex items-center gap-4">
+                    <h2 className="text-lg font-semibold text-gray-800">Bug Tracking</h2>
+                    <span className="text-sm text-gray-600">
+                        Total: {totalBugs} bugs
+                    </span>
+                </div>
+                <div className="flex items-center gap-3">
+                    <button
+                        onClick={() => fetchBugs(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        <ChevronLeft size={18} />
+                    </button>
+                    <span className="text-sm text-gray-700">
+                        Page {currentPage} of {totalPages}
+                    </span>
+                    <button
+                        onClick={() => fetchBugs(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="px-3 py-2 border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                    >
+                        <ChevronRight size={18} />
+                    </button>
+                    <button
+                        onClick={() => fetchBugs(currentPage)}
+                        className="px-3 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 transition-colors flex items-center gap-2"
+                    >
+                        <RefreshCw size={16} />
+                        Refresh
+                    </button>
+                </div>
+            </div>
+
             {/* Spreadsheet */}
-            <div className="flex-1 overflow-auto">
+            <div className="flex-1 overflow-auto relative">
                 <div className="bg-white border border-gray-200 overflow-hidden">
-                    <div className="overflow-x-auto overflow-y-auto" style={{ maxHeight: 'calc(100vh - 200px)' }}>
+                    <div className="overflow-x-auto overflow-y-auto">
                         <div className="inline-block min-w-full">
                             {/* Header */}
-                            <div className="flex sticky top-0 z-20 border-b border-gray-900">
+                            <div className="flex sticky top-0 z-30 border-b border-gray-900">
                                 {columns.map((column) => (
                                     <div
                                         key={column.key}
-                                        className={`${column.color} px-4 py-3 font-bold text-gray-700 text-sm border-r border-gray-300 last:border-r-0 relative group`}
-                                        style={{ width: columnWidths[column.key], minWidth: columnWidths[column.key] }}
+                                        className={`${column.color} px-4 py-3 font-bold text-gray-700 text-sm border-r border-gray-300 last:border-r-0 relative group ${column.sticky ? 'sticky z-40 bg-opacity-100' : ''}`}
+                                        style={{
+                                            width: columnWidths[column.key],
+                                            minWidth: columnWidths[column.key],
+                                            left: column.sticky ? `${getStickyLeftPosition(column.key)}px` : 'auto'
+                                        }}
                                     >
                                         <div className="flex items-center justify-between">
                                             {column.label}
@@ -556,11 +878,12 @@ const BugSpreadsheet = () => {
                                 {columns.map((column) => (
                                     <div
                                         key={`new-${column.key}`}
-                                        className="border-r border-gray-200 last:border-r-0"
+                                        className={`border-r border-gray-200 last:border-r-0 ${column.sticky ? 'sticky z-20 bg-blue-50/50' : ''}`}
                                         style={{
                                             width: columnWidths[column.key],
                                             minWidth: columnWidths[column.key],
-                                            height: rowHeights['new'] || rowHeights.default
+                                            height: rowHeights['new'] || rowHeights.default,
+                                            left: column.sticky ? `${getStickyLeftPosition(column.key)}px` : 'auto'
                                         }}
                                     >
                                         {renderCellContent(null, column, true)}
@@ -578,11 +901,12 @@ const BugSpreadsheet = () => {
                                     {columns.map((column) => (
                                         <div
                                             key={`${bug._id}-${column.key}`}
-                                            className="border-r border-gray-200 last:border-r-0 relative"
+                                            className={`border-r border-gray-200 last:border-r-0 relative ${column.sticky ? 'sticky z-20 bg-white group-hover:bg-gray-50' : ''}`}
                                             style={{
                                                 width: columnWidths[column.key],
                                                 minWidth: columnWidths[column.key],
-                                                height: rowHeights[bug._id] || rowHeights.default
+                                                height: rowHeights[bug._id] || rowHeights.default,
+                                                left: column.sticky ? `${getStickyLeftPosition(column.key)}px` : 'auto'
                                             }}
                                         >
                                             {renderCellContent(bug, column)}
