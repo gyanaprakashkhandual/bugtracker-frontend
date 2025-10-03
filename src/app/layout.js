@@ -6,8 +6,9 @@ import { ConfirmProvider } from "./script/Confirm.context";
 import { LoaderProvider } from "./script/Loader.context";
 import { TestTypeProvider } from "./script/TestType.context";
 import { TooltipProvider } from "./script/Tooltip.context";
+import { ContentProvider } from "./script/Context.context";
 import Tooltip from "./components/utils/Tooltip";
-
+import Context from "./components/utils/Content";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -30,20 +31,23 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-      <TooltipProvider>
-          <ProjectProvider>
-            <TestTypeProvider>
-            <AlertProvider>
-              <ConfirmProvider>
-                <LoaderProvider>
-                  {children}
-                  <Tooltip /> {/* ADD THIS LINE */}
-                </LoaderProvider>
-              </ConfirmProvider>
-            </AlertProvider>
-            </TestTypeProvider>
-          </ProjectProvider>
-          </TooltipProvider>
+        <TooltipProvider>
+          <ContentProvider>
+            <ProjectProvider>
+              <TestTypeProvider>
+                <AlertProvider>
+                  <ConfirmProvider>
+                    <LoaderProvider>
+                      {children}
+                      <Tooltip />
+                      <Context />
+                    </LoaderProvider>
+                  </ConfirmProvider>
+                </AlertProvider>
+              </TestTypeProvider>
+            </ProjectProvider>
+          </ContentProvider>
+        </TooltipProvider>
       </body>
     </html>
   );

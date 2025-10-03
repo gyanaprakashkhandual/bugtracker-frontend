@@ -495,8 +495,8 @@ const BugSpreadsheet = () => {
             <div
                 className={`w-full h-full px-3 py-2 flex items-center ${column.editable ? 'cursor-pointer hover:bg-gray-50' : ''}`}
                 onClick={() => column.editable && startEditing(bugId, column.key, value)}
-                tooltip-data={displayValue}
-                tooltip-placement="top"
+            content-data={displayValue}
+            content-placement="top"
             >
                 <span className={`truncate ${!value && isNewRow ? 'text-gray-400 italic text-sm' : ''}`}>
                     {value ? truncatedValue : (isNewRow ? 'Click to edit' : '')}
