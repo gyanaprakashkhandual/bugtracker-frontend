@@ -488,11 +488,20 @@ const BugSplitView = () => {
             {/* Sidebar */}
             <motion.div
                 ref={sidebarRef}
-                initial={{ x: 0 }}
-                animate={{ x: isSidebarOpen ? 0 : -sidebarWidth }}
-                transition={{ type: "spring", stiffness: 300, damping: 30 }}
+                initial={{ width: sidebarWidth }}
+                animate={{
+                    width: isSidebarOpen ? sidebarWidth : 0,
+                    opacity: isSidebarOpen ? 1 : 0
+                }}
+                transition={{
+                    duration: 0.3,
+                    ease: [0.4, 0.0, 0.2, 1] // cubic-bezier easing for smooth animation
+                }}
                 className="bg-white border-r border-gray-200 flex flex-col sidebar-scrollbar sticky top-0 h-full"
-                style={{ width: sidebarWidth, minWidth: isSidebarOpen ? sidebarWidth : 0 }}
+                style={{
+                    minWidth: isSidebarOpen ? sidebarWidth : 0,
+                    overflow: 'hidden'
+                }}
             >
                 {/* Sidebar Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
