@@ -176,28 +176,15 @@ export default function BugStatisticsDashboard() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-8">
-      <div className="max-w-7xl mx-auto">
-        {/* Header */}
-        <motion.div
-          initial={{ opacity: 0, y: -20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="mb-8"
-        >
-          <h1 className="text-4xl font-bold text-gray-800 mb-2 flex items-center gap-3">
-            <Bug className="w-10 h-10 text-blue-600" />
-            Bug Statistics Dashboard
-          </h1>
-          <p className="text-gray-600">Comprehensive overview of all reported bugs</p>
-        </motion.div>
-
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-2">
+      <div className="max-w-full mx-auto">
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-2">
           <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.1 }}
-            className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-blue-600"
+            className="bg-white rounded-md shadow-sm p-6 border-l-4 border-blue-600"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -214,7 +201,7 @@ export default function BugStatisticsDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-red-600"
+            className="bg-white rounded-md shadow-sm p-6 border-l-4 border-red-600"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -233,7 +220,7 @@ export default function BugStatisticsDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-orange-600"
+            className="bg-white rounded-md shadow-sm p-6 border-l-4 border-orange-600"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -252,7 +239,7 @@ export default function BugStatisticsDashboard() {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-white rounded-xl shadow-lg p-6 border-l-4 border-green-600"
+            className="bg-white rounded-md shadow-sm p-6 border-l-4 border-green-600"
           >
             <div className="flex items-center justify-between">
               <div>
@@ -269,7 +256,7 @@ export default function BugStatisticsDashboard() {
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-2">
           {/* Status Chart */}
           {stats?.bugsByStatus && stats.bugsByStatus.length > 0 && (
             <motion.div
