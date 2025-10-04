@@ -2,6 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Menu, ChevronRight as ChevronRightIcon, Image as ImageIcon, Link2, Image } from 'lucide-react';
+import { useAlert } from '@/app/script/Alert.context';
 
 const BugSplitView = () => {
     const [bugs, setBugs] = useState([]);
@@ -16,13 +17,15 @@ const BugSplitView = () => {
     const [editValue, setEditValue] = useState('');
     const [savingField, setSavingField] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
-    const [sidebarWidth, setSidebarWidth] = useState(400);
+    const [sidebarWidth, setSidebarWidth] = useState(300);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isResizing, setIsResizing] = useState(false);
     const [dateFilter, setDateFilter] = useState({ start: '', end: '' });
     const [showDatePicker, setShowDatePicker] = useState(false);
     const sidebarRef = useRef(null);
     const datePickerRef = useRef(null);
+
+    const { showAlert } = useAlert();
 
     const [editFormData, setEditFormData] = useState({
         moduleName: '',
@@ -33,7 +36,10 @@ const BugSplitView = () => {
 
     const copyText = (text) => {
         navigator.clipboard.writeText(text).then(() => {
-            console.log('Copied:', text);
+            showAlert({
+                type: "success",
+                message: "Serial Number Copied"
+            })
         }).catch(() => {
             console.log('Failed to copy');
         });
@@ -507,6 +513,8 @@ const BugSplitView = () => {
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                     <h2 className="text-sm font-bold text-gray-800 tracking-wide">Bug List</h2>
                     <motion.button
+                        tooltip-data="Close Sidebar"
+                        tooltip-placement="right"
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => setIsSidebarOpen(false)}
@@ -640,6 +648,8 @@ const BugSplitView = () => {
                                     <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                                         <div className="flex items-center gap-1.5">
                                             <motion.button
+                                                tooltip-data="Achieve"
+                                                tooltip-placement="bottom"
                                                 whileHover={{ scale: 1.1 }}
                                                 whileTap={{ scale: 0.9 }}
                                                 onClick={(e) => {
@@ -651,6 +661,8 @@ const BugSplitView = () => {
                                                 <Archive size={13} />
                                             </motion.button>
                                             <motion.button
+                                                tooltip-data="Delete"
+                                                tooltip-placement="bottom"
                                                 whileHover={{ scale: 1.1 }}
                                                 whileTap={{ scale: 0.9 }}
                                                 onClick={(e) => {
@@ -690,6 +702,8 @@ const BugSplitView = () => {
                     <div className="flex items-center gap-3">
                         {!isSidebarOpen && (
                             <motion.button
+                                tooltip-data="Open Sidebar"
+                                tooltip-placement="right"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => setIsSidebarOpen(true)}
@@ -745,6 +759,8 @@ const BugSplitView = () => {
                             {/* Image Button */}
                             {selectedBug.image && selectedBug.image !== 'No Image provided' && (
                                 <motion.a
+                                    tooltip-data="View Image"
+                                    tooltip-placement="bottom"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     href={selectedBug.image}
@@ -759,6 +775,8 @@ const BugSplitView = () => {
                             {/* Reference Link Button */}
                             {selectedBug.refLink && selectedBug.refLink !== 'No Link Provided' && (
                                 <motion.a
+                                    tooltip-data="Open Reference"
+                                    tooltip-placement="bottom"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     href={selectedBug.refLink}
@@ -800,6 +818,8 @@ const BugSplitView = () => {
                             {/* Edit/Save buttons */}
                             {!isEditing ? (
                                 <motion.button
+                                    tooltip-data="Edit"
+                                    tooltip-placement="bottom"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={handleEditClick}
@@ -810,6 +830,8 @@ const BugSplitView = () => {
                             ) : (
                                 <div className="flex items-center gap-2">
                                     <motion.button
+                                        tooltip-data="Save"
+                                        tooltip-placement="bottom"
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
                                         onClick={handleSaveClick}
@@ -818,6 +840,8 @@ const BugSplitView = () => {
                                         <Save size={13} />
                                     </motion.button>
                                     <motion.button
+                                        tooltip-data="Cancel"
+                                        tooltip-placement="bottom"
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
                                         onClick={handleCancelClick}
@@ -830,6 +854,8 @@ const BugSplitView = () => {
 
                             {/* Archive and Delete buttons */}
                             <motion.button
+                                tooltip-data="Achieve"
+                                tooltip-placement="bottom"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => moveBugToTrash(selectedBug._id)}
@@ -838,6 +864,8 @@ const BugSplitView = () => {
                                 <Archive size={13} />
                             </motion.button>
                             <motion.button
+                                tooltip-data="Delete"
+                                tooltip-placement="bottom"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => deleteBugPermanently(selectedBug._id)}
