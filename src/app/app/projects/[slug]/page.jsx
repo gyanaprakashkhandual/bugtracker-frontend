@@ -5,6 +5,7 @@ import Navbar from '@/app/components/Navbars/Workspace';
 import BugSpreadsheet from '@/app/pages/view/bug-module/Table';
 import BugCardView from '@/app/pages/view/bug-module/Card';
 import BugSplitView from '@/app/pages/view/bug-module/Split';
+import BugStatisticsDashboard from '@/app/pages/view/bug-module/Chart';
 
 export default function TokenDebugger() {
   const [token, setToken] = useState('');
@@ -53,7 +54,7 @@ export default function TokenDebugger() {
       <div>
         <Navbar />
       </div>
-      <BugSplitView/>
+      <BugStatisticsDashboard/>
     </div>
   );
 }
