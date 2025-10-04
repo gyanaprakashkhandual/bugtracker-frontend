@@ -85,7 +85,7 @@ export default function CaffetestLanding() {
 
             <div className="hidden md:flex items-center space-x-8">
               <nav className="flex items-center space-x-6">
-                {['Documentation', 'Pricing', 'Contact'].map((item, index) => (
+                {['Documentation', 'Pricing', 'Contact', 'Feedback'].map((item, index) => (
                   <motion.a
                     key={item}
                     onClick={() => openPage(item.toLowerCase())}

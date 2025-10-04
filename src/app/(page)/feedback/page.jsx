@@ -1,8 +1,11 @@
+import FeedbackPage from '@/app/pages/app/Feedback'
 import React from 'react'
 
 function page() {
   return (
-    <div>page</div>
+    <div>
+      <FeedbackPage/>
+    </div>
   )
 }
 
