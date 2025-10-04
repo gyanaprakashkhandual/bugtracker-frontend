@@ -16,7 +16,178 @@ import {
     FiChevronDown,
     FiChevronUp
 } from 'react-icons/fi';
-import FeedbackHeader from '@/app/components/assets/Feedback';
+
+// Feedback Header Component (Integrated)
+const FeedbackHeader = () => {
+    return (
+        <div className="relative w-screen min-w-full max-w-full h-[200px] min-h-[200px] max-h-[200px] overflow-hidden bg-gradient-radial from-slate-50 via-slate-100 to-slate-200">
+            {/* Animated Water Waves Background */}
+            <svg
+                className="absolute inset-0 w-full h-full"
+                viewBox="0 0 1200 200"
+                preserveAspectRatio="none"
+                xmlns="http://www.w3.org/2000/svg"
+            >
+                <defs>
+                    <linearGradient id="waveGradient1" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#3b82f6" stopOpacity="0.08" />
+                        <stop offset="100%" stopColor="#2563eb" stopOpacity="0.04" />
+                    </linearGradient>
+                    <linearGradient id="waveGradient2" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#64748b" stopOpacity="0.06" />
+                        <stop offset="100%" stopColor="#475569" stopOpacity="0.03" />
+                    </linearGradient>
+                    <linearGradient id="waveGradient3" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" stopColor="#1e40af" stopOpacity="0.05" />
+                        <stop offset="100%" stopColor="#1e3a8a" stopOpacity="0.02" />
+                    </linearGradient>
+                </defs>
+
+                {/* Wave Layer 1 */}
+                <motion.path
+                    d="M0,100 C300,150 600,50 900,100 C1050,125 1200,75 1200,100 L1200,200 L0,200 Z"
+                    fill="url(#waveGradient1)"
+                    initial={{ d: "M0,100 C300,150 600,50 900,100 C1050,125 1200,75 1200,100 L1200,200 L0,200 Z" }}
+                    animate={{
+                        d: [
+                            "M0,100 C300,150 600,50 900,100 C1050,125 1200,75 1200,100 L1200,200 L0,200 Z",
+                            "M0,90 C300,40 600,140 900,90 C1050,65 1200,115 1200,90 L1200,200 L0,200 Z",
+                            "M0,100 C300,150 600,50 900,100 C1050,125 1200,75 1200,100 L1200,200 L0,200 Z"
+                        ]
+                    }}
+                    transition={{
+                        duration: 8,
+                        repeat: Infinity,
+                        ease: "easeInOut"
+                    }}
+                />
+
+                {/* Wave Layer 2 */}
+                <motion.path
+                    d="M0,120 C400,80 700,160 1000,120 C1100,100 1200,140 1200,120 L1200,200 L0,200 Z"
+                    fill="url(#waveGradient2)"
+                    initial={{ d: "M0,120 C400,80 700,160 1000,120 C1100,100 1200,140 1200,120 L1200,200 L0,200 Z" }}
+                    animate={{
+                        d: [
+                            "M0,120 C400,80 700,160 1000,120 C1100,100 1200,140 1200,120 L1200,200 L0,200 Z",
+                            "M0,130 C400,170 700,90 1000,130 C1100,150 1200,110 1200,130 L1200,200 L0,200 Z",
+                            "M0,120 C400,80 700,160 1000,120 C1100,100 1200,140 1200,120 L1200,200 L0,200 Z"
+                        ]
+                    }}
+                    transition={{
+                        duration: 10,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 0.5
+                    }}
+                />
+
+                {/* Wave Layer 3 */}
+                <motion.path
+                    d="M0,140 C350,110 650,170 950,140 C1075,125 1200,155 1200,140 L1200,200 L0,200 Z"
+                    fill="url(#waveGradient3)"
+                    initial={{ d: "M0,140 C350,110 650,170 950,140 C1075,125 1200,155 1200,140 L1200,200 L0,200 Z" }}
+                    animate={{
+                        d: [
+                            "M0,140 C350,110 650,170 950,140 C1075,125 1200,155 1200,140 L1200,200 L0,200 Z",
+                            "M0,150 C350,180 650,120 950,150 C1075,165 1200,135 1200,150 L1200,200 L0,200 Z",
+                            "M0,140 C350,110 650,170 950,140 C1075,125 1200,155 1200,140 L1200,200 L0,200 Z"
+                        ]
+                    }}
+                    transition={{
+                        duration: 12,
+                        repeat: Infinity,
+                        ease: "easeInOut",
+                        delay: 1
+                    }}
+                />
+            </svg>
+
+            {/* Content Container */}
+            <div className="relative z-10 flex flex-col items-center justify-center h-full px-4 sm:px-6 md:px-8">
+                <motion.div
+                    initial={{ opacity: 0, y: -20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.6 }}
+                    className="text-center"
+                >
+                    {/* App Name */}
+                    <motion.div
+                        initial={{ opacity: 0, scale: 0.9 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.5, delay: 0.2 }}
+                        className="mb-2"
+                    >
+                        <h2 className="text-lg sm:text-xl md:text-2xl font-bold bg-gradient-to-r from-blue-600 via-slate-700 to-blue-800 bg-clip-text text-transparent">
+                            Caffetest
+                        </h2>
+                    </motion.div>
+
+                    {/* Main Heading */}
+                    <motion.h1
+                        initial={{ opacity: 0, y: 10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6, delay: 0.3 }}
+                        className="text-3xl sm:text-4xl md:text-5xl font-bold text-slate-800 mb-3"
+                    >
+                        Give Feedback
+                    </motion.h1>
+
+                    {/* Subtitle */}
+                    <motion.p
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.6, delay: 0.5 }}
+                        className="text-sm sm:text-base md:text-lg text-slate-600 max-w-2xl mx-auto leading-relaxed"
+                    >
+                        Your valuable feedback helps us improve. We're committed to working on every suggestion you share.
+                    </motion.p>
+                </motion.div>
+
+                {/* Decorative Elements */}
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 1, delay: 0.7 }}
+                    className="absolute top-8 left-8 sm:left-12"
+                >
+                    <svg width="30" height="30" viewBox="0 0 30 30" className="text-blue-300 opacity-50">
+                        <motion.circle
+                            cx="15"
+                            cy="15"
+                            r="10"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            fill="none"
+                            initial={{ scale: 0 }}
+                            animate={{ scale: [0, 1.2, 1] }}
+                            transition={{ duration: 1, delay: 0.8 }}
+                        />
+                    </svg>
+                </motion.div>
+
+                <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 1, delay: 0.9 }}
+                    className="absolute bottom-8 right-8 sm:right-12"
+                >
+                    <svg width="25" height="25" viewBox="0 0 25 25" className="text-slate-400 opacity-50">
+                        <motion.polygon
+                            points="12.5,2 15,10 23,10 17,15 19,23 12.5,18 6,23 8,15 2,10 10,10"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            fill="none"
+                            initial={{ rotate: 0 }}
+                            animate={{ rotate: 360 }}
+                            transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                        />
+                    </svg>
+                </motion.div>
+            </div>
+        </div>
+    );
+};
 
 const FeedbackPage = () => {
     const [feedbacks, setFeedbacks] = useState([]);
@@ -41,6 +212,10 @@ const FeedbackPage = () => {
     // Expanded card states
     const [expandedCards, setExpandedCards] = useState({});
     const [cardComments, setCardComments] = useState({});
+
+    // Image viewer modal
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [showImageModal, setShowImageModal] = useState(false);
 
     const BASE_URL = 'http://localhost:5000/api/v1/feed-back';
 
@@ -255,6 +430,18 @@ const FeedbackPage = () => {
         setCommentText('');
     };
 
+    // Open image viewer
+    const openImageModal = (imageUrl) => {
+        setSelectedImage(imageUrl);
+        setShowImageModal(true);
+    };
+
+    // Close image viewer
+    const closeImageModal = () => {
+        setShowImageModal(false);
+        setSelectedImage(null);
+    };
+
     // Toggle card expansion
     const toggleCardExpansion = async (feedbackId) => {
         const isExpanded = expandedCards[feedbackId];
@@ -316,7 +503,7 @@ const FeedbackPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-6 px-4">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-6 px-4 hide-scrollbar">
             <div>
                 <FeedbackHeader/>
             </div>
@@ -337,11 +524,11 @@ const FeedbackPage = () => {
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
-                            onClick={() => setShowCreateForm(!showCreateForm)}
+                            onClick={() => setShowCreateForm(true)}
                             className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm text-xs font-medium transition-colors"
                         >
-                            {showCreateForm ? <FiX className="w-3.5 h-3.5" /> : <FiPlus className="w-3.5 h-3.5" />}
-                            {showCreateForm ? 'Close' : 'Give Feedback'}
+                            <FiPlus className="w-3.5 h-3.5" />
+                            Give Feedback
                         </motion.button>
                     </div>
                 </motion.div>
@@ -349,114 +536,137 @@ const FeedbackPage = () => {
                 {/* Create Form */}
                 <AnimatePresence>
                     {showCreateForm && (
-                        <motion.div
-                            initial={{ opacity: 0, height: 0 }}
-                            animate={{ opacity: 1, height: 'auto' }}
-                            exit={{ opacity: 0, height: 0 }}
-                            transition={{ duration: 0.2 }}
-                            className="mb-6 overflow-hidden"
-                        >
-                            <div className="bg-white rounded-xl shadow-sm border border-slate-200 p-5">
-                                <h2 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-2">
-                                    <FiMessageSquare className="w-4 h-4 text-blue-600" />
-                                    Share Your Feedback
-                                </h2>
+                        <>
+                            {/* Backdrop */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                exit={{ opacity: 0 }}
+                                onClick={() => setShowCreateForm(false)}
+                                className="fixed inset-0 bg-black/50 backdrop-blur-sm z-40"
+                            />
 
-                                <form onSubmit={createFeedback} className="space-y-4">
-                                    <div>
-                                        <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                                            Your Feedback
-                                        </label>
-                                        <textarea
-                                            required
-                                            value={formData.feedbackDescription}
-                                            onChange={(e) => setFormData({ ...formData, feedbackDescription: e.target.value })}
-                                            rows="3"
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:border-blue-500 text-xs resize-none"
-                                            placeholder="Tell us what you think..."
-                                        />
+                            {/* Modal */}
+                            <motion.div
+                                initial={{ opacity: 0, scale: 0.95, y: 20 }}
+                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                exit={{ opacity: 0, scale: 0.95, y: 20 }}
+                                className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-full max-w-lg bg-white rounded-xl shadow-2xl z-50 max-h-[80vh] flex flex-col mx-4"
+                            >
+                                {/* Modal Header */}
+                                <div className="flex items-center justify-between p-4 border-b border-slate-200">
+                                    <div className="flex items-center gap-2">
+                                        <FiMessageSquare className="w-5 h-5 text-blue-600" />
+                                        <h3 className="text-sm font-semibold text-slate-900">
+                                            Share Your Feedback
+                                        </h3>
                                     </div>
+                                    <button
+                                        onClick={() => setShowCreateForm(false)}
+                                        className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+                                    >
+                                        <FiX className="w-5 h-5 text-slate-500" />
+                                    </button>
+                                </div>
 
-                                    <div>
-                                        <label className="block text-xs font-medium text-slate-700 mb-1.5">
-                                            Attach Image (Optional)
-                                        </label>
-                                        <div className="flex items-start gap-3">
-                                            <label className="flex-shrink-0">
-                                                <input
-                                                    ref={fileInputRef}
-                                                    type="file"
-                                                    accept="image/*"
-                                                    onChange={handleImageChange}
-                                                    className="hidden"
-                                                    disabled={uploading}
-                                                />
-                                                <motion.div
-                                                    whileHover={{ scale: 1.02 }}
-                                                    whileTap={{ scale: 0.98 }}
-                                                    className={`flex items-center gap-1.5 px-3 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-xs font-medium cursor-pointer transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
-                                                >
-                                                    {uploading ? (
-                                                        <>
-                                                            <div className="animate-spin rounded-full h-3 w-3 border border-slate-400 border-t-transparent"></div>
-                                                            Uploading...
-                                                        </>
-                                                    ) : (
-                                                        <>
-                                                            <FiUpload className="w-3.5 h-3.5" />
-                                                            Choose Image
-                                                        </>
-                                                    )}
-                                                </motion.div>
+                                {/* Form Content */}
+                                <div className="flex-1 overflow-y-auto p-4">
+                                    <form onSubmit={createFeedback} className="space-y-4">
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                                                Your Feedback
                                             </label>
-
-                                            {imagePreview && (
-                                                <motion.div
-                                                    initial={{ opacity: 0, scale: 0.8 }}
-                                                    animate={{ opacity: 1, scale: 1 }}
-                                                    className="relative group"
-                                                >
-                                                    <img
-                                                        src={imagePreview}
-                                                        alt="Preview"
-                                                        className="h-16 w-16 object-cover rounded-lg border border-slate-200"
-                                                    />
-                                                    <button
-                                                        type="button"
-                                                        onClick={removeImage}
-                                                        className="absolute -top-1.5 -right-1.5 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
-                                                    >
-                                                        <FiX className="w-2.5 h-2.5" />
-                                                    </button>
-                                                </motion.div>
-                                            )}
+                                            <textarea
+                                                required
+                                                value={formData.feedbackDescription}
+                                                onChange={(e) => setFormData({ ...formData, feedbackDescription: e.target.value })}
+                                                rows="4"
+                                                className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:border-blue-500 text-xs resize-none"
+                                                placeholder="Tell us what you think..."
+                                            />
                                         </div>
-                                    </div>
 
-                                    <div className="flex gap-2 pt-2">
-                                        <button
-                                            type="button"
-                                            onClick={() => {
-                                                setShowCreateForm(false);
-                                                setFormData({ feedbackDescription: '', image: '' });
-                                                setImagePreview('');
-                                            }}
-                                            className="flex-1 px-4 py-2 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 text-xs font-medium transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            type="submit"
-                                            disabled={uploading}
-                                            className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
-                                        >
-                                            <FiCheck className="w-3.5 h-3.5" />
-                                            Submit Feedback
-                                        </button>
-                                    </div>
-                                </form>
-                            </div>
-                        </motion.div>
+                                        <div>
+                                            <label className="block text-xs font-medium text-slate-700 mb-1.5">
+                                                Attach Image (Optional)
+                                            </label>
+                                            <div className="flex items-start gap-3">
+                                                <label className="flex-shrink-0">
+                                                    <input
+                                                        ref={fileInputRef}
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleImageChange}
+                                                        className="hidden"
+                                                        disabled={uploading}
+                                                    />
+                                                    <motion.div
+                                                        whileHover={{ scale: 1.02 }}
+                                                        whileTap={{ scale: 0.98 }}
+                                                        className={`flex items-center gap-1.5 px-3 py-2 border border-slate-300 text-slate-700 rounded-lg hover:bg-slate-50 text-xs font-medium cursor-pointer transition-colors ${uploading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                                                    >
+                                                        {uploading ? (
+                                                            <>
+                                                                <div className="animate-spin rounded-full h-3 w-3 border border-slate-400 border-t-transparent"></div>
+                                                                Uploading...
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <FiUpload className="w-3.5 h-3.5" />
+                                                                Choose Image
+                                                            </>
+                                                        )}
+                                                    </motion.div>
+                                                </label>
+
+                                                {imagePreview && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, scale: 0.8 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        className="relative group"
+                                                    >
+                                                        <img
+                                                            src={imagePreview}
+                                                            alt="Preview"
+                                                            className="h-20 w-20 object-cover rounded-lg border border-slate-200"
+                                                        />
+                                                        <button
+                                                            type="button"
+                                                            onClick={removeImage}
+                                                            className="absolute -top-1.5 -right-1.5 p-1 bg-red-500 text-white rounded-full opacity-0 group-hover:opacity-100 transition-opacity"
+                                                        >
+                                                            <FiX className="w-2.5 h-2.5" />
+                                                        </button>
+                                                    </motion.div>
+                                                )}
+                                            </div>
+                                        </div>
+
+                                        <div className="flex gap-2 pt-2">
+                                            <button
+                                                type="button"
+                                                onClick={() => {
+                                                    setShowCreateForm(false);
+                                                    setFormData({ feedbackDescription: '', image: '' });
+                                                    setImagePreview('');
+                                                }}
+                                                className="flex-1 px-4 py-2 border border-slate-200 text-slate-700 rounded-lg hover:bg-slate-50 text-xs font-medium transition-colors"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                type="submit"
+                                                disabled={uploading}
+                                                className="flex-1 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-xs font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-1.5"
+                                            >
+                                                <FiCheck className="w-3.5 h-3.5" />
+                                                Submit Feedback
+                                            </button>
+                                        </div>
+                                    </form>
+                                </div>
+                            </motion.div>
+                        </>
                     )}
                 </AnimatePresence>
 
@@ -513,12 +723,24 @@ const FeedbackPage = () => {
 
                                     {/* Image */}
                                     {feedback.image && (
-                                        <div className="mb-3">
+                                        <div className="mb-3 relative group">
                                             <img
                                                 src={feedback.image}
                                                 alt="Feedback"
                                                 className="w-full h-32 object-cover rounded-lg border border-slate-200"
                                             />
+                                            <motion.button
+                                                initial={{ opacity: 0 }}
+                                                whileHover={{ scale: 1.05 }}
+                                                whileTap={{ scale: 0.95 }}
+                                                onClick={() => openImageModal(feedback.image)}
+                                                className="absolute inset-0 flex items-center justify-center bg-black/50 opacity-0 group-hover:opacity-100 transition-opacity rounded-lg"
+                                            >
+                                                <div className="flex items-center gap-1.5 px-3 py-1.5 bg-white rounded-lg text-xs font-medium text-slate-900">
+                                                    <FiImage className="w-3.5 h-3.5" />
+                                                    View Full
+                                                </div>
+                                            </motion.button>
                                         </div>
                                     )}
 
@@ -738,6 +960,54 @@ const FeedbackPage = () => {
                                     </motion.button>
                                 </div>
                             </form>
+                        </motion.div>
+                    </>
+                )}
+            </AnimatePresence>
+
+            {/* Image Viewer Modal */}
+            <AnimatePresence>
+                {showImageModal && selectedImage && (
+                    <>
+                        {/* Backdrop */}
+                        <motion.div
+                            initial={{ opacity: 0 }}
+                            animate={{ opacity: 1 }}
+                            exit={{ opacity: 0 }}
+                            onClick={closeImageModal}
+                            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+                        />
+
+                        {/* Image Modal */}
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.9 }}
+                            animate={{ opacity: 1, scale: 1 }}
+                            exit={{ opacity: 0, scale: 0.9 }}
+                            className="fixed top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 z-50 w-[90vw] h-[90vh] flex items-center justify-center"
+                        >
+                            {/* Close Button */}
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                                onClick={closeImageModal}
+                                className="absolute top-4 right-4 p-2 bg-white/90 hover:bg-white rounded-full shadow-lg transition-colors z-10"
+                            >
+                                <FiX className="w-6 h-6 text-slate-900" />
+                            </motion.button>
+
+                            {/* Image Container */}
+                            <motion.div
+                                initial={{ scale: 0.8 }}
+                                animate={{ scale: 1 }}
+                                className="relative max-w-full max-h-full"
+                            >
+                                <img
+                                    src={selectedImage}
+                                    alt="Full size"
+                                    className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+                                    onClick={(e) => e.stopPropagation()}
+                                />
+                            </motion.div>
                         </motion.div>
                     </>
                 )}
