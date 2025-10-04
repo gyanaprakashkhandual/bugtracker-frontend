@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Menu, ChevronRight as ChevronRightIcon, Image as ImageIcon, Link2, Image } from 'lucide-react';
 import { useAlert } from '@/app/script/Alert.context';
+import { useTestType } from '@/app/script/TestType.context';
 
 const BugSplitView = () => {
     const [bugs, setBugs] = useState([]);
@@ -878,7 +879,7 @@ const BugSplitView = () => {
                 </div>
 
                 {/* Bug Details */}
-                <div className="flex-1 overflow-y-auto p-6">
+                <div className="flex-1 overflow-y-auto p-1">
                     {!selectedBug ? (
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
@@ -1053,7 +1054,7 @@ const BugSplitView = () => {
                                     transition={{ delay: 0.2 }}
                                     className="lg:col-span-1"
                                 >
-                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 sticky top-4">
+                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 top-1">
                                         <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2 tracking-wide">
                                             <MessageSquare size={16} className="text-blue-600" />
                                             COMMENTS
