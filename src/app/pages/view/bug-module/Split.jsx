@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Menu, ChevronRight as ChevronRightIcon, Image as ImageIcon, Link2 } from 'lucide-react';
+import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Menu, ChevronRight as ChevronRightIcon, Image as ImageIcon, Link2, Image } from 'lucide-react';
 
 const BugSplitView = () => {
     const [bugs, setBugs] = useState([]);
@@ -677,7 +677,7 @@ const BugSplitView = () => {
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden">
                 {/* Top Bar */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white shadow-sm">
+                <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
                     <div className="flex items-center gap-3">
                         {!isSidebarOpen && (
                             <motion.button
@@ -689,9 +689,7 @@ const BugSplitView = () => {
                                 <Menu size={18} className="text-gray-700" />
                             </motion.button>
                         )}
-                        <h1 className="text-sm font-bold text-gray-800 tracking-wide">Bug Details</h1>
-
-                        {/* Header with Serial Number and Dropdowns - Moved here */}
+                        {/* Header with Serial Number and Dropdowns */}
                         {selectedBug && (
                             <div className="flex items-center gap-3 ml-4">
                                 <motion.h2
@@ -746,7 +744,6 @@ const BugSplitView = () => {
                                     className="flex items-center gap-1.5 px-4 py-2 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm font-medium"
                                 >
                                     <ImageIcon size={13} />
-                                    View Image
                                 </motion.a>
                             )}
 
@@ -761,7 +758,6 @@ const BugSplitView = () => {
                                     className="flex items-center gap-1.5 px-4 py-2 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium"
                                 >
                                     <Link2 size={13} />
-                                    Open Link
                                 </motion.a>
                             )}
 
@@ -801,7 +797,6 @@ const BugSplitView = () => {
                                     className="flex items-center gap-1.5 px-4 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
                                 >
                                     <Edit size={13} />
-                                    Edit
                                 </motion.button>
                             ) : (
                                 <div className="flex items-center gap-2">
@@ -812,7 +807,6 @@ const BugSplitView = () => {
                                         className="flex items-center gap-1.5 px-4 py-2 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm font-medium"
                                     >
                                         <Save size={13} />
-                                        Save
                                     </motion.button>
                                     <motion.button
                                         whileHover={{ scale: 1.05 }}
@@ -821,7 +815,6 @@ const BugSplitView = () => {
                                         className="flex items-center gap-1.5 px-4 py-2 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-sm font-medium"
                                     >
                                         <X size={13} />
-                                        Cancel
                                     </motion.button>
                                 </div>
                             )}
@@ -834,7 +827,6 @@ const BugSplitView = () => {
                                 className="flex items-center gap-1.5 px-4 py-2 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-sm font-medium"
                             >
                                 <Archive size={13} />
-                                Archive
                             </motion.button>
                             <motion.button
                                 whileHover={{ scale: 1.05 }}
@@ -843,7 +835,6 @@ const BugSplitView = () => {
                                 className="flex items-center gap-1.5 px-4 py-2 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm font-medium"
                             >
                                 <Trash2 size={13} />
-                                Delete
                             </motion.button>
                         </div>
                     )}
@@ -865,7 +856,7 @@ const BugSplitView = () => {
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
                             transition={{ duration: 0.3 }}
-                            className="max-w-5xl mx-auto"
+                            className="max-w-full mx-auto"
                         >
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 {/* Left Column - Bug Details */}
