@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Menu, ChevronRight as ChevronRightIcon } from 'lucide-react';
+import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Menu, ChevronRight as ChevronRightIcon, Image as ImageIcon, Link2 } from 'lucide-react';
 
 const BugSplitView = () => {
     const [bugs, setBugs] = useState([]);
@@ -19,7 +19,10 @@ const BugSplitView = () => {
     const [sidebarWidth, setSidebarWidth] = useState(400);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
     const [isResizing, setIsResizing] = useState(false);
+    const [dateFilter, setDateFilter] = useState({ start: '', end: '' });
+    const [showDatePicker, setShowDatePicker] = useState(false);
     const sidebarRef = useRef(null);
+    const datePickerRef = useRef(null);
 
     const [editFormData, setEditFormData] = useState({
         moduleName: '',
@@ -325,43 +328,67 @@ const BugSplitView = () => {
         fetchBugs();
     }, [fetchBugs]);
 
-    const filteredBugs = bugs.filter(bug =>
-        Object.values(bug).some(value =>
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+                setShowDatePicker(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const filteredBugs = bugs.filter(bug => {
+        const matchesSearch = Object.values(bug).some(value =>
             value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        )
-    );
+        );
+
+        let matchesDate = true;
+        if (dateFilter.start || dateFilter.end) {
+            const bugDate = new Date(bug.createdAt);
+            if (dateFilter.start) {
+                matchesDate = matchesDate && bugDate >= new Date(dateFilter.start);
+            }
+            if (dateFilter.end) {
+                matchesDate = matchesDate && bugDate <= new Date(dateFilter.end);
+            }
+        }
+
+        return matchesSearch && matchesDate;
+    });
 
     const getBugTypeColor = (type) => {
         const colors = {
-            'Functional': 'bg-blue-50 text-blue-700 border-blue-200',
-            'User-Interface': 'bg-purple-50 text-purple-700 border-purple-200',
-            'Security': 'bg-red-50 text-red-700 border-red-200',
-            'Database': 'bg-green-50 text-green-700 border-green-200',
-            'Performance': 'bg-orange-50 text-orange-700 border-orange-200'
+            'Functional': 'bg-blue-100 text-blue-800 border-blue-300',
+            'User-Interface': 'bg-purple-100 text-purple-800 border-purple-300',
+            'Security': 'bg-red-100 text-red-800 border-red-300',
+            'Database': 'bg-green-100 text-green-800 border-green-300',
+            'Performance': 'bg-orange-100 text-orange-800 border-orange-300'
         };
-        return colors[type] || 'bg-gray-50 text-gray-700 border-gray-200';
+        return colors[type] || 'bg-gray-100 text-gray-800 border-gray-300';
     };
 
     const getStatusColor = (status) => {
         const colors = {
-            'New': 'bg-blue-50 text-blue-700 border-blue-200',
-            'Open': 'bg-purple-50 text-purple-700 border-purple-200',
-            'In Progress': 'bg-yellow-50 text-yellow-700 border-yellow-200',
-            'In Review': 'bg-orange-50 text-orange-700 border-orange-200',
-            'Closed': 'bg-green-50 text-green-700 border-green-200',
-            'Re Open': 'bg-red-50 text-red-700 border-red-200'
+            'New': 'bg-blue-100 text-blue-800 border-blue-300',
+            'Open': 'bg-purple-100 text-purple-800 border-purple-300',
+            'In Progress': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+            'In Review': 'bg-orange-100 text-orange-800 border-orange-300',
+            'Closed': 'bg-green-100 text-green-800 border-green-300',
+            'Re Open': 'bg-red-100 text-red-800 border-red-300'
         };
-        return colors[status] || 'bg-gray-50 text-gray-700 border-gray-200';
+        return colors[status] || 'bg-gray-100 text-gray-800 border-gray-300';
     };
 
     const getPriorityColor = (priority) => {
         const colors = {
-            'Critical': 'bg-red-50 text-red-700 border-red-200',
-            'High': 'bg-orange-50 text-orange-700 border-orange-200',
-            'Medium': 'bg-yellow-50 text-yellow-700 border-yellow-200',
-            'Low': 'bg-green-50 text-green-700 border-green-200'
+            'Critical': 'bg-red-100 text-red-800 border-red-300',
+            'High': 'bg-orange-100 text-orange-800 border-orange-300',
+            'Medium': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+            'Low': 'bg-green-100 text-green-800 border-green-300'
         };
-        return colors[priority] || 'bg-gray-50 text-gray-700 border-gray-200';
+        return colors[priority] || 'bg-gray-100 text-gray-800 border-gray-300';
     };
 
     const GitHubDropdown = ({ value, options, onChange, label, className = "" }) => {
@@ -384,11 +411,18 @@ const BugSplitView = () => {
             setIsOpen(false);
         };
 
+        const getDropdownColor = () => {
+            if (label === 'Priority') return getPriorityColor(value);
+            if (label === 'Status') return getStatusColor(value);
+            if (label === 'Bug Type') return getBugTypeColor(value);
+            return 'bg-gray-100 text-gray-800 border-gray-300';
+        };
+
         return (
             <div className={`relative inline-block text-left ${className}`} ref={dropdownRef}>
                 <button
                     type="button"
-                    className="inline-flex justify-between items-center w-full px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm"
+                    className={`inline-flex justify-between items-center w-full px-3 py-1.5 text-xs font-semibold border-2 rounded-lg hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm ${getDropdownColor()}`}
                     onClick={() => setIsOpen(!isOpen)}
                 >
                     <span>{value}</span>
@@ -450,14 +484,14 @@ const BugSplitView = () => {
     }
 
     return (
-        <div className="flex h-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+        <div className="flex h-[calc(100vh-4rem)] w-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
             {/* Sidebar */}
             <motion.div
                 ref={sidebarRef}
                 initial={{ x: 0 }}
                 animate={{ x: isSidebarOpen ? 0 : -sidebarWidth }}
                 transition={{ type: "spring", stiffness: 300, damping: 30 }}
-                className="bg-white border-r border-gray-200 flex flex-col sidebar-scrollbar"
+                className="bg-white border-r border-gray-200 flex flex-col sidebar-scrollbar sticky top-0 h-full"
                 style={{ width: sidebarWidth, minWidth: isSidebarOpen ? sidebarWidth : 0 }}
             >
                 {/* Sidebar Header */}
@@ -473,7 +507,7 @@ const BugSplitView = () => {
                     </motion.button>
                 </div>
 
-                {/* Search Bar */}
+                {/* Search Bar with Date Filter */}
                 <div className="p-4 border-b border-gray-200 bg-white">
                     <div className="relative">
                         <Search size={16} className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
@@ -482,9 +516,59 @@ const BugSplitView = () => {
                             placeholder="Search bugs..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                            className="w-full pl-10 pr-10 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
                         />
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.9 }}
+                            onClick={() => setShowDatePicker(!showDatePicker)}
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                        >
+                            <Calendar size={16} />
+                        </motion.button>
                     </div>
+
+                    {/* Date Filter Dropdown */}
+                    <AnimatePresence>
+                        {showDatePicker && (
+                            <motion.div
+                                ref={datePickerRef}
+                                initial={{ opacity: 0, y: -10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                exit={{ opacity: 0, y: -10 }}
+                                className="mt-2 p-3 bg-white border border-gray-200 rounded-lg shadow-lg"
+                            >
+                                <div className="space-y-2">
+                                    <div>
+                                        <label className="text-xs font-medium text-gray-600 block mb-1">Start Date</label>
+                                        <input
+                                            type="date"
+                                            value={dateFilter.start}
+                                            onChange={(e) => setDateFilter(prev => ({ ...prev, start: e.target.value }))}
+                                            className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <div>
+                                        <label className="text-xs font-medium text-gray-600 block mb-1">End Date</label>
+                                        <input
+                                            type="date"
+                                            value={dateFilter.end}
+                                            onChange={(e) => setDateFilter(prev => ({ ...prev, end: e.target.value }))}
+                                            className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        />
+                                    </div>
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
+                                        onClick={() => setDateFilter({ start: '', end: '' })}
+                                        className="w-full px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                                    >
+                                        Clear Filter
+                                    </motion.button>
+                                </div>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
                 </div>
 
                 {/* Bugs List */}
@@ -606,10 +690,81 @@ const BugSplitView = () => {
                             </motion.button>
                         )}
                         <h1 className="text-sm font-bold text-gray-800 tracking-wide">Bug Details</h1>
+
+                        {/* Header with Serial Number and Dropdowns - Moved here */}
+                        {selectedBug && (
+                            <div className="flex items-center gap-3 ml-4">
+                                <motion.h2
+                                    whileHover={{ scale: 1.02 }}
+                                    onClick={() => copyText(selectedBug.serialNumber)}
+                                    className="text-sm font-bold text-gray-800 cursor-pointer bg-gray-100 px-3 py-2 rounded-lg"
+                                >
+                                    {selectedBug.serialNumber}
+                                </motion.h2>
+                                <GitHubDropdown
+                                    value={selectedBug.bugType || 'Functional'}
+                                    options={['Functional', 'User-Interface', 'Security', 'Database', 'Performance']}
+                                    onChange={(value) => handleFieldEdit('bugType', value)}
+                                    label="Bug Type"
+                                    className="min-w-[130px]"
+                                />
+                                <GitHubDropdown
+                                    value={selectedBug.priority || 'Medium'}
+                                    options={['Critical', 'High', 'Medium', 'Low']}
+                                    onChange={(value) => handleFieldEdit('priority', value)}
+                                    label="Priority"
+                                    className="min-w-[110px]"
+                                />
+                                <GitHubDropdown
+                                    value={selectedBug.severity || 'Medium'}
+                                    options={['Critical', 'High', 'Medium', 'Low']}
+                                    onChange={(value) => handleFieldEdit('severity', value)}
+                                    label="Severity"
+                                    className="min-w-[110px]"
+                                />
+                                <GitHubDropdown
+                                    value={selectedBug.status || 'New'}
+                                    options={['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open']}
+                                    onChange={(value) => handleFieldEdit('status', value)}
+                                    label="Status"
+                                    className="min-w-[130px]"
+                                />
+                            </div>
+                        )}
                     </div>
 
                     {selectedBug && (
                         <div className="flex items-center gap-3">
+                            {/* Image Button */}
+                            {selectedBug.image && selectedBug.image !== 'No Image provided' && (
+                                <motion.a
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    href={selectedBug.image}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1.5 px-4 py-2 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm font-medium"
+                                >
+                                    <ImageIcon size={13} />
+                                    View Image
+                                </motion.a>
+                            )}
+
+                            {/* Reference Link Button */}
+                            {selectedBug.refLink && selectedBug.refLink !== 'No Link Provided' && (
+                                <motion.a
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    href={selectedBug.refLink}
+                                    target="_blank"
+                                    rel="noopener noreferrer"
+                                    className="flex items-center gap-1.5 px-4 py-2 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium"
+                                >
+                                    <Link2 size={13} />
+                                    Open Link
+                                </motion.a>
+                            )}
+
                             {/* Bug counter */}
                             <div className="text-xs text-gray-600 font-medium bg-gray-100 px-3 py-1.5 rounded-lg">
                                 Bug {filteredBugs.findIndex(b => b._id === selectedBug._id) + 1} of {filteredBugs.length}
@@ -636,6 +791,60 @@ const BugSplitView = () => {
                                     <ChevronRight size={18} />
                                 </motion.button>
                             </div>
+
+                            {/* Edit/Save buttons */}
+                            {!isEditing ? (
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={handleEditClick}
+                                    className="flex items-center gap-1.5 px-4 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
+                                >
+                                    <Edit size={13} />
+                                    Edit
+                                </motion.button>
+                            ) : (
+                                <div className="flex items-center gap-2">
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={handleSaveClick}
+                                        className="flex items-center gap-1.5 px-4 py-2 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm font-medium"
+                                    >
+                                        <Save size={13} />
+                                        Save
+                                    </motion.button>
+                                    <motion.button
+                                        whileHover={{ scale: 1.05 }}
+                                        whileTap={{ scale: 0.95 }}
+                                        onClick={handleCancelClick}
+                                        className="flex items-center gap-1.5 px-4 py-2 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-sm font-medium"
+                                    >
+                                        <X size={13} />
+                                        Cancel
+                                    </motion.button>
+                                </div>
+                            )}
+
+                            {/* Archive and Delete buttons */}
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => moveBugToTrash(selectedBug._id)}
+                                className="flex items-center gap-1.5 px-4 py-2 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-sm font-medium"
+                            >
+                                <Archive size={13} />
+                                Archive
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => deleteBugPermanently(selectedBug._id)}
+                                className="flex items-center gap-1.5 px-4 py-2 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm font-medium"
+                            >
+                                <Trash2 size={13} />
+                                Delete
+                            </motion.button>
                         </div>
                     )}
                 </div>
@@ -658,101 +867,6 @@ const BugSplitView = () => {
                             transition={{ duration: 0.3 }}
                             className="max-w-5xl mx-auto"
                         >
-                            {/* Header with Serial Number and Dropdowns */}
-                            <div className="flex items-center justify-between mb-6 bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                                <div className="flex items-center gap-3">
-                                    <motion.h2
-                                        whileHover={{ scale: 1.02 }}
-                                        onClick={() => copyText(selectedBug.serialNumber)}
-                                        className="text-sm font-bold text-gray-800 cursor-pointer bg-gray-100 px-3 py-2 rounded-lg"
-                                    >
-                                        {selectedBug.serialNumber}
-                                    </motion.h2>
-                                    <span className={`px-3 py-1 rounded-lg text-xs font-semibold border ${getBugTypeColor(selectedBug.bugType)}`}>
-                                        {selectedBug.bugType}
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center gap-2">
-                                    {/* Dropdowns */}
-                                    <GitHubDropdown
-                                        value={selectedBug.priority || 'Medium'}
-                                        options={['Critical', 'High', 'Medium', 'Low']}
-                                        onChange={(value) => handleFieldEdit('priority', value)}
-                                        label="Priority"
-                                        className="min-w-[110px]"
-                                    />
-                                    <GitHubDropdown
-                                        value={selectedBug.severity || 'Medium'}
-                                        options={['Critical', 'High', 'Medium', 'Low']}
-                                        onChange={(value) => handleFieldEdit('severity', value)}
-                                        label="Severity"
-                                        className="min-w-[110px]"
-                                    />
-                                    <GitHubDropdown
-                                        value={selectedBug.status || 'New'}
-                                        options={['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open']}
-                                        onChange={(value) => handleFieldEdit('status', value)}
-                                        label="Status"
-                                        className="min-w-[130px]"
-                                    />
-
-                                    {/* Edit/Save buttons */}
-                                    {!isEditing ? (
-                                        <motion.button
-                                            whileHover={{ scale: 1.05 }}
-                                            whileTap={{ scale: 0.95 }}
-                                            onClick={handleEditClick}
-                                            className="flex items-center gap-1.5 px-4 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
-                                        >
-                                            <Edit size={13} />
-                                            Edit
-                                        </motion.button>
-                                    ) : (
-                                        <div className="flex items-center gap-2">
-                                            <motion.button
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={handleSaveClick}
-                                                className="flex items-center gap-1.5 px-4 py-2 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm font-medium"
-                                            >
-                                                <Save size={13} />
-                                                Save
-                                            </motion.button>
-                                            <motion.button
-                                                whileHover={{ scale: 1.05 }}
-                                                whileTap={{ scale: 0.95 }}
-                                                onClick={handleCancelClick}
-                                                className="flex items-center gap-1.5 px-4 py-2 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-sm font-medium"
-                                            >
-                                                <X size={13} />
-                                                Cancel
-                                            </motion.button>
-                                        </div>
-                                    )}
-
-                                    {/* Archive and Delete buttons */}
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => moveBugToTrash(selectedBug._id)}
-                                        className="flex items-center gap-1.5 px-4 py-2 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-sm font-medium"
-                                    >
-                                        <Archive size={13} />
-                                        Archive
-                                    </motion.button>
-                                    <motion.button
-                                        whileHover={{ scale: 1.05 }}
-                                        whileTap={{ scale: 0.95 }}
-                                        onClick={() => deleteBugPermanently(selectedBug._id)}
-                                        className="flex items-center gap-1.5 px-4 py-2 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm font-medium"
-                                    >
-                                        <Trash2 size={13} />
-                                        Delete
-                                    </motion.button>
-                                </div>
-                            </div>
-
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
                                 {/* Left Column - Bug Details */}
                                 <div className="lg:col-span-2 space-y-4">
@@ -848,28 +962,37 @@ const BugSplitView = () => {
                                                 <p className="flex-1 text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 truncate">
                                                     {selectedBug.refLink || 'No reference link'}
                                                 </p>
-                                                {selectedBug.refLink && (
-                                                    <motion.a
-                                                        whileHover={{ scale: 1.05 }}
-                                                        whileTap={{ scale: 0.95 }}
-                                                        href={selectedBug.refLink}
-                                                        target="_blank"
-                                                        rel="noopener noreferrer"
-                                                        className="px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 flex items-center gap-2 text-xs font-medium shadow-sm transition-colors"
-                                                    >
-                                                        <ExternalLink size={13} />
-                                                        Open
-                                                    </motion.a>
-                                                )}
                                             </div>
                                         )}
                                     </motion.div>
+
+                                    {/* Image Display */}
+                                    {selectedBug.image && selectedBug.image !== 'No Image provided' && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.3 }}
+                                            className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+                                        >
+                                            <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">BUG IMAGE</label>
+                                            <div className="relative">
+                                                <img
+                                                    src={selectedBug.image}
+                                                    alt="Bug screenshot"
+                                                    className="w-full rounded-lg border border-gray-200"
+                                                    onError={(e) => {
+                                                        e.target.style.display = 'none';
+                                                    }}
+                                                />
+                                            </div>
+                                        </motion.div>
+                                    )}
 
                                     {/* Timestamps */}
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.3 }}
+                                        transition={{ delay: 0.35 }}
                                         className="grid grid-cols-2 gap-4 pt-2"
                                     >
                                         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
