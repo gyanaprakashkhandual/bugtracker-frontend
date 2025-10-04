@@ -228,11 +228,13 @@ const BugSidebar = ({ isOpen, onClose }) => {
 
     const createAIBug = async (rawText) => {
         try {
+            console.log('[DEBUG] createAIBug called with:', rawText);
             setIsSubmitting(true);
             const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
             const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
             const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
+            console.log('[DEBUG] Sending AI bug request:', { projectId, testTypeId, rawText });
             const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/ai-text`, {
                 method: 'POST',
                 headers: {
@@ -246,10 +248,12 @@ const BugSidebar = ({ isOpen, onClose }) => {
 
             if (!response.ok) {
                 const errorData = await response.json();
+                console.error('[DEBUG] AI bug creation failed:', errorData);
                 throw new Error(errorData.message || 'Failed to create bug from text');
             }
 
             const data = await response.json();
+            console.log('[DEBUG] AI bug created successfully:', data);
 
             showAlert({
                 type: 'success',
@@ -258,7 +262,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
 
             return data;
         } catch (error) {
-            console.error('Error creating AI bug:', error);
+            console.error('[DEBUG] Error creating AI bug:', error);
             showAlert({
                 type: 'error',
                 message: error.message || 'Failed to create bug from text'
@@ -352,7 +356,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
             className="flex flex-col h-full"
         >
             <div className="flex-1 p-6 overflow-y-auto">
-                <div className="text-center text-gray-500 mt-20">
+                <div className="text-center text-gray-500 mt-[280px]">
                     <p className="text-sm">Start a conversation...</p>
                 </div>
             </div>
@@ -363,9 +367,9 @@ const BugSidebar = ({ isOpen, onClose }) => {
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         placeholder="Message..."
-                        className="w-full p-3 pr-20 border border-gray-200 rounded-2xl resize-none bg-gray-50 hover:bg-gray-100 transition-colors text-sm"
+                        className="w-full p-3 pr-20 border border-gray-200 rounded-2xl resize-none bg-gray-50 hover:bg-gray-100 transition-colors text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                         rows={1}
-                        style={{ minHeight: '48px', maxHeight: '120px' }}
+                        style={{ minHeight: '200px', maxHeight: '520px' }}
                         onInput={(e) => {
                             e.target.style.height = 'auto';
                             e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
@@ -379,8 +383,8 @@ const BugSidebar = ({ isOpen, onClose }) => {
                             onClick={toggleVoiceRecognition}
                             disabled={isSubmitting}
                             className={`p-2 rounded-full transition-colors ${isListening
-                                    ? 'bg-red-600 text-white hover:bg-red-700'
-                                    : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                                ? 'bg-red-600 text-white hover:bg-red-700'
+                                : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
                                 } disabled:opacity-50 disabled:cursor-not-allowed`}
                             title={isListening ? 'Stop recording' : 'Start voice dictation'}
                         >
@@ -480,7 +484,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     type="text"
                     value={formData.moduleName}
                     onChange={(e) => handleInputChange('moduleName', e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-200 font-medium text-sm"
+                    className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-200 font-medium text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="Module Name"
                     disabled={isSubmitting}
                 />
@@ -490,7 +494,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                 <textarea
                     value={formData.bugDesc}
                     onChange={(e) => handleInputChange('bugDesc', e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-xl h-24 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-sm"
+                    className="w-full p-3 border border-gray-200 rounded-xl h-24 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="Bug Description"
                     disabled={isSubmitting}
                 />
@@ -500,7 +504,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                 <textarea
                     value={formData.bugRequirement}
                     onChange={(e) => handleInputChange('bugRequirement', e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-xl h-24 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-sm"
+                    className="w-full p-3 border border-gray-200 rounded-xl h-24 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="Bug Requirement"
                     disabled={isSubmitting}
                 />
@@ -511,7 +515,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     type="text"
                     value={formData.refLink}
                     onChange={(e) => handleInputChange('refLink', e.target.value)}
-                    className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-200 font-medium text-sm"
+                    className="w-full p-3 border border-gray-200 rounded-xl bg-gray-50 hover:bg-gray-100 transition-all duration-200 font-medium text-sm focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="Reference Link"
                     disabled={isSubmitting}
                 />
