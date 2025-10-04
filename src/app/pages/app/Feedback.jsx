@@ -503,11 +503,11 @@ const FeedbackPage = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-6 px-4 hide-scrollbar">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-6 hide-scrollbar">
             <div>
                 <FeedbackHeader/>
             </div>
-            <div className="max-w-7xl mx-auto">
+            <div className="max-w-full mx-auto p-2">
                 {/* Header */}
                 <motion.div
                     initial={{ opacity: 0, y: -20 }}
@@ -515,12 +515,11 @@ const FeedbackPage = () => {
                     className="mb-6"
                 >
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                        <div>
-                            <h1 className="text-xl font-bold text-slate-900 tracking-tight">Feedback Board</h1>
-                            <p className="text-slate-500 text-xs mt-0.5">
-                                {feedbacks.length} total feedback{feedbacks.length !== 1 ? 's' : ''}
-                            </p>
-                        </div>
+                        
+                            <h1 className="text-slate-900 font-bold mt-0.5">
+                                {feedbacks.length} Feedback{feedbacks.length !== 1 ? 's' : ''}
+                            </h1>
+                        
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
