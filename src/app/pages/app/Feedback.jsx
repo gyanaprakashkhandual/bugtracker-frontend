@@ -16,6 +16,7 @@ import {
     FiChevronDown,
     FiChevronUp
 } from 'react-icons/fi';
+import FeedbackHeader from '@/app/components/assets/Feedback';
 
 const FeedbackPage = () => {
     const [feedbacks, setFeedbacks] = useState([]);
@@ -316,6 +317,9 @@ const FeedbackPage = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-6 px-4">
+            <div>
+                <FeedbackHeader/>
+            </div>
             <div className="max-w-7xl mx-auto">
                 {/* Header */}
                 <motion.div
@@ -337,7 +341,7 @@ const FeedbackPage = () => {
                             className="flex items-center gap-1.5 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 shadow-sm text-xs font-medium transition-colors"
                         >
                             {showCreateForm ? <FiX className="w-3.5 h-3.5" /> : <FiPlus className="w-3.5 h-3.5" />}
-                            {showCreateForm ? 'Close' : 'New Feedback'}
+                            {showCreateForm ? 'Close' : 'Give Feedback'}
                         </motion.button>
                     </div>
                 </motion.div>
@@ -368,7 +372,7 @@ const FeedbackPage = () => {
                                             value={formData.feedbackDescription}
                                             onChange={(e) => setFormData({ ...formData, feedbackDescription: e.target.value })}
                                             rows="3"
-                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs resize-none"
+                                            className="w-full px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:border-blue-500 text-xs resize-none"
                                             placeholder="Tell us what you think..."
                                         />
                                     </div>
@@ -560,12 +564,15 @@ const FeedbackPage = () => {
                                             {formatDate(feedback.createdAt)}
                                         </div>
                                         <motion.button
+                                        tooltip-data="See Comments"
+                                        tooltip-placement="top"
                                             whileTap={{ scale: 0.9 }}
                                             onClick={() => toggleCardExpansion(feedback._id)}
                                             className="p-1 hover:bg-slate-100 rounded transition-colors"
                                         >
                                             {expandedCards[feedback._id] ? (
-                                                <FiChevronUp className="w-4 h-4 text-slate-500" />
+                                                
+                                                <FiChevronUp  className="w-4 h-4 text-slate-500" />
                                             ) : (
                                                 <FiChevronDown className="w-4 h-4 text-slate-500" />
                                             )}
@@ -714,7 +721,7 @@ const FeedbackPage = () => {
                                         value={commentText}
                                         onChange={(e) => setCommentText(e.target.value)}
                                         placeholder="Write a comment..."
-                                        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-xs"
+                                        className="flex-1 px-3 py-2 border border-slate-200 rounded-lg focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:border-blue-500 text-xs"
                                         disabled={submittingComment}
                                     />
                                     <motion.button
