@@ -62,17 +62,17 @@ const StyledDropdown = ({ options, placeholder, value, onChange, size = "sm", cl
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full px-3 py-1.5 text-xs font-medium text-gray-700 transition-all duration-200 border rounded-lg bg-white/70 backdrop-blur-sm border-blue-200/50 hover:bg-blue-50/50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
+        className="flex items-center justify-between w-full px-2.5 py-1.5 text-xs font-medium text-gray-700 transition-all duration-200 border rounded-lg bg-white/70 backdrop-blur-sm border-blue-200/50 hover:bg-blue-50/50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
       >
-        <div className="flex items-center space-x-2">
+        <div className="flex items-center space-x-1.5">
           {selectedOption?.icon}
-          <span>{selectedOption?.label || placeholder}</span>
+          <span className="whitespace-nowrap">{selectedOption?.label || placeholder}</span>
         </div>
         <motion.div
           animate={{ rotate: isOpen ? 180 : 0 }}
           transition={{ duration: 0.2 }}
         >
-          <GoogleArrowDown className="w-4 h-4" />
+          <GoogleArrowDown className="w-3.5 h-3.5" />
         </motion.div>
       </motion.button>
 
@@ -93,67 +93,6 @@ const StyledDropdown = ({ options, placeholder, value, onChange, size = "sm", cl
                 transition={{ delay: index * 0.05 }}
                 onClick={() => handleSelect(option)}
                 className="flex items-center w-full px-4 py-3 space-x-2 text-sm text-gray-700 transition-colors duration-150 hover:bg-blue-50/50 hover:text-blue-600 first:rounded-t-lg last:rounded-b-lg"
-              >
-                {option.icon}
-                <span>{option.label}</span>
-              </motion.button>
-            ))}
-          </motion.div>
-        )}
-      </AnimatePresence>
-
-      {isOpen && (
-        <div
-          className="fixed inset-0 z-40"
-          onClick={() => setIsOpen(false)}
-        />
-      )}
-    </div>
-  );
-};
-
-// ============================================
-// THREE DOTS DROPDOWN COMPONENT
-// ============================================
-const ThreeDotsDropdown = ({ options }) => {
-  const [isOpen, setIsOpen] = useState(false);
-
-  return (
-    <div className="relative">
-      <motion.button
-        tooltip-data="More Options"
-        tooltip-placement="bottom"
-        whileHover={{ scale: 1.05 }}
-        whileTap={{ scale: 0.95 }}
-        onClick={() => setIsOpen(!isOpen)}
-        className="p-2 transition-colors duration-200 rounded-lg hover:bg-blue-50/50"
-      >
-        <MoreVerticalIcon />
-      </motion.button>
-
-      <AnimatePresence>
-        {isOpen && (
-          <motion.div
-            initial={{ opacity: 0, y: -10, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -10, scale: 0.95 }}
-            transition={{ duration: 0.2 }}
-            className="absolute right-0 z-50 w-48 mt-1 overflow-hidden border rounded-lg shadow-lg top-full bg-white/90 backdrop-blur-md border-blue-200/50"
-          >
-            {options.map((option, index) => (
-              <motion.button
-                key={index}
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ delay: index * 0.05 }}
-                onClick={() => {
-                  option.onClick();
-                  setIsOpen(false);
-                }}
-                className={`flex items-center w-full px-4 py-3 space-x-2 text-sm transition-colors duration-150 ${option.danger
-                  ? 'text-red-600 hover:bg-red-50/50'
-                  : 'text-gray-700 hover:bg-blue-50/50 hover:text-blue-600'
-                  } first:rounded-t-lg last:rounded-b-lg`}
               >
                 {option.icon}
                 <span>{option.label}</span>
@@ -204,8 +143,6 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
     setTestDataSidebarOpen(false);
     setFilterSidebarOpen(false);
   };
-
-
 
   // Handle manual add selection with proper state management
   const handleManualAdd = (value) => {
@@ -315,23 +252,23 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
 
   // View options
   const viewOptions = [
-    { value: 'chart', label: 'Chart View', icon: <BarChart3 className="w-4 h-4" /> },
-    { value: 'table', label: 'Table View', icon: <Table className="w-4 h-4" /> },
-    { value: 'card', label: 'Card View', icon: <LayoutGrid className="w-4 h-4" /> },
-    { value: 'split', label: 'Split View', icon: <SplitIcon className='w-4 h-4' /> }
+    { value: 'chart', label: 'Chart', icon: <BarChart3 className="w-4 h-4" /> },
+    { value: 'table', label: 'Table', icon: <Table className="w-4 h-4" /> },
+    { value: 'card', label: 'Card', icon: <LayoutGrid className="w-4 h-4" /> },
+    { value: 'split', label: 'Split', icon: <SplitIcon className='w-4 h-4' /> }
   ];
 
   // Report options
   const reportOptions = [
     { value: 'bug', label: 'BUG', icon: <Bug className="w-4 h-4" /> },
-    { value: 'test-case', label: 'Test Case', icon: <FileText className="w-4 h-4" /> }
+    { value: 'test-case', label: 'Case', icon: <FileText className="w-4 h-4" /> }
   ];
 
   // Manual add options with sidebar handlers
   const manualAddOptions = [
-    { value: 'addBug', label: 'Add Bug', icon: <Plus className="h-4 w-4" /> },
-    { value: 'addTestCase', label: 'Add Case', icon: <Plus className="h-4 w-4" /> },
-    { value: 'addData', label: 'Add Data', icon: <Plus className="h-4 w-4" /> },
+    { value: 'addBug', label: 'Bug', icon: <Plus className="h-4 w-4" /> },
+    { value: 'addTestCase', label: 'Case', icon: <Plus className="h-4 w-4" /> },
+    { value: 'addData', label: 'Data', icon: <Plus className="h-4 w-4" /> },
   ];
 
   // Data options
@@ -345,7 +282,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
       {/* Fixed navbar with proper z-index */}
       <nav className="fixed top-0 left-0 right-0 z-50 border-b bg-gradient-to-r from-blue-100 via-sky-50 to-blue-100 backdrop-blur-md border-blue-200/30">
         <div className="w-full px-4 mx-auto sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between h-16 gap-4">
+          <div className="flex items-center justify-between h-16 gap-2">
 
             {/* Left Section: Desktop Menu + Mobile hamburger + Brand */}
             <div className="flex items-center gap-3 flex-shrink-0">
@@ -422,65 +359,116 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
             </div>
 
             {/* Center Section: Search Bar - Desktop Only */}
-            <div className="hidden md:flex flex-1 max-w-lg">
+            <div className="hidden lg:flex flex-1 max-w-md">
               <motion.div className="relative w-full">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
-                  <Search className={`h-5 w-5 transition-colors duration-200 ${searchFocus ? 'text-blue-500' : 'text-gray-400'}`} />
+                  <Search className={`h-4 w-4 transition-colors duration-200 ${searchFocus ? 'text-blue-500' : 'text-gray-400'}`} />
                 </div>
                 <input
                   type="text"
                   placeholder="Search..."
                   onFocus={() => setSearchFocus(true)}
                   onBlur={() => setSearchFocus(false)}
-                  className="block w-full pl-10 pr-3 py-1.5 border border-blue-200/50 rounded-full bg-white/70 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  className="block w-full pl-9 pr-3 py-1.5 text-sm border border-blue-200/50 rounded-full bg-white/70 backdrop-blur-sm placeholder-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-900"
                 />
               </motion.div>
             </div>
 
             {/* Right Section: Desktop Navigation */}
-            <div className="hidden md:flex items-center gap-3 flex-shrink-0">
+            <div className="hidden md:flex items-center gap-2 flex-shrink-0">
               {/* View Dropdown */}
               <StyledDropdown
                 options={viewOptions}
-                placeholder="View Options"
+                placeholder="View"
                 value={selectedView}
                 onChange={handleViewChange}
                 size="sm"
-                className="w-40"
+                className="w-28"
               />
 
               {/* Report Dropdown */}
               <StyledDropdown
                 options={reportOptions}
-                placeholder="Report Options"
+                placeholder="Report"
                 value={selectedReport}
                 onChange={handleReportChange}
                 size="sm"
-                className="w-40"
+                className="w-28"
               />
 
               {/* Manual Add Dropdown */}
               <StyledDropdown
                 options={manualAddOptions}
-                placeholder="Add Manually"
+                placeholder="Add"
                 value={selectedManual}
                 onChange={handleManualAdd}
                 size='sm'
-                className='w-40'
+                className='w-28'
               />
 
               {/* Data From Dropdown */}
               <StyledDropdown
                 options={dataOption}
-                placeholder="Data From"
+                placeholder="Data"
                 value={selectedData}
                 onChange={handleDataChange}
                 size='sm'
-                className='w-40'
+                className='w-28'
               />
 
-              {/* Three Dots Menu */}
-              <ThreeDotsDropdown options={getOptions()} />
+              {/* Divider */}
+              <div className="w-px h-8 bg-blue-200/50" />
+
+              {/* Filter Button */}
+              <motion.button
+                tooltip-data="Filters"
+                tooltip-placement="bottom"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleFilterOpen}
+                className={`p-2 transition-all duration-200 rounded-lg ${filterSidebarOpen ? 'bg-blue-100 text-blue-600' : 'hover:bg-blue-50/50 text-gray-600'}`}
+              >
+                <FiFilter size={18} />
+              </motion.button>
+
+              {/* Trash Button */}
+              <motion.button
+                tooltip-data="Trash"
+                tooltip-placement="bottom"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push(`/app/projects/${project?.slug}/trash`)}
+                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-red-50/50 hover:text-red-600"
+              >
+                <FiTrash2 size={18} />
+              </motion.button>
+
+              {/* Code Space Button */}
+              <motion.button
+                tooltip-data="Code Space"
+                tooltip-placement="bottom"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push(`/app/projects/${project?.slug}/code-space`)}
+                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-blue-50/50 hover:text-blue-600"
+              >
+                <CodeSquare size={18} />
+              </motion.button>
+
+              {/* Settings Button */}
+              <motion.button
+                tooltip-data="Settings"
+                tooltip-placement="bottom"
+                whileHover={{ scale: 1.05, rotate: 90 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => {
+                  closeAllSidebars();
+                  console.log("Settings clicked");
+                }}
+                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-blue-50/50 hover:text-blue-600"
+              >
+                <FiSettings size={18} />
+              </motion.button>
             </div>
           </div>
 
@@ -551,26 +539,42 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                     onClick={handleFilterOpen}
                     className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
                   >
-                    <Filter className="w-4 h-4" />
+                    <FiFilter className="w-4 h-4" />
                     <span>Filter</span>
                   </motion.button>
 
-                  <div className="flex items-center justify-center pt-2 space-x-4">
-                    <motion.button
-                      whileHover={{ scale: 1.1, rotate: 180 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="p-2 text-gray-600 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
-                    >
-                      <Settings className="w-5 h-5" />
-                    </motion.button>
-                    <motion.button
-                      whileHover={{ scale: 1.1 }}
-                      whileTap={{ scale: 0.95 }}
-                      className="p-2 text-gray-600 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
-                    >
-                      <User className="w-5 h-5" />
-                    </motion.button>
-                  </div>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push(`/app/projects/${project?.slug}/trash`)}
+                    className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-red-600 hover:bg-red-50/50"
+                  >
+                    <FiTrash2 className="w-4 h-4" />
+                    <span>Trash</span>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push(`/app/projects/${project?.slug}/code-space`)}
+                    className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
+                  >
+                    <CodeSquare className="w-4 h-4" />
+                    <span>Code Space</span>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => {
+                      closeAllSidebars();
+                      console.log("Settings clicked");
+                    }}
+                    className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
+                  >
+                    <FiSettings className="w-4 h-4" />
+                    <span>Settings</span>
+                  </motion.button>
                 </div>
               </motion.div>
             )}
