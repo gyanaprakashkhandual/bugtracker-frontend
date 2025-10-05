@@ -15,7 +15,6 @@ import TestResultChartView from '../view/result-module/Chart'
 import TestResultSplitView from '../view/result-module/Split'
 
 function Workspace() {
-    // Initialize state from memory storage or defaults
     const [selectedView, setSelectedView] = useState(() => {
         if (typeof window !== 'undefined') {
             return window.workspaceState?.selectedView || 'split';
@@ -37,7 +36,6 @@ function Workspace() {
         return 'fromManual';
     });
 
-    // Initialize window.workspaceState if it doesn't exist
     useEffect(() => {
         if (typeof window !== 'undefined' && !window.workspaceState) {
             window.workspaceState = {
@@ -48,7 +46,6 @@ function Workspace() {
         }
     }, []);
 
-    // Save to memory storage whenever state changes
     useEffect(() => {
         if (typeof window !== 'undefined') {
             window.workspaceState = {
@@ -59,9 +56,9 @@ function Workspace() {
         }
     }, [selectedView, selectedReport, selectedData]);
 
-    // Function to render the appropriate component based on selections
+
     const renderComponent = () => {
-        // VS Code Data Source - Only View matters, Report is disabled
+
         if (selectedData === 'fromVsCode') {
             switch (selectedView) {
                 case 'split':
@@ -73,11 +70,10 @@ function Workspace() {
                 case 'table':
                     return <TestResultTableView />;
                 default:
-                    return <TestResultSplitView />; // Default to split view
+                    return <TestResultSplitView />;
             }
         }
 
-        // Manual Data Source (default) - Both View and Report matter
         if (selectedData === 'fromManual') {
             // Bug Report (default)
             if (selectedReport === 'bug') {
@@ -91,7 +87,7 @@ function Workspace() {
                     case 'table':
                         return <BugSpreadsheet />;
                     default:
-                        return <BugSplitView />; // Default to split view
+                        return <BugSplitView />;
                 }
             }
 
@@ -107,12 +103,11 @@ function Workspace() {
                     case 'table':
                         return <TestCaseSpreadsheet />;
                     default:
-                        return <TestCaseSplitView />; // Default to split view
+                        return <TestCaseSplitView />;
                 }
             }
         }
 
-        // Fallback - should never reach here with defaults
         return <BugSplitView />;
     };
 
@@ -123,11 +118,11 @@ function Workspace() {
                 onReportChange={setSelectedReport}
                 onDataChange={setSelectedData}
             />
-            <div className="pt-16">
+            <div>
                 {renderComponent()}
             </div>
         </div>
     )
 }
 
-export default Workspace
+export default Workspace;
