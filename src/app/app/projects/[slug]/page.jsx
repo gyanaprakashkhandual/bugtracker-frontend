@@ -9,6 +9,7 @@ import BugStatisticsDashboard from '@/app/pages/view/bug-module/Chart';
 import TestCaseSpreadsheet from '@/app/pages/view/case-module/Table';
 import TestCaseCardView from '@/app/pages/view/case-module/Card';
 import TestCaseSplitView from '@/app/pages/view/case-module/Split';
+import Workspace from '@/app/pages/app/Workspace';
 
 export default function TokenDebugger() {
   const [token, setToken] = useState('');
@@ -54,10 +55,8 @@ export default function TokenDebugger() {
 
   return (
     <div className="min-h-screen bg-gray-50 ">
-      <div>
-        <Navbar />
-      </div>
-      <TestCaseSplitView/>
+      <Workspace/>
+       
     </div>
   );
 }
