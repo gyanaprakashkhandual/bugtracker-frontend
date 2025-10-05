@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Image as ImageIcon, Save, Ban } from 'lucide-react';
 import { GoogleArrowDown } from '@/app/components/utils/Icon';
 
 const BugSpreadsheet = () => {
@@ -27,6 +27,8 @@ const BugSpreadsheet = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalBugs, setTotalBugs] = useState(0);
+    const [newRowEditing, setNewRowEditing] = useState(false);
+    const [newRowTempData, setNewRowTempData] = useState({});
     const dropdownRef = useRef(null);
     const commentModalRef = useRef(null);
     const resizeStartX = useRef(0);
@@ -35,6 +37,7 @@ const BugSpreadsheet = () => {
     const resizeStartHeight = useRef(0);
     const dropdownButtonRefs = useRef({});
     const commentButtonRefs = useRef({});
+    const fileInputRef = useRef(null);
 
     const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
     const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
@@ -49,6 +52,7 @@ const BugSpreadsheet = () => {
         { key: 'bugDesc', label: 'Description', width: 285, editable: true, color: 'bg-yellow-50', sticky: true },
         { key: 'bugRequirement', label: 'Requirement', width: 280, editable: true, color: 'bg-pink-50' },
         { key: 'refLink', label: 'Link', width: 70, editable: true, color: 'bg-indigo-50' },
+        { key: 'image', label: 'Image', width: 70, editable: true, color: 'bg-cyan-50' },
         { key: 'priority', label: 'Priority', width: 120, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
         { key: 'severity', label: 'Severity', width: 120, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50' },
         { key: 'status', label: 'Status', width: 140, editable: true, type: 'select', options: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'], color: 'bg-teal-50' },
@@ -173,6 +177,27 @@ const BugSpreadsheet = () => {
         }
     };
 
+    const uploadImageToCloudinary = async (file) => {
+        try {
+            const formData = new FormData();
+            formData.append('file', file);
+            formData.append('upload_preset', 'test_case_preset');
+
+            const response = await fetch('https://api.cloudinary.com/v1_1/dvytvjplt/image/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('Failed to upload image');
+
+            const data = await response.json();
+            return data.secure_url;
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            throw error;
+        }
+    };
+
     const createBug = async (bugData) => {
         if (!token || isCreatingBug) return;
 
@@ -195,10 +220,10 @@ const BugSpreadsheet = () => {
                         bugDesc: bugData.bugDesc || '',
                         bugRequirement: bugData.bugRequirement || '',
                         refLink: bugData.refLink || '',
+                        image: bugData.image || 'No Image provided',
                         priority: bugData.priority || 'Medium',
                         severity: bugData.severity || 'Medium',
-                        status: bugData.status || 'New',
-                        image: 'No Image provided'
+                        status: bugData.status || 'New'
                     })
                 }
             );
@@ -208,6 +233,8 @@ const BugSpreadsheet = () => {
             const result = await response.json();
             setBugs(prev => [result.bug, ...prev]);
             setNewRowData({});
+            setNewRowEditing(false);
+            setNewRowTempData({});
         } catch (error) {
             console.error('Error creating bug:', error);
         } finally {
@@ -276,9 +303,36 @@ const BugSpreadsheet = () => {
         }
     };
 
+    const handleNewRowManualSave = () => {
+        if (Object.keys(newRowTempData).length > 0) {
+            const finalData = { ...newRowData, ...newRowTempData };
+            setNewRowData(finalData);
+            createBug(finalData);
+        }
+        setNewRowEditing(false);
+        setNewRowTempData({});
+    };
+
+    const handleNewRowCancel = () => {
+        setNewRowEditing(false);
+        setNewRowTempData({});
+    };
+
+    const handleNewRowCellClick = (columnKey) => {
+        if (!newRowEditing) {
+            setNewRowEditing(true);
+        }
+        const currentValue = newRowTempData[columnKey] || newRowData[columnKey] || '';
+        startEditing('new', columnKey, currentValue);
+    };
+
     const handleDropdownSelect = (bugId, columnKey, value) => {
         if (bugId === 'new') {
-            handleNewRowEdit(columnKey, value);
+            if (newRowEditing) {
+                setNewRowTempData(prev => ({ ...prev, [columnKey]: value }));
+            } else {
+                handleNewRowEdit(columnKey, value);
+            }
         } else {
             handleCellEdit(bugId, columnKey, value);
         }
@@ -293,13 +347,37 @@ const BugSpreadsheet = () => {
     const stopEditing = () => {
         if (editingCell) {
             if (editingCell.bugId === 'new') {
-                handleNewRowEdit(editingCell.columnKey, editValue);
+                if (newRowEditing) {
+                    setNewRowTempData(prev => ({ ...prev, [editingCell.columnKey]: editValue }));
+                } else {
+                    handleNewRowEdit(editingCell.columnKey, editValue);
+                }
             } else {
                 handleCellEdit(editingCell.bugId, editingCell.columnKey, editValue);
             }
         }
         setEditingCell(null);
         setEditValue('');
+    };
+
+    const handleImageUpload = async (bugId, columnKey, file) => {
+        if (!file) return;
+
+        try {
+            const imageUrl = await uploadImageToCloudinary(file);
+
+            if (bugId === 'new') {
+                if (newRowEditing) {
+                    setNewRowTempData(prev => ({ ...prev, [columnKey]: imageUrl }));
+                } else {
+                    handleNewRowEdit(columnKey, imageUrl);
+                }
+            } else {
+                handleCellEdit(bugId, columnKey, imageUrl);
+            }
+        } catch (error) {
+            console.error('Error uploading image:', error);
+        }
     };
 
     const moveBugToTrash = async (bugId) => {
@@ -628,10 +706,71 @@ const BugSpreadsheet = () => {
 
     const renderCellContent = (bug, column, isNewRow = false) => {
         const bugId = isNewRow ? 'new' : bug?._id;
-        const value = isNewRow ? newRowData[column.key] : bug?.[column.key];
+        const value = isNewRow ? (newRowTempData[column.key] || newRowData[column.key]) : bug?.[column.key];
         const cellKey = `${bugId}-${column.key}`;
         const isSaving = savingCells.has(cellKey);
         const hasError = errorCells.has(cellKey);
+        const rowHeight = rowHeights[bugId] || rowHeights.default;
+
+        if (column.key === 'image') {
+            if (editingCell?.bugId === bugId && editingCell?.columnKey === column.key) {
+                return (
+                    <div className="w-full h-full flex flex-col items-center justify-center p-1 border border-blue-500 bg-white">
+                        <input
+                            type="file"
+                            ref={fileInputRef}
+                            accept="image/*"
+                            onChange={(e) => {
+                                const file = e.target.files[0];
+                                if (file) {
+                                    handleImageUpload(bugId, column.key, file);
+                                }
+                                setEditingCell(null);
+                            }}
+                            className="hidden"
+                        />
+                        <button
+                            onClick={() => fileInputRef.current?.click()}
+                            className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
+                        >
+                            Upload Image
+                        </button>
+                        <span className="text-xs text-gray-500 mt-1 text-center">Click to upload</span>
+                    </div>
+                );
+            }
+
+            if (value && value !== 'No Image provided') {
+                return (
+                    <div
+                        className="w-full h-full px-2 py-1.5 flex items-center justify-center cursor-pointer hover:bg-gray-50"
+                        onDoubleClick={() => column.editable && startEditing(bugId, column.key, value)}
+                    >
+                        <a
+                            href={value}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-800 transition-colors"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <ImageIcon size={16} />
+                        </a>
+                    </div>
+                );
+            }
+
+            return (
+                <div
+                    className="w-full h-full px-2 py-1.5 flex items-center justify-center cursor-pointer hover:bg-gray-50"
+                    onDoubleClick={() => column.editable && startEditing(bugId, column.key, value)}
+                    onClick={() => isNewRow && column.editable && handleNewRowCellClick(column.key)}
+                >
+                    <span className="text-gray-400 text-xs italic">
+                        {isNewRow ? 'Add image' : 'No image'}
+                    </span>
+                </div>
+            );
+        }
 
         if (column.key === 'refLink') {
             if (editingCell?.bugId === bugId && editingCell?.columnKey === column.key) {
@@ -678,6 +817,7 @@ const BugSpreadsheet = () => {
                 <div
                     className="w-full h-full px-2 py-1.5 flex items-center justify-center cursor-pointer hover:bg-gray-50"
                     onDoubleClick={() => column.editable && startEditing(bugId, column.key, value)}
+                    onClick={() => isNewRow && column.editable && handleNewRowCellClick(column.key)}
                 >
                     <span className="text-gray-400 text-xs italic">
                         {isNewRow ? 'Add link' : 'No link'}
@@ -689,7 +829,24 @@ const BugSpreadsheet = () => {
         if (column.key === 'actions') {
             if (isNewRow) {
                 return (
-                    <div className="flex items-center justify-center h-full">
+                    <div className="flex items-center justify-center h-full space-x-1">
+                        {newRowEditing && (
+                            <>
+                                <button
+                                    onClick={handleNewRowManualSave}
+                                    className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                    disabled={isCreatingBug}
+                                >
+                                    <Save size={14} />
+                                </button>
+                                <button
+                                    onClick={handleNewRowCancel}
+                                    className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                >
+                                    <Ban size={14} />
+                                </button>
+                            </>
+                        )}
                         {isCreatingBug && <Loader2 size={14} className="animate-spin text-blue-500" />}
                     </div>
                 );
@@ -772,17 +929,33 @@ const BugSpreadsheet = () => {
         }
 
         const displayValue = value || '';
-        const truncatedValue = displayValue.length > 50 ? displayValue.substring(0, 50) + '...' : displayValue;
+        const maxChars = Math.floor((columnWidths[column.key] - 32) / 6);
+        const truncatedValue = displayValue.length > maxChars ? displayValue.substring(0, maxChars) + '...' : displayValue;
 
         return (
             <div
                 className={`w-full h-full px-2 py-1.5 flex items-center text-xs ${column.editable ? 'cursor-pointer hover:bg-gray-50' : ''}`}
-                onClick={() => column.editable && startEditing(bugId, column.key, value)}
+                onClick={() => column.editable && (isNewRow ? handleNewRowCellClick(column.key) : startEditing(bugId, column.key, value))}
                 content-data={displayValue}
                 content-placement="top"
+                style={{
+                    minHeight: rowHeight,
+                    maxHeight: rowHeight,
+                    overflow: 'hidden'
+                }}
             >
-                <span className={`truncate ${!value && isNewRow ? 'text-gray-400 italic' : ''}`}>
-                    {value ? truncatedValue : (isNewRow ? 'Click to edit' : '')}
+                <span
+                    className={`${!value && isNewRow ? 'text-gray-400 italic' : ''}`}
+                    style={{
+                        lineHeight: '1.4',
+                        maxHeight: rowHeight - 12,
+                        overflow: 'hidden',
+                        display: '-webkit-box',
+                        WebkitLineClamp: Math.floor((rowHeight - 12) / 16),
+                        WebkitBoxOrient: 'vertical'
+                    }}
+                >
+                    {value ? displayValue : (isNewRow ? 'Click to edit' : '')}
                 </span>
                 {isSaving && <Loader2 size={12} className="ml-1 animate-spin text-blue-500 flex-shrink-0" />}
                 {hasError && <AlertCircle size={12} className="ml-1 text-red-500 flex-shrink-0" />}
@@ -817,9 +990,7 @@ const BugSpreadsheet = () => {
     }
 
     return (
-
-        <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
-
+        <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col min-h-screen">
             {/* Spreadsheet */}
             <div className="flex-1 overflow-auto relative">
                 <div className="bg-white border border-gray-200 overflow-hidden">
@@ -916,6 +1087,73 @@ const BugSpreadsheet = () => {
                                 </div>
                             )}
                         </div>
+                    </div>
+                </div>
+            </div>
+
+            {/* Pagination */}
+            <div className="border-t border-gray-200 bg-white px-4 py-3 flex items-center justify-between sm:px-6">
+                <div className="flex flex-1 justify-between items-center sm:hidden">
+                    <button
+                        onClick={() => currentPage > 1 && fetchBugs(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-4 py-2 text-xs font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Previous
+                    </button>
+                    <div className="text-xs text-gray-700">
+                        Page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{totalPages}</span>
+                    </div>
+                    <button
+                        onClick={() => currentPage < totalPages && fetchBugs(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="relative inline-flex items-center px-4 py-2 text-xs font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        Next
+                    </button>
+                </div>
+                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                        <p className="text-xs text-gray-700">
+                            Showing <span className="font-medium">{(currentPage - 1) * 1000000 + 1}</span> to{' '}
+                            <span className="font-medium">{Math.min(currentPage * 1000000, totalBugs)}</span> of{' '}
+                            <span className="font-medium">{totalBugs}</span> results
+                        </p>
+                    </div>
+                    <div>
+                        <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                            <button
+                                onClick={() => currentPage > 1 && fetchBugs(currentPage - 1)}
+                                disabled={currentPage === 1}
+                                className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span className="sr-only">Previous</span>
+                                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+                            </button>
+                            <div className="relative inline-flex items-center px-4 py-2 text-xs font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">
+                                Page {currentPage} of {totalPages}
+                            </div>
+                            <button
+                                onClick={() => currentPage < totalPages && fetchBugs(currentPage + 1)}
+                                disabled={currentPage === totalPages}
+                                className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
+                            >
+                                <span className="sr-only">Next</span>
+                                <ChevronRight className="h-4 w-4" aria-hidden="true" />
+                            </button>
+                        </nav>
+                    </div>
+                </div>
+            </div>
+
+            {/* Test Type Info */}
+            <div className="border-t border-gray-200 bg-gray-50 px-4 py-2">
+                <div className="flex items-center justify-between">
+                    <div className="text-xs text-gray-600">
+                        <span className="font-medium">Test Type:</span> {testTypeId || 'Not selected'}
+                    </div>
+                    <div className="text-xs text-gray-500">
+                        Total Bugs: <span className="font-medium">{totalBugs}</span>
                     </div>
                 </div>
             </div>
