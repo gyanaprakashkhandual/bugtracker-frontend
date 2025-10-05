@@ -2,7 +2,7 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Image as ImageIcon, Save, Ban } from 'lucide-react';
-import { GoogleArrowDown } from '@/app/components/utils/Icon';
+import { useTestType } from '@/app/script/TestType.context';
 
 const BugSpreadsheet = () => {
     const [bugs, setBugs] = useState([]);
@@ -38,6 +38,9 @@ const BugSpreadsheet = () => {
     const dropdownButtonRefs = useRef({});
     const commentButtonRefs = useRef({});
     const fileInputRef = useRef(null);
+
+    const { selectedTestType } = useTestType();
+
 
     const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
     const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
@@ -1087,7 +1090,7 @@ const BugSpreadsheet = () => {
   <div className="flex flex-col sm:flex-row items-center gap-2 text-xs text-gray-700">
     <div>
       <span className="font-medium text-gray-600">Test Type:</span>{' '}
-      <span>{testTypeId || 'Not selected'}</span>
+      <span>{selectedTestType || 'Not selected'}</span>
     </div>
     <div className="hidden sm:block h-3 w-px bg-gray-300 mx-2" /> {/* Divider */}
     <div>
