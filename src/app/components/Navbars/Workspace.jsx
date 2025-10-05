@@ -25,7 +25,8 @@ import {
   Plus,
   CodeSquareIcon,
   ChevronDown,
-  MoreVertical
+  MoreVertical,
+  CodeSquare
 } from 'lucide-react';
 import { FiFilter, FiTrash2, FiSettings } from "react-icons/fi";
 import { GoogleArrowDown } from '../utils/Icon';
@@ -291,6 +292,13 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
         router.push(`/app/projects/${project?.slug}/trash`)
       },
       danger: true,
+    },
+    {
+      label: "Code Space",
+      icon: <CodeSquare size={16} />,
+      onClick: () => {
+        router.push(`/app/projects/${project?.slug}/code-space`)
+      },
     },
     {
       label: "Settings",
