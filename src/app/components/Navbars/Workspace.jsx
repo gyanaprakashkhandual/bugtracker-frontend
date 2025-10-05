@@ -28,11 +28,14 @@ import {
   MoreVertical,
   CodeSquare,
   GitBranch,
-  MoreVerticalIcon
+  MoreVerticalIcon,
+  Dock
 } from 'lucide-react';
 import { FiFilter, FiTrash2, FiSettings } from "react-icons/fi";
 import { GoogleArrowDown } from '../utils/Icon';
 import { GiBranchArrow } from 'react-icons/gi';
+import { SiChatbot } from 'react-icons/si';
+import { GoReport } from 'react-icons/go';
 
 // ============================================
 // STYLED DROPDOWN COMPONENT
@@ -453,6 +456,28 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                 className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-blue-50/50 hover:text-blue-600"
               >
                 <CodeSquare size={18} />
+              </motion.button>
+
+              {/* Chart Button */}
+              <motion.button
+                tooltip-data="Chat Bot"
+                tooltip-placement="bottom"
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push(`/app/projects/${project?.slug}/chat`)}
+                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-blue-50/50 hover:text-blue-600"
+              >
+                <SiChatbot size={18} />
+              </motion.button>
+
+              {/* Settings Button */}
+              <motion.button
+                tooltip-data="Report"
+                tooltip-placement="bottom"
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push(`/app/projects/${project?.slug}/reports`)}
+                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-blue-50/50 hover:text-blue-600"
+              >
+                <Dock size={18} />
               </motion.button>
 
               {/* Settings Button */}
