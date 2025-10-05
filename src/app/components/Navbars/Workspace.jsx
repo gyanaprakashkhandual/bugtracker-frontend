@@ -57,7 +57,7 @@ const StyledDropdown = ({ options, placeholder, value, onChange, size = "sm", cl
         whileHover={{ scale: 1.02 }}
         whileTap={{ scale: 0.98 }}
         onClick={() => setIsOpen(!isOpen)}
-        className="flex items-center justify-between w-full px-4 py-2 text-sm font-medium text-gray-700 transition-all duration-200 border rounded-lg bg-white/70 backdrop-blur-sm border-blue-200/50 hover:bg-blue-50/50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
+        className="flex items-center justify-between w-full px-3 py-1.5 text-xs font-medium text-gray-700 transition-all duration-200 border rounded-lg bg-white/70 backdrop-blur-sm border-blue-200/50 hover:bg-blue-50/50 hover:text-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-300/50"
       >
         <div className="flex items-center space-x-2">
           {selectedOption?.icon}
@@ -171,7 +171,7 @@ const ThreeDotsDropdown = ({ options }) => {
 // ============================================
 // MAIN NAVBAR COMPONENT
 // ============================================
-export default function Navbar() {
+export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
   const [isOpen, setIsOpen] = useState(false);
   const [searchFocus, setSearchFocus] = useState(false);
   const [selectedView, setSelectedView] = useState(null);
@@ -199,6 +199,8 @@ export default function Navbar() {
     setTestDataSidebarOpen(false);
     setFilterSidebarOpen(false);
   };
+
+  
 
   // Handle manual add selection with proper state management
   const handleManualAdd = (value) => {
@@ -251,23 +253,26 @@ export default function Navbar() {
     setTestTypeSidebarOpen(true);
   };
 
-  // Handle view change - close sidebars when changing view
-  const handleViewChange = (value) => {
-    closeAllSidebars();
-    setSelectedView(value);
-  };
+ // Handle view change - close sidebars when changing view
+const handleViewChange = (value) => {
+  closeAllSidebars();
+  setSelectedView(value);
+  onViewChange?.(value); // Add this line
+};
 
-  // Handle report change - close sidebars when changing report
-  const handleReportChange = (value) => {
-    closeAllSidebars();
-    setSelectedReport(value);
-  };
+// Handle report change - close sidebars when changing report
+const handleReportChange = (value) => {
+  closeAllSidebars();
+  setSelectedReport(value);
+  onReportChange?.(value); // Add this line
+};
 
-  // Handle data source change - close sidebars when changing data source
-  const handleDataChange = (value) => {
-    closeAllSidebars();
-    setSelectedData(value);
-  };
+// Handle data source change - close sidebars when changing data source
+const handleDataChange = (value) => {
+  closeAllSidebars();
+  setSelectedData(value);
+  onDataChange?.(value); // Add this line
+};
 
   // Three dots dropdown options
   const getOptions = () => [
