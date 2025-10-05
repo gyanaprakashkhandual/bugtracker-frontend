@@ -8,6 +8,7 @@ import TestCaseSidebar from '../Sidebars/TestCase';
 import BugSidebar from '../Sidebars/Bug';
 import TestDataSidebar from '../Sidebars/Data';
 import FilterSidebar from '../Sidebars/Filter';
+import { useRouter } from 'next/navigation';
 import {
   Menu,
   X,
@@ -116,8 +117,8 @@ const ThreeDotsDropdown = ({ options }) => {
   return (
     <div className="relative">
       <motion.button
-      tooltip-data="More Options"
-      tooltip-placement="bottom"
+        tooltip-data="More Options"
+        tooltip-placement="bottom"
         whileHover={{ scale: 1.05 }}
         whileTap={{ scale: 0.95 }}
         onClick={() => setIsOpen(!isOpen)}
@@ -186,7 +187,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
   const [testDataSidebarOpen, setTestDataSidebarOpen] = useState(false);
   const [filterSidebarOpen, setFilterSidebarOpen] = useState(false);
 
-  const { slug } = useParams(); // get slug from /project/[slug] route
+  const { slug } = useParams();
   const { project, loading, error } = useProject(slug);
 
   const toggleMenu = () => setIsOpen(!isOpen);
@@ -200,7 +201,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
     setFilterSidebarOpen(false);
   };
 
-  
+
 
   // Handle manual add selection with proper state management
   const handleManualAdd = (value) => {
@@ -253,26 +254,28 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
     setTestTypeSidebarOpen(true);
   };
 
- // Handle view change - close sidebars when changing view
-const handleViewChange = (value) => {
-  closeAllSidebars();
-  setSelectedView(value);
-  onViewChange?.(value); // Add this line
-};
+  // Handle view change - close sidebars when changing view
+  const handleViewChange = (value) => {
+    closeAllSidebars();
+    setSelectedView(value);
+    onViewChange?.(value); // Add this line
+  };
 
-// Handle report change - close sidebars when changing report
-const handleReportChange = (value) => {
-  closeAllSidebars();
-  setSelectedReport(value);
-  onReportChange?.(value); // Add this line
-};
+  // Handle report change - close sidebars when changing report
+  const handleReportChange = (value) => {
+    closeAllSidebars();
+    setSelectedReport(value);
+    onReportChange?.(value); // Add this line
+  };
 
-// Handle data source change - close sidebars when changing data source
-const handleDataChange = (value) => {
-  closeAllSidebars();
-  setSelectedData(value);
-  onDataChange?.(value); // Add this line
-};
+  // Handle data source change - close sidebars when changing data source
+  const handleDataChange = (value) => {
+    closeAllSidebars();
+    setSelectedData(value);
+    onDataChange?.(value); // Add this line
+  };
+
+  const router = useRouter();
 
   // Three dots dropdown options
   const getOptions = () => [
@@ -285,8 +288,7 @@ const handleDataChange = (value) => {
       label: "Trash",
       icon: <FiTrash2 size={16} />,
       onClick: () => {
-        closeAllSidebars();
-        console.log("Trash clicked");
+        router.push(`/app/projects/${project?.slug}/trash`)
       },
       danger: true,
     },
@@ -338,7 +340,7 @@ const handleDataChange = (value) => {
             <div className="flex items-center gap-3 flex-shrink-0">
               {/* Desktop Menu Icon */}
               <motion.button
-              tooltip-data="Open Test Types"
+                tooltip-data="Open Test Types"
                 tooltip-placement="right"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
