@@ -2,6 +2,7 @@
 import { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { CheckCircle, AlertTriangle, XCircle, Info } from "lucide-react";
+import * as Tone from "tone";
 
 const alertStyles = {
     success: {
@@ -67,6 +68,58 @@ const Particle = ({ x, y, color, delay }) => {
     );
 };
 
+// Sound effect function using Tone.js
+const playAlertSound = async (type) => {
+    await Tone.start();
+
+    const synth = new Tone.Synth({
+        oscillator: { type: "sine" },
+        envelope: {
+            attack: 0.005,
+            decay: 0.1,
+            sustain: 0.3,
+            release: 0.3,
+        },
+    }).toDestination();
+
+    switch (type) {
+        case "success":
+            // Upward cheerful melody
+            synth.triggerAttackRelease("C5", "0.1", Tone.now());
+            synth.triggerAttackRelease("E5", "0.1", Tone.now() + 0.1);
+            synth.triggerAttackRelease("G5", "0.2", Tone.now() + 0.2);
+            break;
+        case "error":
+            // Descending alert tone
+            const errorSynth = new Tone.Synth({
+                oscillator: { type: "sawtooth" },
+                envelope: { attack: 0.001, decay: 0.2, sustain: 0, release: 0.2 },
+            }).toDestination();
+            errorSynth.triggerAttackRelease("G4", "0.15", Tone.now());
+            errorSynth.triggerAttackRelease("D4", "0.2", Tone.now() + 0.15);
+            setTimeout(() => errorSynth.dispose(), 500);
+            break;
+        case "warning":
+            // Double beep
+            const warnSynth = new Tone.Synth({
+                oscillator: { type: "square" },
+                envelope: { attack: 0.005, decay: 0.1, sustain: 0.2, release: 0.1 },
+            }).toDestination();
+            warnSynth.triggerAttackRelease("F4", "0.1", Tone.now());
+            warnSynth.triggerAttackRelease("F4", "0.1", Tone.now() + 0.15);
+            setTimeout(() => warnSynth.dispose(), 500);
+            break;
+        case "info":
+            // Single soft notification
+            synth.triggerAttackRelease("A4", "0.15", Tone.now());
+            break;
+        default:
+            synth.triggerAttackRelease("C4", "0.1", Tone.now());
+    }
+
+    setTimeout(() => synth.dispose(), 1000);
+};
+
 export default function Alert({
     type = "info",
     message = "This is a sample alert message!",
@@ -97,6 +150,9 @@ export default function Alert({
     };
 
     useEffect(() => {
+        // Play sound when alert appears
+        playAlertSound(type);
+
         const timer = setTimeout(() => {
             setIsDisintegrating(true);
             createParticles();
@@ -105,7 +161,7 @@ export default function Alert({
         }, 2000);
 
         return () => clearTimeout(timer);
-    }, []);
+    }, [type]);
 
     return (
         <AnimatePresence>
