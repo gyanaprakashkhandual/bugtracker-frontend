@@ -26,10 +26,13 @@ import {
   CodeSquareIcon,
   ChevronDown,
   MoreVertical,
-  CodeSquare
+  CodeSquare,
+  GitBranch,
+  MoreVerticalIcon
 } from 'lucide-react';
 import { FiFilter, FiTrash2, FiSettings } from "react-icons/fi";
 import { GoogleArrowDown } from '../utils/Icon';
+import { GiBranchArrow } from 'react-icons/gi';
 
 // ============================================
 // STYLED DROPDOWN COMPONENT
@@ -125,7 +128,7 @@ const ThreeDotsDropdown = ({ options }) => {
         onClick={() => setIsOpen(!isOpen)}
         className="p-2 transition-colors duration-200 rounded-lg hover:bg-blue-50/50"
       >
-        <MoreVertical />
+        <MoreVerticalIcon />
       </motion.button>
 
       <AnimatePresence>
