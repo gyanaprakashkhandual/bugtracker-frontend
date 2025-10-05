@@ -2,7 +2,7 @@
 
 import { useEffect, useRef, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { useContent } from "@/app/script/Context.context";
+import { useContent } from "@/app/script/Content.context";
 
 const Context = () => {
   const { content, hideContent, setTooltipHover } = useContent();

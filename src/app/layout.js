@@ -6,7 +6,7 @@ import { ConfirmProvider } from "./script/Confirm.context";
 import { LoaderProvider } from "./script/Loader.context";
 import { TestTypeProvider } from "./script/TestType.context";
 import { TooltipProvider } from "./script/Tooltip.context";
-import { ContentProvider } from "./script/Context.context";
+import { ContentProvider } from "./script/Content.context";
 import Tooltip from "./components/utils/Tooltip";
 import Context from "./components/utils/Content";
 
