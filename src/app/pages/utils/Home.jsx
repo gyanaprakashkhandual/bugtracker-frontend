@@ -535,7 +535,7 @@ export default function CaffetestLanding() {
             >
               <h4 className="text-white font-medium text-sm mb-4">Company</h4>
               <ul className="space-y-2">
-                <li><a onClick={() => router.push("/about")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">About Us</a></li>
+                <li><a onClick={() => window.open('https://www.neckly.com')} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">About Us</a></li>
                 <li><a onClick={() => router.push("/privacy")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Privacy</a></li>
                 <li><a onClick={() => router.push("/terms-and-conditions")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Terms & Conditions</a></li>
                 <li><a onClick={() => router.push("/careers")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Careers</a></li>
