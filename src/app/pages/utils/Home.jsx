@@ -401,7 +401,7 @@ export default function CaffetestLanding() {
                   <p className="text-gray-600 leading-relaxed">{step.description}</p>
                 </div>
 
-                
+
               </motion.div>
             ))}
           </div>
@@ -434,135 +434,143 @@ export default function CaffetestLanding() {
         </motion.div>
       </section>
 
-      {/* Footer */}
       <footer className="py-12 px-4 sm:px-6 lg:px-8 bg-gray-900 relative overflow-hidden">
-  {/* SVG Background Structure */}
-  <div className="absolute inset-0 opacity-10">
-    <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
-      <defs>
-        <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
-          <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgb(59, 130, 246)" strokeWidth="0.5"/>
-        </pattern>
-      </defs>
-      <rect width="100%" height="100%" fill="url(#grid)" />
-      
-      {/* Curved flowing lines */}
-      <path 
-        d="M -50 50 Q 200 100, 400 50 T 800 50 T 1200 50 T 1600 50" 
-        fill="none" 
-        stroke="rgb(59, 130, 246)" 
-        strokeWidth="2"
-        opacity="0.3"
-      />
-      <path 
-        d="M -50 150 Q 250 200, 500 150 T 1000 150 T 1500 150" 
-        fill="none" 
-        stroke="rgb(96, 165, 250)" 
-        strokeWidth="1.5"
-        opacity="0.2"
-      />
-      <path 
-        d="M 0 250 Q 300 200, 600 250 T 1200 250 T 1800 250" 
-        fill="none" 
-        stroke="rgb(147, 197, 253)" 
-        strokeWidth="1"
-        opacity="0.15"
-      />
-      
-      {/* Circuit-like connections */}
-      <circle cx="15%" cy="30%" r="4" fill="none" stroke="rgb(59, 130, 246)" strokeWidth="1.5" opacity="0.4"/>
-      <circle cx="45%" cy="70%" r="3" fill="none" stroke="rgb(96, 165, 250)" strokeWidth="1.5" opacity="0.3"/>
-      <circle cx="75%" cy="40%" r="5" fill="none" stroke="rgb(147, 197, 253)" strokeWidth="1.5" opacity="0.4"/>
-      <circle cx="85%" cy="80%" r="3" fill="none" stroke="rgb(59, 130, 246)" strokeWidth="1.5" opacity="0.3"/>
-      
-      <line x1="15%" y1="30%" x2="45%" y2="70%" stroke="rgb(59, 130, 246)" strokeWidth="0.5" opacity="0.2" strokeDasharray="5,5"/>
-      <line x1="45%" y1="70%" x2="75%" y2="40%" stroke="rgb(96, 165, 250)" strokeWidth="0.5" opacity="0.2" strokeDasharray="5,5"/>
-      <line x1="75%" y1="40%" x2="85%" y2="80%" stroke="rgb(147, 197, 253)" strokeWidth="0.5" opacity="0.2" strokeDasharray="5,5"/>
-    </svg>
-  </div>
+        {/* SVG Background Structure */}
+        <div className="absolute inset-0 opacity-10">
+          <svg className="w-full h-full" xmlns="http://www.w3.org/2000/svg">
+            <defs>
+              <pattern id="grid" width="40" height="40" patternUnits="userSpaceOnUse">
+                <path d="M 40 0 L 0 0 0 40" fill="none" stroke="rgb(59, 130, 246)" strokeWidth="0.5" />
+              </pattern>
+            </defs>
+            <rect width="100%" height="100%" fill="url(#grid)" />
 
-  <div className="w-full max-w-6xl mx-auto relative z-10">
-    <div className="grid lg:grid-cols-4 gap-8 mb-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        whileInView={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5 }}
-        viewport={{ once: true }}
-      >
-        <div className="flex items-center space-x-3 mb-4">
-          <FaCoffee className="w-8 h-8 text-blue-900" />
-          <span className="text-lg font-semibold text-white">Caffetest</span>
+            {/* Curved flowing lines */}
+            <path
+              d="M -50 50 Q 200 100, 400 50 T 800 50 T 1200 50 T 1600 50"
+              fill="none"
+              stroke="rgb(59, 130, 246)"
+              strokeWidth="2"
+              opacity="0.3"
+            />
+            <path
+              d="M -50 150 Q 250 200, 500 150 T 1000 150 T 1500 150"
+              fill="none"
+              stroke="rgb(96, 165, 250)"
+              strokeWidth="1.5"
+              opacity="0.2"
+            />
+            <path
+              d="M 0 250 Q 300 200, 600 250 T 1200 250 T 1800 250"
+              fill="none"
+              stroke="rgb(147, 197, 253)"
+              strokeWidth="1"
+              opacity="0.15"
+            />
+
+            {/* Circuit-like connections */}
+            <circle cx="15%" cy="30%" r="4" fill="none" stroke="rgb(59, 130, 246)" strokeWidth="1.5" opacity="0.4" />
+            <circle cx="45%" cy="70%" r="3" fill="none" stroke="rgb(96, 165, 250)" strokeWidth="1.5" opacity="0.3" />
+            <circle cx="75%" cy="40%" r="5" fill="none" stroke="rgb(147, 197, 253)" strokeWidth="1.5" opacity="0.4" />
+            <circle cx="85%" cy="80%" r="3" fill="none" stroke="rgb(59, 130, 246)" strokeWidth="1.5" opacity="0.3" />
+
+            <line x1="15%" y1="30%" x2="45%" y2="70%" stroke="rgb(59, 130, 246)" strokeWidth="0.5" opacity="0.2" strokeDasharray="5,5" />
+            <line x1="45%" y1="70%" x2="75%" y2="40%" stroke="rgb(96, 165, 250)" strokeWidth="0.5" opacity="0.2" strokeDasharray="5,5" />
+            <line x1="75%" y1="40%" x2="85%" y2="80%" stroke="rgb(147, 197, 253)" strokeWidth="0.5" opacity="0.2" strokeDasharray="5,5" />
+          </svg>
         </div>
-        <p className="text-gray-400 text-sm leading-relaxed mb-4">
-          AI-powered automation testing for modern development teams.
-          Streamline your workflow with intelligent test generation and analytics.
-        </p>
-        <div className="flex space-x-3">
-          {[FaTwitter, FaGithub, FaLinkedin].map((Icon, index) => (
-            <motion.a
-              key={index}
-              href="#"
-              className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-700 hover:text-white transition-all duration-200"
-              whileHover={{ scale: 1.1 }}
-              whileTap={{ scale: 0.95 }}
+
+        <div className="w-full max-w-6xl mx-auto relative z-10">
+          <div className="grid lg:grid-cols-4 gap-8 mb-8">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              viewport={{ once: true }}
             >
-              <Icon className="w-4 h-4" />
-            </motion.a>
-          ))}
+              <div className="flex items-center space-x-3 mb-4">
+                <FaCoffee className="w-8 h-8 text-blue-900" />
+                <span className="text-lg font-semibold text-white">Caffetest</span>
+              </div>
+              <p className="text-gray-400 text-sm leading-relaxed mb-4">
+                AI-powered automation testing for modern development teams.
+                Streamline your workflow with intelligent test generation and analytics.
+              </p>
+              <div className="flex space-x-3">
+                {[FaTwitter, FaGithub, FaLinkedin].map((Icon, index) => (
+                  <motion.a
+                    key={index}
+                    href="https://github.com/GyanaprakashKhandual"
+                    className="w-8 h-8 bg-gray-800 rounded-lg flex items-center justify-center text-gray-400 hover:bg-gray-700 hover:text-white transition-all duration-200"
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                  >
+                    <Icon className="w-4 h-4" />
+                  </motion.a>
+                ))}
+              </div>
+            </motion.div>
+
+            {/* Footer link columns */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+              viewport={{ once: true }}
+            >
+              <h4 className="text-white font-medium text-sm mb-4">Visit</h4>
+              <ul className="space-y-2">
+                <li><a onClick={() => router.push("/features")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Features</a></li>
+                <li><a onClick={() => router.push("/report-bug")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Report Bug</a></li>
+                <li><a onClick={() => router.push("/pricing")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Pricing</a></li>
+                <li><a onClick={() => router.push("/documentation")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Documentation</a></li>
+              </ul>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.6 }}
+              viewport={{ once: true }}
+            >
+              <h4 className="text-white font-medium text-sm mb-4">Company</h4>
+              <ul className="space-y-2">
+                <li><a onClick={() => router.push("/about")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">About Us</a></li>
+                <li><a onClick={() => router.push("/privacy")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Privacy</a></li>
+                <li><a onClick={() => router.push("/terms-and-conditions")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Terms & Conditions</a></li>
+                <li><a onClick={() => router.push("/careers")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Careers</a></li>
+              </ul>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.7 }}
+              viewport={{ once: true }}
+            >
+              <h4 className="text-white font-medium text-sm mb-4">Support</h4>
+              <ul className="space-y-2">
+                <li><a onClick={() => router.push("/help-center")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Help Center</a></li>
+                <li><a onClick={() => router.push("/feedback")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Feedback</a></li>
+                <li><a onClick={() => router.push("/community")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Community</a></li>
+                <li><a onClick={() => router.push("/status")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Status</a></li>
+              </ul>
+            </motion.div>
+          </div>
+
+          <motion.div
+            className="border-t border-gray-800 pt-8 text-center"
+            initial={{ opacity: 0 }}
+            whileInView={{ opacity: 1 }}
+            transition={{ duration: 0.5 }}
+            viewport={{ once: true }}
+          >
+            <p className="text-gray-400 text-sm">
+              © 2025 Caffetest. All rights reserved.
+            </p>
+          </motion.div>
         </div>
-      </motion.div>
-
-      {[
-        {
-          title: "Visit",
-          links: ["Features", "Integrations", "Pricing", "Documentation"]
-        },
-        {
-          title: "Company",
-          links: ["About Us", "Careers", "Blog", "Contact"]
-        },
-        {
-          title: "Support",
-          links: ["Help Center", "Feedback", "Community", "Status"]
-        }
-      ].map((column, index) => (
-        <motion.div
-          key={index}
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.5, delay: index * 0.1 }}
-          viewport={{ once: true }}
-        >
-          <h4 className="text-white font-medium text-sm mb-4">{column.title}</h4>
-          <ul className="space-y-2">
-            {column.links.map((link, linkIndex) => (
-              <li key={linkIndex}>
-                <a
-                  href="#"
-                  className="text-gray-400 hover:text-white transition-colors duration-200 text-sm"
-                >
-                  {link}
-                </a>
-              </li>
-            ))}
-          </ul>
-        </motion.div>
-      ))}
-    </div>
-
-    <motion.div
-      className="border-t border-gray-800 pt-8 text-center"
-      initial={{ opacity: 0 }}
-      whileInView={{ opacity: 1 }}
-      transition={{ duration: 0.5 }}
-      viewport={{ once: true }}
-    >
-      <p className="text-gray-400 text-sm">
-        © 2025 Caffetest. All rights reserved.
-      </p>
-    </motion.div>
-  </div>
-</footer>
+      </footer>
     </div>
   )
 }
