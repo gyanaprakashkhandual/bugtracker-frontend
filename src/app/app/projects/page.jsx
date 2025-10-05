@@ -1,11 +1,37 @@
-// app/projects/[id]/page.jsx
 import { cookies } from 'next/headers';
 
 export const dynamic = "force-dynamic";
 
-async function getProjectById(id) {
-  console.log("Fetching project with ID:", id);
+export async function generateMetadata({ params }) {
+  const { id } = params;
+  const cookieStore = cookies();
+  const token = cookieStore.get('token')?.value;
 
+  try {
+    const res = await fetch(`http://localhost:5000/api/v1/project/${id}`, {
+      cache: "no-store",
+      headers: {
+        'Authorization': token ? `Bearer ${token}` : '',
+        'Content-Type': 'application/json',
+      },
+    });
+
+    if (res.ok) {
+      const project = await res.json();
+      return {
+        title: `${project.projectName} - Caffetest Dashboard`,
+      };
+    }
+  } catch (error) {
+    console.error("Failed to fetch metadata:", error);
+  }
+
+  return {
+    title: 'Project - Caffetest Dashboard',
+  };
+}
+
+async function getProjectById(id) {
   const cookieStore = cookies();
   const token = cookieStore.get('token')?.value;
 
@@ -18,12 +44,9 @@ async function getProjectById(id) {
   });
 
   if (!res.ok) {
-    console.error("API failed:", res.status, res.statusText);
-
     if (res.status === 401) {
       throw new Error("Unauthorized: Please log in");
     }
-
     throw new Error("Failed to fetch project");
   }
 
@@ -31,7 +54,7 @@ async function getProjectById(id) {
 }
 
 export default async function ProjectPage({ params }) {
-  const { id } = params; // ✅ no await
+  const { id } = params;
 
   try {
     const project = await getProjectById(id);
