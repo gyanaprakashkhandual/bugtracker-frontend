@@ -48,15 +48,15 @@ const BugSpreadsheet = () => {
     const columns = [
         { key: 'serialNumber', label: 'S.No', width: 84, editable: false, color: 'bg-purple-50', sticky: true },
         { key: 'bugType', label: 'Type', width: 140, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'], color: 'bg-blue-50', sticky: true },
-        { key: 'moduleName', label: 'Module', width: 160, editable: true, color: 'bg-green-50', sticky: true },
-        { key: 'bugDesc', label: 'Description', width: 285, editable: true, color: 'bg-yellow-50', sticky: true },
-        { key: 'bugRequirement', label: 'Requirement', width: 280, editable: true, color: 'bg-pink-50' },
+        { key: 'moduleName', label: 'Module', width: 120, editable: true, color: 'bg-green-50', sticky: true },
+        { key: 'bugDesc', label: 'Description', width: 300, editable: true, color: 'bg-yellow-50', sticky: true },
+        { key: 'bugRequirement', label: 'Requirement', width: 300, editable: true, color: 'bg-pink-50' },
         { key: 'refLink', label: 'Link', width: 70, editable: true, color: 'bg-indigo-50' },
         { key: 'image', label: 'Image', width: 70, editable: true, color: 'bg-cyan-50' },
         { key: 'priority', label: 'Priority', width: 120, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
         { key: 'severity', label: 'Severity', width: 120, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50' },
         { key: 'status', label: 'Status', width: 140, editable: true, type: 'select', options: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'], color: 'bg-teal-50' },
-        { key: 'actions', label: 'Actions', width: 130, editable: false, color: 'bg-gray-100' }
+        { key: 'actions', label: 'Act', width: 65, editable: false, color: 'bg-gray-100' }
     ];
 
     useEffect(() => {
@@ -93,7 +93,7 @@ const BugSpreadsheet = () => {
         try {
             setLoading(true);
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs?page=${page}&limit=1000000`,
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs?page=${page}&limit=11`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -555,9 +555,6 @@ const BugSpreadsheet = () => {
                     <span className={`px-2 py-1 rounded text-xs font-medium border w-30 ${badgeClass}`}>
                         {value || 'Select'}
                     </span>
-                    <div className='bg-gray-50 p-0.5 rounded border border-gray-200'>
-                        <GoogleArrowDown size={12} className={`text-gray-500 transition-transform ml-0.5 group-hover:text-gray-700 ${isActive ? 'rotate-180' : ''}`} />
-                    </div>
                 </button>
 
                 <AnimatePresence>
@@ -883,14 +880,6 @@ const BugSpreadsheet = () => {
                     >
                         <Archive size={14} />
                     </button>
-                    <button
-                        tooltip-data="Delete"
-                        tooltip-placement="top"
-                        onClick={() => deleteBugPermanently(bug._id)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                    >
-                        <Trash2 size={14} />
-                    </button>
                     {renderCommentModal(bug._id, commentButtonRefs.current[bug._id])}
                 </div>
             );
@@ -990,7 +979,7 @@ const BugSpreadsheet = () => {
     }
 
     return (
-        <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col min-h-screen">
+        <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
             {/* Spreadsheet */}
             <div className="flex-1 overflow-auto relative">
                 <div className="bg-white border border-gray-200 overflow-hidden">
@@ -1091,72 +1080,51 @@ const BugSpreadsheet = () => {
                 </div>
             </div>
 
-            {/* Pagination */}
-            <div className="border-t border-gray-200 bg-white px-4 py-3 flex items-center justify-between sm:px-6">
-                <div className="flex flex-1 justify-between items-center sm:hidden">
-                    <button
-                        onClick={() => currentPage > 1 && fetchBugs(currentPage - 1)}
-                        disabled={currentPage === 1}
-                        className="relative inline-flex items-center px-4 py-2 text-xs font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        Previous
-                    </button>
-                    <div className="text-xs text-gray-700">
-                        Page <span className="font-medium">{currentPage}</span> of <span className="font-medium">{totalPages}</span>
-                    </div>
-                    <button
-                        onClick={() => currentPage < totalPages && fetchBugs(currentPage + 1)}
-                        disabled={currentPage === totalPages}
-                        className="relative inline-flex items-center px-4 py-2 text-xs font-medium rounded-md border border-gray-300 bg-white text-gray-700 hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                        Next
-                    </button>
-                </div>
-                <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
-                    <div>
-                        <p className="text-xs text-gray-700">
-                            Showing <span className="font-medium">{(currentPage - 1) * 1000000 + 1}</span> to{' '}
-                            <span className="font-medium">{Math.min(currentPage * 1000000, totalBugs)}</span> of{' '}
-                            <span className="font-medium">{totalBugs}</span> results
-                        </p>
-                    </div>
-                    <div>
-                        <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-                            <button
-                                onClick={() => currentPage > 1 && fetchBugs(currentPage - 1)}
-                                disabled={currentPage === 1}
-                                className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <span className="sr-only">Previous</span>
-                                <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-                            </button>
-                            <div className="relative inline-flex items-center px-4 py-2 text-xs font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">
-                                Page {currentPage} of {totalPages}
-                            </div>
-                            <button
-                                onClick={() => currentPage < totalPages && fetchBugs(currentPage + 1)}
-                                disabled={currentPage === totalPages}
-                                className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 focus:outline-offset-0 disabled:opacity-50 disabled:cursor-not-allowed"
-                            >
-                                <span className="sr-only">Next</span>
-                                <ChevronRight className="h-4 w-4" aria-hidden="true" />
-                            </button>
-                        </nav>
-                    </div>
-                </div>
-            </div>
+            {/* Unified Pagination + Info Bar */}
+<div className="border-t border-gray-200 bg-white px-4 py-1 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 sm:px-6">
+  
+  {/* Left Side: Info */}
+  <div className="flex flex-col sm:flex-row items-center gap-2 text-xs text-gray-700">
+    <div>
+      <span className="font-medium text-gray-600">Test Type:</span>{' '}
+      <span>{testTypeId || 'Not selected'}</span>
+    </div>
+    <div className="hidden sm:block h-3 w-px bg-gray-300 mx-2" /> {/* Divider */}
+    <div>
+      Showing <span className="font-medium">{(currentPage - 1) * 1000000 + 1}</span> to{' '}
+      <span className="font-medium">{Math.min(currentPage * 1000000, totalBugs)}</span> of{' '}
+      <span className="font-medium">{totalBugs}</span> results
+    </div>
+    <div className="hidden sm:block h-3 w-px bg-gray-300 mx-2" /> {/* Divider */}
+    <div>
+      Total Bugs: <span className="font-medium">{totalBugs}</span>
+    </div>
+  </div>
 
-            {/* Test Type Info */}
-            <div className="border-t border-gray-200 bg-gray-50 px-4 py-2">
-                <div className="flex items-center justify-between">
-                    <div className="text-xs text-gray-600">
-                        <span className="font-medium">Test Type:</span> {testTypeId || 'Not selected'}
-                    </div>
-                    <div className="text-xs text-gray-500">
-                        Total Bugs: <span className="font-medium">{totalBugs}</span>
-                    </div>
-                </div>
-            </div>
+  {/* Right Side: Pagination Buttons */}
+  <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+    <button
+      onClick={() => currentPage > 1 && fetchBugs(currentPage - 1)}
+      disabled={currentPage === 1}
+      className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <span className="sr-only">Previous</span>
+      <ChevronLeft className="h-4 w-4" aria-hidden="true" />
+    </button>
+    <div className="relative inline-flex items-center px-4 py-2 text-xs font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">
+      Page {currentPage} of {totalPages}
+    </div>
+    <button
+      onClick={() => currentPage < totalPages && fetchBugs(currentPage + 1)}
+      disabled={currentPage === totalPages}
+      className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed"
+    >
+      <span className="sr-only">Next</span>
+      <ChevronRight className="h-4 w-4" aria-hidden="true" />
+    </button>
+  </nav>
+
+</div>
 
             {/* Resize overlay */}
             {resizing && (
