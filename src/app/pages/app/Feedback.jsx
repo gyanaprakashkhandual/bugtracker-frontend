@@ -505,7 +505,7 @@ const FeedbackPage = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 py-6 hide-scrollbar">
             <div>
-                <FeedbackHeader/>
+                <FeedbackHeader />
             </div>
             <div className="max-w-full mx-auto p-2">
                 {/* Header */}
@@ -515,11 +515,11 @@ const FeedbackPage = () => {
                     className="mb-6"
                 >
                     <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-3">
-                        
-                            <h1 className="text-slate-900 font-bold mt-0.5">
-                                {feedbacks.length} Feedback{feedbacks.length !== 1 ? 's' : ''}
-                            </h1>
-                        
+
+                        <h1 className="text-slate-900 font-bold mt-0.5">
+                            {feedbacks.length} Feedback{feedbacks.length !== 1 ? 's' : ''}
+                        </h1>
+
                         <motion.button
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
@@ -759,8 +759,8 @@ const FeedbackPage = () => {
                                         >
                                             <FiHeart
                                                 className={`w-4 h-4 transition-colors ${feedback.isLiked
-                                                        ? 'fill-red-500 text-red-500'
-                                                        : 'text-slate-400 hover:text-red-500'
+                                                    ? 'fill-red-500 text-red-500'
+                                                    : 'text-slate-400 hover:text-red-500'
                                                     }`}
                                             />
                                             <span className={feedback.isLiked ? 'text-red-500' : 'text-slate-600'}>
@@ -785,15 +785,15 @@ const FeedbackPage = () => {
                                             {formatDate(feedback.createdAt)}
                                         </div>
                                         <motion.button
-                                        tooltip-data="See Comments"
-                                        tooltip-placement="top"
+                                            tooltip-data="See Comments"
+                                            tooltip-placement="top"
                                             whileTap={{ scale: 0.9 }}
                                             onClick={() => toggleCardExpansion(feedback._id)}
                                             className="p-1 hover:bg-slate-100 rounded transition-colors"
                                         >
                                             {expandedCards[feedback._id] ? (
-                                                
-                                                <FiChevronUp  className="w-4 h-4 text-slate-500" />
+
+                                                <FiChevronUp className="w-4 h-4 text-slate-500" />
                                             ) : (
                                                 <FiChevronDown className="w-4 h-4 text-slate-500" />
                                             )}
