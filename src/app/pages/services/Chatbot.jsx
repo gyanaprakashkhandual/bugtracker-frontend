@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Search, Plus, Paperclip, Mic, StopCircle } from 'lucide-react'
+import { Send, Search, Plus, Paperclip, Mic, StopCircle, CheckCircle, AlertCircle, Info } from 'lucide-react'
 
 const commands = [
     '@add-test-case',
@@ -25,6 +25,14 @@ const commands = [
     '@get-test-data'
 ]
 
+// API Configuration
+const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1/chat'
+
+// Helper to get auth token
+const getAuthToken = () => {
+    return localStorage.getItem('authToken') || ''
+}
+
 // Helper to render message content with command highlighting
 const renderMessageContent = (content) => {
     const parts = content.split(/(@[\w-]+)/g)
@@ -40,13 +48,64 @@ const renderMessageContent = (content) => {
     })
 }
 
+// Action result component
+const ActionResult = ({ result }) => {
+    if (!result) return null
+
+    const getIcon = () => {
+        switch (result.status) {
+            case 'success':
+                return <CheckCircle className="w-5 h-5 text-green-600" />
+            case 'error':
+                return <AlertCircle className="w-5 h-5 text-red-600" />
+            case 'need_info':
+                return <Info className="w-5 h-5 text-blue-600" />
+            default:
+                return <Info className="w-5 h-5 text-gray-600" />
+        }
+    }
+
+    const getBgColor = () => {
+        switch (result.status) {
+            case 'success':
+                return 'bg-green-50 border-green-200'
+            case 'error':
+                return 'bg-red-50 border-red-200'
+            case 'need_info':
+                return 'bg-blue-50 border-blue-200'
+            default:
+                return 'bg-gray-50 border-gray-200'
+        }
+    }
+
+    return (
+        <motion.div
+            initial={{ opacity: 0, y: 10 }}
+            animate={{ opacity: 1, y: 0 }}
+            className={`mt-3 p-3 rounded-lg border ${getBgColor()}`}
+        >
+            <div className="flex items-start gap-2">
+                {getIcon()}
+                <div className="flex-1">
+                    <p className="text-sm font-medium text-gray-800">{result.message}</p>
+                    {result.data && (
+                        <pre className="mt-2 text-xs bg-white p-2 rounded border overflow-x-auto">
+                            {JSON.stringify(result.data, null, 2)}
+                        </pre>
+                    )}
+                </div>
+            </div>
+        </motion.div>
+    )
+}
+
 export default function LumenChat() {
     const [messages, setMessages] = useState([
         {
             id: 1,
             type: 'ai',
-            content: 'Good Morning, Julie!',
-            subtitle: 'Your money story today starts with Lumen — clear, simple, and made for you.',
+            content: 'Good Morning! 👋',
+            subtitle: 'I\'m Lumen, your QA testing assistant. I can help you create bugs, projects, test cases, and more using natural language. Try using commands like @add-bug or @add-project!',
             timestamp: new Date()
         }
     ])
@@ -59,6 +118,8 @@ export default function LumenChat() {
     const [selectedCommandIndex, setSelectedCommandIndex] = useState(0)
     const [sidebarSearch, setSidebarSearch] = useState('')
     const [highlightedCommands, setHighlightedCommands] = useState(new Set())
+    const [chatHistory, setChatHistory] = useState([])
+    const [currentChatId, setCurrentChatId] = useState(null)
     const inputRef = useRef(null)
     const messagesEndRef = useRef(null)
     const dropdownRef = useRef(null)
@@ -93,23 +154,6 @@ export default function LumenChat() {
         }
     }, [input])
 
-    useEffect(() => {
-        // Apply styling to textarea content
-        if (inputRef.current) {
-            const parts = input.split(/(@[\w-]+)/g)
-            let hasValidCommand = false
-            parts.forEach(part => {
-                if (commands.includes(part)) {
-                    hasValidCommand = true
-                }
-            })
-
-            if (hasValidCommand) {
-                inputRef.current.style.fontWeight = '400'
-            }
-        }
-    }, [input])
-
     const triggerCommandHighlight = (command) => {
         setHighlightedCommands(prev => new Set([...prev, command]))
         setTimeout(() => {
@@ -128,7 +172,6 @@ export default function LumenChat() {
         setInput(value)
         setCursorPosition(curPos)
 
-        // Check if a valid command was just completed
         const prevParts = prevInput.split(/(@[\w-]*)/g).filter(p => p.startsWith('@'))
         const currentParts = value.split(/(@[\w-]*)/g).filter(p => p.startsWith('@'))
 
@@ -177,8 +220,6 @@ export default function LumenChat() {
         setDropdownSearch('')
         setSelectedCommandIndex(0)
         inputRef.current?.focus()
-
-        // Trigger highlight after command selection
         triggerCommandHighlight(command)
     }
 
@@ -205,7 +246,34 @@ export default function LumenChat() {
         }
     }
 
-    const handleSend = () => {
+    // API call to send message to backend
+    const sendMessageToAPI = async (message) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/chat`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${getAuthToken()}`
+                },
+                body: JSON.stringify({
+                    message: message,
+                    conversationId: currentChatId
+                })
+            })
+
+            if (!response.ok) {
+                throw new Error(`API error: ${response.status}`)
+            }
+
+            const data = await response.json()
+            return data
+        } catch (error) {
+            console.error('Error sending message:', error)
+            throw error
+        }
+    }
+
+    const handleSend = async () => {
         if (!input.trim()) return
 
         const userMessage = {
@@ -216,31 +284,79 @@ export default function LumenChat() {
         }
 
         setMessages(prev => [...prev, userMessage])
+        const currentInput = input
         setInput('')
         setHighlightedCommands(new Set())
         setIsTyping(true)
 
-        setTimeout(() => {
+        try {
+            // Call the API
+            const response = await sendMessageToAPI(currentInput)
+
             const aiMessage = {
                 id: messages.length + 2,
                 type: 'ai',
-                content: 'I can help you with that! I can analyze your spending patterns, create budgets, and provide financial insights tailored to your goals.',
-                timestamp: new Date()
+                content: response.message,
+                timestamp: new Date(),
+                command: response.command,
+                actionResult: response.actionResult
             }
+
             setMessages(prev => [...prev, aiMessage])
+        } catch (error) {
+            const errorMessage = {
+                id: messages.length + 2,
+                type: 'ai',
+                content: 'Sorry, I encountered an error processing your request. Please make sure you\'re logged in and try again.',
+                timestamp: new Date(),
+                actionResult: {
+                    status: 'error',
+                    message: error.message
+                }
+            }
+            setMessages(prev => [...prev, errorMessage])
+        } finally {
             setIsTyping(false)
-        }, 1500)
+        }
+    }
+
+    const handleNewChat = async () => {
+        try {
+            // Clear conversation history on backend
+            await fetch(`${API_BASE_URL}/chat/clear`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                }
+            })
+
+            // Reset local state
+            setMessages([
+                {
+                    id: 1,
+                    type: 'ai',
+                    content: 'Good Morning! 👋',
+                    subtitle: 'I\'m Lumen, your QA testing assistant. How can I help you today?',
+                    timestamp: new Date()
+                }
+            ])
+            setCurrentChatId(null)
+        } catch (error) {
+            console.error('Error starting new chat:', error)
+        }
     }
 
     const handleFileUpload = (e) => {
         const file = e.target.files[0]
         if (file) {
             console.log('File uploaded:', file.name)
+            // Implement file upload logic here
         }
     }
 
     const toggleRecording = () => {
         setIsRecording(!isRecording)
+        // Implement voice recording logic here
     }
 
     const renderInputContent = () => {
@@ -270,7 +386,6 @@ export default function LumenChat() {
                         </span>
                     )
                 } else {
-                    // Partial match or incomplete command - show as plain text
                     return <span key={index} className="text-gray-800">{part}</span>
                 }
             }
@@ -283,7 +398,10 @@ export default function LumenChat() {
             {/* Sidebar */}
             <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col">
                 <div className="p-4 border-b border-gray-200 space-y-3">
-                    <button className="w-full flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700">
+                    <button 
+                        onClick={handleNewChat}
+                        className="w-full flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+                    >
                         <Plus className="w-4 h-4" />
                         New Chat
                     </button>
@@ -333,6 +451,9 @@ export default function LumenChat() {
                                                 </div>
                                                 {message.subtitle && (
                                                     <p className="text-gray-500 text-sm mt-2">{message.subtitle}</p>
+                                                )}
+                                                {message.actionResult && (
+                                                    <ActionResult result={message.actionResult} />
                                                 )}
                                             </div>
                                         </div>
