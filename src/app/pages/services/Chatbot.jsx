@@ -26,11 +26,11 @@ const commands = [
 ]
 
 // API Configuration
-const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:5000/api/v1/chat'
+const API_BASE_URL = 'http://localhost:5000/api/v1/chat'
 
 // Helper to get auth token
 const getAuthToken = () => {
-    return localStorage.getItem('authToken') || ''
+    return localStorage.getItem('token') || ''
 }
 
 // Helper to render message content with command highlighting
