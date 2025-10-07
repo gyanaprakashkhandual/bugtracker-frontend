@@ -2,7 +2,7 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Search, Plus, Paperclip, Mic, StopCircle, CheckCircle, AlertCircle, Info } from 'lucide-react'
+import { Send, Search, Plus, Paperclip, Mic, StopCircle, CheckCircle, AlertCircle, Info, X, Image as ImageIcon, File, Trash2, MessageSquare } from 'lucide-react'
 
 const commands = [
     '@add-test-case',
@@ -30,7 +30,15 @@ const API_BASE_URL = 'http://localhost:5000/api/v1/chat'
 
 // Helper to get auth token
 const getAuthToken = () => {
-    return localStorage.getItem('token') || ''
+    // Safely read from localStorage in the browser; fall back to window.authToken if set
+    if (typeof window === 'undefined') return ''
+    try {
+        const t = localStorage.getItem('token')
+        return t || window.authToken || ''
+    } catch (e) {
+        // localStorage access can throw in some environments (e.g., private mode)
+        return window.authToken || ''
+    }
 }
 
 // Helper to render message content with command highlighting
@@ -99,6 +107,34 @@ const ActionResult = ({ result }) => {
     )
 }
 
+// Attachment preview component
+const AttachmentPreview = ({ attachment, onRemove }) => {
+    const isImage = attachment.type === 'image'
+    
+    return (
+        <div className="relative inline-block mr-2 mb-2">
+            <div className="relative w-20 h-20 bg-gray-100 rounded-lg border border-gray-300 overflow-hidden">
+                {isImage ? (
+                    <img src={attachment.url} alt={attachment.name} className="w-full h-full object-cover" />
+                ) : (
+                    <div className="flex items-center justify-center w-full h-full">
+                        <File className="w-8 h-8 text-gray-400" />
+                    </div>
+                )}
+            </div>
+            {onRemove && (
+                <button
+                    onClick={onRemove}
+                    className="absolute -top-2 -right-2 w-5 h-5 bg-red-500 text-white rounded-full flex items-center justify-center hover:bg-red-600"
+                >
+                    <X className="w-3 h-3" />
+                </button>
+            )}
+            <p className="text-xs text-gray-600 mt-1 truncate w-20">{attachment.name}</p>
+        </div>
+    )
+}
+
 export default function LumenChat() {
     const [messages, setMessages] = useState([
         {
@@ -119,7 +155,9 @@ export default function LumenChat() {
     const [sidebarSearch, setSidebarSearch] = useState('')
     const [highlightedCommands, setHighlightedCommands] = useState(new Set())
     const [chatHistory, setChatHistory] = useState([])
-    const [currentChatId, setCurrentChatId] = useState(null)
+    const [currentConversationId, setCurrentConversationId] = useState(null)
+    const [attachments, setAttachments] = useState([])
+    const [isUploading, setIsUploading] = useState(false)
     const inputRef = useRef(null)
     const messagesEndRef = useRef(null)
     const dropdownRef = useRef(null)
@@ -129,6 +167,10 @@ export default function LumenChat() {
         cmd.toLowerCase().includes(dropdownSearch.toLowerCase())
     )
 
+    const filteredChatHistory = chatHistory.filter(chat =>
+        chat.title.toLowerCase().includes(sidebarSearch.toLowerCase())
+    )
+
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' })
     }
@@ -136,6 +178,10 @@ export default function LumenChat() {
     useEffect(() => {
         scrollToBottom()
     }, [messages])
+
+    useEffect(() => {
+        loadChatHistory()
+    }, [])
 
     useEffect(() => {
         const handleClickOutside = (event) => {
@@ -153,6 +199,99 @@ export default function LumenChat() {
             inputRef.current.style.height = Math.min(inputRef.current.scrollHeight, 300) + 'px'
         }
     }, [input])
+
+    const loadChatHistory = async () => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/history`, {
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                }
+            })
+
+            if (response.ok) {
+                const data = await response.json()
+                setChatHistory(data.conversations || [])
+            }
+        } catch (error) {
+            console.error('Error loading chat history:', error)
+        }
+    }
+
+    const loadConversation = async (conversationId) => {
+        try {
+            const response = await fetch(`${API_BASE_URL}/conversation/${conversationId}`, {
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                }
+            })
+
+            if (response.ok) {
+                const data = await response.json()
+                const conversation = data.conversation
+                
+                const formattedMessages = conversation.messages.map((msg, index) => ({
+                    id: index + 1,
+                    type: msg.role === 'user' ? 'user' : 'ai',
+                    content: msg.content,
+                    timestamp: new Date(msg.timestamp),
+                    command: msg.command,
+                    actionResult: msg.actionResult,
+                    attachments: msg.attachments
+                }))
+
+                setMessages(formattedMessages)
+                setCurrentConversationId(conversationId)
+            }
+        } catch (error) {
+            console.error('Error loading conversation:', error)
+        }
+    }
+
+    const handleSearchConversations = async (query) => {
+        if (!query.trim()) {
+            loadChatHistory()
+            return
+        }
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/search?query=${encodeURIComponent(query)}`, {
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                }
+            })
+
+            if (response.ok) {
+                const data = await response.json()
+                setChatHistory(data.conversations || [])
+            }
+        } catch (error) {
+            console.error('Error searching conversations:', error)
+        }
+    }
+
+    const deleteConversation = async (conversationId, e) => {
+        e.stopPropagation()
+        
+        if (!confirm('Are you sure you want to delete this conversation?')) return
+
+        try {
+            const response = await fetch(`${API_BASE_URL}/conversation/${conversationId}`, {
+                method: 'DELETE',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                }
+            })
+
+            if (response.ok) {
+                setChatHistory(prev => prev.filter(chat => chat._id !== conversationId))
+                if (currentConversationId === conversationId) {
+                    handleNewChat()
+                }
+            }
+        } catch (error) {
+            console.error('Error deleting conversation:', error)
+        }
+    }
 
     const triggerCommandHighlight = (command) => {
         setHighlightedCommands(prev => new Set([...prev, command]))
@@ -246,8 +385,81 @@ export default function LumenChat() {
         }
     }
 
-    // API call to send message to backend
-    const sendMessageToAPI = async (message) => {
+    const handleFileUpload = async (e) => {
+        const file = e.target.files[0]
+        if (!file) return
+
+        setIsUploading(true)
+
+        try {
+            const formData = new FormData()
+            formData.append('file', file)
+
+            const response = await fetch(`${API_BASE_URL}/upload`, {
+                method: 'POST',
+                headers: {
+                    'Authorization': `Bearer ${getAuthToken()}`
+                },
+                body: formData
+            })
+
+            if (response.ok) {
+                const data = await response.json()
+                setAttachments(prev => [...prev, data.file])
+            } else {
+                alert('Failed to upload file')
+            }
+        } catch (error) {
+            console.error('Error uploading file:', error)
+            alert('Error uploading file')
+        } finally {
+            setIsUploading(false)
+            e.target.value = ''
+        }
+    }
+
+    const handlePaste = async (e) => {
+        const items = e.clipboardData?.items
+        if (!items) return
+
+        for (let item of items) {
+            if (item.type.startsWith('image/')) {
+                e.preventDefault()
+                const file = item.getAsFile()
+                if (file) {
+                    setIsUploading(true)
+
+                    try {
+                        const formData = new FormData()
+                        formData.append('file', file)
+
+                        const response = await fetch(`${API_BASE_URL}/upload`, {
+                            method: 'POST',
+                            headers: {
+                                'Authorization': `Bearer ${getAuthToken()}`
+                            },
+                            body: formData
+                        })
+
+                        if (response.ok) {
+                            const data = await response.json()
+                            setAttachments(prev => [...prev, data.file])
+                        }
+                    } catch (error) {
+                        console.error('Error uploading pasted image:', error)
+                    } finally {
+                        setIsUploading(false)
+                    }
+                }
+            }
+        }
+    }
+
+    const removeAttachment = (index) => {
+        setAttachments(prev => prev.filter((_, i) => i !== index))
+    }
+
+    const sendMessageToAPI = async (message, attachmentData) => {
         try {
             const response = await fetch(`${API_BASE_URL}/chat`, {
                 method: 'POST',
@@ -257,7 +469,8 @@ export default function LumenChat() {
                 },
                 body: JSON.stringify({
                     message: message,
-                    conversationId: currentChatId
+                    conversationId: currentConversationId,
+                    attachments: attachmentData
                 })
             })
 
@@ -274,24 +487,26 @@ export default function LumenChat() {
     }
 
     const handleSend = async () => {
-        if (!input.trim()) return
+        if (!input.trim() && attachments.length === 0) return
 
         const userMessage = {
             id: messages.length + 1,
             type: 'user',
             content: input,
-            timestamp: new Date()
+            timestamp: new Date(),
+            attachments: [...attachments]
         }
 
         setMessages(prev => [...prev, userMessage])
         const currentInput = input
+        const currentAttachments = [...attachments]
         setInput('')
+        setAttachments([])
         setHighlightedCommands(new Set())
         setIsTyping(true)
 
         try {
-            // Call the API
-            const response = await sendMessageToAPI(currentInput)
+            const response = await sendMessageToAPI(currentInput, currentAttachments)
 
             const aiMessage = {
                 id: messages.length + 2,
@@ -303,6 +518,11 @@ export default function LumenChat() {
             }
 
             setMessages(prev => [...prev, aiMessage])
+            
+            if (response.conversationId && !currentConversationId) {
+                setCurrentConversationId(response.conversationId)
+                loadChatHistory()
+            }
         } catch (error) {
             const errorMessage = {
                 id: messages.length + 2,
@@ -320,43 +540,22 @@ export default function LumenChat() {
         }
     }
 
-    const handleNewChat = async () => {
-        try {
-            // Clear conversation history on backend
-            await fetch(`${API_BASE_URL}/chat/clear`, {
-                method: 'POST',
-                headers: {
-                    'Authorization': `Bearer ${getAuthToken()}`
-                }
-            })
-
-            // Reset local state
-            setMessages([
-                {
-                    id: 1,
-                    type: 'ai',
-                    content: 'Good Morning! 👋',
-                    subtitle: 'I\'m Lumen, your QA testing assistant. How can I help you today?',
-                    timestamp: new Date()
-                }
-            ])
-            setCurrentChatId(null)
-        } catch (error) {
-            console.error('Error starting new chat:', error)
-        }
-    }
-
-    const handleFileUpload = (e) => {
-        const file = e.target.files[0]
-        if (file) {
-            console.log('File uploaded:', file.name)
-            // Implement file upload logic here
-        }
+    const handleNewChat = () => {
+        setMessages([
+            {
+                id: 1,
+                type: 'ai',
+                content: 'Good Morning! 👋',
+                subtitle: 'I\'m Lumen, your QA testing assistant. How can I help you today?',
+                timestamp: new Date()
+            }
+        ])
+        setCurrentConversationId(null)
+        setAttachments([])
     }
 
     const toggleRecording = () => {
         setIsRecording(!isRecording)
-        // Implement voice recording logic here
     }
 
     const renderInputContent = () => {
@@ -412,17 +611,54 @@ export default function LumenChat() {
                             type="text"
                             placeholder="Search chats..."
                             value={sidebarSearch}
-                            onChange={(e) => setSidebarSearch(e.target.value)}
+                            onChange={(e) => {
+                                setSidebarSearch(e.target.value)
+                                handleSearchConversations(e.target.value)
+                            }}
                             className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                         />
                     </div>
                 </div>
 
                 <div className="flex-1 p-3 overflow-y-auto">
-                    <div className="text-center py-12">
-                        <p className="text-sm text-gray-400">No chat history yet</p>
-                        <p className="text-xs text-gray-300 mt-1">Start a conversation to see it here</p>
-                    </div>
+                    {chatHistory.length === 0 ? (
+                        <div className="text-center py-12">
+                            <p className="text-sm text-gray-400">No chat history yet</p>
+                            <p className="text-xs text-gray-300 mt-1">Start a conversation to see it here</p>
+                        </div>
+                    ) : (
+                        <div className="space-y-2">
+                            {filteredChatHistory.map((chat) => (
+                                <div
+                                    key={chat._id}
+                                    onClick={() => loadConversation(chat._id)}
+                                    className={`group relative p-3 rounded-lg cursor-pointer transition-colors ${
+                                        currentConversationId === chat._id
+                                            ? 'bg-blue-50 border border-blue-200'
+                                            : 'bg-white border border-gray-200 hover:bg-gray-50'
+                                    }`}
+                                >
+                                    <div className="flex items-start gap-2">
+                                        <MessageSquare className="w-4 h-4 text-gray-400 mt-1 flex-shrink-0" />
+                                        <div className="flex-1 min-w-0">
+                                            <p className="text-sm font-medium text-gray-800 truncate">
+                                                {chat.title}
+                                            </p>
+                                            <p className="text-xs text-gray-500 mt-1">
+                                                {new Date(chat.lastMessageAt).toLocaleDateString()}
+                                            </p>
+                                        </div>
+                                        <button
+                                            onClick={(e) => deleteConversation(chat._id, e)}
+                                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
+                                        >
+                                            <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
                 </div>
             </div>
 
@@ -459,9 +695,18 @@ export default function LumenChat() {
                                         </div>
                                     </div>
                                 ) : (
-                                    <div className="bg-gray-100 rounded-2xl px-4 py-3 max-w-xl">
-                                        <div className="text-gray-800 text-base">
-                                            {renderMessageContent(message.content)}
+                                    <div className="max-w-xl">
+                                        <div className="bg-gray-100 rounded-2xl px-4 py-3">
+                                            <div className="text-gray-800 text-base">
+                                                {renderMessageContent(message.content)}
+                                            </div>
+                                            {message.attachments && message.attachments.length > 0 && (
+                                                <div className="mt-3 flex flex-wrap gap-2">
+                                                    {message.attachments.map((att, idx) => (
+                                                        <AttachmentPreview key={idx} attachment={att} />
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     </div>
                                 )}
@@ -527,16 +772,30 @@ export default function LumenChat() {
                                         <button
                                             key={index}
                                             onClick={() => handleCommandSelect(command)}
-                                            className={`w-full text-left px-4 py-2.5 transition-colors text-sm font-mono ${index === selectedCommandIndex
-                                                ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-500'
-                                                : 'text-gray-700 hover:bg-gray-100'
-                                                }`}
+                                            className={`w-full text-left px-4 py-2.5 transition-colors text-sm font-mono ${
+                                                index === selectedCommandIndex
+                                                    ? 'bg-blue-50 text-blue-700 border-l-2 border-blue-500'
+                                                    : 'text-gray-700 hover:bg-gray-100'
+                                            }`}
                                         >
                                             {command}
                                         </button>
                                     ))}
                                 </div>
                             </motion.div>
+                        )}
+
+                        {/* Attachment Preview Area */}
+                        {attachments.length > 0 && (
+                            <div className="mb-3 flex flex-wrap gap-2">
+                                {attachments.map((att, idx) => (
+                                    <AttachmentPreview 
+                                        key={idx} 
+                                        attachment={att} 
+                                        onRemove={() => removeAttachment(idx)}
+                                    />
+                                ))}
+                            </div>
                         )}
 
                         <div className="bg-white rounded-xl border border-gray-300 focus-within:border-gray-400 transition-all shadow-sm">
@@ -549,7 +808,8 @@ export default function LumenChat() {
                                 />
                                 <button
                                     onClick={() => fileInputRef.current?.click()}
-                                    className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all flex-shrink-0"
+                                    disabled={isUploading}
+                                    className="w-8 h-8 flex items-center justify-center text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-all flex-shrink-0 disabled:opacity-50"
                                 >
                                     <Paperclip className="w-5 h-5" />
                                 </button>
@@ -559,6 +819,7 @@ export default function LumenChat() {
                                         value={input}
                                         onChange={handleInputChange}
                                         onKeyDown={handleKeyDown}
+                                        onPaste={handlePaste}
                                         placeholder="Message Lumen..."
                                         rows="1"
                                         className="w-full bg-transparent border-none outline-none text-base text-gray-800 caret-gray-800 placeholder:text-gray-400 resize-none overflow-y-auto px-0 py-0 relative z-20"
@@ -569,10 +830,11 @@ export default function LumenChat() {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={toggleRecording}
-                                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all flex-shrink-0 ${isRecording
-                                        ? 'bg-red-500 hover:bg-red-600 text-white'
-                                        : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
-                                        }`}
+                                    className={`w-8 h-8 rounded-lg flex items-center justify-center transition-all flex-shrink-0 ${
+                                        isRecording
+                                            ? 'bg-red-500 hover:bg-red-600 text-white'
+                                            : 'bg-gray-200 hover:bg-gray-300 text-gray-600'
+                                    }`}
                                 >
                                     {isRecording ? (
                                         <StopCircle className="w-4 h-4" />
@@ -584,7 +846,7 @@ export default function LumenChat() {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={handleSend}
-                                    disabled={!input.trim()}
+                                    disabled={!input.trim() && attachments.length === 0}
                                     className="w-8 h-8 bg-gray-200 hover:bg-gray-300 rounded-lg flex items-center justify-center text-gray-600 transition-all flex-shrink-0 disabled:opacity-40 disabled:cursor-not-allowed"
                                 >
                                     <Send className="w-4 h-4" />
