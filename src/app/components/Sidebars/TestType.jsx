@@ -102,7 +102,7 @@ export default function TestTypeSidebar({ sidebarOpen, onClose }) {
                         animate={{ x: 0 }}
                         exit={{ x: -280 }}
                         transition={{ duration: 0.2 }}
-                        className="fixed left-0 top-0 h-[calc(100vh-4rem)] w-70 mt-16 bg-white z-50 flex flex-col border-r border-gray-200"
+                        className="user-select-none fixed left-0 top-0 h-[calc(100vh-4rem)] w-70 mt-16 bg-white z-50 flex flex-col border-r border-gray-200"
                     >
                         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                             <div>
