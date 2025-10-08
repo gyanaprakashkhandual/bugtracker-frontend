@@ -4,7 +4,7 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiPlus, FiEdit, FiTrash2, FiSearch,
-  FiChevronLeft, FiChevronRight, FiEye,
+  FiChevronLeft, FiChevronRight, FiEye, FiEyeOff,
   FiBarChart2, FiUsers, FiShield, FiChevronDown, FiCheck, FiPower
 } from 'react-icons/fi';
 import { useAlert } from '@/app/script/Alert.context';
@@ -22,6 +22,7 @@ const UserManagement = () => {
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [saving, setSaving] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -38,18 +39,47 @@ const UserManagement = () => {
   });
   const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
 
-  const roles = ['admin', 'manager', 'developer', 'tester'];
+  const roles = [
+    'admin',
+    'project manager',
+    'developer',
+    'qa tester',
+    'hr manager',
+    'devops engineer',
+    'ui-ux designer',
+    'manager',
+    'product manager',
+    'business analyst',
+    'scrum master',
+    'data scientist',
+    'data engineer',
+    'ml engineer',
+    'ai engineer',
+    'frontend developer',
+    'backend developer',
+    'fullstack developer',
+    'mobile developer',
+    'cloud engineer',
+    'security engineer',
+    'automation tester',
+    'manual tester',
+    'support engineer',
+    'system administrator',
+    'solution architect',
+    'technical lead',
+    'software architect',
+    'database administrator',
+    'intern',
+    'other'
+  ];
 
-  // Get token from localStorage
   const getToken = () => {
     if (typeof window !== 'undefined') {
-      const token = localStorage.getItem('token');
-      return token;
+      return localStorage.getItem('token');
     }
     return null;
   };
 
-  // API call function
   const apiCall = async (endpoint, options = {}) => {
     const token = getToken();
 
@@ -86,7 +116,6 @@ const UserManagement = () => {
     }
   };
 
-  // Fetch all users
   const fetchAllUsers = async (page = 1, search = '') => {
     setLoading(true);
     const endpoint = `/admin/users?page=${page}&limit=8&search=${search}`;
@@ -105,7 +134,6 @@ const UserManagement = () => {
     setLoading(false);
   };
 
-  // Fetch statistics
   const fetchStats = async () => {
     const result = await apiCall('/admin/users/stats');
     if (result) {
@@ -113,7 +141,6 @@ const UserManagement = () => {
     }
   };
 
-  // Create user
   const handleCreateUser = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -139,7 +166,6 @@ const UserManagement = () => {
     }
   };
 
-  // Update user
   const handleUpdateUser = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -172,7 +198,6 @@ const UserManagement = () => {
     }
   };
 
-  // Handle form submission (create or update)
   const handleSubmitUser = async (e) => {
     if (selectedUser) {
       await handleUpdateUser(e);
@@ -181,7 +206,6 @@ const UserManagement = () => {
     }
   };
 
-  // Delete user permanently
   const handleDeleteUser = async (user) => {
     const result = await showConfirm({
       title: `Delete "${user.name}"?`,
@@ -207,7 +231,6 @@ const UserManagement = () => {
     }
   };
 
-  // Toggle user status
   const handleToggleStatus = async (user) => {
     const result = await showConfirm({
       title: `${user.isActive ? 'Deactivate' : 'Activate'} "${user.name}"?`,
@@ -233,13 +256,11 @@ const UserManagement = () => {
     }
   };
 
-  // Initial data fetch
   useEffect(() => {
     fetchAllUsers();
     fetchStats();
   }, [activeTab]);
 
-  // Handle search
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchAllUsers(1, searchTerm);
@@ -251,9 +272,7 @@ const UserManagement = () => {
   return (
     <div className="bg-gray-50 min-h-screen">
       <div className="max-w-full mx-auto">
-        {/* Main Content */}
         <div className="bg-white rounded-sm">
-          {/* Tabs and Search */}
           <div className="border-b border-gray-200">
             <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
               <div className="flex space-x-4">
@@ -296,7 +315,6 @@ const UserManagement = () => {
             </div>
           </div>
 
-          {/* Content Area */}
           <div className="p-6">
             {activeTab === 'stats' ? (
               <StatsView stats={stats} />
@@ -325,7 +343,6 @@ const UserManagement = () => {
         </div>
       </div>
 
-      {/* Create/Edit User Modal */}
       <AnimatePresence>
         {showCreateModal && (
           <Modal
@@ -335,6 +352,7 @@ const UserManagement = () => {
               setSelectedUser(null);
               setFormData({ name: '', email: '', password: '', role: 'developer' });
               setRoleDropdownOpen(false);
+              setShowPassword(false);
             }}
           >
             <form onSubmit={handleSubmitUser} className="space-y-4">
@@ -371,14 +389,23 @@ const UserManagement = () => {
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Password (Optional)
                   </label>
-                  <input
-                    type="password"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
-                    placeholder="Leave blank for default password"
-                    disabled={saving}
-                  />
+                  <div className="relative">
+                    <input
+                      type={showPassword ? "text" : "password"}
+                      value={formData.password}
+                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 pr-10"
+                      placeholder="Leave blank for default password"
+                      disabled={saving}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
+                    >
+                      {showPassword ? <FiEyeOff className="h-5 w-5" /> : <FiEye className="h-5 w-5" />}
+                    </button>
+                  </div>
                 </div>
               )}
               <div>
@@ -437,6 +464,7 @@ const UserManagement = () => {
                     setSelectedUser(null);
                     setFormData({ name: '', email: '', password: '', role: 'developer' });
                     setRoleDropdownOpen(false);
+                    setShowPassword(false);
                   }}
                   className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                   disabled={saving}
@@ -466,7 +494,6 @@ const UserManagement = () => {
   );
 };
 
-// Users View Component
 const UsersView = ({ users, loading, pagination, onPageChange, onEdit, onDelete, onToggleStatus }) => {
   if (loading) {
     return (
@@ -503,7 +530,6 @@ const UsersView = ({ users, loading, pagination, onPageChange, onEdit, onDelete,
         ))}
       </div>
 
-      {/* Pagination */}
       {pagination.totalPages > 1 && (
         <div className="flex justify-center items-center space-x-4 mt-8">
           <button
@@ -533,7 +559,6 @@ const UsersView = ({ users, loading, pagination, onPageChange, onEdit, onDelete,
   );
 };
 
-// User Card Component
 const UserCard = ({ user, index, onEdit, onDelete, onToggleStatus }) => {
   return (
     <motion.div
@@ -596,7 +621,6 @@ const UserCard = ({ user, index, onEdit, onDelete, onToggleStatus }) => {
   );
 };
 
-// Statistics View Component
 const StatsView = ({ stats }) => {
   if (!stats) {
     return (
@@ -664,7 +688,6 @@ const StatsView = ({ stats }) => {
         </div>
       </motion.div>
 
-      {/* Users by Role */}
       {stats.usersByRole && stats.usersByRole.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Users by Role</h3>
@@ -690,7 +713,6 @@ const StatsView = ({ stats }) => {
         </div>
       )}
 
-      {/* Recent Users */}
       {stats.recentUsers && stats.recentUsers.length > 0 && (
         <div>
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Users</h3>
@@ -725,7 +747,6 @@ const StatsView = ({ stats }) => {
   );
 };
 
-// Modal Component
 const Modal = ({ title, children, onClose }) => {
   return (
     <motion.div
@@ -733,14 +754,12 @@ const Modal = ({ title, children, onClose }) => {
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
       className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center p-4 z-50"
-      onClick={onClose}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
         className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
       >
         <div className="flex justify-between items-center p-6 border-b border-gray-200">
           <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
@@ -748,7 +767,9 @@ const Modal = ({ title, children, onClose }) => {
             onClick={onClose}
             className="text-gray-400 hover:text-gray-600 transition-colors"
           >
-            <FiEye className="h-6 w-6" />
+            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
           </button>
         </div>
         <div className="p-6">{children}</div>
