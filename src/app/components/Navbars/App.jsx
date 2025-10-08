@@ -19,6 +19,7 @@ import ProjectConfiguration from '../Modules/Project-Management/App';
 import UserProfileInterface from '../Modules/User/App';
 import TestTypeManagement from '../Modules/Test-Type-Management/App';
 import { useRouter } from 'next/navigation';
+import Messaging from '../Modules/Messaging/App';
 
 const TestTypeConfiguration = () => (
     <div className="p-8">
@@ -199,7 +200,7 @@ const AppNavbar = () => {
             case 'Notifications':
                 return <NotificationsPanel />
             case 'Messages':
-                return <MessagesPanel />
+                return <Messaging />
             case 'UserPanel':
                 return <UserProfileInterface />
             default:
@@ -218,9 +219,10 @@ const AppNavbar = () => {
                             {/* Project Info */}
                             <div className="hidden lg:block min-w-0 max-w-xs xl:max-w-md">
                                 {!selectedProject ? (
-                                    <div className="animate-pulse flex space-x-2">
-                                        <div className="h-5 bg-gray-300 rounded w-32"></div>
-                                        <div className="h-5 bg-gray-300 rounded w-40"></div>
+                                    <div className="flex flex-col">
+                                        <h1 className="text-lg font-semibold text-gray-900 truncate">
+                                            Please tart by creating a project
+                                        </h1>
                                     </div>
                                 ) : (
                                     <h1 className="text-lg font-semibold text-gray-900 truncate">
@@ -240,7 +242,7 @@ const AppNavbar = () => {
                             {/* Dashboard Button */}
                             <motion.button
                                 onClick={() => handleComponentChange('Dashboard')}
-                                className={`hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${activeComponent === 'Dashboard'
+                                className={`user-select-none cursor-pointer hidden sm:flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium transition-all ${activeComponent === 'Dashboard'
                                     ? 'bg-blue-50 text-blue-700 border border-blue-200'
                                     : 'text-gray-700 hover:bg-gray-100 border border-transparent'
                                     }`}
@@ -255,7 +257,7 @@ const AppNavbar = () => {
                             <div className="relative">
                                 <motion.button
                                     onClick={() => setIsProjectDropdownOpen(!isProjectDropdownOpen)}
-                                    className="flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all border border-gray-200"
+                                    className="user-select-none cursor-pointer flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all border border-gray-200"
                                     whileHover={{ scale: 1.02 }}
                                     whileTap={{ scale: 0.98 }}
                                 >
@@ -307,7 +309,7 @@ const AppNavbar = () => {
 
                             {/* Open Workspace Button */}
                             <motion.button
-                                className="hidden xl:flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all border border-gray-200"
+                                className="user-select-none cursor-pointer hidden xl:flex items-center space-x-2 px-3 py-1.5 rounded-lg text-sm font-medium text-gray-700 hover:bg-gray-100 transition-all border border-gray-200"
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => router.push(`/app/projects/${selectedProject?.slug}`)}
@@ -321,8 +323,8 @@ const AppNavbar = () => {
                         <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                             {/* Bell Icon */}
                             <motion.button
-                            tooltip-data="Notification"
-                            tooltip-placement="bottom"
+                                tooltip-data="Notification"
+                                tooltip-placement="bottom"
                                 onClick={() => handleComponentChange('Notifications')}
                                 className={`p-2 rounded-lg transition-all relative ${activeComponent === 'Notifications'
                                     ? 'bg-blue-50 text-blue-700'
@@ -337,8 +339,8 @@ const AppNavbar = () => {
 
                             {/* Message Icon */}
                             <motion.button
-                            tooltip-data="Chats"
-                            tooltip-placement="bottom"
+                                tooltip-data="Chats"
+                                tooltip-placement="bottom"
                                 onClick={() => handleComponentChange('Messages')}
                                 className={`p-2 rounded-lg transition-all relative ${activeComponent === 'Messages'
                                     ? 'bg-blue-50 text-blue-700'
@@ -354,7 +356,7 @@ const AppNavbar = () => {
                             {/* User Icon */}
                             <motion.button
                                 onClick={() => handleComponentChange('UserPanel')}
-                                className={`p-2 bg-gray-100 rounded-lg transition-all flex items-center space-x-2 ${activeComponent === 'UserPanel'
+                                className={`cursor-pointer user-select-none p-2 bg-gray-100 rounded-lg transition-all flex items-center space-x-2 ${activeComponent === 'UserPanel'
                                     ? 'bg-blue-50 text-blue-700'
                                     : 'text-gray-600 hover:bg-gray-100'
                                     }`}
