@@ -272,7 +272,7 @@ const AuthPage = () => {
   };
 
   const handleTermsConditions = () => {
-    router.push('/terms');
+    router.push('/terms-and-conditions');
   };
 
   return (
@@ -456,7 +456,7 @@ const AuthPage = () => {
       </div>
 
       {/* Right Side - Auth Forms */}
-      <div className="flex-1 flex items-center justify-center p-6">
+      <div className="flex-1 flex items-center justify-center p-2">
         <div className="w-full max-w-md">
           <motion.div
             key={isLogin ? 'login' : 'register'}
@@ -466,7 +466,7 @@ const AuthPage = () => {
             className="bg-white rounded-2xl shadow-xl p-8"
           >
             {/* Header */}
-            <div className="text-center mb-8">
+            <div className="text-center mb-1">
               <h2 className="text-3xl font-bold text-gray-800 mb-2">
                 {isLogin ? 'Welcome Back!' : 'Create Account'}
               </h2>
@@ -609,7 +609,7 @@ const AuthPage = () => {
                       </div>
 
                       {/* Terms and Conditions Checkbox */}
-                      <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-start gap-3 p-2 bg-gray-50 rounded-lg">
                         <input
                           type="checkbox"
                           id="acceptTerms"
@@ -622,7 +622,7 @@ const AuthPage = () => {
                           <button
                             type="button"
                             onClick={handleTermsConditions}
-                            className="text-blue-600 hover:text-blue-700 font-medium underline"
+                            className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
                           >
                             Terms & Conditions
                           </button>{' '}
@@ -630,7 +630,7 @@ const AuthPage = () => {
                           <button
                             type="button"
                             onClick={handlePrivacyPolicy}
-                            className="text-blue-600 hover:text-blue-700 font-medium underline"
+                            className="text-blue-600 hover:text-blue-700 font-medium cursor-pointer"
                           >
                             Privacy Policy
                           </button>
@@ -774,7 +774,7 @@ const AuthPage = () => {
                       <button
                         type="button"
                         onClick={handleForgotPassword}
-                        className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors cursor-pointer"
                       >
                         Forgot your password?
                       </button>
