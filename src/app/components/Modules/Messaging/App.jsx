@@ -443,7 +443,7 @@ const Messaging = () => {
   };
 
   return (
-    <div className="flex h-screen bg-gradient-to-br from-slate-50 to-slate-100">
+    <div className="flex min-h-[calc(100vh-69px)] bg-gradient-to-br from-slate-50 to-slate-100">
       {/* Sidebar - Stats */}
       <AnimatePresence>
         {showStats && (
@@ -533,7 +533,7 @@ const Messaging = () => {
       </AnimatePresence>
 
       {/* Main Container */}
-      <div className="flex-1 flex flex-col max-w-7xl mx-auto w-full">
+      <div className="flex-1 flex flex-col max-full max-h-[calc(100vh-69px)] mx-auto w-full">
         {/* Header */}
         <motion.div
           initial={{ y: -50, opacity: 0 }}
