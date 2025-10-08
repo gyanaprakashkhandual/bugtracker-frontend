@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from "react";
 import axios from "axios";
 import { motion, AnimatePresence } from "framer-motion";
 import { useRouter } from "next/navigation";
-import { User, LogOut, Mail, MoreVertical } from "lucide-react";
+import { User, LogOut, Mail } from "lucide-react";
 import { FaCoffee } from "react-icons/fa";
 import {
     GoogleArrowLeft,
@@ -14,135 +14,8 @@ import {
 import { useProject } from "@/app/script/Project.context";
 import { useAlert } from "@/app/script/Alert.context";
 import { useConfirm } from "@/app/script/Confirm.context";
-import ProjectModal from "../Modals/Add-Project";
+import { PROJECT_EVENTS } from "@/app/components/modules/Project-Management/App";
 
-// Custom Three Dot Dropdown Component
-// Custom Three Dot Dropdown Component
-const CustomThreeDotsDropdown = ({ options, projectId }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const [openUpward, setOpenUpward] = useState(false);
-    const buttonRef = useRef(null);
-    const dropdownRef = useRef(null);
-
-    const checkPosition = () => {
-        if (buttonRef.current) {
-            const buttonRect = buttonRef.current.getBoundingClientRect();
-            const dropdownHeight = options.length * 44 + 16 + 20; // estimated height + padding
-            const spaceBelow = window.innerHeight - buttonRect.bottom;
-
-            // If not enough space below, open upward
-            setOpenUpward(spaceBelow < dropdownHeight);
-        }
-    };
-
-    const handleToggle = (e) => {
-        e.stopPropagation();
-        if (!isOpen) {
-            checkPosition();
-        }
-        setIsOpen(!isOpen);
-    };
-
-    const handleOptionClick = (e, onClick) => {
-        e.stopPropagation();
-        onClick();
-        setIsOpen(false);
-    };
-
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (
-                dropdownRef.current &&
-                !dropdownRef.current.contains(event.target) &&
-                buttonRef.current &&
-                !buttonRef.current.contains(event.target)
-            ) {
-                setIsOpen(false);
-            }
-        };
-
-        const handleResize = () => {
-            if (isOpen) {
-                checkPosition();
-            }
-        };
-
-        if (isOpen) {
-            document.addEventListener("mousedown", handleClickOutside);
-            window.addEventListener("resize", handleResize);
-            window.addEventListener("scroll", handleResize, true);
-        }
-
-        return () => {
-            document.removeEventListener("mousedown", handleClickOutside);
-            window.removeEventListener("resize", handleResize);
-            window.removeEventListener("scroll", handleResize, true);
-        };
-    }, [isOpen]);
-
-    return (
-        <div className="relative">
-            <motion.button
-                ref={buttonRef}
-                onClick={handleToggle}
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.9 }}
-                className="p-1.5 rounded-lg hover:bg-slate-200/60 transition-colors duration-150"
-                tooltip-data="More options"
-                tooltip-placement="top"
-            >
-                <MoreVertical size={16} className="text-slate-600" />
-            </motion.button>
-
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        ref={dropdownRef}
-                        initial={{
-                            opacity: 0,
-                            scale: 0.95,
-                            y: openUpward ? 10 : -10
-                        }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{
-                            opacity: 0,
-                            scale: 0.95,
-                            y: openUpward ? 10 : -10
-                        }}
-                        transition={{ duration: 0.15 }}
-                        className={`absolute right-0 w-52 bg-white rounded-lg shadow-lg border border-slate-200/60 overflow-hidden z-50 ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'
-                            }`}
-                    >
-                        <div className="py-2">
-                            {options.map((option, index) => (
-                                <motion.button
-                                    key={index}
-                                    onClick={(e) => handleOptionClick(e, option.onClick)}
-                                    whileHover={{
-                                        backgroundColor: option.danger ? "#fef2f2" : "#f8fafc",
-                                    }}
-                                    className={`w-full px-4 py-2.5 text-left flex items-center gap-3 transition-colors duration-150 ${option.danger
-                                            ? "text-red-600 hover:text-red-700"
-                                            : "text-slate-700 hover:text-slate-900"
-                                        }`}
-                                >
-                                    <span
-                                        className={
-                                            option.danger ? "text-red-500" : "text-slate-500"
-                                        }
-                                    >
-                                        {option.icon}
-                                    </span>
-                                    <span className="font-medium text-sm">{option.label}</span>
-                                </motion.button>
-                            ))}
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-};
 const ProjectSidebar = () => {
     const [isOpen, setIsOpen] = useState(true);
     const [projects, setProjects] = useState([]);
@@ -157,7 +30,6 @@ const ProjectSidebar = () => {
     const {
         isModalOpen,
         modalMode,
-        openCreateModal,
         openEditModal,
         closeModal,
         selectedProject,
@@ -166,7 +38,6 @@ const ProjectSidebar = () => {
 
     const router = useRouter();
 
-    // Get token from localStorage
     const getToken = () => {
         if (typeof window !== "undefined") {
             return localStorage.getItem("token");
@@ -174,14 +45,12 @@ const ProjectSidebar = () => {
         return null;
     };
 
-    // Store project ID in localStorage
     const storeProjectId = (projectId) => {
         if (typeof window !== "undefined") {
             localStorage.setItem("currentProjectId", projectId);
         }
     };
 
-    // Fetch user data with token
     const fetchUserData = async () => {
         const token = getToken();
         if (!token) {
@@ -208,7 +77,6 @@ const ProjectSidebar = () => {
         }
     };
 
-    // Fetch projects with token
     const fetchProjects = async () => {
         setIsLoading(true);
         const token = getToken();
@@ -245,10 +113,41 @@ const ProjectSidebar = () => {
     useEffect(() => {
         fetchUserData();
         fetchProjects();
+
+        const handleProjectCreated = () => {
+            fetchProjects();
+        };
+
+        const handleProjectUpdated = () => {
+            fetchProjects();
+        };
+
+        const handleProjectDeleted = () => {
+            fetchProjects();
+        };
+
+        const handleProjectChanged = () => {
+            fetchProjects();
+        };
+
+        if (typeof window !== 'undefined') {
+            window.addEventListener(PROJECT_EVENTS.CREATED, handleProjectCreated);
+            window.addEventListener(PROJECT_EVENTS.UPDATED, handleProjectUpdated);
+            window.addEventListener(PROJECT_EVENTS.DELETED, handleProjectDeleted);
+            window.addEventListener(PROJECT_EVENTS.CHANGED, handleProjectChanged);
+        }
+
+        return () => {
+            if (typeof window !== 'undefined') {
+                window.removeEventListener(PROJECT_EVENTS.CREATED, handleProjectCreated);
+                window.removeEventListener(PROJECT_EVENTS.UPDATED, handleProjectUpdated);
+                window.removeEventListener(PROJECT_EVENTS.DELETED, handleProjectDeleted);
+                window.removeEventListener(PROJECT_EVENTS.CHANGED, handleProjectChanged);
+            }
+        };
     }, []);
 
     useEffect(() => {
-        // Restore selected project from localStorage after projects are loaded
         if (projects.length > 0) {
             const storedProjectId = localStorage.getItem("currentProjectId");
             if (storedProjectId) {
@@ -264,83 +163,11 @@ const ProjectSidebar = () => {
         }
     }, [projects]);
 
-    // Handle project click - store in context and localStorage
     const handleProjectClick = (project) => {
         setSelectedProject(project);
         storeProjectId(project._id);
     };
 
-    // Delete project with confirmation
-    const deleteProject = async (projectId) => {
-        const project = projects.find((p) => p._id === projectId);
-        if (!project) return;
-
-        try {
-            const result = await showConfirm({
-                title: `Delete "${project.projectName}"?`,
-                message:
-                    "This action cannot be undone. All project data will be permanently lost.",
-                confirmText: "Delete Project",
-                cancelText: "Keep Project",
-                type: "danger",
-            });
-
-            if (!result || !result.isConfirmed) {
-                return;
-            }
-
-            const token = getToken();
-            if (!token) {
-                showAlert({
-                    type: "error",
-                    message: "Authentication token not found",
-                });
-                return;
-            }
-
-            showAlert({
-                type: "info",
-                message: "Deleting project...",
-                duration: 0,
-            });
-
-            await axios.delete(`http://localhost:5000/api/v1/project/${projectId}`, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            setProjects(projects.filter((p) => p._id !== projectId));
-
-            if (selectedProject && selectedProject._id === projectId) {
-                setSelectedProject(null);
-                localStorage.removeItem("currentProjectId");
-            }
-
-            showAlert({
-                type: "success",
-                message: `"${project.projectName}" deleted successfully`,
-            });
-        } catch (err) {
-            console.error("Error deleting project", err);
-
-            if (err.response?.status === 401) {
-                showAlert({
-                    type: "error",
-                    message: "Authentication failed. Please login again.",
-                });
-            } else {
-                showAlert({
-                    type: "error",
-                    message:
-                        err.response?.data?.message ||
-                        "Failed to delete the project. Please try again.",
-                });
-            }
-        }
-    };
-
-    // Handle logout
     const handleLogout = async () => {
         const result = await showConfirm({
             title: "Sign Out?",
@@ -376,13 +203,11 @@ const ProjectSidebar = () => {
         }
     };
 
-    // Navigate to project workspace
     const navigateToWorkspace = (project) => {
         handleProjectClick(project);
         router.push(`/app/projects/${project.slug}`);
     };
 
-    // Format user name display
     const getFirstWord = (user) => {
         const name = user?.name || user?.email || "";
         const firstWord = name.split(" ")[0];
@@ -391,13 +216,6 @@ const ProjectSidebar = () => {
         return formatted.length > 5 ? formatted.slice(0, 5) + "." : formatted;
     };
 
-    // Refresh projects after modal operations
-    const handleModalSuccess = () => {
-        fetchProjects();
-        closeModal();
-    };
-
-    // Animation variants
     const sidebarVariants = {
         open: { width: 280 },
         closed: { width: 64 },
@@ -413,77 +231,12 @@ const ProjectSidebar = () => {
         tap: { scale: 0.98 },
     };
 
-    // Loading animation variants
     const loadingVariants = {
         initial: { opacity: 0, y: 10 },
         animate: { opacity: 1, y: 0 },
         exit: { opacity: 0, y: -10 },
     };
 
-    // Dropdown options for project actions
-    const getProjectOptions = (project) => [
-        {
-            label: "Edit",
-            icon: (
-                <svg
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                >
-                    <path d="M12 20h9" />
-                    <path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19.5 3 21l1.5-4L16.5 3.5z" />
-                </svg>
-            ),
-            onClick: () => {
-                setSelectedProject(project);
-                if (typeof openEditModal === "function") {
-                    openEditModal(project);
-                }
-            },
-        },
-        {
-            label: "Workspace",
-            icon: (
-                <svg
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                >
-                    <rect x="3" y="3" width="18" height="18" rx="2" />
-                    <path d="M9 9h6v6H9z" />
-                </svg>
-            ),
-            onClick: () => navigateToWorkspace(project),
-        },
-        {
-            label: "Delete",
-            icon: (
-                <svg
-                    width="16"
-                    height="16"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2"
-                    viewBox="0 0 24 24"
-                >
-                    <polyline points="3 6 5 6 21 6" />
-                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h2a2 2 0 0 1 2 2v2" />
-                    <line x1="10" y1="11" x2="10" y2="17" />
-                    <line x1="14" y1="11" x2="14" y2="17" />
-                </svg>
-            ),
-            onClick: () => deleteProject(project._id),
-            danger: true,
-        },
-    ];
-
-    // Loading skeleton component
     const LoadingSkeleton = () => (
         <div className="space-y-2 mx-2">
             {[1, 2, 3].map((item) => (
@@ -509,9 +262,9 @@ const ProjectSidebar = () => {
             <motion.div
                 variants={sidebarVariants}
                 animate={isOpen ? "open" : "closed"}
-                className="h-screen bg-gradient-to-b from-slate-50 to-white text-slate-800 flex flex-col border-r border-slate-200/50 sticky top-0 sidebar-scrollbar"
+                className=" user-select-none h-screen bg-gradient-to-b from-slate-50 to-white text-slate-800 flex flex-col border-r border-slate-200/50 sticky top-0 sidebar-scrollbar"
             >
-                {/* Sidebar Header */}
+                {/* Header */}
                 <div className="flex items-center justify-center p-4 border-b border-slate-200/60 bg-white/80 backdrop-blur-sm">
                     <AnimatePresence mode="wait">
                         {isOpen ? (
@@ -534,8 +287,6 @@ const ProjectSidebar = () => {
                                     whileTap={{ scale: 0.9 }}
                                     onClick={() => setIsOpen(!isOpen)}
                                     className="p-2 rounded-full text-slate-500 hover:text-slate-700 transition-all duration-200"
-                                    tooltip-data="Close Sidebar"
-                                    tooltip-placement="right"
                                 >
                                     <GoogleArrowLeft />
                                 </motion.button>
@@ -550,7 +301,7 @@ const ProjectSidebar = () => {
                                 whileHover={{ scale: 1.1, backgroundColor: "#f1f5f9" }}
                                 whileTap={{ scale: 0.9 }}
                                 onClick={() => setIsOpen(!isOpen)}
-                                className="p-2 rounded-full text-blue-900 hover:text-slate-950 transition-all duration-200"
+                                className="p-2 rounded-full text-blue-900 hover:text-slate-950 transition-all duration-200 cursor-pointer"
                             >
                                 <FaCoffee className="h-5 w-5" />
                             </motion.button>
@@ -575,58 +326,36 @@ const ProjectSidebar = () => {
                                     variants={projectItemVariants}
                                     onHoverStart={() => setHoveredProject(project._id)}
                                     onHoverEnd={() => setHoveredProject(null)}
-                                    className={`mx-2 my-1 rounded-xl border transition-all duration-200 ${selectedProject?._id === project._id
-                                            ? "border-blue-300 bg-blue-50"
-                                            : "border-transparent hover:border-slate-200/60"
+                                    onClick={() => handleProjectClick(project)}
+                                    onDoubleClick={() => navigateToWorkspace(project)}
+                                    className={`mx-2 my-1 rounded-xl border transition-all duration-200 cursor-pointer ${selectedProject?._id === project._id
+                                        ? "border-blue-300 bg-blue-50"
+                                        : "border-transparent hover:border-slate-200/60"
                                         }`}
                                 >
                                     {isOpen ? (
-                                        <div className="flex items-center justify-between px-4 py-3">
-                                            <div
-                                                className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer"
-                                                onClick={() => handleProjectClick(project)}
-                                            >
-                                                <motion.div className="flex-shrink-0">
-                                                    <Folder
-                                                        size={18}
-                                                        className={
-                                                            selectedProject?._id === project._id
-                                                                ? "text-blue-600"
-                                                                : "text-blue-500"
-                                                        }
-                                                    />
-                                                </motion.div>
-                                                <span
-                                                    tooltip-data={project.projectName}
-                                                    tooltip-placement="top"
-                                                    className={`font-medium truncate ${selectedProject?._id === project._id
-                                                            ? "text-blue-700"
-                                                            : "text-slate-700"
-                                                        }`}
-                                                >
-                                                    {project.projectName}
-                                                </span>
-                                            </div>
-
-                                            <motion.div
-                                                initial={{ opacity: 0, scale: 0.8 }}
-                                                animate={{
-                                                    opacity: hoveredProject === project._id ? 1 : 0.7,
-                                                    scale: hoveredProject === project._id ? 1 : 0.8,
-                                                }}
-                                                transition={{ duration: 0.2 }}
-                                            >
-                                                <CustomThreeDotsDropdown
-                                                    options={getProjectOptions(project)}
-                                                    projectId={project._id}
+                                        <div className="flex items-center px-4 py-3">
+                                            <motion.div className="flex-shrink-0 mr-3">
+                                                <Folder
+                                                    size={18}
+                                                    className={
+                                                        selectedProject?._id === project._id
+                                                            ? "text-blue-600"
+                                                            : "text-blue-500"
+                                                    }
                                                 />
                                             </motion.div>
+                                            <span
+                                                className={`font-medium truncate ${selectedProject?._id === project._id
+                                                    ? "text-blue-700"
+                                                    : "text-slate-700"
+                                                    }`}
+                                            >
+                                                {project.projectName}
+                                            </span>
                                         </div>
                                     ) : (
-                                        <div
-                                            className="flex items-center justify-center py-4 cursor-pointer"
-                                            onClick={() => handleProjectClick(project)}
-                                        >
+                                        <div className="flex items-center justify-center py-4">
                                             <motion.div
                                                 whileHover={{ color: "#3b82f6" }}
                                                 tooltip-data={project.projectName}
@@ -683,16 +412,14 @@ const ProjectSidebar = () => {
                                         </span>
                                     </div>
 
-                                    {/* Role and Status Information */}
                                     <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-100">
-                                        {/* Role Badge */}
                                         <div className="flex items-center gap-1.5">
                                             <div
                                                 className={`w-2 h-2 rounded-full ${userData?.role === "admin"
-                                                        ? "bg-purple-500"
-                                                        : userData?.role === "user"
-                                                            ? "bg-blue-500"
-                                                            : "bg-gray-500"
+                                                    ? "bg-purple-500"
+                                                    : userData?.role === "user"
+                                                        ? "bg-blue-500"
+                                                        : "bg-gray-500"
                                                     }`}
                                             ></div>
                                             <span className="text-xs font-medium text-slate-700 capitalize">
@@ -700,7 +427,6 @@ const ProjectSidebar = () => {
                                             </span>
                                         </div>
 
-                                        {/* Status Badge */}
                                         <div className="flex items-center gap-1.5">
                                             <div
                                                 className={`w-2 h-2 rounded-full ${userData?.isActive ? "bg-green-500" : "bg-red-500"
@@ -711,12 +437,11 @@ const ProjectSidebar = () => {
                                             </span>
                                         </div>
 
-                                        {/* Verification Status */}
                                         <div className="flex items-center gap-1.5">
                                             <div
                                                 className={`w-2 h-2 rounded-full ${userData?.isVerified
-                                                        ? "bg-green-500"
-                                                        : "bg-yellow-500"
+                                                    ? "bg-green-500"
+                                                    : "bg-yellow-500"
                                                     }`}
                                             ></div>
                                             <span className="text-xs font-medium text-slate-700">
@@ -725,7 +450,6 @@ const ProjectSidebar = () => {
                                         </div>
                                     </div>
 
-                                    {/* Member Since */}
                                     {userData?.createdAt && (
                                         <div className="mt-2 text-xs text-slate-400">
                                             Member since{" "}
@@ -741,7 +465,6 @@ const ProjectSidebar = () => {
                                     )}
                                 </div>
 
-                                {/* Additional User Info */}
                                 <div className="p-3 bg-slate-50 border-b border-slate-200/50">
                                     <div className="grid grid-cols-2 gap-2 text-xs">
                                         <div className="text-slate-600">User ID:</div>
@@ -777,8 +500,6 @@ const ProjectSidebar = () => {
                     <button
                         onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
                         className="w-full p-4 flex items-center justify-between hover:bg-slate-100/50 transition-colors duration-150"
-                        tooltip-data="View profile details"
-                        tooltip-placement="top"
                     >
                         <div className="flex items-center gap-3">
                             <div className="relative">
@@ -786,7 +507,6 @@ const ProjectSidebar = () => {
                                     <User size={16} />
                                 </div>
 
-                                {/* Online Status Indicator */}
                                 {userData?.isActive && (
                                     <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
                                 )}
@@ -815,18 +535,6 @@ const ProjectSidebar = () => {
                     </button>
                 </div>
             </motion.div>
-
-            {/* Project Modal */}
-            <AnimatePresence>
-                {isModalOpen && (
-                    <ProjectModal
-                        project={modalMode === "edit" ? selectedProject : null}
-                        token={getToken()}
-                        onClose={closeModal}
-                        onSuccess={handleModalSuccess}
-                    />
-                )}
-            </AnimatePresence>
         </>
     );
 };

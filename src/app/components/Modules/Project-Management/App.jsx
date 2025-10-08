@@ -15,7 +15,7 @@ export const PROJECT_EVENTS = {
   CREATED: 'project:created',
   UPDATED: 'project:updated',
   DELETED: 'project:deleted',
-  CHANGED: 'project:changed', // Generic change event
+  CHANGED: 'project:changed',
 };
 
 const emitProjectEvent = (eventType, projectData = null) => {
