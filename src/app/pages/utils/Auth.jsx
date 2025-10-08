@@ -47,6 +47,7 @@ const AuthPage = () => {
   const [showOTPForm, setShowOTPForm] = useState(false);
   const [showLoginModal, setShowLoginModal] = useState(false);
   const [isPersistent, setIsPersistent] = useState(true);
+  const [acceptTerms, setAcceptTerms] = useState(false);
 
   const { showAlert } = useAlert();
 
@@ -109,6 +110,12 @@ const AuthPage = () => {
         })
         router.push('/app');
       }, 2000);
+    } else {
+      // Show info alert about Google sign-in
+      showAlert({
+        type: "info",
+        message: "For enhanced security and compatibility with VS Code environment, we currently support email-based authentication only. This ensures maximum protection for your testing projects and data."
+      });
     }
   }, [router, showAlert]);
 
@@ -123,6 +130,11 @@ const AuthPage = () => {
     e.preventDefault();
     if (!formData.email) {
       showAlert('Please enter your email address', 'error');
+      return;
+    }
+
+    if (!acceptTerms) {
+      showAlert('Please accept the Terms & Conditions and Privacy Policy to continue', 'error');
       return;
     }
 
@@ -158,6 +170,11 @@ const AuthPage = () => {
     e.preventDefault();
     if (!formData.name || !formData.email || !formData.password || !formData.otp) {
       showAlert('Please fill in all fields', 'error');
+      return;
+    }
+
+    if (!acceptTerms) {
+      showAlert('Please accept the Terms & Conditions and Privacy Policy to continue', 'error');
       return;
     }
 
@@ -244,6 +261,18 @@ const AuthPage = () => {
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleForgotPassword = () => {
+    router.push('/forgot-password');
+  };
+
+  const handlePrivacyPolicy = () => {
+    router.push('/privacy');
+  };
+
+  const handleTermsConditions = () => {
+    router.push('/terms');
   };
 
   return (
@@ -579,10 +608,39 @@ const AuthPage = () => {
                         </div>
                       </div>
 
+                      {/* Terms and Conditions Checkbox */}
+                      <div className="flex items-start gap-3 p-3 bg-gray-50 rounded-lg">
+                        <input
+                          type="checkbox"
+                          id="acceptTerms"
+                          checked={acceptTerms}
+                          onChange={(e) => setAcceptTerms(e.target.checked)}
+                          className="w-4 h-4 text-blue-600 bg-white border-gray-300 rounded focus:ring-blue-500 focus:ring-2 mt-1 flex-shrink-0"
+                        />
+                        <label htmlFor="acceptTerms" className="text-sm text-gray-700 cursor-pointer select-none">
+                          I agree to the{' '}
+                          <button
+                            type="button"
+                            onClick={handleTermsConditions}
+                            className="text-blue-600 hover:text-blue-700 font-medium underline"
+                          >
+                            Terms & Conditions
+                          </button>{' '}
+                          and{' '}
+                          <button
+                            type="button"
+                            onClick={handlePrivacyPolicy}
+                            className="text-blue-600 hover:text-blue-700 font-medium underline"
+                          >
+                            Privacy Policy
+                          </button>
+                        </label>
+                      </div>
+
                       {/* Send OTP Button */}
                       <motion.button
                         onClick={handleSendOTP}
-                        disabled={isLoading}
+                        disabled={isLoading || !acceptTerms}
                         whileHover={{ scale: 1.02 }}
                         whileTap={{ scale: 0.98 }}
                         className="w-full bg-blue-600 hover:bg-blue-700 text-white py-3 rounded-lg font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
@@ -709,6 +767,17 @@ const AuthPage = () => {
                           {showPassword ? <EyeOff className="w-5 h-5" /> : <Eye className="w-5 h-5" />}
                         </button>
                       </div>
+                    </div>
+
+                    {/* Forgot Password Link */}
+                    <div className="text-right">
+                      <button
+                        type="button"
+                        onClick={handleForgotPassword}
+                        className="text-sm text-blue-600 hover:text-blue-700 font-medium transition-colors"
+                      >
+                        Forgot your password?
+                      </button>
                     </div>
 
                     {/* Persistent Login Checkbox */}
