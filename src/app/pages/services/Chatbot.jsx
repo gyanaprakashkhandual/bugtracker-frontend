@@ -2,9 +2,11 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Search, Plus, Paperclip, Mic, StopCircle, CheckCircle, AlertCircle, Info, X, File, Trash2, MessageSquare } from 'lucide-react'
+import { Send, Search, Plus, Paperclip, Mic, StopCircle, CheckCircle, AlertCircle, Info, X, File, Trash2, MessageSquare, Menu } from 'lucide-react'
 import { handleProjectCommand } from '@/app/client/project.client'
+import { handleTestTypeCommand } from '@/app/client/test.type.client'
 import { ProjectsGrid } from '@/app/components/Chatbot/Project'
+import { TestTypesGrid } from '@/app/components/Chatbot/Test.Type'
 
 const commands = [
     '@add-test-case',
@@ -25,7 +27,9 @@ const commands = [
     '@get-bug-search',
     '@get-projects',
     '@get-my-projects',
-    '@get-test-types'
+    '@get-test-types',
+    '@get-my-test-types',
+    '@search-test-types'
 ]
 
 // API Configuration
@@ -55,6 +59,27 @@ const renderMessageContent = (content) => {
         }
         return <span key={index}>{part}</span>
     })
+}
+
+// Typing animation component for AI messages
+const TypingText = ({ text, onComplete }) => {
+    const [displayedText, setDisplayedText] = useState('')
+    const [currentIndex, setCurrentIndex] = useState(0)
+
+    useEffect(() => {
+        if (currentIndex < text.length) {
+            const timeout = setTimeout(() => {
+                setDisplayedText(prev => prev + text[currentIndex])
+                setCurrentIndex(prev => prev + 1)
+            }, 20) // Adjust speed here (milliseconds per character)
+
+            return () => clearTimeout(timeout)
+        } else if (onComplete) {
+            onComplete()
+        }
+    }, [currentIndex, text, onComplete])
+
+    return <span>{displayedText}</span>
 }
 
 // Action result component
@@ -97,13 +122,16 @@ const ActionResult = ({ result }) => {
                 {getIcon()}
                 <div className="flex-1">
                     <p className="text-sm font-medium text-gray-800">{result.message}</p>
-                    {result.data && !result.projects && (
+                    {result.data && !result.projects && !result.testTypes && (
                         <pre className="mt-2 text-xs bg-white p-2 rounded border overflow-x-auto max-h-40">
                             {JSON.stringify(result.data, null, 2)}
                         </pre>
                     )}
                     {result.projects && (
                         <ProjectsGrid projects={result.projects} showCount={true} />
+                    )}
+                    {result.testTypes && (
+                        <TestTypesGrid testTypes={result.testTypes} showCount={true} />
                     )}
                 </div>
             </div>
@@ -162,6 +190,7 @@ export default function LumenChat() {
     const [currentConversationId, setCurrentConversationId] = useState(null)
     const [attachments, setAttachments] = useState([])
     const [isUploading, setIsUploading] = useState(false)
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true)
     const inputRef = useRef(null)
     const messagesEndRef = useRef(null)
     const dropdownRef = useRef(null)
@@ -240,7 +269,8 @@ export default function LumenChat() {
                     timestamp: new Date(msg.timestamp),
                     command: msg.command,
                     actionResult: msg.actionResult,
-                    attachments: msg.attachments
+                    attachments: msg.attachments,
+                    isTypingComplete: true
                 }))
 
                 setMessages(formattedMessages)
@@ -475,6 +505,11 @@ export default function LumenChat() {
                 return await handleProjectCommand(command, message)
             }
 
+            // Handle test type commands
+            if (command === '@get-test-types' || command === '@get-my-test-types' || command === '@search-test-types') {
+                return await handleTestTypeCommand(command, message)
+            }
+
             // Add handlers for other commands here
             // if (command.includes('test-case')) { return await handleTestCaseCommand(command, message) }
             // if (command.includes('bug')) { return await handleBugCommand(command, message) }
@@ -518,7 +553,8 @@ export default function LumenChat() {
                     type: 'ai',
                     content: localResult.message || 'Command processed successfully',
                     timestamp: new Date(),
-                    actionResult: localResult
+                    actionResult: localResult,
+                    isTypingComplete: false
                 }
                 setMessages(prev => [...prev, aiMessage])
             } else {
@@ -548,7 +584,8 @@ export default function LumenChat() {
                     content: data.message,
                     timestamp: new Date(),
                     command: data.command,
-                    actionResult: data.actionResult
+                    actionResult: data.actionResult,
+                    isTypingComplete: false
                 }
 
                 setMessages(prev => [...prev, aiMessage])
@@ -567,7 +604,8 @@ export default function LumenChat() {
                 actionResult: {
                     status: 'error',
                     message: error.message
-                }
+                },
+                isTypingComplete: false
             }
             setMessages(prev => [...prev, errorMessage])
         } finally {
@@ -582,7 +620,8 @@ export default function LumenChat() {
                 type: 'ai',
                 content: 'Good Morning! 👋',
                 subtitle: 'I\'m Lumen, your QA testing assistant. How can I help you today?',
-                timestamp: new Date()
+                timestamp: new Date(),
+                isTypingComplete: true
             }
         ])
         setCurrentConversationId(null)
@@ -593,78 +632,103 @@ export default function LumenChat() {
         setIsRecording(!isRecording)
     }
 
+    const toggleSidebar = () => {
+        setIsSidebarOpen(!isSidebarOpen)
+    }
+
     return (
         <div className="flex h-screen bg-white">
             {/* Sidebar */}
-            <div className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col">
-                <div className="p-4 border-b border-gray-200 space-y-3">
-                    <button 
-                        onClick={handleNewChat}
-                        className="w-full flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+            <AnimatePresence>
+                {isSidebarOpen && (
+                    <motion.div
+                        initial={{ x: -256, opacity: 0 }}
+                        animate={{ x: 0, opacity: 1 }}
+                        exit={{ x: -256, opacity: 0 }}
+                        transition={{ duration: 0.3 }}
+                        className="w-64 bg-gray-50 border-r border-gray-200 flex flex-col"
                     >
-                        <Plus className="w-4 h-4" />
-                        New Chat
-                    </button>
+                        <div className="p-4 border-b border-gray-200 space-y-3">
+                            <button 
+                                onClick={handleNewChat}
+                                className="w-full flex items-center gap-2 px-3 py-2.5 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-700"
+                            >
+                                <Plus className="w-4 h-4" />
+                                New Chat
+                            </button>
 
-                    <div className="relative">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
-                        <input
-                            type="text"
-                            placeholder="Search chats..."
-                            value={sidebarSearch}
-                            onChange={(e) => {
-                                setSidebarSearch(e.target.value)
-                                handleSearchConversations(e.target.value)
-                            }}
-                            className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                        />
-                    </div>
-                </div>
-
-                <div className="flex-1 p-3 overflow-y-auto">
-                    {chatHistory.length === 0 ? (
-                        <div className="text-center py-12">
-                            <p className="text-sm text-gray-400">No chat history yet</p>
-                            <p className="text-xs text-gray-300 mt-1">Start a conversation to see it here</p>
+                            <div className="relative">
+                                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-400" />
+                                <input
+                                    type="text"
+                                    placeholder="Search chats..."
+                                    value={sidebarSearch}
+                                    onChange={(e) => {
+                                        setSidebarSearch(e.target.value)
+                                        handleSearchConversations(e.target.value)
+                                    }}
+                                    className="w-full pl-9 pr-3 py-2 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                />
+                            </div>
                         </div>
-                    ) : (
-                        <div className="space-y-2">
-                            {filteredChatHistory.map((chat) => (
-                                <div
-                                    key={chat._id}
-                                    onClick={() => loadConversation(chat._id)}
-                                    className={`group relative p-3 rounded-lg cursor-pointer transition-colors ${
-                                        currentConversationId === chat._id
-                                            ? 'bg-blue-50 border border-blue-200'
-                                            : 'bg-white border border-gray-200 hover:bg-gray-50'
-                                    }`}
-                                >
-                                    <div className="flex items-start gap-2">
-                                        <MessageSquare className="w-4 h-4 text-gray-400 mt-1 flex-shrink-0" />
-                                        <div className="flex-1 min-w-0">
-                                            <p className="text-sm font-medium text-gray-800 truncate">
-                                                {chat.title}
-                                            </p>
-                                            <p className="text-xs text-gray-500 mt-1">
-                                                {new Date(chat.lastMessageAt).toLocaleDateString()}
-                                            </p>
-                                        </div>
-                                        <button
-                                            onClick={(e) => deleteConversation(chat._id, e)}
-                                            className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
-                                        >
-                                            <Trash2 className="w-3.5 h-3.5 text-red-600" />
-                                        </button>
-                                    </div>
+
+                        <div className="flex-1 p-3 overflow-y-auto">
+                            {chatHistory.length === 0 ? (
+                                <div className="text-center py-12">
+                                    <p className="text-sm text-gray-400">No chat history yet</p>
+                                    <p className="text-xs text-gray-300 mt-1">Start a conversation to see it here</p>
                                 </div>
-                            ))}
+                            ) : (
+                                <div className="space-y-2">
+                                    {filteredChatHistory.map((chat) => (
+                                        <div
+                                            key={chat._id}
+                                            onClick={() => loadConversation(chat._id)}
+                                            className={`group relative p-3 rounded-lg cursor-pointer transition-colors ${
+                                                currentConversationId === chat._id
+                                                    ? 'bg-blue-50 border border-blue-200'
+                                                    : 'bg-white border border-gray-200 hover:bg-gray-50'
+                                            }`}
+                                        >
+                                            <div className="flex items-start gap-2">
+                                                <MessageSquare className="w-4 h-4 text-gray-400 mt-1 flex-shrink-0" />
+                                                <div className="flex-1 min-w-0">
+                                                    <p className="text-sm font-medium text-gray-800 truncate">
+                                                        {chat.title}
+                                                    </p>
+                                                    <p className="text-xs text-gray-500 mt-1">
+                                                        {new Date(chat.lastMessageAt).toLocaleDateString()}
+                                                    </p>
+                                                </div>
+                                                <button
+                                                    onClick={(e) => deleteConversation(chat._id, e)}
+                                                    className="opacity-0 group-hover:opacity-100 p-1 hover:bg-red-100 rounded transition-all"
+                                                >
+                                                    <Trash2 className="w-3.5 h-3.5 text-red-600" />
+                                                </button>
+                                            </div>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
-                    )}
-                </div>
-            </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
 
             {/* Main Chat Area */}
             <div className="flex-1 flex flex-col">
+                {/* Header with menu toggle */}
+                <div className="border-b border-gray-200 px-6 py-4 flex items-center gap-3">
+                    <button
+                        onClick={toggleSidebar}
+                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        <Menu className="w-5 h-5 text-gray-600" />
+                    </button>
+                    <h1 className="text-lg font-semibold text-gray-800">Lumen AI Assistant</h1>
+                </div>
+
                 {/* Messages */}
                 <div className="flex-1 overflow-y-auto px-6 py-6">
                     <AnimatePresence>
@@ -684,12 +748,27 @@ export default function LumenChat() {
                                             </div>
                                             <div className="flex-1">
                                                 <div className="text-gray-800 text-base leading-relaxed">
-                                                    {renderMessageContent(message.content)}
+                                                    {message.isTypingComplete ? (
+                                                        renderMessageContent(message.content)
+                                                    ) : (
+                                                        <TypingText 
+                                                            text={message.content} 
+                                                            onComplete={() => {
+                                                                setMessages(prev => 
+                                                                    prev.map(msg => 
+                                                                        msg.id === message.id 
+                                                                            ? { ...msg, isTypingComplete: true }
+                                                                            : msg
+                                                                    )
+                                                                )
+                                                            }}
+                                                        />
+                                                    )}
                                                 </div>
                                                 {message.subtitle && (
                                                     <p className="text-gray-500 text-sm mt-2">{message.subtitle}</p>
                                                 )}
-                                                {message.actionResult && (
+                                                {message.actionResult && message.isTypingComplete && (
                                                     <ActionResult result={message.actionResult} />
                                                 )}
                                             </div>
