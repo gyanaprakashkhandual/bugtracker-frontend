@@ -6,15 +6,12 @@ import {
     Search,
     AlertCircle,
     Loader2,
-    RefreshCw,
     Archive,
     MessageSquare,
-    ExternalLink,
     X,
     Send,
     ChevronLeft,
     ChevronRight,
-    Eye,
     Calendar,
     Clock,
     Edit,
@@ -23,18 +20,18 @@ import {
     ChevronRight as ChevronRightIcon,
     Image as ImageIcon,
     Link2,
-    Image,
     Upload,
-    Plus,
-    Minus,
+    Copy,
+    Check
 } from "lucide-react";
 import { useAlert } from "@/app/script/Alert.context";
 import { useTestType } from "@/app/script/TestType.context";
-import { GoogleArrowDown } from "@/app/components/utils/Icon";
-import Loader from "@/app/components/utils/Loader";
-import { copyToClipboard } from "@/app/utils/Copy.text";
-import { Copy, Check } from "lucide-react";
 import { useConfirm } from "@/app/script/Confirm.context";
+import { GoogleArrowDown } from "@/app/components/utils/Icon";
+import { copyToClipboard } from "@/app/utils/Copy.text";
+import Loader from "@/app/components/utils/Loader";
+
+
 
 const BugSplitView = () => {
     const [imageDropdownOpen, setImageDropdownOpen] = useState(false);
@@ -65,6 +62,9 @@ const BugSplitView = () => {
     const fileInputRef = useRef(null);
 
     const { showAlert } = useAlert();
+    const { showConfirm } = useConfirm();
+    const { testTypeId, testTypeName } = useTestType();
+
     const handleCopy = (text) => {
         copyToClipboard(text, showAlert);
     };
@@ -91,9 +91,7 @@ const BugSplitView = () => {
             });
     };
 
-    const { showConfirm } = useConfirm();
 
-    const { testTypeId, testTypeName } = useTestType();
     const projectId =
         typeof window !== "undefined"
             ? localStorage.getItem("currentProjectId")
