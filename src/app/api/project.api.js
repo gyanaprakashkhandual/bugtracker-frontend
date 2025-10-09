@@ -1,17 +1,30 @@
-// api.project.js
+// apis/project.api.js
 // Complete API service for Project operations
 
 const BASE_URL = 'http://localhost:5000/api/v1/project';
 
 // Helper function to get stored credentials
 const getCredentials = () => {
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-        throw new Error("Missing authentication token. Please ensure you're logged in.");
+    if (typeof window === 'undefined') {
+        throw new Error("Window is not available. This function must be called in a browser environment.");
     }
 
-    return { token };
+    try {
+        const token = window.localStorage?.getItem("token");
+
+        if (!token) {
+            throw new Error("Missing authentication token. Please ensure you're logged in.");
+        }
+
+        return { token };
+    } catch (error) {
+        // Fallback to window.authToken if localStorage fails
+        const token = window.authToken;
+        if (!token) {
+            throw new Error("Missing authentication token. Please ensure you're logged in.");
+        }
+        return { token };
+    }
 };
 
 // Helper function to create headers
@@ -152,10 +165,14 @@ export const getProjectStats = async () => {
 };
 
 /**
- * Get current project from localStorage
+ * Get current project from memory
  */
 export const getCurrentProject = async () => {
-    const projectId = localStorage.getItem("currentProjectId");
+    if (typeof window === 'undefined') {
+        throw new Error("Window is not available.");
+    }
+
+    const projectId = window.localStorage?.getItem("currentProjectId") || window.currentProjectId;
 
     if (!projectId) {
         throw new Error("No project selected. Please select a project first.");
@@ -220,24 +237,6 @@ export const getProjectsByUser = async (userId, options = {}) => {
     });
 };
 
-/**
- * Get AI-generated projects from stats (Admin only)
- * @returns {number} Count of AI-generated projects
- */
-export const getAIGeneratedProjectsCount = async () => {
-    const stats = await getProjectStats();
-    return stats.stats.aiGeneratedCount;
-};
-
-/**
- * Get recent projects (last 30 days) count (Admin only)
- * @returns {number} Count of recent projects
- */
-export const getRecentProjectsCount = async () => {
-    const stats = await getProjectStats();
-    return stats.stats.recentProjectsCount;
-};
-
 // ============================================
 // UTILITY FUNCTIONS
 // ============================================
@@ -298,292 +297,48 @@ export const getMyProjectCount = async () => {
 };
 
 /**
- * Validate project access
- * @param {string} projectId - Project ID
- * @returns {boolean} True if user has access
- */
-export const validateProjectAccess = async (projectId) => {
-    try {
-        await getProjectById(projectId);
-        return true;
-    } catch (error) {
-        if (error.message.includes("Access denied")) {
-            return false;
-        }
-        throw error;
-    }
-};
-
-/**
- * Set current project in localStorage
+ * Set current project in memory
  * @param {string} projectId - Project ID
  */
 export const setCurrentProject = (projectId) => {
     if (!projectId) {
         throw new Error("Project ID is required.");
     }
-    localStorage.setItem("currentProjectId", projectId);
+
+    if (typeof window !== 'undefined') {
+        try {
+            window.localStorage?.setItem("currentProjectId", projectId);
+        } catch (e) {
+            window.currentProjectId = projectId;
+        }
+    }
 };
 
 /**
- * Clear current project from localStorage
+ * Clear current project from memory
  */
 export const clearCurrentProject = () => {
-    localStorage.removeItem("currentProjectId");
+    if (typeof window !== 'undefined') {
+        try {
+            window.localStorage?.removeItem("currentProjectId");
+        } catch (e) {
+            window.currentProjectId = null;
+        }
+    }
 };
 
 /**
- * Get project ID from localStorage
+ * Get project ID from memory
  * @returns {string|null} Project ID or null
  */
 export const getCurrentProjectId = () => {
-    return localStorage.getItem("currentProjectId");
-};
-
-// ============================================
-// ADMIN-SPECIFIC OPERATIONS
-// ============================================
-
-/**
- * Get top project creators (Admin only)
- * @returns {Array} List of users with project counts
- */
-export const getTopProjectCreators = async () => {
-    const stats = await getProjectStats();
-    return stats.stats.projectsByUser;
-};
-
-/**
- * Get recent projects (Admin only)
- * @returns {Array} List of recent projects
- */
-export const getRecentProjects = async () => {
-    const stats = await getProjectStats();
-    return stats.stats.recentProjects;
-};
-
-/**
- * Get organization overview (Admin only)
- * @returns {Object} Organization statistics
- */
-export const getOrganizationOverview = async () => {
-    const stats = await getProjectStats();
-    return {
-        organizationName: stats.stats.organizationName,
-        organizationId: stats.stats.organizationId,
-        totalProjects: stats.stats.totalProjects,
-        recentProjectsCount: stats.stats.recentProjectsCount,
-        aiGeneratedCount: stats.stats.aiGeneratedCount
-    };
-};
-
-// ============================================
-// CHATBOT-SPECIFIC HELPERS
-// ============================================
-
-/**
- * Process chatbot command for project operations
- * @param {string} command - Natural language command
- * @param {Object} params - Extracted parameters from command
- */
-export const processChatbotCommand = async (command, params = {}) => {
-    const lowerCommand = command.toLowerCase();
+    if (typeof window === 'undefined') return null;
 
     try {
-        // Get operations
-        if (lowerCommand.includes('get') || lowerCommand.includes('show') || lowerCommand.includes('list') || lowerCommand.includes('find')) {
-
-            // Get by ID
-            if (params.projectId) {
-                return await getProjectById(params.projectId);
-            }
-
-            // Get by slug
-            if (params.slug) {
-                return await getProjectBySlug(params.slug);
-            }
-
-            // Get by name
-            if (params.projectName) {
-                return await findProjectByName(params.projectName);
-            }
-
-            // Get current project
-            if (lowerCommand.includes('current') || lowerCommand.includes('selected')) {
-                return await getCurrentProject();
-            }
-
-            // Get my projects
-            if (lowerCommand.includes('my') || lowerCommand.includes('own')) {
-                return await getMyProjects(params.options);
-            }
-
-            // Get by user (Admin only)
-            if (params.userId) {
-                return await getProjectsByUser(params.userId, params.options);
-            }
-
-            // Get all
-            return await getAllProjects(params.options);
-        }
-
-        // Search operations
-        if (lowerCommand.includes('search')) {
-            if (lowerCommand.includes('my')) {
-                return await searchMyProjects(params.keyword, params.options);
-            }
-            return await searchProjects(params.keyword, params.options);
-        }
-
-        // Statistics operations
-        if (lowerCommand.includes('stats') || lowerCommand.includes('statistics')) {
-            return await getProjectStats();
-        }
-
-        // Count operations
-        if (lowerCommand.includes('count') || lowerCommand.includes('how many')) {
-            if (lowerCommand.includes('my')) {
-                return await getMyProjectCount();
-            }
-            if (lowerCommand.includes('ai')) {
-                return await getAIGeneratedProjectsCount();
-            }
-            if (lowerCommand.includes('recent')) {
-                return await getRecentProjectsCount();
-            }
-            return await getProjectCount();
-        }
-
-        // Overview operations
-        if (lowerCommand.includes('overview') || lowerCommand.includes('summary')) {
-            return await getOrganizationOverview();
-        }
-
-        // Top creators (Admin)
-        if (lowerCommand.includes('top') && lowerCommand.includes('creator')) {
-            return await getTopProjectCreators();
-        }
-
-        // Recent projects (Admin)
-        if (lowerCommand.includes('recent')) {
-            return await getRecentProjects();
-        }
-
-        throw new Error('Unable to process command. Please rephrase your request.');
-    } catch (error) {
-        throw new Error(`Command processing failed: ${error.message}`);
+        return window.localStorage?.getItem("currentProjectId") || window.currentProjectId || null;
+    } catch (e) {
+        return window.currentProjectId || null;
     }
-};
-
-/**
- * Parse common chatbot queries for projects
- * @param {string} query - User query
- * @returns {Object} Parsed parameters
- */
-export const parseProjectQuery = (query) => {
-    const lowerQuery = query.toLowerCase();
-    const params = { options: {} };
-
-    // Extract project ID (assuming MongoDB ObjectId format: 24 hex characters)
-    const idMatch = query.match(/\b[a-f\d]{24}\b/i);
-    if (idMatch) {
-        params.projectId = idMatch[0];
-    }
-
-    // Extract project name (in quotes)
-    const nameMatch = query.match(/["']([^"']+)["']/);
-    if (nameMatch) {
-        params.projectName = nameMatch[1];
-    }
-
-    // Extract slug (after "slug:" or "/slug/")
-    const slugMatch = query.match(/(?:slug:|\/slug\/)\s*(\S+)/i);
-    if (slugMatch) {
-        params.slug = slugMatch[1];
-    }
-
-    // Check for user ID context
-    const userIdMatch = query.match(/user[:\s]+([a-f\d]{24})/i);
-    if (userIdMatch) {
-        params.userId = userIdMatch[1];
-    }
-
-    // Extract search keyword
-    const searchMatch = query.match(/(?:search for|find|looking for)\s+(.+?)(?:\s+project|$)/i);
-    if (searchMatch) {
-        params.keyword = searchMatch[1].trim().replace(/["']/g, '');
-    }
-
-    // Pagination
-    const pageMatch = query.match(/page\s+(\d+)/i);
-    if (pageMatch) {
-        params.options.page = parseInt(pageMatch[1]);
-    }
-
-    const limitMatch = query.match(/(?:limit|show)\s+(\d+)/i);
-    if (limitMatch) {
-        params.options.limit = parseInt(limitMatch[1]);
-    }
-
-    return params;
-};
-
-/**
- * Format project response for chatbot display
- * @param {Object} project - Project object
- * @returns {string} Formatted string
- */
-export const formatProjectForChatbot = (project) => {
-    return `
-📁 Project: ${project.projectName}
-📝 Description: ${project.projectDesc || 'No description'}
-👤 Owner: ${project.user?.name || 'Unknown'}
-📧 Email: ${project.user?.email || 'N/A'}
-🔗 Slug: ${project.slug || 'N/A'}
-📅 Created: ${new Date(project.createdAt).toLocaleDateString()}
-${project.aiGenerated ? '🤖 AI-Generated' : ''}
-  `.trim();
-};
-
-/**
- * Format project list for chatbot display
- * @param {Array} projects - Array of project objects
- * @returns {string} Formatted string
- */
-export const formatProjectListForChatbot = (projects) => {
-    if (projects.length === 0) {
-        return "No projects found.";
-    }
-
-    return projects.map((project, index) =>
-        `${index + 1}. ${project.projectName} (${project.slug}) - ${project.user?.name || 'Unknown'}`
-    ).join('\n');
-};
-
-/**
- * Format project stats for chatbot display
- * @param {Object} stats - Project statistics
- * @returns {string} Formatted string
- */
-export const formatStatsForChatbot = (stats) => {
-    return `
-📊 Project Statistics
-
-🏢 Organization: ${stats.organizationName}
-📁 Total Projects: ${stats.totalProjects}
-📅 Recent Projects (30 days): ${stats.recentProjectsCount}
-🤖 AI-Generated: ${stats.aiGeneratedCount}
-
-👥 Top Project Creators:
-${stats.projectsByUser.slice(0, 5).map((user, index) =>
-        `${index + 1}. ${user.userName} - ${user.projectCount} projects`
-    ).join('\n')}
-
-📌 Recent Projects:
-${stats.recentProjects.map((project, index) =>
-        `${index + 1}. ${project.projectName} by ${project.user?.name}`
-    ).join('\n')}
-  `.trim();
 };
 
 // Export all functions
@@ -602,30 +357,15 @@ const projectApi = {
 
     // Filter operations
     getProjectsByUser,
-    getAIGeneratedProjectsCount,
-    getRecentProjectsCount,
 
     // Utilities
     findProjectByName,
     projectExists,
     getProjectCount,
     getMyProjectCount,
-    validateProjectAccess,
     setCurrentProject,
     clearCurrentProject,
-    getCurrentProjectId,
-
-    // Admin operations
-    getTopProjectCreators,
-    getRecentProjects,
-    getOrganizationOverview,
-
-    // Chatbot helpers
-    processChatbotCommand,
-    parseProjectQuery,
-    formatProjectForChatbot,
-    formatProjectListForChatbot,
-    formatStatsForChatbot
+    getCurrentProjectId
 };
 
 export default projectApi;

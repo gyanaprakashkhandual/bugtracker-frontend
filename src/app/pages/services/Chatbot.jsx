@@ -2,27 +2,29 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Search, Plus, Paperclip, Mic, StopCircle, CheckCircle, AlertCircle, Info, X, Image as ImageIcon, File, Trash2, MessageSquare } from 'lucide-react'
+import { Send, Search, Plus, Paperclip, Mic, StopCircle, CheckCircle, AlertCircle, Info, X, File, Trash2, MessageSquare, FolderOpen, Users } from 'lucide-react'
+import { handleProjectCommand } from '@/app/client/project.client'
 
 const commands = [
     '@add-test-case',
-    '@add-bug',
-    '@add-data',
-    '@add-project',
-    '@add-test-type',
     '@edit-test-case',
-    '@edit-bug',
-    '@edit-data',
-    '@edit-project',
-    '@edit-test-type',
-    '@archive-test-case',
-    '@archive-bug',
-    '@archive-data',
+    '@trash-test-case',
+    '@delete-test-case',
+    '@delete-all-test-case',
     '@get-test-case',
+    '@get-test-case-search',
+    '@trash-all-test-case',
+    '@add-bug',
+    '@edit-bug',
+    '@trash-bug',
+    '@delete-bug',
+    '@trash-all-bug',
+    '@delete-all-bug',
     '@get-bug',
-    '@get-project',
-    '@get-test-type',
-    '@get-test-data'
+    '@get-bug-search',
+    '@get-projects',
+    '@get-my-projects',
+    '@get-test-types'
 ]
 
 // API Configuration
@@ -30,13 +32,11 @@ const API_BASE_URL = 'http://localhost:5000/api/v1/chat'
 
 // Helper to get auth token
 const getAuthToken = () => {
-    // Safely read from localStorage in the browser; fall back to window.authToken if set
     if (typeof window === 'undefined') return ''
     try {
-        const t = localStorage.getItem('token')
+        const t = window.localStorage?.getItem('token')
         return t || window.authToken || ''
     } catch (e) {
-        // localStorage access can throw in some environments (e.g., private mode)
         return window.authToken || ''
     }
 }
@@ -55,6 +55,62 @@ const renderMessageContent = (content) => {
         return <span key={index}>{part}</span>
     })
 }
+
+// Project Card Component
+const ProjectCard = ({ project }) => (
+    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
+        <div className="flex items-start justify-between mb-2">
+            <div className="flex items-center gap-2">
+                <FolderOpen className="w-5 h-5 text-indigo-600" />
+                <h3 className="font-semibold text-gray-900">{project.projectName}</h3>
+            </div>
+            {project.aiGenerated && (
+                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
+                    🤖 AI
+                </span>
+            )}
+        </div>
+        {project.projectDesc && (
+            <p className="text-sm text-gray-600 mb-3">{project.projectDesc}</p>
+        )}
+        <div className="flex items-center justify-between text-xs text-gray-500">
+            <div className="flex items-center gap-1">
+                <Users className="w-3 h-3" />
+                <span>{project.user?.name || 'Unknown'}</span>
+            </div>
+            <span>{new Date(project.createdAt).toLocaleDateString()}</span>
+        </div>
+        {project.slug && (
+            <div className="mt-2 text-xs text-gray-400">
+                Slug: <span className="font-mono">{project.slug}</span>
+            </div>
+        )}
+    </div>
+)
+
+// Projects Grid Component
+const ProjectsGrid = ({ projects, title }) => (
+    <div className="mt-4">
+        {title && <h3 className="text-lg font-semibold text-gray-800 mb-3">{title}</h3>}
+        {projects.length === 0 ? (
+            <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
+                <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                <p className="text-gray-600">No projects found</p>
+            </div>
+        ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                {projects.map((project) => (
+                    <ProjectCard key={project._id} project={project} />
+                ))}
+            </div>
+        )}
+        {projects.length > 0 && (
+            <div className="mt-3 text-sm text-gray-500 text-center">
+                Showing {projects.length} project{projects.length !== 1 ? 's' : ''}
+            </div>
+        )}
+    </div>
+)
 
 // Action result component
 const ActionResult = ({ result }) => {
@@ -96,10 +152,13 @@ const ActionResult = ({ result }) => {
                 {getIcon()}
                 <div className="flex-1">
                     <p className="text-sm font-medium text-gray-800">{result.message}</p>
-                    {result.data && (
-                        <pre className="mt-2 text-xs bg-white p-2 rounded border overflow-x-auto">
+                    {result.data && !result.projects && (
+                        <pre className="mt-2 text-xs bg-white p-2 rounded border overflow-x-auto max-h-40">
                             {JSON.stringify(result.data, null, 2)}
                         </pre>
+                    )}
+                    {result.projects && (
+                        <ProjectsGrid projects={result.projects} />
                     )}
                 </div>
             </div>
@@ -141,7 +200,7 @@ export default function LumenChat() {
             id: 1,
             type: 'ai',
             content: 'Good Morning! 👋',
-            subtitle: 'I\'m Lumen, your QA testing assistant. I can help you create bugs, projects, test cases, and more using natural language. Try using commands like @add-bug or @add-project!',
+            subtitle: 'I\'m Lumen, your QA testing assistant. I can help you manage test cases, bugs, and projects using natural language commands.',
             timestamp: new Date()
         }
     ])
@@ -459,30 +518,29 @@ export default function LumenChat() {
         setAttachments(prev => prev.filter((_, i) => i !== index))
     }
 
-    const sendMessageToAPI = async (message, attachmentData) => {
-        try {
-            const response = await fetch(`${API_BASE_URL}/chat`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${getAuthToken()}`
-                },
-                body: JSON.stringify({
-                    message: message,
-                    conversationId: currentConversationId,
-                    attachments: attachmentData
-                })
-            })
+    const processLocalCommand = async (message) => {
+        // Extract command from message
+        const commandMatch = message.match(/@[\w-]+/)
+        if (!commandMatch) return null
 
-            if (!response.ok) {
-                throw new Error(`API error: ${response.status}`)
+        const command = commandMatch[0]
+
+        try {
+            // Handle project commands
+            if (command === '@get-projects' || command === '@get-my-projects') {
+                return await handleProjectCommand(command, message)
             }
 
-            const data = await response.json()
-            return data
+            // Add handlers for other commands here
+            // if (command === '@get-test-case') { ... }
+            // if (command === '@get-bug') { ... }
+
+            return null
         } catch (error) {
-            console.error('Error sending message:', error)
-            throw error
+            return {
+                status: 'error',
+                message: error.message
+            }
         }
     }
 
@@ -506,22 +564,55 @@ export default function LumenChat() {
         setIsTyping(true)
 
         try {
-            const response = await sendMessageToAPI(currentInput, currentAttachments)
+            // First, try to process command locally
+            const localResult = await processLocalCommand(currentInput)
 
-            const aiMessage = {
-                id: messages.length + 2,
-                type: 'ai',
-                content: response.message,
-                timestamp: new Date(),
-                command: response.command,
-                actionResult: response.actionResult
-            }
+            if (localResult) {
+                // Command was handled locally
+                const aiMessage = {
+                    id: messages.length + 2,
+                    type: 'ai',
+                    content: localResult.message || 'Command processed successfully',
+                    timestamp: new Date(),
+                    actionResult: localResult
+                }
+                setMessages(prev => [...prev, aiMessage])
+            } else {
+                // Send to backend API
+                const response = await fetch(`${API_BASE_URL}/chat`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${getAuthToken()}`
+                    },
+                    body: JSON.stringify({
+                        message: currentInput,
+                        conversationId: currentConversationId,
+                        attachments: currentAttachments
+                    })
+                })
 
-            setMessages(prev => [...prev, aiMessage])
-            
-            if (response.conversationId && !currentConversationId) {
-                setCurrentConversationId(response.conversationId)
-                loadChatHistory()
+                if (!response.ok) {
+                    throw new Error(`API error: ${response.status}`)
+                }
+
+                const data = await response.json()
+
+                const aiMessage = {
+                    id: messages.length + 2,
+                    type: 'ai',
+                    content: data.message,
+                    timestamp: new Date(),
+                    command: data.command,
+                    actionResult: data.actionResult
+                }
+
+                setMessages(prev => [...prev, aiMessage])
+                
+                if (data.conversationId && !currentConversationId) {
+                    setCurrentConversationId(data.conversationId)
+                    loadChatHistory()
+                }
             }
         } catch (error) {
             const errorMessage = {
@@ -556,40 +647,6 @@ export default function LumenChat() {
 
     const toggleRecording = () => {
         setIsRecording(!isRecording)
-    }
-
-    const renderInputContent = () => {
-        const parts = input.split(/(@[\w-]*)/g)
-        return parts.map((part, index) => {
-            if (part.startsWith('@') && part.length > 1) {
-                const isValidCommand = commands.includes(part)
-                const shouldHighlight = highlightedCommands.has(part)
-
-                if (isValidCommand && shouldHighlight) {
-                    return (
-                        <motion.span
-                            key={`${part}-${index}-highlighted`}
-                            animate={{
-                                color: ['rgb(67 56 202)', 'rgb(124 58 237)', 'rgb(67 56 202)']
-                            }}
-                            transition={{ duration: 1, ease: 'easeInOut' }}
-                            className="font-bold text-indigo-700"
-                        >
-                            {part}
-                        </motion.span>
-                    )
-                } else if (isValidCommand) {
-                    return (
-                        <span key={`${part}-${index}`} className="font-bold text-indigo-700">
-                            {part}
-                        </span>
-                    )
-                } else {
-                    return <span key={index} className="text-gray-800">{part}</span>
-                }
-            }
-            return <span key={index}>{part}</span>
-        })
     }
 
     return (
@@ -676,7 +733,7 @@ export default function LumenChat() {
                                 className={`mb-6 ${message.type === 'user' ? 'flex justify-end' : ''}`}
                             >
                                 {message.type === 'ai' ? (
-                                    <div className="max-w-3xl">
+                                    <div className="max-w-4xl w-full">
                                         <div className="flex items-start gap-3">
                                             <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center text-white font-semibold text-sm flex-shrink-0">
                                                 AI
