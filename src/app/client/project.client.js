@@ -1,6 +1,3 @@
-// services/projectCommandHandler.js
-// Handles all project-related commands from the chatbot
-
 import { getAllProjects, getMyProjects } from '../api/project.api'
 
 /**
@@ -223,4 +220,4 @@ const projectClient = {
     formatProjectsResponse
 }
 
-export default projectClient
+export default projectClient;

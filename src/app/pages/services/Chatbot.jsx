@@ -2,8 +2,9 @@
 
 import { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Send, Search, Plus, Paperclip, Mic, StopCircle, CheckCircle, AlertCircle, Info, X, File, Trash2, MessageSquare, FolderOpen, Users } from 'lucide-react'
+import { Send, Search, Plus, Paperclip, Mic, StopCircle, CheckCircle, AlertCircle, Info, X, File, Trash2, MessageSquare } from 'lucide-react'
 import { handleProjectCommand } from '@/app/client/project.client'
+import { ProjectsGrid } from '@/app/components/Chatbot/Project'
 
 const commands = [
     '@add-test-case',
@@ -56,62 +57,6 @@ const renderMessageContent = (content) => {
     })
 }
 
-// Project Card Component
-const ProjectCard = ({ project }) => (
-    <div className="bg-white border border-gray-200 rounded-lg p-4 hover:shadow-md transition-shadow">
-        <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-2">
-                <FolderOpen className="w-5 h-5 text-indigo-600" />
-                <h3 className="font-semibold text-gray-900">{project.projectName}</h3>
-            </div>
-            {project.aiGenerated && (
-                <span className="text-xs bg-purple-100 text-purple-700 px-2 py-1 rounded-full">
-                    🤖 AI
-                </span>
-            )}
-        </div>
-        {project.projectDesc && (
-            <p className="text-sm text-gray-600 mb-3">{project.projectDesc}</p>
-        )}
-        <div className="flex items-center justify-between text-xs text-gray-500">
-            <div className="flex items-center gap-1">
-                <Users className="w-3 h-3" />
-                <span>{project.user?.name || 'Unknown'}</span>
-            </div>
-            <span>{new Date(project.createdAt).toLocaleDateString()}</span>
-        </div>
-        {project.slug && (
-            <div className="mt-2 text-xs text-gray-400">
-                Slug: <span className="font-mono">{project.slug}</span>
-            </div>
-        )}
-    </div>
-)
-
-// Projects Grid Component
-const ProjectsGrid = ({ projects, title }) => (
-    <div className="mt-4">
-        {title && <h3 className="text-lg font-semibold text-gray-800 mb-3">{title}</h3>}
-        {projects.length === 0 ? (
-            <div className="text-center py-8 bg-gray-50 rounded-lg border border-gray-200">
-                <FolderOpen className="w-12 h-12 text-gray-400 mx-auto mb-2" />
-                <p className="text-gray-600">No projects found</p>
-            </div>
-        ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
-                {projects.map((project) => (
-                    <ProjectCard key={project._id} project={project} />
-                ))}
-            </div>
-        )}
-        {projects.length > 0 && (
-            <div className="mt-3 text-sm text-gray-500 text-center">
-                Showing {projects.length} project{projects.length !== 1 ? 's' : ''}
-            </div>
-        )}
-    </div>
-)
-
 // Action result component
 const ActionResult = ({ result }) => {
     if (!result) return null
@@ -158,7 +103,7 @@ const ActionResult = ({ result }) => {
                         </pre>
                     )}
                     {result.projects && (
-                        <ProjectsGrid projects={result.projects} />
+                        <ProjectsGrid projects={result.projects} showCount={true} />
                     )}
                 </div>
             </div>
@@ -519,7 +464,6 @@ export default function LumenChat() {
     }
 
     const processLocalCommand = async (message) => {
-        // Extract command from message
         const commandMatch = message.match(/@[\w-]+/)
         if (!commandMatch) return null
 
@@ -532,8 +476,8 @@ export default function LumenChat() {
             }
 
             // Add handlers for other commands here
-            // if (command === '@get-test-case') { ... }
-            // if (command === '@get-bug') { ... }
+            // if (command.includes('test-case')) { return await handleTestCaseCommand(command, message) }
+            // if (command.includes('bug')) { return await handleBugCommand(command, message) }
 
             return null
         } catch (error) {
