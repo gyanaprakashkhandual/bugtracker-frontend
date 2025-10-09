@@ -36,6 +36,8 @@ import { copyToClipboard } from "@/app/utils/Copy.text";
 import { Copy, Check } from "lucide-react";
 
 const BugSplitView = () => {
+    const [imageDropdownOpen, setImageDropdownOpen] = useState(false);
+    const [refLinkDropdownOpen, setRefLinkDropdownOpen] = useState(false);
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [bugs, setBugs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -826,8 +828,8 @@ const BugSplitView = () => {
                                         key={option}
                                         whileHover={{ backgroundColor: "rgba(59, 130, 246, 0.08)" }}
                                         className={`block w-full text-left px-2.5 py-1.5 text-xs transition-colors font-medium ${value === option
-                                                ? "bg-blue-50 text-blue-600 border-l-2 border-blue-500"
-                                                : "text-gray-700 hover:text-gray-900"
+                                            ? "bg-blue-50 text-blue-600 border-l-2 border-blue-500"
+                                            : "text-gray-700 hover:text-gray-900"
                                             }`}
                                         onClick={() => handleSelect(option)}
                                         role="menuitem"
@@ -1012,8 +1014,8 @@ const BugSplitView = () => {
                                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                                     }}
                                     className={`bg-white rounded-xl border-2 p-3 cursor-pointer transition-all duration-200 ${selectedBug?._id === bug._id
-                                            ? "border-blue-500 bg-blue-50 shadow-md"
-                                            : "border-gray-200 hover:border-blue-300"
+                                        ? "border-blue-500 bg-blue-50 shadow-md"
+                                        : "border-gray-200 hover:border-blue-300"
                                         }`}
                                     onClick={() => {
                                         setSelectedBug(bug);
@@ -1149,45 +1151,101 @@ const BugSplitView = () => {
                         )}
                     </div>
 
+
+
                     {selectedBug && (
                         <div className="flex items-center gap-3">
-                            {/* Image Button */}
+                            {/* Image Button with Dropdown */}
                             {selectedBug.images && selectedBug.images.length > 0 && (
-                                <motion.button
-                                    tooltip-data="View Images"
-                                    tooltip-placement="bottom"
-                                    whileHover={{ scale: 1.05 }}
-                                    whileTap={{ scale: 0.95 }}
-                                    onClick={() => {
-                                        // Open image gallery or modal
-                                        selectedBug.images.forEach((img, index) => {
-                                            window.open(img, `image-${index}`);
-                                        });
-                                    }}
-                                    className="flex items-center gap-1.5 px-4 py-2 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm font-medium"
-                                >
-                                    <ImageIcon size={13} />
-                                    <span>{selectedBug.images.length}</span>
-                                </motion.button>
-                            )}
-
-                            {/* Reference Link Button */}
-                            {selectedBug.refLinks &&
-                                selectedBug.refLinks !== "No Link Provided" && (
-                                    <motion.a
-                                        tooltip-data="Open Reference"
+                                <div className="relative">
+                                    <motion.button
+                                        tooltip-data="View Images"
                                         tooltip-placement="bottom"
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
-                                        href={selectedBug.refLinks}
-                                        target="_blank"
-                                        rel="noopener noreferrer"
-                                        className="flex items-center gap-1.5 px-4 py-2 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium"
+                                        onClick={() => setImageDropdownOpen(!imageDropdownOpen)}
+                                        className="flex items-center gap-1.5 px-4 py-2 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm font-medium"
                                     >
-                                        <Link2 size={13} />
-                                    </motion.a>
-                                )}
+                                        <ImageIcon size={13} />
+                                        <span>{selectedBug.images.length}</span>
+                                    </motion.button>
 
+                                    {/* Image Dropdown */}
+                                    {imageDropdownOpen && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: -10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            exit={{ opacity: 0, y: -10 }}
+                                            className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] w-64 overflow-y-auto"
+                                        >
+                                            {selectedBug.images.map((image, index) => (
+                                                <a
+                                                    key={index}
+                                                    href={image}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    onClick={() => setImageDropdownOpen(false)}
+                                                    className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-purple-100 hover:text-purple-700 transition-colors border-b border-gray-100 last:border-b-0 truncate"
+                                                >
+                                                    {image}
+                                                </a>
+                                            ))}
+                                        </motion.div>
+                                    )}
+                                </div>
+                            )}
+
+                            {/* Reference Link Button with Dropdown */}
+                            {selectedBug.refLinks &&
+                                selectedBug.refLinks !== "No Link Provided" && (
+                                    <div className="relative">
+                                        <motion.button
+                                            tooltip-data="Open Reference"
+                                            tooltip-placement="bottom"
+                                            whileHover={{ scale: 1.05 }}
+                                            whileTap={{ scale: 0.95 }}
+                                            onClick={() => setRefLinkDropdownOpen(!refLinkDropdownOpen)}
+                                            className="flex items-center gap-1.5 px-4 py-2 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium"
+                                        >
+                                            <Link2 size={13} />
+                                        </motion.button>
+
+                                        {/* Reference Link Dropdown */}
+                                        {refLinkDropdownOpen && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] w-64 overflow-y-auto"
+                                            >
+                                                {Array.isArray(selectedBug.refLinks) ? (
+                                                    selectedBug.refLinks.map((link, index) => (
+                                                        <a
+                                                            key={index}
+                                                            href={link}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            onClick={() => setRefLinkDropdownOpen(false)}
+                                                            className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-colors border-b border-gray-100 last:border-b-0 truncate"
+                                                        >
+                                                            {link}
+                                                        </a>
+                                                    ))
+                                                ) : (
+                                                    <a
+                                                        href={selectedBug.refLinks}
+                                                        target="_blank"
+                                                        rel="noopener noreferrer"
+                                                        onClick={() => setRefLinkDropdownOpen(false)}
+                                                        className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-colors truncate"
+                                                    >
+                                                        {selectedBug.refLinks}
+                                                    </a>
+                                                )}
+                                            </motion.div>
+                                        )}
+                                    </div>
+                                )}
                             {/* Bug counter */}
                             <div className="text-xs text-gray-600 font-medium bg-gray-100 px-3 py-1.5 rounded-lg">
                                 Bug{" "}
