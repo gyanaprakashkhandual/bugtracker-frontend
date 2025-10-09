@@ -27,7 +27,7 @@ import {
 import { useAlert } from "@/app/script/Alert.context";
 import { useTestType } from "@/app/script/TestType.context";
 import { useConfirm } from "@/app/script/Confirm.context";
-import { GoogleArrowDown } from "@/app/components/utils/Icon";
+import { GoogleArrowDown, GoogleArrowRight } from "@/app/components/utils/Icon";
 import { copyToClipboard } from "@/app/utils/Copy.text";
 import Loader from "@/app/components/utils/Loader";
 
@@ -830,17 +830,21 @@ const BugSplitView = () => {
                     duration: 0.3,
                     ease: [0.4, 0.0, 0.2, 1],
                 }}
-                className="bg-white border-r border-gray-200 flex flex-col sidebar-scrollbar sticky top-0 h-full"
+                className="bg-white border-r border-gray-200 flex flex-col user-select-none sidebar-scrollbar sticky top-0 h-full"
                 style={{
                     minWidth: isSidebarOpen ? sidebarWidth : 0,
                     overflow: "hidden",
                 }}
             >
                 {/* Sidebar Header */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
-                    <h2 className="text-sm font-bold text-gray-800 tracking-wide">
+                <div className="flex items-center justify-between p-[14px] border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <h2
+                        onClick={() => copyToClipboard(testTypeName, showAlert)}
+                        className="text-sm font-bold text-gray-800 tracking-wide"
+                    >
                         {testTypeName || 'Select Test Type'}
                     </h2>
+
                     <motion.button
                         tooltip-data="Close Sidebar"
                         tooltip-placement="right"
@@ -849,7 +853,7 @@ const BugSplitView = () => {
                         onClick={() => setIsSidebarOpen(false)}
                         className="p-1.5 hover:bg-white rounded-lg transition-colors"
                     >
-                        <ChevronRightIcon size={16} className="text-gray-600" />
+                        <GoogleArrowRight size={16} className="text-gray-600" />
                     </motion.button>
                 </div>
 
@@ -885,7 +889,7 @@ const BugSplitView = () => {
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="mt-2 p-3 bg-white border border-gray-200 rounded-lg shadow-lg"
+                                className="absolute right-0 mt-2 p-3 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
                             >
                                 <div className="space-y-2">
                                     <div>
@@ -959,14 +963,157 @@ const BugSplitView = () => {
 
                 {/* Bugs List */}
                 <div className="flex-1 overflow-y-auto bg-gray-50">
-                    {filteredBugs.length === 0 ? (
+                    {loading ? (
+                        // Skeleton Loader
+                        <div className="space-y-2 p-3">
+                            {[...Array(5)].map((_, index) => (
+                                <motion.div
+                                    key={index}
+                                    initial={{ opacity: 0 }}
+                                    animate={{ opacity: 1 }}
+                                    transition={{ delay: index * 0.05 }}
+                                    className="bg-white rounded-xl border border-gray-200 p-3"
+                                >
+                                    {/* Header Skeleton */}
+                                    <div className="flex items-center justify-between gap-2 mb-2">
+                                        <motion.div
+                                            animate={{ opacity: [0.5, 1, 0.5] }}
+                                            transition={{ duration: 1.5, repeat: Infinity }}
+                                            className="h-6 w-20 bg-gray-200 rounded-md"
+                                        />
+                                        <div className="flex items-center gap-1.5">
+                                            <motion.div
+                                                animate={{ opacity: [0.5, 1, 0.5] }}
+                                                transition={{ duration: 1.5, repeat: Infinity, delay: 0.1 }}
+                                                className="h-5 w-16 bg-gray-200 rounded-md"
+                                            />
+                                            <motion.div
+                                                animate={{ opacity: [0.5, 1, 0.5] }}
+                                                transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
+                                                className="h-5 w-16 bg-gray-200 rounded-md"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* Description Skeleton */}
+                                    <div className="space-y-1.5 mb-2">
+                                        <motion.div
+                                            animate={{ opacity: [0.5, 1, 0.5] }}
+                                            transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
+                                            className="h-3 bg-gray-200 rounded w-full"
+                                        />
+                                        <motion.div
+                                            animate={{ opacity: [0.5, 1, 0.5] }}
+                                            transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
+                                            className="h-3 bg-gray-200 rounded w-3/4"
+                                        />
+                                    </div>
+
+                                    {/* Date Skeleton */}
+                                    <motion.div
+                                        animate={{ opacity: [0.5, 1, 0.5] }}
+                                        transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
+                                        className="h-3 w-32 bg-gray-200 rounded"
+                                    />
+                                </motion.div>
+                            ))}
+                        </div>
+                    ) : filteredBugs.length === 0 ? (
                         <motion.div
                             initial={{ opacity: 0, y: 20 }}
                             animate={{ opacity: 1, y: 0 }}
-                            className="flex flex-col items-center justify-center py-12"
+                            className="flex flex-col items-center justify-center py-16"
                         >
-                            <AlertCircle size={40} className="text-gray-400 mb-3" />
-                            <p className="text-gray-600 text-xs font-medium">No bugs found</p>
+                            {/* Animated Icon Container */}
+                            <motion.div
+                                initial={{ scale: 0 }}
+                                animate={{ scale: 1 }}
+                                transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
+                                className="relative mb-6"
+                            >
+                                {/* Outer Circle with Gradient */}
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                                    className="absolute inset-0 rounded-full bg-gradient-to-tr from-emerald-100 via-teal-50 to-blue-100 blur-xl opacity-60"
+                                    style={{ width: '120px', height: '120px', left: '-10px', top: '-10px' }}
+                                />
+
+                                {/* Main Circle */}
+                                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 flex items-center justify-center">
+                                    {/* Checkmark SVG */}
+                                    <motion.svg
+                                        initial={{ pathLength: 0 }}
+                                        animate={{ pathLength: 1 }}
+                                        transition={{ delay: 0.5, duration: 0.6, ease: "easeOut" }}
+                                        width="48"
+                                        height="48"
+                                        viewBox="0 0 24 24"
+                                        fill="none"
+                                        xmlns="http://www.w3.org/2000/svg"
+                                    >
+                                        <motion.path
+                                            d="M20 6L9 17L4 12"
+                                            stroke="#10b981"
+                                            strokeWidth="2.5"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                            initial={{ pathLength: 0 }}
+                                            animate={{ pathLength: 1 }}
+                                            transition={{ delay: 0.5, duration: 0.6 }}
+                                        />
+                                    </motion.svg>
+                                </div>
+
+                                {/* Floating Particles */}
+                                {[...Array(3)].map((_, i) => (
+                                    <motion.div
+                                        key={i}
+                                        className="absolute w-2 h-2 rounded-full bg-emerald-300"
+                                        style={{
+                                            top: `${20 + i * 25}%`,
+                                            left: `${-10 + i * 50}%`,
+                                        }}
+                                        animate={{
+                                            y: [-10, 10, -10],
+                                            opacity: [0.3, 0.7, 0.3],
+                                        }}
+                                        transition={{
+                                            duration: 2,
+                                            repeat: Infinity,
+                                            delay: i * 0.3,
+                                            ease: "easeInOut",
+                                        }}
+                                    />
+                                ))}
+                            </motion.div>
+
+                            {/* Text Content */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 10 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.6 }}
+                                className="text-center"
+                            >
+                                <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                                    All Clear!
+                                </h3>
+                                <p className="text-sm text-gray-500 max-w-xs">
+                                    No bugs found. Your system is running smoothly.
+                                </p>
+                            </motion.div>
+
+                            {/* Decorative Elements */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 0.8 }}
+                                className="mt-6 flex gap-2"
+                            >
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-teal-400" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                            </motion.div>
                         </motion.div>
                     ) : (
                         <div className="space-y-2 p-3">
@@ -980,7 +1127,7 @@ const BugSplitView = () => {
                                         y: -2,
                                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                                     }}
-                                    className={`bg-white rounded-xl border-2 p-3 cursor-pointer transition-all duration-200 ${selectedBug?._id === bug._id
+                                    className={`bg-white rounded-xl border-1 p-3 cursor-pointer transition-all duration-200 ${selectedBug?._id === bug._id
                                         ? "border-blue-500 bg-blue-50 shadow-md"
                                         : "border-gray-200 hover:border-blue-300"
                                         }`}
@@ -1041,7 +1188,7 @@ const BugSplitView = () => {
             {isSidebarOpen && (
                 <motion.div
                     whileHover={{ backgroundColor: "rgb(59, 130, 246)" }}
-                    className="w-[2px] bg-gray-200 cursor-col-resize transition-colors"
+                    className="w-[1px] bg-gray-200 cursor-col-resize transition-colors"
                     onMouseDown={startResizing}
                 />
             )}
@@ -1049,7 +1196,7 @@ const BugSplitView = () => {
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden sidebar-scrollbar">
                 {/* Top Bar */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
+                <div className="flex items-center user-select-none justify-between p-3 border-b border-gray-200 bg-white">
                     <div className="flex items-center gap-3">
                         {!isSidebarOpen && (
                             <motion.button
@@ -1117,8 +1264,6 @@ const BugSplitView = () => {
                             </div>
                         )}
                     </div>
-
-
 
                     {selectedBug && (
                         <div className="flex items-center gap-3">
@@ -1316,12 +1461,161 @@ const BugSplitView = () => {
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="flex flex-col items-center justify-center h-full text-gray-500"
+                            className="flex flex-col items-center justify-center h-full text-gray-500 px-8"
                         >
-                            <AlertCircle size={56} className="mb-4 text-gray-400" />
-                            <p className="text-sm font-medium">
-                                Select a bug to view details
-                            </p>
+                            {/* Animated Icon Container */}
+                            <motion.div
+                                initial={{ scale: 0, rotate: -180 }}
+                                animate={{ scale: 1, rotate: 0 }}
+                                transition={{
+                                    delay: 0.2,
+                                    type: "spring",
+                                    stiffness: 200,
+                                    damping: 15
+                                }}
+                                className="relative mb-8"
+                            >
+                                {/* Orbiting Rings */}
+                                <motion.div
+                                    animate={{ rotate: 360 }}
+                                    transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
+                                    className="absolute inset-0 w-32 h-32 -left-4 -top-4"
+                                >
+                                    <div className="absolute inset-0 rounded-full border-2 border-dashed border-blue-200 opacity-40" />
+                                </motion.div>
+
+                                <motion.div
+                                    animate={{ rotate: -360 }}
+                                    transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
+                                    className="absolute inset-0 w-40 h-40 -left-8 -top-8"
+                                >
+                                    <div className="absolute inset-0 rounded-full border-2 border-dotted border-purple-200 opacity-30" />
+                                </motion.div>
+
+                                {/* Main Circle Background */}
+                                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200 flex items-center justify-center shadow-xl">
+                                    {/* Inner Glow */}
+                                    <div className="absolute inset-2 rounded-full bg-gradient-to-br from-blue-100/50 to-purple-100/50 blur-md" />
+
+                                    {/* Icon */}
+                                    <motion.div
+                                        animate={{
+                                            scale: [1, 1.1, 1],
+                                            rotate: [0, 5, -5, 0]
+                                        }}
+                                        transition={{
+                                            duration: 3,
+                                            repeat: Infinity,
+                                            ease: "easeInOut"
+                                        }}
+                                        className="relative z-10"
+                                    >
+                                        <svg
+                                            width="48"
+                                            height="48"
+                                            viewBox="0 0 24 24"
+                                            fill="none"
+                                            xmlns="http://www.w3.org/2000/svg"
+                                            className="text-blue-500"
+                                        >
+                                            <motion.path
+                                                initial={{ pathLength: 0 }}
+                                                animate={{ pathLength: 1 }}
+                                                transition={{ delay: 0.5, duration: 1 }}
+                                                d="M9 12L11 14L15 10M21 12C21 16.9706 16.9706 21 12 21C7.02944 21 3 16.9706 3 12C3 7.02944 7.02944 3 12 3C16.9706 3 21 7.02944 21 12Z"
+                                                stroke="currentColor"
+                                                strokeWidth="2"
+                                                strokeLinecap="round"
+                                                strokeLinejoin="round"
+                                            />
+                                        </svg>
+                                    </motion.div>
+                                </div>
+
+                                {/* Floating Dots */}
+                                {[...Array(4)].map((_, i) => (
+                                    <motion.div
+                                        key={i}
+                                        className="absolute w-2 h-2 rounded-full bg-gradient-to-br from-blue-400 to-purple-400"
+                                        style={{
+                                            top: `${[10, 50, 90, 50][i]}%`,
+                                            left: `${[50, 90, 50, 10][i]}%`,
+                                        }}
+                                        animate={{
+                                            scale: [1, 1.5, 1],
+                                            opacity: [0.4, 0.8, 0.4],
+                                        }}
+                                        transition={{
+                                            duration: 2,
+                                            repeat: Infinity,
+                                            delay: i * 0.4,
+                                            ease: "easeInOut",
+                                        }}
+                                    />
+                                ))}
+                            </motion.div>
+
+                            {/* Text Content */}
+                            <motion.div
+                                initial={{ opacity: 0, y: 20 }}
+                                animate={{ opacity: 1, y: 0 }}
+                                transition={{ delay: 0.6 }}
+                                className="text-center max-w-sm"
+                            >
+                                <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                                    No Bug Selected
+                                </h3>
+                                <p className="text-sm text-gray-500 leading-relaxed mb-4">
+                                    Choose a bug from the list to view its details, comments, and tracking information
+                                </p>
+
+                                {/* Visual Indicator */}
+                                <motion.div
+                                    animate={{ x: [0, 8, 0] }}
+                                    transition={{
+                                        duration: 1.5,
+                                        repeat: Infinity,
+                                        ease: "easeInOut"
+                                    }}
+                                    className="flex items-center justify-center gap-2 text-xs text-gray-400"
+                                >
+                                    <span>Click a bug card</span>
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-400">
+                                        <path
+                                            d="M19 12H5M5 12L12 5M5 12L12 19"
+                                            stroke="currentColor"
+                                            strokeWidth="2"
+                                            strokeLinecap="round"
+                                            strokeLinejoin="round"
+                                        />
+                                    </svg>
+
+                                </motion.div>
+                            </motion.div>
+
+                            {/* Bottom Decorative Elements */}
+                            <motion.div
+                                initial={{ opacity: 0 }}
+                                animate={{ opacity: 1 }}
+                                transition={{ delay: 1 }}
+                                className="mt-8 flex gap-2"
+                            >
+                                {[...Array(5)].map((_, i) => (
+                                    <motion.div
+                                        key={i}
+                                        className="w-1 h-1 rounded-full bg-gradient-to-r from-blue-400 to-purple-400"
+                                        animate={{
+                                            scale: [1, 1.5, 1],
+                                            opacity: [0.3, 0.7, 0.3],
+                                        }}
+                                        transition={{
+                                            duration: 1.5,
+                                            repeat: Infinity,
+                                            delay: i * 0.2,
+                                        }}
+                                    />
+                                ))}
+                            </motion.div>
                         </motion.div>
                     ) : (
                         <motion.div
@@ -1340,7 +1634,7 @@ const BugSplitView = () => {
                                         transition={{ delay: 0.1 }}
                                         className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
                                     >
-                                        <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">
+                                        <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
                                             MODULE
                                         </label>
                                         {isEditing ? (
@@ -1370,7 +1664,7 @@ const BugSplitView = () => {
                                         transition={{ delay: 0.15 }}
                                         className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
                                     >
-                                        <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">
+                                        <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
                                             DESCRIPTION
                                         </label>
                                         {isEditing ? (
@@ -1400,7 +1694,7 @@ const BugSplitView = () => {
                                         transition={{ delay: 0.2 }}
                                         className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
                                     >
-                                        <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">
+                                        <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
                                             REQUIREMENT
                                         </label>
                                         {isEditing ? (
@@ -1431,7 +1725,7 @@ const BugSplitView = () => {
                                         transition={{ delay: 0.25 }}
                                         className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
                                     >
-                                        <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">
+                                        <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
                                             REFERENCE LINK
                                         </label>
 
@@ -1503,7 +1797,7 @@ const BugSplitView = () => {
                                                 transition={{ delay: 0.3 }}
                                                 className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
                                             >
-                                                <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">
+                                                <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
                                                     BUG IMAGES
                                                 </label>
                                                 {isEditing ? (
@@ -1677,7 +1971,7 @@ const BugSplitView = () => {
                                         className="grid grid-cols-2 gap-4 pt-2"
                                     >
                                         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                                            <label className="text-xs font-bold text-gray-600 mb-1.5 block tracking-wide flex items-center gap-1.5">
+                                            <label className="text-xs font-bold text-gray-600 mb-1.5 tracking-wide flex items-center gap-1.5">
                                                 <Calendar size={12} />
                                                 CREATED AT
                                             </label>
@@ -1687,7 +1981,7 @@ const BugSplitView = () => {
                                         </div>
                                         {selectedBug.updatedAt && (
                                             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                                                <label className="text-xs font-bold text-gray-600 mb-1.5 block tracking-wide flex items-center gap-1.5">
+                                                <label className="text-xs font-bold text-gray-600 mb-1.5 block tracking-wide  items-center gap-1.5">
                                                     <Clock size={12} />
                                                     UPDATED AT
                                                 </label>
@@ -1707,7 +2001,7 @@ const BugSplitView = () => {
                                     className="lg:col-span-1"
                                 >
                                     <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 top-1">
-                                        <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2 tracking-wide">
+                                        <h3 className="user-select-none text-sm font-bold text-gray-800 mb-4 flex items-center gap-2 tracking-wide">
                                             <MessageSquare size={16} className="text-blue-600" />
                                             COMMENTS
                                         </h3>
