@@ -4,6 +4,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Menu, ChevronRight as ChevronRightIcon, Image as ImageIcon, Link2, Image, Upload, Plus, Minus } from 'lucide-react';
 import { useAlert } from '@/app/script/Alert.context';
 import { useTestType } from '@/app/script/TestType.context';
+import { GoogleArrowDown } from '@/app/components/utils/Icon';
 
 const BugSplitView = () => {
     const [bugs, setBugs] = useState([]);
@@ -91,7 +92,7 @@ const BugSplitView = () => {
         try {
             setLoading(true);
             let url = `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/filter/date?page=1&limit=1000000`;
-            
+
             if (fromDate) url += `&fromDate=${fromDate}`;
             if (toDate) url += `&toDate=${toDate}`;
 
@@ -228,7 +229,7 @@ const BugSplitView = () => {
             }
 
             const data = await response.json();
-            
+
             setBugs(prev => prev.map(bug =>
                 bug._id === bugId ? { ...bug, [field]: value } : bug
             ));
@@ -266,7 +267,7 @@ const BugSplitView = () => {
             }
 
             const data = await response.json();
-            
+
             setBugs(prev => prev.map(bug =>
                 bug._id === bugId ? { ...bug, ...fields } : bug
             ));
@@ -305,12 +306,12 @@ const BugSplitView = () => {
             }
 
             const data = await response.json();
-            
+
             setBugs(prev => prev.filter(bug => bug._id !== bugId));
             if (selectedBug?._id === bugId) {
                 setSelectedBug(null);
             }
-            
+
             showAlert({ type: "success", message: "Bug moved to trash successfully" });
         } catch (error) {
             console.error('Error moving bug to trash:', error);
@@ -337,12 +338,12 @@ const BugSplitView = () => {
             }
 
             const data = await response.json();
-            
+
             setBugs(prev => prev.filter(bug => bug._id !== bugId));
             if (selectedBug?._id === bugId) {
                 setSelectedBug(null);
             }
-            
+
             showAlert({ type: "success", message: "Bug restored successfully" });
         } catch (error) {
             console.error('Error restoring bug:', error);
@@ -371,12 +372,12 @@ const BugSplitView = () => {
             }
 
             const data = await response.json();
-            
+
             setBugs(prev => prev.filter(bug => bug._id !== bugId));
             if (selectedBug?._id === bugId) {
                 setSelectedBug(null);
             }
-            
+
             showAlert({ type: "success", message: "Bug deleted permanently" });
         } catch (error) {
             console.error('Error deleting bug permanently:', error);
@@ -405,10 +406,10 @@ const BugSplitView = () => {
             }
 
             const data = await response.json();
-            
+
             setBugs([]);
             setSelectedBug(null);
-            
+
             showAlert({ type: "success", message: "All bugs moved to trash successfully" });
         } catch (error) {
             console.error('Error moving all bugs to trash:', error);
@@ -437,10 +438,10 @@ const BugSplitView = () => {
             }
 
             const data = await response.json();
-            
+
             setBugs([]);
             setSelectedBug(null);
-            
+
             showAlert({ type: "success", message: "All bugs deleted permanently" });
         } catch (error) {
             console.error('Error deleting all bugs:', error);
@@ -453,15 +454,15 @@ const BugSplitView = () => {
         const formData = new FormData();
         formData.append('file', file);
         formData.append('upload_preset', 'your_upload_preset'); // Replace with your upload preset
-        
+
         try {
             const response = await fetch('https://api.cloudinary.com/v1_1/your_cloud_name/image/upload', {
                 method: 'POST',
                 body: formData
             });
-            
+
             if (!response.ok) throw new Error('Upload failed');
-            
+
             const data = await response.json();
             return data.secure_url;
         } catch (error) {
@@ -472,17 +473,17 @@ const BugSplitView = () => {
 
     const handleImageUpload = async (files) => {
         setUploadingImages(true);
-        
+
         try {
             const uploadPromises = Array.from(files).map(file => uploadToCloudinary(file));
             const imageUrls = await Promise.all(uploadPromises);
-            
+
             setSelectedImages(prev => [...prev, ...imageUrls]);
             setEditFormData(prev => ({
                 ...prev,
                 images: [...prev.images, ...imageUrls]
             }));
-            
+
             showAlert({ type: "success", message: "Images uploaded successfully" });
         } catch (error) {
             console.error('Error uploading images:', error);
@@ -646,6 +647,16 @@ const BugSplitView = () => {
         };
         return colors[priority] || 'bg-gray-100 text-gray-800 border-gray-300';
     };
+    const getSeverityColor = (severity) => {
+        const colors = {
+            'Critical': 'bg-red-100 text-red-800 border-red-300',
+            'High': 'bg-orange-100 text-orange-800 border-orange-300',
+            'Medium': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+            'Low': 'bg-green-100 text-green-800 border-green-300'
+        };
+        return colors[severity] || 'bg-gray-100 text-gray-800 border-gray-300';
+    };
+
 
     const GitHubDropdown = ({ value, options, onChange, label, className = "" }) => {
         const [isOpen, setIsOpen] = useState(false);
@@ -669,46 +680,45 @@ const BugSplitView = () => {
 
         const getDropdownColor = () => {
             if (label === 'Priority') return getPriorityColor(value);
+            if (label = 'Severity') return getSeverityColor(value);
             if (label === 'Status') return getStatusColor(value);
             if (label === 'Bug Type') return getBugTypeColor(value);
-            return 'bg-gray-100 text-gray-800 border-gray-300';
+            return 'bg-white text-gray-900 border-gray-200';
         };
 
         return (
-            <div className={`relative inline-block text-left ${className}`} ref={dropdownRef}>
+            <div className={`relative inline-block text-left`} ref={dropdownRef}>
                 <button
                     type="button"
-                    className={`inline-flex justify-between items-center w-full px-3 py-1.5 text-xs font-semibold border-2 rounded-lg hover:opacity-80 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm ${getDropdownColor()}`}
+                    className={`inline-flex justify-between items-center px-2 py-1.5 text-xs font-semibold border rounded-md transition-all duration-200 hover:shadow-sm hover:border-opacity-60 focus:outline-none ${getDropdownColor()}`}
                     onClick={() => setIsOpen(!isOpen)}
                 >
-                    <span>{value}</span>
-                    <motion.svg
-                        className="-mr-1 ml-2 h-4 w-4"
-                        fill="none"
-                        stroke="currentColor"
-                        viewBox="0 0 24 24"
+                    <span className="mr-1">{value}</span>
+                    <motion.div
                         animate={{ rotate: isOpen ? 180 : 0 }}
                         transition={{ duration: 0.2 }}
                     >
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
-                    </motion.svg>
+                        <GoogleArrowDown className="h-4 w-4" />
+                    </motion.div>
                 </button>
 
                 <AnimatePresence>
                     {isOpen && (
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                            initial={{ opacity: 0, scale: 0.95, y: -8 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                            transition={{ duration: 0.15 }}
-                            className="origin-top-right absolute right-0 mt-2 w-full rounded-lg shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-20 overflow-hidden"
+                            exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                            transition={{ duration: 0.12 }}
+                            className="origin-top-right absolute right-0 mt-2 w-full rounded-md shadow-xl bg-white ring-1 ring-gray-200 z-20 overflow-hidden"
                         >
                             <div className="py-1" role="menu">
                                 {options.map((option) => (
                                     <motion.button
                                         key={option}
-                                        whileHover={{ backgroundColor: 'rgba(59, 130, 246, 0.05)' }}
-                                        className={`block w-full text-left px-3 py-2 text-xs transition-colors ${value === option ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
+                                        whileHover={{ backgroundColor: 'rgba(59, 130, 246, 0.08)' }}
+                                        className={`block w-full text-left px-2.5 py-1.5 text-xs transition-colors font-medium ${value === option
+                                            ? 'bg-blue-50 text-blue-600 border-l-2 border-blue-500'
+                                            : 'text-gray-700 hover:text-gray-900'
                                             }`}
                                         onClick={() => handleSelect(option)}
                                         role="menuitem"
@@ -723,6 +733,8 @@ const BugSplitView = () => {
             </div>
         );
     };
+
+
 
     if (loading) {
         return (
@@ -916,42 +928,6 @@ const BugSplitView = () => {
                                             }
                                         </span>
                                     </div>
-
-                                    {/* Actions */}
-                                    <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                                        <div className="flex items-center gap-1.5">
-                                            <motion.button
-                                                tooltip-data="Archive"
-                                                tooltip-placement="bottom"
-                                                whileHover={{ scale: 1.1 }}
-                                                whileTap={{ scale: 0.9 }}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    moveBugToTrash(bug._id);
-                                                }}
-                                                className="p-1.5 text-orange-600 hover:bg-orange-50 rounded-lg transition-colors"
-                                            >
-                                                <Archive size={13} />
-                                            </motion.button>
-                                            <motion.button
-                                                tooltip-data="Delete"
-                                                tooltip-placement="bottom"
-                                                whileHover={{ scale: 1.1 }}
-                                                whileTap={{ scale: 0.9 }}
-                                                onClick={(e) => {
-                                                    e.stopPropagation();
-                                                    deleteBugPermanently(bug._id);
-                                                }}
-                                                className="p-1.5 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
-                                            >
-                                                <Trash2 size={13} />
-                                            </motion.button>
-                                        </div>
-                                        <div className="flex items-center gap-1.5 text-xs text-gray-500 bg-gray-50 px-2 py-1 rounded-md">
-                                            <MessageSquare size={12} />
-                                            <span className="font-medium">{comments.filter(c => c.bugId === bug._id).length}</span>
-                                        </div>
-                                    </div>
                                 </motion.div>
                             ))}
                         </div>
@@ -987,7 +963,7 @@ const BugSplitView = () => {
                         )}
                         {/* Header with Serial Number and Dropdowns */}
                         {selectedBug && (
-                            <div className="flex items-center gap-3 ml-4">
+                            <div className="flex items-center gap-2 ml-4">
                                 <motion.h2
                                     whileHover={{ scale: 1.02 }}
                                     onClick={() => copyText(selectedBug.serialNumber)}
