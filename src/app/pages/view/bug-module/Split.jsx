@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Menu, ChevronRight as ChevronRightIcon, Image as ImageIcon, Link2, Image } from 'lucide-react';
+import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Menu, ChevronRight as ChevronRightIcon, Image as ImageIcon, Link2, Image, Upload, Plus, Minus } from 'lucide-react';
 import { useAlert } from '@/app/script/Alert.context';
 import { useTestType } from '@/app/script/TestType.context';
 
@@ -23,8 +23,11 @@ const BugSplitView = () => {
     const [isResizing, setIsResizing] = useState(false);
     const [dateFilter, setDateFilter] = useState({ start: '', end: '' });
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [uploadingImages, setUploadingImages] = useState(false);
+    const [selectedImages, setSelectedImages] = useState([]);
     const sidebarRef = useRef(null);
     const datePickerRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     const { showAlert } = useAlert();
 
@@ -32,7 +35,8 @@ const BugSplitView = () => {
         moduleName: '',
         bugDesc: '',
         bugRequirement: '',
-        refLink: ''
+        refLinks: '',
+        images: []
     });
 
     const copyText = (text) => {
@@ -51,7 +55,65 @@ const BugSplitView = () => {
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
     const BASE_URL = 'http://localhost:5000/api/v1/bug';
+    const COMMENT_URL = 'http://localhost:5000/api/v1/comment'
 
+    // Search bugs API
+    const searchBugs = useCallback(async (searchQuery) => {
+        if (!projectId || !testTypeId || !token) return;
+
+        try {
+            setLoading(true);
+            const response = await fetch(
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/search?search=${encodeURIComponent(searchQuery)}&page=1&limit=1000000`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+
+            if (!response.ok) throw new Error('Failed to search bugs');
+
+            const data = await response.json();
+            setBugs(data.bugs || []);
+        } catch (error) {
+            console.error('Error searching bugs:', error);
+            showAlert({ type: "error", message: "Failed to search bugs" });
+        } finally {
+            setLoading(false);
+        }
+    }, [projectId, testTypeId, token]);
+
+    // Filter bugs by date API
+    const filterBugsByDate = useCallback(async (fromDate, toDate) => {
+        if (!projectId || !testTypeId || !token) return;
+
+        try {
+            setLoading(true);
+            let url = `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/filter/date?page=1&limit=1000000`;
+            
+            if (fromDate) url += `&fromDate=${fromDate}`;
+            if (toDate) url += `&toDate=${toDate}`;
+
+            const response = await fetch(url, {
+                headers: {
+                    'Authorization': `Bearer ${token}`
+                }
+            });
+
+            if (!response.ok) throw new Error('Failed to filter bugs by date');
+
+            const data = await response.json();
+            setBugs(data.bugs || []);
+        } catch (error) {
+            console.error('Error filtering bugs by date:', error);
+            showAlert({ type: "error", message: "Failed to filter bugs by date" });
+        } finally {
+            setLoading(false);
+        }
+    }, [projectId, testTypeId, token]);
+
+    // Get all bugs API
     const fetchBugs = useCallback(async () => {
         if (!projectId || !testTypeId || !token) {
             setLoading(false);
@@ -75,6 +137,7 @@ const BugSplitView = () => {
             setBugs(data.bugs || []);
         } catch (error) {
             console.error('Error fetching bugs:', error);
+            showAlert({ type: "error", message: "Failed to fetch bugs" });
         } finally {
             setLoading(false);
         }
@@ -87,7 +150,7 @@ const BugSplitView = () => {
 
         try {
             const response = await fetch(
-                `http://localhost:5000/api/v1/comment/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -101,6 +164,7 @@ const BugSplitView = () => {
             setComments(data.comments || []);
         } catch (error) {
             console.error('Error fetching comments:', error);
+            showAlert({ type: "error", message: "Failed to fetch comments" });
         } finally {
             setLoadingComments(false);
         }
@@ -113,7 +177,7 @@ const BugSplitView = () => {
 
         try {
             const response = await fetch(
-                `http://localhost:5000/api/v1/comment/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
                 {
                     method: 'POST',
                     headers: {
@@ -132,13 +196,16 @@ const BugSplitView = () => {
             const data = await response.json();
             setComments(prev => [data.comment, ...prev]);
             setNewComment('');
+            showAlert({ type: "success", message: "Comment added successfully" });
         } catch (error) {
             console.error('Error submitting comment:', error);
+            showAlert({ type: "error", message: "Failed to add comment" });
         } finally {
             setSubmittingComment(false);
         }
     };
 
+    // Update bug API
     const updateBug = async (bugId, field, value) => {
         setSavingField(field);
 
@@ -155,8 +222,13 @@ const BugSplitView = () => {
                 }
             );
 
-            if (!response.ok) throw new Error('Failed to update bug');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to update bug');
+            }
 
+            const data = await response.json();
+            
             setBugs(prev => prev.map(bug =>
                 bug._id === bugId ? { ...bug, [field]: value } : bug
             ));
@@ -165,9 +237,11 @@ const BugSplitView = () => {
                 setSelectedBug(prev => ({ ...prev, [field]: value }));
             }
 
+            showAlert({ type: "success", message: "Bug updated successfully" });
             setTimeout(() => setSavingField(null), 500);
         } catch (error) {
             console.error('Error updating bug:', error);
+            showAlert({ type: "error", message: error.message || "Failed to update bug" });
             setSavingField(null);
         }
     };
@@ -186,8 +260,13 @@ const BugSplitView = () => {
                 }
             );
 
-            if (!response.ok) throw new Error('Failed to update bug');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to update bug');
+            }
 
+            const data = await response.json();
+            
             setBugs(prev => prev.map(bug =>
                 bug._id === bugId ? { ...bug, ...fields } : bug
             ));
@@ -196,19 +275,22 @@ const BugSplitView = () => {
                 setSelectedBug(prev => ({ ...prev, ...fields }));
             }
 
+            showAlert({ type: "success", message: "Bug updated successfully" });
             return true;
         } catch (error) {
             console.error('Error updating bug:', error);
+            showAlert({ type: "error", message: error.message || "Failed to update bug" });
             return false;
         }
     };
 
+    // Move bug to trash API
     const moveBugToTrash = async (bugId) => {
         if (!confirm('Move this bug to trash?')) return;
 
         try {
             const response = await fetch(
-                `${BASE_URL}/bugs/${bugId}/trash`,
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/trash`,
                 {
                     method: 'PATCH',
                     headers: {
@@ -217,23 +299,64 @@ const BugSplitView = () => {
                 }
             );
 
-            if (!response.ok) throw new Error('Failed to move bug to trash');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to move bug to trash');
+            }
 
+            const data = await response.json();
+            
             setBugs(prev => prev.filter(bug => bug._id !== bugId));
             if (selectedBug?._id === bugId) {
                 setSelectedBug(null);
             }
+            
+            showAlert({ type: "success", message: "Bug moved to trash successfully" });
         } catch (error) {
             console.error('Error moving bug to trash:', error);
+            showAlert({ type: "error", message: error.message || "Failed to move bug to trash" });
         }
     };
 
+    // Restore bug from trash API
+    const restoreBugFromTrash = async (bugId) => {
+        try {
+            const response = await fetch(
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/restore`,
+                {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to restore bug');
+            }
+
+            const data = await response.json();
+            
+            setBugs(prev => prev.filter(bug => bug._id !== bugId));
+            if (selectedBug?._id === bugId) {
+                setSelectedBug(null);
+            }
+            
+            showAlert({ type: "success", message: "Bug restored successfully" });
+        } catch (error) {
+            console.error('Error restoring bug:', error);
+            showAlert({ type: "error", message: error.message || "Failed to restore bug" });
+        }
+    };
+
+    // Delete bug permanently API
     const deleteBugPermanently = async (bugId) => {
         if (!confirm('Permanently delete this bug? This action cannot be undone!')) return;
 
         try {
             const response = await fetch(
-                `${BASE_URL}/bugs/${bugId}`,
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/permanent`,
                 {
                     method: 'DELETE',
                     headers: {
@@ -242,15 +365,139 @@ const BugSplitView = () => {
                 }
             );
 
-            if (!response.ok) throw new Error('Failed to delete bug permanently');
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to delete bug permanently');
+            }
 
+            const data = await response.json();
+            
             setBugs(prev => prev.filter(bug => bug._id !== bugId));
             if (selectedBug?._id === bugId) {
                 setSelectedBug(null);
             }
+            
+            showAlert({ type: "success", message: "Bug deleted permanently" });
         } catch (error) {
             console.error('Error deleting bug permanently:', error);
+            showAlert({ type: "error", message: error.message || "Failed to delete bug" });
         }
+    };
+
+    // Move all bugs to trash API
+    const moveAllBugsToTrash = async () => {
+        if (!confirm('Move all bugs to trash? This action cannot be undone!')) return;
+
+        try {
+            const response = await fetch(
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/trash-all`,
+                {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to move all bugs to trash');
+            }
+
+            const data = await response.json();
+            
+            setBugs([]);
+            setSelectedBug(null);
+            
+            showAlert({ type: "success", message: "All bugs moved to trash successfully" });
+        } catch (error) {
+            console.error('Error moving all bugs to trash:', error);
+            showAlert({ type: "error", message: error.message || "Failed to move bugs to trash" });
+        }
+    };
+
+    // Delete all bugs permanently API
+    const deleteAllBugsPermanently = async () => {
+        if (!confirm('Permanently delete all bugs? This action cannot be undone!')) return;
+
+        try {
+            const response = await fetch(
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/delete-all`,
+                {
+                    method: 'DELETE',
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || 'Failed to delete all bugs');
+            }
+
+            const data = await response.json();
+            
+            setBugs([]);
+            setSelectedBug(null);
+            
+            showAlert({ type: "success", message: "All bugs deleted permanently" });
+        } catch (error) {
+            console.error('Error deleting all bugs:', error);
+            showAlert({ type: "error", message: error.message || "Failed to delete all bugs" });
+        }
+    };
+
+    // Cloudinary image upload function
+    const uploadToCloudinary = async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', 'your_upload_preset'); // Replace with your upload preset
+        
+        try {
+            const response = await fetch('https://api.cloudinary.com/v1_1/your_cloud_name/image/upload', {
+                method: 'POST',
+                body: formData
+            });
+            
+            if (!response.ok) throw new Error('Upload failed');
+            
+            const data = await response.json();
+            return data.secure_url;
+        } catch (error) {
+            console.error('Error uploading to Cloudinary:', error);
+            throw error;
+        }
+    };
+
+    const handleImageUpload = async (files) => {
+        setUploadingImages(true);
+        
+        try {
+            const uploadPromises = Array.from(files).map(file => uploadToCloudinary(file));
+            const imageUrls = await Promise.all(uploadPromises);
+            
+            setSelectedImages(prev => [...prev, ...imageUrls]);
+            setEditFormData(prev => ({
+                ...prev,
+                images: [...prev.images, ...imageUrls]
+            }));
+            
+            showAlert({ type: "success", message: "Images uploaded successfully" });
+        } catch (error) {
+            console.error('Error uploading images:', error);
+            showAlert({ type: "error", message: "Failed to upload images" });
+        } finally {
+            setUploadingImages(false);
+        }
+    };
+
+    const removeImage = (index) => {
+        setSelectedImages(prev => prev.filter((_, i) => i !== index));
+        setEditFormData(prev => ({
+            ...prev,
+            images: prev.images.filter((_, i) => i !== index)
+        }));
     };
 
     const handleFieldEdit = (field, value) => {
@@ -263,8 +510,10 @@ const BugSplitView = () => {
             moduleName: selectedBug.moduleName || '',
             bugDesc: selectedBug.bugDesc || '',
             bugRequirement: selectedBug.bugRequirement || '',
-            refLink: selectedBug.refLink || ''
+            refLinks: selectedBug.refLinks || '',
+            images: selectedBug.images || []
         });
+        setSelectedImages(selectedBug.images || []);
     };
 
     const handleSaveClick = async () => {
@@ -280,8 +529,10 @@ const BugSplitView = () => {
             moduleName: selectedBug.moduleName || '',
             bugDesc: selectedBug.bugDesc || '',
             bugRequirement: selectedBug.bugRequirement || '',
-            refLink: selectedBug.refLink || ''
+            refLinks: selectedBug.refLinks || '',
+            images: selectedBug.images || []
         });
+        setSelectedImages(selectedBug.images || []);
     };
 
     const goToNextBug = () => {
@@ -346,24 +597,22 @@ const BugSplitView = () => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    const filteredBugs = bugs.filter(bug => {
-        const matchesSearch = Object.values(bug).some(value =>
-            value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
-        );
-
-        let matchesDate = true;
-        if (dateFilter.start || dateFilter.end) {
-            const bugDate = new Date(bug.createdAt);
-            if (dateFilter.start) {
-                matchesDate = matchesDate && bugDate >= new Date(dateFilter.start);
+    // Handle search and filter changes
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            if (searchTerm.trim()) {
+                searchBugs(searchTerm);
+            } else if (dateFilter.start || dateFilter.end) {
+                filterBugsByDate(dateFilter.start, dateFilter.end);
+            } else {
+                fetchBugs();
             }
-            if (dateFilter.end) {
-                matchesDate = matchesDate && bugDate <= new Date(dateFilter.end);
-            }
-        }
+        }, 500);
 
-        return matchesSearch && matchesDate;
-    });
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm, dateFilter.start, dateFilter.end, searchBugs, filterBugsByDate, fetchBugs]);
+
+    const filteredBugs = bugs; // Now using API filtered results
 
     const getBugTypeColor = (type) => {
         const colors = {
@@ -502,7 +751,7 @@ const BugSplitView = () => {
                 }}
                 transition={{
                     duration: 0.3,
-                    ease: [0.4, 0.0, 0.2, 1] // cubic-bezier easing for smooth animation
+                    ease: [0.4, 0.0, 0.2, 1]
                 }}
                 className="bg-white border-r border-gray-200 flex flex-col sidebar-scrollbar sticky top-0 h-full"
                 style={{
@@ -578,7 +827,10 @@ const BugSplitView = () => {
                                     <motion.button
                                         whileHover={{ scale: 1.02 }}
                                         whileTap={{ scale: 0.98 }}
-                                        onClick={() => setDateFilter({ start: '', end: '' })}
+                                        onClick={() => {
+                                            setDateFilter({ start: '', end: '' });
+                                            fetchBugs();
+                                        }}
                                         className="w-full px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
                                     >
                                         Clear Filter
@@ -587,6 +839,26 @@ const BugSplitView = () => {
                             </motion.div>
                         )}
                     </AnimatePresence>
+
+                    {/* Bulk Actions */}
+                    <div className="mt-3 flex gap-2">
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={moveAllBugsToTrash}
+                            className="flex-1 px-3 py-1.5 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
+                        >
+                            Trash All
+                        </motion.button>
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={deleteAllBugsPermanently}
+                            className="flex-1 px-3 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                        >
+                            Delete All
+                        </motion.button>
+                    </div>
                 </div>
 
                 {/* Bugs List */}
@@ -649,7 +921,7 @@ const BugSplitView = () => {
                                     <div className="flex items-center justify-between pt-2 border-t border-gray-100">
                                         <div className="flex items-center gap-1.5">
                                             <motion.button
-                                                tooltip-data="Achieve"
+                                                tooltip-data="Archive"
                                                 tooltip-placement="bottom"
                                                 whileHover={{ scale: 1.1 }}
                                                 whileTap={{ scale: 0.9 }}
@@ -758,29 +1030,33 @@ const BugSplitView = () => {
                     {selectedBug && (
                         <div className="flex items-center gap-3">
                             {/* Image Button */}
-                            {selectedBug.image && selectedBug.image !== 'No Image provided' && (
-                                <motion.a
-                                    tooltip-data="View Image"
+                            {selectedBug.images && selectedBug.images.length > 0 && (
+                                <motion.button
+                                    tooltip-data="View Images"
                                     tooltip-placement="bottom"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    href={selectedBug.image}
-                                    target="_blank"
-                                    rel="noopener noreferrer"
+                                    onClick={() => {
+                                        // Open image gallery or modal
+                                        selectedBug.images.forEach((img, index) => {
+                                            window.open(img, `image-${index}`);
+                                        });
+                                    }}
                                     className="flex items-center gap-1.5 px-4 py-2 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm font-medium"
                                 >
                                     <ImageIcon size={13} />
-                                </motion.a>
+                                    <span>{selectedBug.images.length}</span>
+                                </motion.button>
                             )}
 
                             {/* Reference Link Button */}
-                            {selectedBug.refLink && selectedBug.refLink !== 'No Link Provided' && (
+                            {selectedBug.refLinks && selectedBug.refLinks !== 'No Link Provided' && (
                                 <motion.a
                                     tooltip-data="Open Reference"
                                     tooltip-placement="bottom"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
-                                    href={selectedBug.refLink}
+                                    href={selectedBug.refLinks}
                                     target="_blank"
                                     rel="noopener noreferrer"
                                     className="flex items-center gap-1.5 px-4 py-2 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium"
@@ -855,7 +1131,7 @@ const BugSplitView = () => {
 
                             {/* Archive and Delete buttons */}
                             <motion.button
-                                tooltip-data="Achieve"
+                                tooltip-data="Archive"
                                 tooltip-placement="bottom"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
@@ -980,8 +1256,8 @@ const BugSplitView = () => {
                                             <div className="flex gap-2">
                                                 <input
                                                     type="text"
-                                                    value={editFormData.refLink}
-                                                    onChange={(e) => setEditFormData(prev => ({ ...prev, refLink: e.target.value }))}
+                                                    value={editFormData.refLinks}
+                                                    onChange={(e) => setEditFormData(prev => ({ ...prev, refLinks: e.target.value }))}
                                                     className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                                     placeholder="https://..."
                                                 />
@@ -989,30 +1265,137 @@ const BugSplitView = () => {
                                         ) : (
                                             <div className="flex gap-2">
                                                 <p className="flex-1 text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 truncate">
-                                                    {selectedBug.refLink || 'No reference link'}
+                                                    {selectedBug.refLinks || 'No reference link'}
                                                 </p>
                                             </div>
                                         )}
                                     </motion.div>
 
-                                    {/* Image Display */}
-                                    {selectedBug.image && selectedBug.image !== 'No Image provided' && (
+                                    {/* Multiple Images Display */}
+                                    {(selectedBug.images && selectedBug.images.length > 0) && (
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: 0.3 }}
                                             className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
                                         >
-                                            <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">BUG IMAGE</label>
-                                            <div className="relative">
-                                                <img
-                                                    src={selectedBug.image}
-                                                    alt="Bug screenshot"
-                                                    className="w-full rounded-lg border border-gray-200"
-                                                    onError={(e) => {
-                                                        e.target.style.display = 'none';
-                                                    }}
-                                                />
+                                            <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">BUG IMAGES</label>
+                                            {isEditing ? (
+                                                <div className="space-y-3">
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {selectedImages.map((image, index) => (
+                                                            <div key={index} className="relative group">
+                                                                <img
+                                                                    src={image}
+                                                                    alt={`Bug screenshot ${index + 1}`}
+                                                                    className="w-24 h-24 object-cover rounded-lg border border-gray-200"
+                                                                />
+                                                                <motion.button
+                                                                    whileHover={{ scale: 1.1 }}
+                                                                    whileTap={{ scale: 0.9 }}
+                                                                    onClick={() => removeImage(index)}
+                                                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                >
+                                                                    <X size={12} />
+                                                                </motion.button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                    <div className="flex gap-2">
+                                                        <input
+                                                            ref={fileInputRef}
+                                                            type="file"
+                                                            multiple
+                                                            accept="image/*"
+                                                            onChange={(e) => handleImageUpload(e.target.files)}
+                                                            className="hidden"
+                                                        />
+                                                        <motion.button
+                                                            whileHover={{ scale: 1.02 }}
+                                                            whileTap={{ scale: 0.98 }}
+                                                            onClick={() => fileInputRef.current?.click()}
+                                                            disabled={uploadingImages}
+                                                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-xs font-medium"
+                                                        >
+                                                            <Upload size={14} />
+                                                            {uploadingImages ? 'Uploading...' : 'Add Images'}
+                                                        </motion.button>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                <div className="flex flex-wrap gap-2">
+                                                    {selectedBug.images.map((image, index) => (
+                                                        <motion.a
+                                                            key={index}
+                                                            href={image}
+                                                            target="_blank"
+                                                            rel="noopener noreferrer"
+                                                            whileHover={{ scale: 1.05 }}
+                                                            className="block"
+                                                        >
+                                                            <img
+                                                                src={image}
+                                                                alt={`Bug screenshot ${index + 1}`}
+                                                                className="w-24 h-24 object-cover rounded-lg border border-gray-200 hover:border-blue-500 transition-colors cursor-pointer"
+                                                            />
+                                                        </motion.a>
+                                                    ))}
+                                                </div>
+                                            )}
+                                        </motion.div>
+                                    )}
+
+                                    {/* Image Upload in Edit Mode */}
+                                    {isEditing && (!selectedBug.images || selectedBug.images.length === 0) && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.3 }}
+                                            className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+                                        >
+                                            <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">ADD BUG IMAGES</label>
+                                            <div className="space-y-3">
+                                                {selectedImages.length > 0 && (
+                                                    <div className="flex flex-wrap gap-2">
+                                                        {selectedImages.map((image, index) => (
+                                                            <div key={index} className="relative group">
+                                                                <img
+                                                                    src={image}
+                                                                    alt={`Bug screenshot ${index + 1}`}
+                                                                    className="w-24 h-24 object-cover rounded-lg border border-gray-200"
+                                                                />
+                                                                <motion.button
+                                                                    whileHover={{ scale: 1.1 }}
+                                                                    whileTap={{ scale: 0.9 }}
+                                                                    onClick={() => removeImage(index)}
+                                                                    className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                >
+                                                                    <X size={12} />
+                                                                </motion.button>
+                                                            </div>
+                                                        ))}
+                                                    </div>
+                                                )}
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        ref={fileInputRef}
+                                                        type="file"
+                                                        multiple
+                                                        accept="image/*"
+                                                        onChange={(e) => handleImageUpload(e.target.files)}
+                                                        className="hidden"
+                                                    />
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.02 }}
+                                                        whileTap={{ scale: 0.98 }}
+                                                        onClick={() => fileInputRef.current?.click()}
+                                                        disabled={uploadingImages}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-xs font-medium"
+                                                    >
+                                                        <Upload size={14} />
+                                                        {uploadingImages ? 'Uploading...' : 'Upload Images'}
+                                                    </motion.button>
+                                                </div>
                                             </div>
                                         </motion.div>
                                     )}
