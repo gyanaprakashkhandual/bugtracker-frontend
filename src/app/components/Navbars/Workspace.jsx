@@ -240,7 +240,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
       label: "Code Space",
       icon: <CodeSquare size={16} />,
       onClick: () => {
-        router.push(`/app/projects/${project?.slug}/code-space`)
+        router.push(`/app/projects/${project?.slug}/test-data`)
       },
     },
     {
