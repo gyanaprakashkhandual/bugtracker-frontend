@@ -498,7 +498,6 @@ const BugSplitView = () => {
             });
         }
     };
-
     // Cloudinary image upload function
     const uploadToCloudinary = async (file) => {
         const formData = new FormData();
@@ -523,7 +522,7 @@ const BugSplitView = () => {
             throw error;
         }
     };
-
+    // Image Uploading
     const handleImageUpload = async (files) => {
         setUploadingImages(true);
 
@@ -547,7 +546,7 @@ const BugSplitView = () => {
             setUploadingImages(false);
         }
     };
-
+    // Image Remove functions
     const removeImage = (index) => {
         setSelectedImages((prev) => prev.filter((_, i) => i !== index));
         setEditFormData((prev) => ({
@@ -685,7 +684,7 @@ const BugSplitView = () => {
         fetchBugs,
     ]);
 
-    const filteredBugs = bugs; // Now using API filtered results
+    const filteredBugs = bugs;
 
     const getBugTypeColor = (type) => {
         const colors = {
