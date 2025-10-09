@@ -29,7 +29,8 @@ import {
   CodeSquare,
   GitBranch,
   MoreVerticalIcon,
-  Dock
+  Dock,
+  DockIcon
 } from 'lucide-react';
 import { FiFilter, FiTrash2, FiSettings } from "react-icons/fi";
 import { GoogleArrowDown } from '../utils/Icon';
@@ -240,15 +241,14 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
       label: "Code Space",
       icon: <CodeSquare size={16} />,
       onClick: () => {
-        router.push(`/app/projects/${project?.slug}/test-data`)
+        router.push(`/app/projects/${project?.slug}/code-space`)
       },
     },
     {
-      label: "Settings",
-      icon: <FiSettings size={16} />,
+      label: "Test Data",
+      icon: <DockIcon size={16} />,
       onClick: () => {
-        closeAllSidebars();
-        console.log("Settings clicked");
+        router.push(`/app/projects/${project?.slug}/test-data`)
       },
     },
   ];
@@ -478,6 +478,17 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                 className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-blue-50/50 hover:text-blue-600"
               >
                 <Dock size={18} />
+              </motion.button>
+              {/* Settings Button */}
+              <motion.button
+                tooltip-data="Test Data"
+                tooltip-placement="bottom"
+                whileHover={{ scale: 1.05, rotate: 90 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push(`/app/projects/${project?.slug}/test-data`)}
+                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-blue-50/50 hover:text-blue-600"
+              >
+                <DockIcon size={18} />
               </motion.button>
 
               {/* Settings Button */}
