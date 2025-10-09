@@ -34,6 +34,7 @@ import { GoogleArrowDown } from "@/app/components/utils/Icon";
 import Loader from "@/app/components/utils/Loader";
 import { copyToClipboard } from "@/app/utils/Copy.text";
 import { Copy, Check } from "lucide-react";
+import { useConfirm } from "@/app/script/Confirm.context";
 
 const BugSplitView = () => {
     const [imageDropdownOpen, setImageDropdownOpen] = useState(false);
@@ -89,6 +90,9 @@ const BugSplitView = () => {
                 console.log("Failed to copy");
             });
     };
+
+    const { showConfirm } = useConfirm();
+
     const { testTypeId, testTypeName } = useTestType();
     const projectId =
         typeof window !== "undefined"
@@ -409,13 +413,20 @@ const BugSplitView = () => {
             });
         }
     };
-
     // Move all bugs to trash API
     const moveAllBugsToTrash = async () => {
-        if (!confirm("Move all bugs to trash? This action cannot be undone!"))
-            return;
-
         try {
+            // Show custom confirmation modal
+            const result = await showConfirm({
+                title: "Move All Bugs to Trash",
+                message: "Are you sure you want to move all bugs to trash? This action cannot be undone!",
+                confirmText: "Move to Trash",
+                cancelText: "Cancel",
+                type: "warning",
+            });
+
+            if (!result) return; // User canceled
+
             const response = await fetch(
                 `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/trash-all`,
                 {
@@ -428,12 +439,8 @@ const BugSplitView = () => {
 
             if (!response.ok) {
                 const errorData = await response.json();
-                throw new Error(
-                    errorData.message || "Failed to move all bugs to trash"
-                );
+                throw new Error(errorData.message || "Failed to move all bugs to trash");
             }
-
-            const data = await response.json();
 
             setBugs([]);
             setSelectedBug(null);
@@ -450,13 +457,20 @@ const BugSplitView = () => {
             });
         }
     };
-
     // Delete all bugs permanently API
     const deleteAllBugsPermanently = async () => {
-        if (!confirm("Permanently delete all bugs? This action cannot be undone!"))
-            return;
-
         try {
+            // Show custom confirmation modal
+            const result = await showConfirm({
+                title: "Delete All Bugs Permanently",
+                message: "Are you sure you want to permanently delete all bugs? This action cannot be undone!",
+                confirmText: "Delete All",
+                cancelText: "Cancel",
+                type: "warning",
+            });
+
+            if (!result) return; // User canceled
+
             const response = await fetch(
                 `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/delete-all`,
                 {
@@ -471,8 +485,6 @@ const BugSplitView = () => {
                 const errorData = await response.json();
                 throw new Error(errorData.message || "Failed to delete all bugs");
             }
-
-            const data = await response.json();
 
             setBugs([]);
             setSelectedBug(null);

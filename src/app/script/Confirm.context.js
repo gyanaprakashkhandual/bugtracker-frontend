@@ -8,7 +8,7 @@ export const ConfirmProvider = ({ children }) => {
   const [confirmConfig, setConfirmConfig] = useState(null);
   const [resolveRef, setResolveRef] = useState(null);
 
-  // Open modal and return a Promise
+  // Open modal and return a Promise<boolean>
   const showConfirm = useCallback(
     ({
       title = "Confirm Action",
@@ -18,7 +18,7 @@ export const ConfirmProvider = ({ children }) => {
       type = "default",
     }) => {
       return new Promise((resolve) => {
-        setResolveRef(() => resolve);
+        setResolveRef(() => resolve); // store resolve function
         setConfirmConfig({
           isOpen: true,
           title,
@@ -32,21 +32,17 @@ export const ConfirmProvider = ({ children }) => {
     []
   );
 
-  // Close modal
+  // Close modal without confirming
   const hideConfirm = useCallback(() => {
-    if (resolveRef) {
-      resolveRef({ isConfirmed: false });
-      setResolveRef(null);
-    }
+    if (resolveRef) resolveRef(false); // return false on cancel
+    setResolveRef(null);
     setConfirmConfig(null);
   }, [resolveRef]);
 
   // Handle confirm button
   const handleConfirm = useCallback(() => {
-    if (resolveRef) {
-      resolveRef({ isConfirmed: true });
-      setResolveRef(null);
-    }
+    if (resolveRef) resolveRef(true); // return true on confirm
+    setResolveRef(null);
     setConfirmConfig(null);
   }, [resolveRef]);
 
