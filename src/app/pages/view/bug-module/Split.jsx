@@ -89,7 +89,7 @@ const BugSplitView = () => {
                 console.log("Failed to copy");
             });
     };
-    const { testTypeId } = useTestType();
+    const { testTypeId, testTypeName } = useTestType();
     const projectId =
         typeof window !== "undefined"
             ? localStorage.getItem("currentProjectId")
@@ -163,7 +163,6 @@ const BugSplitView = () => {
         },
         [projectId, testTypeId, token]
     );
-
     // Get all bugs API
     const fetchBugs = useCallback(async () => {
         if (!projectId || !testTypeId || !token) {
@@ -194,6 +193,7 @@ const BugSplitView = () => {
         }
     }, [projectId, testTypeId, token]);
 
+    // Get All the comments
     const fetchComments = async (bugId) => {
         if (!token || !bugId) return;
 
@@ -220,7 +220,7 @@ const BugSplitView = () => {
             setLoadingComments(false);
         }
     };
-
+    // Add Comment
     const submitComment = async (bugId) => {
         if (!newComment.trim() || submittingComment) return;
 
@@ -255,7 +255,6 @@ const BugSplitView = () => {
             setSubmittingComment(false);
         }
     };
-
     // Update bug API
     const updateBug = async (bugId, field, value) => {
         setSavingField(field);
@@ -298,7 +297,7 @@ const BugSplitView = () => {
             setSavingField(null);
         }
     };
-
+    // Update BUG fields (Edit)
     const updateBugFields = async (bugId, fields) => {
         try {
             const response = await fetch(`${BASE_URL}/bugs/${bugId}`, {
@@ -336,11 +335,8 @@ const BugSplitView = () => {
             return false;
         }
     };
-
     // Move bug to trash API
     const moveBugToTrash = async (bugId) => {
-        if (!confirm("Move this bug to trash?")) return;
-
         try {
             const response = await fetch(
                 `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/trash`,
@@ -376,46 +372,8 @@ const BugSplitView = () => {
             });
         }
     };
-
-    // Restore bug from trash API
-    const restoreBugFromTrash = async (bugId) => {
-        try {
-            const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/restore`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.message || "Failed to restore bug");
-            }
-
-            const data = await response.json();
-
-            setBugs((prev) => prev.filter((bug) => bug._id !== bugId));
-            if (selectedBug?._id === bugId) {
-                setSelectedBug(null);
-            }
-
-            showAlert({ type: "success", message: "Bug restored successfully" });
-        } catch (error) {
-            console.error("Error restoring bug:", error);
-            showAlert({
-                type: "error",
-                message: error.message || "Failed to restore bug",
-            });
-        }
-    };
-
     // Delete bug permanently API
     const deleteBugPermanently = async (bugId) => {
-        if (!confirm("Permanently delete this bug? This action cannot be undone!"))
-            return;
 
         try {
             const response = await fetch(
@@ -872,7 +830,7 @@ const BugSplitView = () => {
                 {/* Sidebar Header */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                     <h2 className="text-sm font-bold text-gray-800 tracking-wide">
-                        Bug List
+                        {testTypeName || 'Select Test Type'}
                     </h2>
                     <motion.button
                         tooltip-data="Close Sidebar"
@@ -1074,13 +1032,13 @@ const BugSplitView = () => {
             {isSidebarOpen && (
                 <motion.div
                     whileHover={{ backgroundColor: "rgb(59, 130, 246)" }}
-                    className="w-1 bg-gray-200 cursor-col-resize transition-colors"
+                    className="w-[2px] bg-gray-200 cursor-col-resize transition-colors"
                     onMouseDown={startResizing}
                 />
             )}
 
             {/* Main Content Area */}
-            <div className="flex-1 flex flex-col overflow-hidden">
+            <div className="flex-1 flex flex-col overflow-hidden sidebar-scrollbar">
                 {/* Top Bar */}
                 <div className="flex items-center justify-between p-4 border-b border-gray-200 bg-white">
                     <div className="flex items-center gap-3">
