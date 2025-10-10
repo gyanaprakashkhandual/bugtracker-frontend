@@ -27,6 +27,7 @@ import { useConfirm } from "@/app/script/Confirm.context";
 import { GoogleArrowDown, GoogleArrowRight } from "@/app/components/utils/Icon";
 
 const BASE_URL = "http://localhost:5000/api/v1/test-case";
+const COMMENT_URL = "http://localhost:5000/api/v1/comment";
 
 // GitHub-style Dropdown Component
 const GitHubDropdown = ({ value, options, onChange, label, className = "" }) => {
@@ -104,7 +105,7 @@ const TestCaseSplitView = () => {
     const [dateFilter, setDateFilter] = useState({ start: "", end: "" });
     const [showDatePicker, setShowDatePicker] = useState(false);
     const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [sidebarWidth, setSidebarWidth] = useState(400);
+    const [sidebarWidth, setSidebarWidth] = useState(300);
     const [isResizing, setIsResizing] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [editFormData, setEditFormData] = useState({});
@@ -189,25 +190,85 @@ const TestCaseSplitView = () => {
 
     // Fetch Comments
     const fetchComments = async (testCaseId) => {
-        // Placeholder - implement when comment API is available
-        setComments([]);
+        if (!projectId || !testTypeId || !testCaseId || !token) return;
+
+        setLoadingComments(true);
+        try {
+            const response = await fetch(
+                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/${testCaseId}/comments`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            const data = await response.json();
+
+            if (response.ok) {
+                setComments(data.comments || []);
+            } else {
+                showAlert({
+                    type: "error",
+                    message: data.message || "Failed to fetch comments",
+                });
+            }
+        } catch (error) {
+            showAlert({
+                type: "error",
+                message: "Error fetching comments. Please try again.",
+            });
+        } finally {
+            setLoadingComments(false);
+        }
     };
 
     // Submit Comment
     const submitComment = async (testCaseId) => {
-        if (!newComment.trim()) return;
+        if (!newComment.trim()) {
+            showAlert({ type: "warning", message: "Comment cannot be empty" });
+            return;
+        }
+
+        if (!projectId || !testTypeId || !testCaseId || !token) return;
 
         setSubmittingComment(true);
         try {
-            // Placeholder - implement when comment API is available
-            showAlert({ type: "info", message: "Comment feature coming soon" });
-            setNewComment("");
+            const response = await fetch(
+                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/${testCaseId}/comments`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({ content: newComment }),
+                }
+            );
+
+            const data = await response.json();
+
+            if (response.ok) {
+                showAlert({ type: "success", message: "Comment added successfully" });
+                setNewComment("");
+                // Refresh comments list
+                fetchComments(testCaseId);
+            } else {
+                showAlert({
+                    type: "error",
+                    message: data.message || "Failed to add comment",
+                });
+            }
         } catch (error) {
-            showAlert({ type: "error", message: "Error submitting comment" });
+            showAlert({
+                type: "error",
+                message: "Error submitting comment. Please try again.",
+            });
         } finally {
             setSubmittingComment(false);
         }
     };
+
 
     // Handle Edit
     const handleEditClick = () => {
@@ -223,21 +284,29 @@ const TestCaseSplitView = () => {
             status: selectedTestCase.status || "New",
             image: selectedTestCase.image || [],
         });
-        setSelectedImages(selectedTestCase.image || []);
+        setSelectedImages(Array.isArray(selectedTestCase.image) ? selectedTestCase.image : (selectedTestCase.image ? [selectedTestCase.image] : []));
     };
 
     const handleSaveClick = async () => {
         try {
-            const response = await fetch(`${BASE_URL}/test-cases/${selectedTestCase._id}`, {
+            const testCaseId = String(selectedTestCase._id);
+            const url = `${BASE_URL}/test-cases/${testCaseId}`;
+
+            // Prepare payload: ensure image is a single string to match backend schema
+            const payload = {
+                ...editFormData,
+                image: Array.isArray(selectedImages) ? (selectedImages[0] || '') : (selectedImages || ''),
+            };
+
+            console.log('Updating test case', { url, payload });
+
+            const response = await fetch(url, {
                 method: "PUT",
                 headers: {
                     "Content-Type": "application/json",
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    ...editFormData,
-                    image: selectedImages,
-                }),
+                body: JSON.stringify(payload),
             });
 
             const data = await response.json();
@@ -258,35 +327,56 @@ const TestCaseSplitView = () => {
     const handleCancelClick = () => {
         setIsEditing(false);
         setEditFormData({});
-        setSelectedImages(selectedTestCase.image || []);
+        setSelectedImages(Array.isArray(selectedTestCase.image) ? selectedTestCase.image : (selectedTestCase.image ? [selectedTestCase.image] : []));
     };
 
     // Handle Field Edit (Dropdowns)
     const handleFieldEdit = async (field, value) => {
+        // Optimistic UI update
+        const prevSelected = selectedTestCase;
         try {
-            const response = await fetch(`${BASE_URL}/test-cases/${selectedTestCase._id}`, {
-                method: "PUT",
+            setSelectedTestCase((prev) => ({ ...prev, [field]: value }));
+            setTestCases((prev) => prev.map((tc) => (tc._id === prevSelected._id ? { ...tc, [field]: value } : tc)));
+
+            // Warn about fields that backend may not persist
+            if (field === 'severity') {
+                showAlert({ type: 'info', message: 'Severity updated locally. Backend schema may not persist this field.' });
+            }
+
+            const testCaseId = String(prevSelected._id);
+            const url = `${BASE_URL}/test-cases/${testCaseId}`;
+            const payload = { [field]: value };
+            console.log('handleFieldEdit PUT', { url, payload });
+
+            const response = await fetch(url, {
+                method: 'PUT',
                 headers: {
-                    "Content-Type": "application/json",
+                    'Content-Type': 'application/json',
                     Authorization: `Bearer ${token}`,
                 },
-                body: JSON.stringify({
-                    ...selectedTestCase,
-                    [field]: value,
-                }),
+                body: JSON.stringify(payload),
             });
 
             const data = await response.json();
 
             if (response.ok) {
-                showAlert({ type: "success", message: `${field} updated successfully` });
-                setSelectedTestCase(data.testCase);
-                fetchTestCases();
+                showAlert({ type: 'success', message: `${field} updated successfully` });
+                if (data.testCase) {
+                    setSelectedTestCase(data.testCase);
+                    fetchTestCases();
+                }
             } else {
-                showAlert({ type: "error", message: data.message || "Failed to update test case" });
+                console.error('Field update failed', data);
+                // revert optimistic update
+                setSelectedTestCase(prevSelected);
+                fetchTestCases();
+                showAlert({ type: 'error', message: data.message || 'Failed to update test case' });
             }
         } catch (error) {
-            showAlert({ type: "error", message: "Error updating test case" });
+            console.error('Error updating field', error);
+            setSelectedTestCase(prevSelected);
+            fetchTestCases();
+            showAlert({ type: 'error', message: 'Error updating test case' });
         }
     };
 
@@ -863,7 +953,7 @@ const TestCaseSplitView = () => {
                                 >
                                     <div className="flex items-center justify-between gap-2 mb-2">
                                         <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
-                                            {testCase.testCaseId}
+                                            {testCase.serialNumber}
                                         </span>
                                         <div className="flex items-center gap-1.5">
                                             <span
@@ -910,7 +1000,7 @@ const TestCaseSplitView = () => {
             {isSidebarOpen && (
                 <motion.div
                     whileHover={{ backgroundColor: "rgb(59, 130, 246)" }}
-                    className="w-[1px] bg-gray-200 cursor-col-resize transition-colors"
+                    className="w-[2px] bg-gray-200 cursor-col-resize transition-colors"
                     onMouseDown={startResizing}
                 />
             )}
@@ -934,10 +1024,10 @@ const TestCaseSplitView = () => {
                             <div className="flex items-center gap-2 ml-4">
                                 <motion.h2
                                     whileHover={{ scale: 1.02 }}
-                                    onClick={() => copyText(selectedTestCase.testCaseId)}
+                                    onClick={() => copyText(selectedTestCase.serialNumber)}
                                     className="text-sm font-bold text-gray-800 cursor-pointer bg-gray-100 px-3 py-2 rounded-lg"
                                 >
-                                    {selectedTestCase.testCaseId}
+                                    {selectedTestCase.serialNumber}
                                 </motion.h2>
                                 <GitHubDropdown
                                     value={selectedTestCase.testCaseType || "Functional"}
@@ -969,11 +1059,8 @@ const TestCaseSplitView = () => {
                                 <GitHubDropdown
                                     value={selectedTestCase.status || "New"}
                                     options={[
-                                        "New",
-                                        "In Progress",
-                                        "Passed",
-                                        "Failed",
-                                        "Blocked",
+                                        "Pass",
+                                        "Fail"
                                     ]}
                                     onChange={(value) => handleFieldEdit("status", value)}
                                     label="Status"
@@ -994,7 +1081,6 @@ const TestCaseSplitView = () => {
                                         className="flex items-center gap-1.5 px-4 py-2 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm font-medium"
                                     >
                                         <ImageIcon size={13} />
-                                        <span>{selectedTestCase.image.length}</span>
                                     </motion.button>
 
                                     {imageDropdownOpen && (
@@ -1383,116 +1469,6 @@ const TestCaseSplitView = () => {
                                             </p>
                                         )}
                                     </motion.div>
-
-                                    {/* Reference Links */}
-                                    <motion.div
-                                        initial={{ opacity: 0, y: 10 }}
-                                        animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.3 }}
-                                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
-                                    >
-                                        <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
-                                            REFERENCE LINKS
-                                        </label>
-
-                                        {isEditing ? (
-                                            <div className="flex flex-col gap-2">
-                                                {Array.isArray(editFormData.refLinks) && editFormData.refLinks.length > 0 ? (
-                                                    editFormData.refLinks.map((link, index) => (
-                                                        <div
-                                                            key={index}
-                                                            className="flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200"
-                                                        >
-                                                            <input
-                                                                type="text"
-                                                                value={link}
-                                                                onChange={(e) => {
-                                                                    const newLinks = [...editFormData.refLinks];
-                                                                    newLinks[index] = e.target.value;
-                                                                    setEditFormData((prev) => ({
-                                                                        ...prev,
-                                                                        refLinks: newLinks,
-                                                                    }));
-                                                                }}
-                                                                className="flex-1 bg-transparent text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-2 py-1"
-                                                                placeholder="https://..."
-                                                            />
-                                                            <button
-                                                                onClick={() => {
-                                                                    const newLinks = editFormData.refLinks.filter((_, i) => i !== index);
-                                                                    setEditFormData((prev) => ({
-                                                                        ...prev,
-                                                                        refLinks: newLinks,
-                                                                    }));
-                                                                }}
-                                                                className="text-red-500 hover:text-red-700 transition"
-                                                                title="Remove link"
-                                                            >
-                                                                ✕
-                                                            </button>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <p className="flex-1 text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 truncate">
-                                                        No reference links
-                                                    </p>
-                                                )}
-
-                                                {/* Add new link button */}
-                                                <button
-                                                    onClick={() =>
-                                                        setEditFormData((prev) => ({
-                                                            ...prev,
-                                                            refLinks: [...(prev.refLinks || []), ""],
-                                                        }))
-                                                    }
-                                                    className="text-sm text-blue-600 hover:underline self-start mt-2"
-                                                >
-                                                    + Add another link
-                                                </button>
-                                            </div>
-                                        ) : (
-                                            <div className="flex flex-col gap-2">
-                                                {Array.isArray(selectedTestCase?.refLinks) && selectedTestCase.refLinks.length > 0 ? (
-                                                    selectedTestCase.refLinks.map((link, index) => (
-                                                        <div
-                                                            key={index}
-                                                            className="flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 truncate"
-                                                        >
-                                                            <a
-                                                                href={link}
-                                                                target="_blank"
-                                                                rel="noopener noreferrer"
-                                                                className="flex-1 text-sm text-blue-600 hover:underline truncate"
-                                                            >
-                                                                {link}
-                                                            </a>
-                                                            <button
-                                                                onClick={() => {
-                                                                    handleCopy(link);
-                                                                    setCopiedIndex(index);
-                                                                    setTimeout(() => setCopiedIndex(null), 2000);
-                                                                }}
-                                                                className="text-gray-500 hover:text-blue-500 transition"
-                                                                title="Copy link"
-                                                            >
-                                                                {copiedIndex === index ? (
-                                                                    <Check size={18} className="text-green-500" />
-                                                                ) : (
-                                                                    <Copy size={18} />
-                                                                )}
-                                                            </button>
-                                                        </div>
-                                                    ))
-                                                ) : (
-                                                    <p className="flex-1 text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 truncate">
-                                                        No reference links
-                                                    </p>
-                                                )}
-                                            </div>
-                                        )}
-                                    </motion.div>
-
                                     {/* Test Case Images */}
                                     {selectedTestCase.image && selectedTestCase.image.length > 0 && (
                                         <>
@@ -1604,69 +1580,6 @@ const TestCaseSplitView = () => {
                                             )}
                                         </>
                                     )}
-
-                                    {/* Image Upload in Edit Mode */}
-                                    {isEditing &&
-                                        (!selectedTestCase.image ||
-                                            selectedTestCase.image.length === 0) && (
-                                            <motion.div
-                                                initial={{ opacity: 0, y: 10 }}
-                                                animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: 0.35 }}
-                                                className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
-                                            >
-                                                <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">
-                                                    ADD TEST CASE IMAGES
-                                                </label>
-                                                <div className="space-y-3">
-                                                    {selectedImages.length > 0 && (
-                                                        <div className="flex flex-wrap gap-2">
-                                                            {selectedImages.map((image, index) => (
-                                                                <div key={index} className="relative group">
-                                                                    <img
-                                                                        src={image}
-                                                                        alt={`Test case screenshot ${index + 1}`}
-                                                                        className="w-24 h-24 object-cover rounded-lg border border-gray-200"
-                                                                    />
-                                                                    <motion.button
-                                                                        whileHover={{ scale: 1.1 }}
-                                                                        whileTap={{ scale: 0.9 }}
-                                                                        onClick={() => removeImage(index)}
-                                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
-                                                                    >
-                                                                        <X size={12} />
-                                                                    </motion.button>
-                                                                </div>
-                                                            ))}
-                                                        </div>
-                                                    )}
-                                                    <div className="flex gap-2">
-                                                        <input
-                                                            ref={fileInputRef}
-                                                            type="file"
-                                                            multiple
-                                                            accept="image/*"
-                                                            onChange={(e) =>
-                                                                handleImageUpload(e.target.files)
-                                                            }
-                                                            className="hidden"
-                                                        />
-                                                        <motion.button
-                                                            whileHover={{ scale: 1.02 }}
-                                                            whileTap={{ scale: 0.98 }}
-                                                            onClick={() => fileInputRef.current?.click()}
-                                                            disabled={uploadingImages}
-                                                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-xs font-medium"
-                                                        >
-                                                            <Upload size={14} />
-                                                            {uploadingImages
-                                                                ? "Uploading..."
-                                                                : "Upload Images"}
-                                                        </motion.button>
-                                                    </div>
-                                                </div>
-                                            </motion.div>
-                                        )}
 
                                     {/* Timestamps */}
                                     <motion.div
