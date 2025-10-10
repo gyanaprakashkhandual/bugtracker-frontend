@@ -1730,24 +1730,64 @@ const BugSplitView = () => {
                                         </label>
 
                                         {isEditing ? (
-                                            <div className="flex gap-2">
-                                                <input
-                                                    type="text"
-                                                    value={editFormData.refLinks}
-                                                    onChange={(e) =>
+                                            <div className="flex flex-col gap-2">
+                                                {Array.isArray(editFormData.refLinks) && editFormData.refLinks.length > 0 ? (
+                                                    editFormData.refLinks.map((link, index) => (
+                                                        <div
+                                                            key={index}
+                                                            className="flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200"
+                                                        >
+                                                            <input
+                                                                type="text"
+                                                                value={link}
+                                                                onChange={(e) => {
+                                                                    const newLinks = [...editFormData.refLinks];
+                                                                    newLinks[index] = e.target.value;
+                                                                    setEditFormData((prev) => ({
+                                                                        ...prev,
+                                                                        refLinks: newLinks,
+                                                                    }));
+                                                                }}
+                                                                className="flex-1 bg-transparent text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-2 py-1"
+                                                                placeholder="https://..."
+                                                            />
+                                                            <button
+                                                                onClick={() => {
+                                                                    const newLinks = editFormData.refLinks.filter((_, i) => i !== index);
+                                                                    setEditFormData((prev) => ({
+                                                                        ...prev,
+                                                                        refLinks: newLinks,
+                                                                    }));
+                                                                }}
+                                                                className="text-red-500 hover:text-red-700 transition"
+                                                                title="Remove link"
+                                                            >
+                                                                ✕
+                                                            </button>
+                                                        </div>
+                                                    ))
+                                                ) : (
+                                                    <p className="flex-1 text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 truncate">
+                                                        No reference link
+                                                    </p>
+                                                )}
+
+                                                {/* Add new link button */}
+                                                <button
+                                                    onClick={() =>
                                                         setEditFormData((prev) => ({
                                                             ...prev,
-                                                            refLinks: e.target.value,
+                                                            refLinks: [...(prev.refLinks || []), ""],
                                                         }))
                                                     }
-                                                    className="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
-                                                    placeholder="https://..."
-                                                />
+                                                    className="text-sm text-blue-600 hover:underline self-start mt-2"
+                                                >
+                                                    + Add another link
+                                                </button>
                                             </div>
                                         ) : (
                                             <div className="flex flex-col gap-2">
-                                                {Array.isArray(selectedBug?.refLinks) &&
-                                                    selectedBug.refLinks.length > 0 ? (
+                                                {Array.isArray(selectedBug?.refLinks) && selectedBug.refLinks.length > 0 ? (
                                                     selectedBug.refLinks.map((link, index) => (
                                                         <div
                                                             key={index}
