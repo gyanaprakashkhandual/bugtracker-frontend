@@ -9,6 +9,7 @@ import { TooltipProvider } from "./script/Tooltip.context";
 import { ContentProvider } from "./script/Content.context";
 import Tooltip from "./components/utils/Tooltip";
 import Context from "./components/utils/Content";
+import Script from "next/script";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -31,6 +32,24 @@ export default function RootLayout({ children }) {
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
+        {/* Google Analytics */}
+        <Script
+          strategy="afterInteractive"
+          src="https://www.googletagmanager.com/gtag/js?id=G-WH3CSJJNFM"
+        />
+        <Script
+          id="google-analytics"
+          strategy="afterInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              window.dataLayer = window.dataLayer || [];
+              function gtag(){dataLayer.push(arguments);}
+              gtag('js', new Date());
+              gtag('config', 'G-WH3CSJJNFM');
+            `,
+          }}
+        />
+        
         <TooltipProvider>
           <ContentProvider>
             <ProjectProvider>

@@ -453,64 +453,64 @@ const Messaging = () => {
             exit={{ x: -300, opacity: 0 }}
             className="fixed left-0 top-0 h-full w-80 bg-white shadow-2xl z-50 overflow-y-auto"
           >
-            <div className="p-6">
-              <div className="flex justify-between items-center mb-6">
-                <h2 className="text-2xl font-bold text-slate-800">Statistics</h2>
+            <div className="p-4">
+              <div className="flex justify-between items-center mb-4">
+                <h2 className="text-lg font-bold text-slate-800">Statistics</h2>
                 <button
                   onClick={() => setShowStats(false)}
-                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
                 >
-                  <X size={20} />
+                  <X size={18} />
                 </button>
               </div>
 
               {stats && (
-                <div className="space-y-4">
+                <div className="space-y-3">
                   <StatCard
-                    icon={<MessageSquare />}
+                    icon={<MessageSquare size={16} />}
                     label="Total Messages"
                     value={stats.totalMessages}
                     color="blue"
                   />
                   <StatCard
-                    icon={<Reply />}
+                    icon={<Reply size={16} />}
                     label="Total Replies"
                     value={stats.totalReplies}
                     color="green"
                   />
                   <StatCard
-                    icon={<Pin />}
+                    icon={<Pin size={16} />}
                     label="Pinned"
                     value={stats.pinnedMessages}
                     color="yellow"
                   />
                   <StatCard
-                    icon={<TrendingUp />}
+                    icon={<TrendingUp size={16} />}
                     label="Today"
                     value={stats.todayMessages}
                     color="purple"
                   />
 
-                  <div className="mt-8">
-                    <h3 className="text-lg font-semibold mb-4 flex items-center gap-2 text-slate-800">
-                      <Users size={20} />
+                  <div className="mt-6">
+                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-slate-800">
+                      <Users size={16} />
                       Top Contributors
                     </h3>
-                    <div className="space-y-3">
+                    <div className="space-y-2">
                       {stats.topContributors.map((contributor, idx) => (
                         <motion.div
                           key={idx}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: idx * 0.1 }}
-                          className="flex items-center justify-between p-3 bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg hover:shadow-md transition-shadow"
+                          className="flex items-center justify-between p-2 bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg hover:shadow-md transition-shadow"
                         >
-                          <div className="flex items-center gap-3">
-                            <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold">
+                          <div className="flex items-center gap-2">
+                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
                               {contributor.senderName?.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p className="font-medium text-slate-800">
+                              <p className="text-xs font-medium text-slate-800">
                                 {contributor.senderName}
                               </p>
                               <p className="text-xs text-slate-500">
@@ -518,7 +518,7 @@ const Messaging = () => {
                               </p>
                             </div>
                           </div>
-                          <span className="text-lg font-bold text-blue-600">
+                          <span className="text-sm font-bold text-blue-600">
                             {contributor.messageCount}
                           </span>
                         </motion.div>
@@ -538,18 +538,18 @@ const Messaging = () => {
         <motion.div
           initial={{ y: -50, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          className="bg-white shadow-md px-6 py-4 flex items-center justify-between"
+          className="bg-white shadow-md px-4 py-3 flex items-center justify-between"
         >
-          <div className="flex items-center gap-4">
+          <div className="flex items-center gap-3">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => setShowStats(!showStats)}
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
             >
-              <TrendingUp size={24} className="text-slate-700" />
+              <TrendingUp size={20} className="text-slate-700" />
             </motion.button>
-            <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+            <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
               Messaging
             </h1>
             
@@ -557,19 +557,19 @@ const Messaging = () => {
             <div className="flex items-center gap-2">
               {isSocketConnected ? (
                 <div className="flex items-center gap-1 text-green-600">
-                  <Wifi size={16} />
+                  <Wifi size={14} />
                   <span className="text-xs font-medium">Connected</span>
                 </div>
               ) : (
                 <div className="flex items-center gap-1 text-red-600">
-                  <WifiOff size={16} />
+                  <WifiOff size={14} />
                   <span className="text-xs font-medium">Disconnected</span>
                 </div>
               )}
             </div>
           </div>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <div className="relative">
               <input
                 type="text"
@@ -577,18 +577,18 @@ const Messaging = () => {
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                className="pl-10 pr-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-64 transition-all"
+                className="pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-56 transition-all"
               />
               <Search
-                className="absolute left-3 top-2.5 text-slate-400"
-                size={20}
+                className="absolute left-2 top-2.5 text-slate-400"
+                size={16}
               />
             </div>
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleSearch}
-              className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
+              className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
             >
               Search
             </motion.button>
@@ -602,15 +602,15 @@ const Messaging = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="mx-6 mt-4 p-4 bg-red-50 border border-red-200 rounded-lg flex items-center gap-3"
+              className="mx-4 mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2"
             >
-              <AlertCircle className="text-red-600" size={20} />
-              <p className="text-red-800">{error}</p>
+              <AlertCircle className="text-red-600" size={16} />
+              <p className="text-xs text-red-800">{error}</p>
               <button
                 onClick={() => setError(null)}
                 className="ml-auto text-red-600 hover:text-red-800"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </motion.div>
           )}
@@ -620,32 +620,32 @@ const Messaging = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="mx-6 mt-4 p-4 bg-green-50 border border-green-200 rounded-lg flex items-center gap-3"
+              className="mx-4 mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2"
             >
-              <Check className="text-green-600" size={20} />
-              <p className="text-green-800">{success}</p>
+              <Check className="text-green-600" size={16} />
+              <p className="text-xs text-green-800">{success}</p>
               <button
                 onClick={() => setSuccess(null)}
                 className="ml-auto text-green-600 hover:text-green-800"
               >
-                <X size={18} />
+                <X size={16} />
               </button>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div className="flex-1 overflow-y-auto p-4 space-y-3">
           {loading ? (
             <div className="flex flex-col justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-16 w-16 border-b-4 border-blue-600"></div>
-              <p className="mt-4 text-slate-600 font-medium">Loading messages...</p>
+              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600"></div>
+              <p className="mt-3 text-xs text-slate-600 font-medium">Loading messages...</p>
             </div>
           ) : messages.length === 0 ? (
             <div className="flex flex-col justify-center items-center h-full text-slate-500">
-              <MessageSquare size={64} className="mb-4 opacity-50" />
-              <p className="text-xl font-medium">No messages yet</p>
-              <p className="text-sm">Start a conversation!</p>
+              <MessageSquare size={48} className="mb-3 opacity-50" />
+              <p className="text-sm font-medium">No messages yet</p>
+              <p className="text-xs">Start a conversation!</p>
             </div>
           ) : (
             <>
@@ -675,7 +675,7 @@ const Messaging = () => {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-2 text-slate-500 text-sm px-4"
+                  className="flex items-center gap-2 text-slate-500 text-xs px-3"
                 >
                   <div className="flex gap-1">
                     <motion.span
@@ -710,18 +710,18 @@ const Messaging = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex justify-center items-center gap-3 py-4 bg-white border-t"
+            className="flex justify-center items-center gap-2 py-3 bg-white border-t"
           >
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={() => fetchMessages(currentPage - 1, searchQuery)}
               disabled={currentPage === 1}
-              className="px-4 py-2 bg-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-300 transition-colors font-medium"
+              className="px-3 py-1 text-sm bg-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-300 transition-colors font-medium"
             >
               Previous
             </motion.button>
-            <span className="px-4 py-2 font-medium text-slate-700">
+            <span className="px-2 py-1 text-xs font-medium text-slate-700">
               Page {currentPage} of {totalPages}
             </span>
             <motion.button
@@ -729,7 +729,7 @@ const Messaging = () => {
               whileTap={{ scale: 0.95 }}
               onClick={() => fetchMessages(currentPage + 1, searchQuery)}
               disabled={currentPage === totalPages}
-              className="px-4 py-2 bg-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-300 transition-colors font-medium"
+              className="px-3 py-1 text-sm bg-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-300 transition-colors font-medium"
             >
               Next
             </motion.button>
@@ -737,22 +737,22 @@ const Messaging = () => {
         )}
 
         {/* Input Area */}
-        <div className="bg-white border-t px-6 py-4">
+        <div className="bg-white border-t px-4 py-3">
           <AnimatePresence>
             {replyingTo && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex items-center justify-between mb-3 p-3 bg-blue-50 rounded-lg border border-blue-200"
+                className="flex items-center justify-between mb-2 p-2 bg-blue-50 rounded-lg border border-blue-200"
               >
                 <div className="flex items-center gap-2">
-                  <Reply size={16} className="text-blue-600" />
+                  <Reply size={14} className="text-blue-600" />
                   <div>
-                    <span className="text-sm font-medium text-slate-700">
+                    <span className="text-xs font-medium text-slate-700">
                       Replying to {replyingTo.senderName}
                     </span>
-                    <p className="text-xs text-slate-500 truncate max-w-md">
+                    <p className="text-xs text-slate-500 truncate max-w-xs">
                       {replyingTo.content}
                     </p>
                   </div>
@@ -761,7 +761,7 @@ const Messaging = () => {
                   onClick={() => setReplyingTo(null)}
                   className="text-slate-500 hover:text-slate-700 transition-colors"
                 >
-                  <X size={16} />
+                  <X size={14} />
                 </button>
               </motion.div>
             )}
@@ -771,11 +771,11 @@ const Messaging = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex items-center justify-between mb-3 p-3 bg-amber-50 rounded-lg border border-amber-200"
+                className="flex items-center justify-between mb-2 p-2 bg-amber-50 rounded-lg border border-amber-200"
               >
                 <div className="flex items-center gap-2">
-                  <Edit2 size={16} className="text-amber-600" />
-                  <span className="text-sm font-medium text-slate-700">
+                  <Edit2 size={14} className="text-amber-600" />
+                  <span className="text-xs font-medium text-slate-700">
                     Editing message
                   </span>
                 </div>
@@ -783,19 +783,19 @@ const Messaging = () => {
                   onClick={cancelEdit}
                   className="text-slate-500 hover:text-slate-700 transition-colors"
                 >
-                  <X size={16} />
+                  <X size={14} />
                 </button>
               </motion.div>
             )}
           </AnimatePresence>
 
-          <div className="flex items-center gap-3">
+          <div className="flex items-center gap-2">
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+              className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
             >
-              <Paperclip size={20} className="text-slate-600" />
+              <Paperclip size={18} className="text-slate-600" />
             </motion.button>
             <input
               type="text"
@@ -811,16 +811,16 @@ const Messaging = () => {
                   handleSendMessage();
                 }
               }}
-              className="flex-1 px-4 py-3 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
             />
             <motion.button
               whileHover={{ scale: 1.05 }}
               whileTap={{ scale: 0.95 }}
               onClick={handleSendMessage}
               disabled={!newMessage.trim()}
-              className="px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
             >
-              <Send size={20} />
+              <Send size={16} />
               {editingMessage ? "Update" : "Send"}
             </motion.button>
           </div>
@@ -854,25 +854,25 @@ const MessageCard = ({
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: -100 }}
       transition={{ delay: index * 0.05 }}
-      className={`bg-white rounded-xl shadow-md p-5 hover:shadow-xl transition-all ${
+      className={`bg-white rounded-lg shadow-sm p-3 hover:shadow-md transition-all ${
         message.isPinned ? "border-l-4 border-yellow-500 bg-yellow-50" : ""
       }`}
     >
       <div className="flex items-start justify-between">
-        <div className="flex items-start gap-4 flex-1">
+        <div className="flex items-start gap-3 flex-1">
           <motion.div
             whileHover={{ scale: 1.1 }}
-            className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-lg shadow-md"
+            className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md flex-shrink-0"
           >
             {message.senderName?.charAt(0).toUpperCase()}
           </motion.div>
 
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <h3 className="font-semibold text-slate-800 text-lg">
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1 flex-wrap">
+              <h3 className="font-semibold text-slate-800 text-xs">
                 {message.senderName}
               </h3>
-              <span className="text-xs px-3 py-1 bg-gradient-to-r from-slate-100 to-slate-200 rounded-full text-slate-600 font-medium">
+              <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-slate-100 to-slate-200 rounded-full text-slate-600 font-medium">
                 {message.senderRole}
               </span>
               {message.isPinned && (
@@ -881,23 +881,23 @@ const MessageCard = ({
                   animate={{ rotate: [0, -10, 10, -10, 0] }}
                   transition={{ duration: 0.5 }}
                 >
-                  <Pin size={16} className="text-yellow-600 fill-yellow-600" />
+                  <Pin size={14} className="text-yellow-600 fill-yellow-600" />
                 </motion.div>
               )}
             </div>
 
-            <p className="text-slate-700 mb-3 leading-relaxed">{message.content}</p>
+            <p className="text-slate-700 mb-2 leading-relaxed text-sm">{message.content}</p>
 
             {message.isEdited && (
               <span className="text-xs text-slate-500 italic flex items-center gap-1">
-                <Edit2 size={12} />
+                <Edit2 size={10} />
                 edited
               </span>
             )}
 
             {/* Reactions */}
             {message.reactions && message.reactions.length > 0 && (
-              <div className="flex gap-2 mt-3 flex-wrap">
+              <div className="flex gap-1.5 mt-2 flex-wrap">
                 {Object.entries(
                   message.reactions.reduce((acc, r) => {
                     acc[r.emoji] = (acc[r.emoji] || 0) + 1;
@@ -909,7 +909,7 @@ const MessageCard = ({
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.9 }}
                     onClick={() => onReaction(emoji)}
-                    className="px-3 py-1 bg-slate-100 hover:bg-slate-200 rounded-full text-sm transition-colors font-medium shadow-sm"
+                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs transition-colors font-medium shadow-sm"
                   >
                     {emoji} {count}
                   </motion.button>
@@ -918,15 +918,15 @@ const MessageCard = ({
             )}
 
             {/* Actions */}
-            <div className="flex items-center gap-4 mt-4 text-slate-500 flex-wrap">
+            <div className="flex items-center gap-3 mt-2 text-slate-500 flex-wrap text-xs">
               <motion.button
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={onReply}
                 className="flex items-center gap-1 hover:text-blue-600 transition-colors"
               >
-                <Reply size={16} />
-                <span className="text-sm font-medium">Reply</span>
+                <Reply size={14} />
+                <span className="font-medium">Reply</span>
               </motion.button>
 
               <div className="relative">
@@ -938,8 +938,8 @@ const MessageCard = ({
                   }
                   className="flex items-center gap-1 hover:text-blue-600 transition-colors"
                 >
-                  <Smile size={16} />
-                  <span className="text-sm font-medium">React</span>
+                  <Smile size={14} />
+                  <span className="font-medium">React</span>
                 </motion.button>
 
                 <AnimatePresence>
@@ -948,7 +948,7 @@ const MessageCard = ({
                       initial={{ opacity: 0, scale: 0.8, y: 10 }}
                       animate={{ opacity: 1, scale: 1, y: 0 }}
                       exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                      className="absolute bottom-full left-0 mb-2 p-3 bg-white rounded-xl shadow-2xl flex gap-2 z-10 border border-slate-200"
+                      className="absolute bottom-full left-0 mb-2 p-2 bg-white rounded-lg shadow-lg flex gap-1 z-10 border border-slate-200"
                     >
                       {emojis.map((emoji) => (
                         <motion.button
@@ -956,7 +956,7 @@ const MessageCard = ({
                           whileHover={{ scale: 1.3 }}
                           whileTap={{ scale: 0.9 }}
                           onClick={() => onReaction(emoji)}
-                          className="text-2xl hover:bg-slate-100 rounded-lg p-2 transition-colors"
+                          className="text-lg hover:bg-slate-100 rounded p-1 transition-colors"
                         >
                           {emoji}
                         </motion.button>
@@ -973,14 +973,14 @@ const MessageCard = ({
                   onClick={onToggleReplies}
                   className="flex items-center gap-1 hover:text-blue-600 transition-colors"
                 >
-                  <MessageSquare size={16} />
-                  <span className="text-sm font-medium">
+                  <MessageSquare size={14} />
+                  <span className="font-medium">
                     {message.replyCount} {message.replyCount === 1 ? "reply" : "replies"}
                   </span>
                   {showReplies ? (
-                    <ChevronUp size={14} />
+                    <ChevronUp size={12} />
                   ) : (
-                    <ChevronDown size={14} />
+                    <ChevronDown size={12} />
                   )}
                 </motion.button>
               )}
@@ -997,7 +997,7 @@ const MessageCard = ({
                   initial={{ opacity: 0, height: 0 }}
                   animate={{ opacity: 1, height: "auto" }}
                   exit={{ opacity: 0, height: 0 }}
-                  className="mt-4 pl-4 border-l-2 border-blue-200 space-y-3"
+                  className="mt-3 pl-3 border-l-2 border-blue-200 space-y-2"
                 >
                   {replies.map((reply, idx) => (
                     <motion.div
@@ -1005,20 +1005,20 @@ const MessageCard = ({
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.1 }}
-                      className="bg-slate-50 rounded-lg p-4 hover:bg-slate-100 transition-colors"
+                      className="bg-slate-50 rounded-lg p-2 hover:bg-slate-100 transition-colors"
                     >
-                      <div className="flex items-center gap-2 mb-2">
-                        <div className="w-8 h-8 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-sm font-bold">
+                      <div className="flex items-center gap-2 mb-1">
+                        <div className="w-7 h-7 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
                           {reply.senderName?.charAt(0).toUpperCase()}
                         </div>
-                        <span className="font-medium text-sm text-slate-800">
+                        <span className="font-medium text-xs text-slate-800">
                           {reply.senderName}
                         </span>
                         <span className="text-xs text-slate-500">
                           {new Date(reply.createdAt).toLocaleString()}
                         </span>
                       </div>
-                      <p className="text-sm text-slate-700 leading-relaxed">
+                      <p className="text-xs text-slate-700 leading-relaxed">
                         {reply.content}
                       </p>
                     </motion.div>
@@ -1029,14 +1029,14 @@ const MessageCard = ({
           </div>
         </div>
 
-        <div className="relative">
+        <div className="relative ml-2 flex-shrink-0">
           <motion.button
             whileHover={{ scale: 1.1 }}
             whileTap={{ scale: 0.9 }}
             onClick={() => setShowActions(!showActions)}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+            className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
           >
-            <MoreVertical size={18} className="text-slate-600" />
+            <MoreVertical size={16} className="text-slate-600" />
           </motion.button>
 
           <AnimatePresence>
@@ -1045,40 +1045,40 @@ const MessageCard = ({
                 initial={{ opacity: 0, scale: 0.95, y: -10 }}
                 animate={{ opacity: 1, scale: 1, y: 0 }}
                 exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-2xl py-2 z-10 border border-slate-200"
+                className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg py-1 z-10 border border-slate-200"
               >
                 <button
                   onClick={() => {
                     onEdit();
                     setShowActions(false);
                   }}
-                  className="w-full px-4 py-2 text-left hover:bg-slate-100 flex items-center gap-2 text-slate-700 transition-colors"
+                  className="w-full px-3 py-1 text-left hover:bg-slate-100 flex items-center gap-2 text-slate-700 transition-colors text-xs font-medium"
                 >
-                  <Edit2 size={16} />
-                  <span className="font-medium">Edit</span>
+                  <Edit2 size={14} />
+                  <span>Edit</span>
                 </button>
                 <button
                   onClick={() => {
                     onPin();
                     setShowActions(false);
                   }}
-                  className="w-full px-4 py-2 text-left hover:bg-slate-100 flex items-center gap-2 text-slate-700 transition-colors"
+                  className="w-full px-3 py-1 text-left hover:bg-slate-100 flex items-center gap-2 text-slate-700 transition-colors text-xs font-medium"
                 >
-                  <Pin size={16} />
-                  <span className="font-medium">
+                  <Pin size={14} />
+                  <span>
                     {message.isPinned ? "Unpin" : "Pin"}
                   </span>
                 </button>
-                <div className="border-t border-slate-200 my-1"></div>
+                <div className="border-t border-slate-200 my-0.5"></div>
                 <button
                   onClick={() => {
                     onDelete();
                     setShowActions(false);
                   }}
-                  className="w-full px-4 py-2 text-left hover:bg-red-50 flex items-center gap-2 text-red-600 transition-colors"
+                  className="w-full px-3 py-1 text-left hover:bg-red-50 flex items-center gap-2 text-red-600 transition-colors text-xs font-medium"
                 >
-                  <Trash2 size={16} />
-                  <span className="font-medium">Delete</span>
+                  <Trash2 size={14} />
+                  <span>Delete</span>
                 </button>
               </motion.div>
             )}
@@ -1101,13 +1101,13 @@ const StatCard = ({ icon, label, value, color }) => {
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
-      className={`bg-gradient-to-br ${colors[color]} rounded-xl p-5 text-white shadow-lg hover:shadow-xl transition-shadow`}
+      className={`bg-gradient-to-br ${colors[color]} rounded-lg p-3 text-white shadow-md hover:shadow-lg transition-shadow`}
     >
-      <div className="flex items-center justify-between mb-2">
-        <div className="p-2 bg-white bg-opacity-20 rounded-lg">{icon}</div>
-        <span className="text-4xl font-bold">{value}</span>
+      <div className="flex items-center justify-between mb-1">
+        <div className="p-1 bg-white bg-opacity-20 rounded-lg">{icon}</div>
+        <span className="text-2xl font-bold">{value}</span>
       </div>
-      <p className="text-sm opacity-90 font-medium">{label}</p>
+      <p className="text-xs opacity-90 font-medium">{label}</p>
     </motion.div>
   );
 };
