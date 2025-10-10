@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Image as ImageIcon, Link as LinkIcon, Copy, Plus, Trash, Upload, CheckCircle } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context';
+import { useAlert } from '@/app/script/Alert.context';
 
 // Bug Events
 const BUG_EVENTS = {
@@ -54,8 +55,10 @@ const BugCardView = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalBugs, setTotalBugs] = useState(0);
-    const itemsPerPage = 16;
+    const itemsPerPage = 12;
     const fileInputRef = useRef(null);
+
+    const { showAlert } = useAlert();
 
     const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
     const { testTypeId, testTypeName } = useTestType();
@@ -232,6 +235,10 @@ const BugCardView = () => {
             }
 
             emitBugEvent(BUG_EVENTS.UPDATED, data.bug);
+            showAlert({
+                type: "success",
+                message: "Bug updated successfully!"
+            });
             return true;
         } catch (error) {
             console.error('Error updating bug:', error);
@@ -266,6 +273,10 @@ const BugCardView = () => {
             }
 
             emitBugEvent(BUG_EVENTS.UPDATED, data.bug);
+            showAlert({
+                type: "success",
+                message: "Bug fields updated successfully!"
+            });
             return true;
         } catch (error) {
             console.error('Error updating bug:', error);
@@ -274,7 +285,6 @@ const BugCardView = () => {
     };
 
     const moveBugToTrash = async (bugId) => {
-        if (!confirm('Move this bug to trash?')) return;
 
         try {
             const response = await fetch(
@@ -296,13 +306,16 @@ const BugCardView = () => {
             }
             emitBugEvent(BUG_EVENTS.TRASHED, data.bug);
             fetchBugs();
+            showAlert({
+                type: "success",
+                message: "Bug moved to trash successfully!"
+            });
         } catch (error) {
             console.error('Error moving bug to trash:', error);
         }
     };
 
     const deleteBugPermanently = async (bugId) => {
-        if (!confirm('Permanently delete this bug? This action cannot be undone!')) return;
 
         try {
             const response = await fetch(
@@ -323,10 +336,15 @@ const BugCardView = () => {
             }
             emitBugEvent(BUG_EVENTS.DELETED, { _id: bugId });
             fetchBugs();
+            showAlert({
+                type: "success",
+                message: "Bug deleted permanently!"
+            });
         } catch (error) {
             console.error('Error deleting bug permanently:', error);
         }
     };
+
 
     const handleEditClick = () => {
         setIsEditing(true);
@@ -506,14 +524,8 @@ const BugCardView = () => {
     }
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-6">
-            <div className="max-w-7xl mx-auto">
-                {/* Header */}
-                <div className="mb-6">
-                    <h1 className="text-3xl font-bold text-gray-900 mb-2">{testTypeName} Test Bugs</h1>
-                    <p className="text-gray-600">Total {totalBugs} bugs found</p>
-                </div>
-
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-2">
+            <div className="max-w-full mx-auto">
                 {filteredBugs.length === 0 ? (
                     <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm">
                         <AlertCircle size={64} className="text-gray-300 mb-4" />
@@ -538,7 +550,10 @@ const BugCardView = () => {
                                             </div>
                                         </div>
 
-                                        <p className="text-sm text-gray-800 mb-3 line-clamp-2 min-h-[2.5rem] font-medium">
+                                        <p
+                                            content-data={bug.bugDesc}
+                                            content-placement="top"
+                                            className="text-sm text-gray-800 mb-3 line-clamp-2 min-h-[2.5rem] font-medium">
                                             {bug.bugDesc || 'No description'}
                                         </p>
 
@@ -583,9 +598,12 @@ const BugCardView = () => {
                         </div>
 
                         {/* Pagination */}
-                        <div className="flex items-center justify-between bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-4">
+                        <div className="flex items-center user-select-none justify-between bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-3">
                             <div className="text-sm text-gray-600">
                                 Page <span className="font-bold text-gray-900">{currentPage}</span> of <span className="font-bold text-gray-900">{totalPages}</span>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                                Current Test Type: <span className="font-bold text-gray-900">{testTypeName}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
@@ -615,7 +633,7 @@ const BugCardView = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 flex items-center justify-center p-4"
+                        className="fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center"
                         onClick={() => setSelectedBug(null)}
                     >
                         <motion.div
@@ -624,7 +642,7 @@ const BugCardView = () => {
                             exit={{ scale: 0.95, opacity: 0 }}
                             transition={{ type: "spring", duration: 0.3 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white w-full max-w-7xl h-[90vh] rounded-2xl shadow-2xl overflow-hidden flex flex-col"
+                            className="bg-white w-full max-w-full h-full sidebar-scrollbar overflow-hidden flex flex-col"
                         >
                             {/* Modal Header */}
                             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 flex-shrink-0">
@@ -812,7 +830,7 @@ const BugCardView = () => {
                                             transition={{ delay: 0.3 }}
                                             className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
                                         >
-                                            <label className="text-xs font-bold text-gray-700 mb-3 block uppercase tracking-wide flex items-center gap-2">
+                                            <label className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
                                                 <LinkIcon size={14} />
                                                 Reference Links
                                             </label>
@@ -913,7 +931,7 @@ const BugCardView = () => {
                                             transition={{ delay: 0.4 }}
                                             className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
                                         >
-                                            <label className="text-xs font-bold text-gray-700 mb-3 block uppercase tracking-wide flex items-center gap-2">
+                                            <label className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
                                                 <ImageIcon size={14} />
                                                 Images
                                             </label>
