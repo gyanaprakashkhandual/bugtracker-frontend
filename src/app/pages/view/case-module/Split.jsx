@@ -1634,7 +1634,7 @@ const TestCaseSplitView = () => {
                                         </div>
                                         {selectedTestCase.updatedAt && (
                                             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                                                <label className="text-xs font-bold text-gray-600 mb-1.5 block tracking-wide flex items-center gap-1.5">
+                                                <label className="text-xs font-bold text-gray-600 mb-1.5 tracking-wide flex items-center gap-1.5">
                                                     <Clock size={12} />
                                                     UPDATED AT
                                                 </label>
