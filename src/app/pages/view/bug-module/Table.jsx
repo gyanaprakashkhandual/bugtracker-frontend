@@ -1,7 +1,7 @@
 'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Image as ImageIcon, Save, Ban } from 'lucide-react';
+import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Image as ImageIcon, Save, Ban, Link as LinkIcon, Copy, ZoomIn } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context';
 
 const BugSpreadsheet = () => {
@@ -29,42 +29,54 @@ const BugSpreadsheet = () => {
     const [totalBugs, setTotalBugs] = useState(0);
     const [newRowEditing, setNewRowEditing] = useState(false);
     const [newRowTempData, setNewRowTempData] = useState({});
+    const [imagePreviewModal, setImagePreviewModal] = useState(null);
+    const [activeLinksDropdown, setActiveLinksDropdown] = useState(null);
+    const [activeImagesDropdown, setActiveImagesDropdown] = useState(null);
+    const [alert, setAlert] = useState(null);
+
     const dropdownRef = useRef(null);
     const commentModalRef = useRef(null);
+    const linksDropdownRef = useRef(null);
+    const imagesDropdownRef = useRef(null);
     const resizeStartX = useRef(0);
     const resizeStartY = useRef(0);
     const resizeStartWidth = useRef(0);
     const resizeStartHeight = useRef(0);
     const dropdownButtonRefs = useRef({});
     const commentButtonRefs = useRef({});
+    const linksButtonRefs = useRef({});
+    const imagesButtonRefs = useRef({});
     const fileInputRef = useRef(null);
 
     const { selectedTestType } = useTestType();
-
 
     const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
     const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
     const BASE_URL = 'http://localhost:5000/api/v1/bug';
+    const COMMENT_URL = 'http://localhost:5000/api/v1/comment';
+    const ROWS_PER_PAGE = 25;
 
     const columns = [
-        { key: 'serialNumber', label: 'S.No', width: 84, editable: false, color: 'bg-purple-50', sticky: true },
+        { key: 'serialNumber', label: 'S.No', width: 100, editable: false, color: 'bg-purple-50', sticky: true },
         { key: 'bugType', label: 'Type', width: 140, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'], color: 'bg-blue-50', sticky: true },
-        { key: 'moduleName', label: 'Module', width: 120, editable: true, color: 'bg-green-50', sticky: true },
-        { key: 'bugDesc', label: 'Description', width: 300, editable: true, color: 'bg-yellow-50', sticky: true },
+        { key: 'moduleName', label: 'Module', width: 150, editable: true, color: 'bg-green-50', sticky: true },
+        { key: 'bugDesc', label: 'Description', width: 300, editable: true, color: 'bg-yellow-50' },
         { key: 'bugRequirement', label: 'Requirement', width: 300, editable: true, color: 'bg-pink-50' },
-        { key: 'refLink', label: 'Link', width: 70, editable: true, color: 'bg-indigo-50' },
-        { key: 'image', label: 'Image', width: 70, editable: true, color: 'bg-cyan-50' },
         { key: 'priority', label: 'Priority', width: 120, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
         { key: 'severity', label: 'Severity', width: 120, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50' },
         { key: 'status', label: 'Status', width: 140, editable: true, type: 'select', options: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'], color: 'bg-teal-50' },
-        { key: 'actions', label: 'Act', width: 65, editable: false, color: 'bg-gray-100' }
+        { key: 'actions', label: 'Actions', width: 150, editable: false, color: 'bg-gray-100' }
     ];
+
+    const showAlert = ({ type, message }) => {
+        setAlert({ type, message });
+        setTimeout(() => setAlert(null), 3000);
+    };
 
     useEffect(() => {
         const initialWidths = {};
-        const initialHeights = {};
         columns.forEach(col => {
             initialWidths[col.key] = col.width;
         });
@@ -79,6 +91,12 @@ const BugSpreadsheet = () => {
             }
             if (commentModalRef.current && !commentModalRef.current.contains(event.target)) {
                 setActiveCommentModal(null);
+            }
+            if (linksDropdownRef.current && !linksDropdownRef.current.contains(event.target)) {
+                setActiveLinksDropdown(null);
+            }
+            if (imagesDropdownRef.current && !imagesDropdownRef.current.contains(event.target)) {
+                setActiveImagesDropdown(null);
             }
         };
 
@@ -96,7 +114,7 @@ const BugSpreadsheet = () => {
         try {
             setLoading(true);
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs?page=${page}&limit=11`,
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs?page=${page}&limit=${ROWS_PER_PAGE}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -113,6 +131,7 @@ const BugSpreadsheet = () => {
             setCurrentPage(page);
         } catch (error) {
             console.error('Error fetching bugs:', error);
+            showAlert({ type: 'error', message: 'Failed to fetch bugs' });
         } finally {
             setLoading(false);
         }
@@ -125,7 +144,7 @@ const BugSpreadsheet = () => {
 
         try {
             const response = await fetch(
-                `http://localhost:5000/api/v1/comment/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -151,7 +170,7 @@ const BugSpreadsheet = () => {
 
         try {
             const response = await fetch(
-                `http://localhost:5000/api/v1/comment/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
                 {
                     method: 'POST',
                     headers: {
@@ -173,8 +192,10 @@ const BugSpreadsheet = () => {
                 [bugId]: [data.comment, ...(prev[bugId] || [])]
             }));
             setNewComment('');
+            showAlert({ type: 'success', message: 'Comment added successfully' });
         } catch (error) {
             console.error('Error submitting comment:', error);
+            showAlert({ type: 'error', message: 'Failed to submit comment' });
         } finally {
             setSubmittingComment(false);
         }
@@ -222,8 +243,8 @@ const BugSpreadsheet = () => {
                         moduleName: bugData.moduleName || '',
                         bugDesc: bugData.bugDesc || '',
                         bugRequirement: bugData.bugRequirement || '',
-                        refLink: bugData.refLink || '',
-                        image: bugData.image || 'No Image provided',
+                        refLinks: bugData.refLinks ? [bugData.refLinks] : [],
+                        images: bugData.images ? [bugData.images] : [],
                         priority: bugData.priority || 'Medium',
                         severity: bugData.severity || 'Medium',
                         status: bugData.status || 'New'
@@ -234,12 +255,14 @@ const BugSpreadsheet = () => {
             if (!response.ok) throw new Error('Failed to create bug');
 
             const result = await response.json();
-            setBugs(prev => [result.bug, ...prev]);
+            await fetchBugs(currentPage);
             setNewRowData({});
             setNewRowEditing(false);
             setNewRowTempData({});
+            showAlert({ type: 'success', message: 'Bug created successfully' });
         } catch (error) {
             console.error('Error creating bug:', error);
+            showAlert({ type: 'error', message: 'Failed to create bug' });
         } finally {
             setIsCreatingBug(false);
         }
@@ -275,6 +298,7 @@ const BugSpreadsheet = () => {
                     newSet.delete(cellKey);
                     return newSet;
                 });
+                showAlert({ type: 'success', message: 'Field updated successfully' });
             }, 500);
         } catch (error) {
             console.error('Error updating bug:', error);
@@ -284,6 +308,11 @@ const BugSpreadsheet = () => {
                 newSet.delete(cellKey);
                 return newSet;
             });
+            showAlert({ type: 'error', message: 'Failed to update field' });
+
+            setBugs(prev => prev.map(bug =>
+                bug._id === bugId ? { ...bug, [field]: bug[field] } : bug
+            ));
         }
     };
 
@@ -297,19 +326,11 @@ const BugSpreadsheet = () => {
     const handleNewRowEdit = (columnKey, value) => {
         const updatedData = { ...newRowData, [columnKey]: value };
         setNewRowData(updatedData);
-
-        if (updatedData.moduleName || updatedData.bugDesc) {
-            const timeoutId = setTimeout(() => {
-                createBug(updatedData);
-            }, 1500);
-            return () => clearTimeout(timeoutId);
-        }
     };
 
     const handleNewRowManualSave = () => {
-        if (Object.keys(newRowTempData).length > 0) {
+        if (Object.keys(newRowTempData).length > 0 || Object.keys(newRowData).length > 0) {
             const finalData = { ...newRowData, ...newRowTempData };
-            setNewRowData(finalData);
             createBug(finalData);
         }
         setNewRowEditing(false);
@@ -319,6 +340,7 @@ const BugSpreadsheet = () => {
     const handleNewRowCancel = () => {
         setNewRowEditing(false);
         setNewRowTempData({});
+        setNewRowData({});
     };
 
     const handleNewRowCellClick = (columnKey) => {
@@ -363,23 +385,35 @@ const BugSpreadsheet = () => {
         setEditValue('');
     };
 
-    const handleImageUpload = async (bugId, columnKey, file) => {
+    const handleImageUpload = async (bugId, file) => {
         if (!file) return;
 
         try {
+            showAlert({ type: 'success', message: 'Uploading image...' });
             const imageUrl = await uploadImageToCloudinary(file);
 
             if (bugId === 'new') {
                 if (newRowEditing) {
-                    setNewRowTempData(prev => ({ ...prev, [columnKey]: imageUrl }));
+                    const currentImages = newRowTempData.images || newRowData.images || '';
+                    const imagesArray = currentImages ? currentImages.split(',') : [];
+                    imagesArray.push(imageUrl);
+                    setNewRowTempData(prev => ({ ...prev, images: imagesArray.join(',') }));
                 } else {
-                    handleNewRowEdit(columnKey, imageUrl);
+                    const currentImages = newRowData.images || '';
+                    const imagesArray = currentImages ? currentImages.split(',') : [];
+                    imagesArray.push(imageUrl);
+                    handleNewRowEdit('images', imagesArray.join(','));
                 }
             } else {
-                handleCellEdit(bugId, columnKey, imageUrl);
+                const bug = bugs.find(b => b._id === bugId);
+                const currentImages = bug?.images || [];
+                const updatedImages = Array.isArray(currentImages) ? [...currentImages, imageUrl] : [imageUrl];
+                handleCellEdit(bugId, 'images', updatedImages);
             }
+            showAlert({ type: 'success', message: 'Image uploaded successfully' });
         } catch (error) {
             console.error('Error uploading image:', error);
+            showAlert({ type: 'error', message: 'Failed to upload image' });
         }
     };
 
@@ -388,7 +422,7 @@ const BugSpreadsheet = () => {
 
         try {
             const response = await fetch(
-                `${BASE_URL}/bugs/${bugId}/trash`,
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/trash`,
                 {
                     method: 'PATCH',
                     headers: {
@@ -399,10 +433,11 @@ const BugSpreadsheet = () => {
 
             if (!response.ok) throw new Error('Failed to move bug to trash');
 
-            setBugs(prev => prev.filter(bug => bug._id !== bugId));
+            await fetchBugs(currentPage);
+            showAlert({ type: 'success', message: 'Bug moved to trash' });
         } catch (error) {
             console.error('Error moving bug to trash:', error);
-            alert('Failed to move bug to trash');
+            showAlert({ type: 'error', message: 'Failed to move bug to trash' });
         }
     };
 
@@ -411,7 +446,7 @@ const BugSpreadsheet = () => {
 
         try {
             const response = await fetch(
-                `${BASE_URL}/bugs/${bugId}`,
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/permanent`,
                 {
                     method: 'DELETE',
                     headers: {
@@ -422,10 +457,11 @@ const BugSpreadsheet = () => {
 
             if (!response.ok) throw new Error('Failed to delete bug permanently');
 
-            setBugs(prev => prev.filter(bug => bug._id !== bugId));
+            await fetchBugs(currentPage);
+            showAlert({ type: 'success', message: 'Bug deleted permanently' });
         } catch (error) {
             console.error('Error deleting bug permanently:', error);
-            alert('Failed to delete bug permanently');
+            showAlert({ type: 'error', message: 'Failed to delete bug permanently' });
         }
     };
 
@@ -532,6 +568,11 @@ const BugSpreadsheet = () => {
         }
     };
 
+    const copyToClipboard = (text) => {
+        navigator.clipboard.writeText(text);
+        showAlert({ type: 'success', message: 'Copied to clipboard' });
+    };
+
     const renderDropdown = (bugId, column, value) => {
         const cellKey = `${bugId}-${column.key}`;
         const isActive = activeDropdown === cellKey;
@@ -555,9 +596,10 @@ const BugSpreadsheet = () => {
                     onClick={() => handleDropdownClick(cellKey)}
                     className="w-full h-full px-2 py-1.5 flex items-center justify-between hover:bg-gray-50 transition-colors group"
                 >
-                    <span className={`px-2 py-1 rounded text-xs font-medium border w-30 ${badgeClass}`}>
+                    <span className={`px-2 py-1 rounded text-xs font-medium border ${badgeClass}`}>
                         {value || 'Select'}
                     </span>
+                    <ChevronDown size={12} className="text-gray-400 group-hover:text-gray-600" />
                 </button>
 
                 <AnimatePresence>
@@ -584,8 +626,7 @@ const BugSpreadsheet = () => {
                                         <button
                                             key={option}
                                             onClick={() => handleDropdownSelect(bugId, column.key, option)}
-                                            className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50' : ''
-                                                }`}
+                                            className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50' : ''}`}
                                         >
                                             <span className={`px-2 py-1 rounded text-xs font-medium border ${optionBadgeClass}`}>
                                                 {option}
@@ -601,6 +642,172 @@ const BugSpreadsheet = () => {
                     )}
                 </AnimatePresence>
             </div>
+        );
+    };
+
+    const renderLinksDropdown = (bugId, refLinks) => {
+        const cellKey = `links-${bugId}`;
+        const isActive = activeLinksDropdown === cellKey;
+        const links = Array.isArray(refLinks) ? refLinks : (refLinks ? [refLinks] : []);
+        const validLinks = links.filter(link => link && link !== 'No Link Provided');
+
+        if (validLinks.length === 0) return null;
+
+        const buttonRef = linksButtonRefs.current[cellKey];
+        const rect = buttonRef?.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - (rect?.bottom || 0);
+        const openUpward = spaceBelow < 300;
+
+        return (
+            <>
+                <button
+                    ref={(el) => {
+                        if (el) linksButtonRefs.current[cellKey] = el;
+                    }}
+                    onClick={() => setActiveLinksDropdown(isActive ? null : cellKey)}
+                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors relative"
+                    title="View links"
+                >
+                    <LinkIcon size={14} />
+                    {validLinks.length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                            {validLinks.length}
+                        </span>
+                    )}
+                </button>
+
+                <AnimatePresence>
+                    {isActive && (
+                        <motion.div
+                            ref={linksDropdownRef}
+                            initial={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50`}
+                        >
+                            <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                    <LinkIcon size={16} className="text-gray-600" />
+                                    <h3 className="font-semibold text-gray-800 text-sm">Links</h3>
+                                </div>
+                                <button
+                                    onClick={() => setActiveLinksDropdown(null)}
+                                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                            <div className="max-h-64 overflow-y-auto">
+                                {validLinks.map((link, index) => (
+                                    <div key={index} className="px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <a
+                                                href={link}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                className="flex-1 text-xs text-blue-600 hover:text-blue-800 truncate"
+                                            >
+                                                {link}
+                                            </a>
+                                            <button
+                                                onClick={() => copyToClipboard(link)}
+                                                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                                title="Copy link"
+                                            >
+                                                <Copy size={12} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </>
+        );
+    };
+
+    const renderImagesDropdown = (bugId, images) => {
+        const cellKey = `images-${bugId}`;
+        const isActive = activeImagesDropdown === cellKey;
+        const imageArray = Array.isArray(images) ? images : (images ? [images] : []);
+        const validImages = imageArray.filter(img => img && img !== 'No Image Provided' && img !== 'No Image provided');
+
+        if (validImages.length === 0) return null;
+
+        const buttonRef = imagesButtonRefs.current[cellKey];
+        const rect = buttonRef?.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - (rect?.bottom || 0);
+        const openUpward = spaceBelow < 300;
+
+        return (
+            <>
+                <button
+                    ref={(el) => {
+                        if (el) imagesButtonRefs.current[cellKey] = el;
+                    }}
+                    onClick={() => setActiveImagesDropdown(isActive ? null : cellKey)}
+                    className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors relative"
+                    title="View images"
+                >
+                    <ImageIcon size={14} />
+                    {validImages.length > 0 && (
+                        <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
+                            {validImages.length}
+                        </span>
+                    )}
+                </button>
+
+                <AnimatePresence>
+                    {isActive && (
+                        <motion.div
+                            ref={imagesDropdownRef}
+                            initial={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
+                            animate={{ opacity: 1, y: 0, scale: 1 }}
+                            exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
+                            transition={{ duration: 0.15 }}
+                            className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50`}
+                        >
+                            <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
+                                <div className="flex items-center gap-1.5">
+                                    <ImageIcon size={16} className="text-gray-600" />
+                                    <h3 className="font-semibold text-gray-800 text-sm">Images</h3>
+                                </div>
+                                <button
+                                    onClick={() => setActiveImagesDropdown(null)}
+                                    className="text-gray-400 hover:text-gray-600 transition-colors"
+                                >
+                                    <X size={16} />
+                                </button>
+                            </div>
+                            <div className="max-h-64 overflow-y-auto">
+                                {validImages.map((image, index) => (
+                                    <div key={index} className="px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                                        <div className="flex items-center justify-between gap-2">
+                                            <div className="flex items-center gap-2 flex-1">
+                                                <img
+                                                    src={image}
+                                                    alt={`Image ${index + 1}`}
+                                                    className="w-10 h-10 object-cover rounded border border-gray-200"
+                                                />
+                                                <span className="text-xs text-gray-700">Image {index + 1}</span>
+                                            </div>
+                                            <button
+                                                onClick={() => setImagePreviewModal(image)}
+                                                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                                title="View full size"
+                                            >
+                                                <ZoomIn size={12} />
+                                            </button>
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </>
         );
     };
 
@@ -712,120 +919,6 @@ const BugSpreadsheet = () => {
         const hasError = errorCells.has(cellKey);
         const rowHeight = rowHeights[bugId] || rowHeights.default;
 
-        if (column.key === 'image') {
-            if (editingCell?.bugId === bugId && editingCell?.columnKey === column.key) {
-                return (
-                    <div className="w-full h-full flex flex-col items-center justify-center p-1 border border-blue-500 bg-white">
-                        <input
-                            type="file"
-                            ref={fileInputRef}
-                            accept="image/*"
-                            onChange={(e) => {
-                                const file = e.target.files[0];
-                                if (file) {
-                                    handleImageUpload(bugId, column.key, file);
-                                }
-                                setEditingCell(null);
-                            }}
-                            className="hidden"
-                        />
-                        <button
-                            onClick={() => fileInputRef.current?.click()}
-                            className="px-2 py-1 bg-blue-600 text-white rounded text-xs hover:bg-blue-700 transition-colors"
-                        >
-                            Upload Image
-                        </button>
-                        <span className="text-xs text-gray-500 mt-1 text-center">Click to upload</span>
-                    </div>
-                );
-            }
-
-            if (value && value !== 'No Image provided') {
-                return (
-                    <div
-                        className="w-full h-full px-2 py-1.5 flex items-center justify-center cursor-pointer hover:bg-gray-50"
-                        onDoubleClick={() => column.editable && startEditing(bugId, column.key, value)}
-                    >
-                        <a
-                            href={value}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <ImageIcon size={16} />
-                        </a>
-                    </div>
-                );
-            }
-
-            return (
-                <div
-                    className="w-full h-full px-2 py-1.5 flex items-center justify-center cursor-pointer hover:bg-gray-50"
-                    onDoubleClick={() => column.editable && startEditing(bugId, column.key, value)}
-                    onClick={() => isNewRow && column.editable && handleNewRowCellClick(column.key)}
-                >
-                    <span className="text-gray-400 text-xs italic">
-                        {isNewRow ? 'Add image' : 'No image'}
-                    </span>
-                </div>
-            );
-        }
-
-        if (column.key === 'refLink') {
-            if (editingCell?.bugId === bugId && editingCell?.columnKey === column.key) {
-                return (
-                    <input
-                        type="text"
-                        value={editValue}
-                        onChange={(e) => setEditValue(e.target.value)}
-                        onBlur={stopEditing}
-                        onKeyDown={(e) => {
-                            if (e.key === 'Enter') stopEditing();
-                            if (e.key === 'Escape') {
-                                setEditingCell(null);
-                                setEditValue('');
-                            }
-                        }}
-                        className="w-full h-full border border-blue-500 outline-none bg-white px-2 py-1.5 text-xs"
-                        autoFocus
-                        placeholder="Enter link URL"
-                    />
-                );
-            }
-
-            if (value && !isNewRow) {
-                return (
-                    <div
-                        className="w-full h-full px-2 py-1.5 flex items-center justify-center cursor-pointer hover:bg-gray-50"
-                        onDoubleClick={() => column.editable && startEditing(bugId, column.key, value)}
-                    >
-                        <a
-                            href={value}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-800 transition-colors"
-                            onClick={(e) => e.stopPropagation()}
-                        >
-                            <ExternalLink size={14} />
-                        </a>
-                    </div>
-                );
-            }
-
-            return (
-                <div
-                    className="w-full h-full px-2 py-1.5 flex items-center justify-center cursor-pointer hover:bg-gray-50"
-                    onDoubleClick={() => column.editable && startEditing(bugId, column.key, value)}
-                    onClick={() => isNewRow && column.editable && handleNewRowCellClick(column.key)}
-                >
-                    <span className="text-gray-400 text-xs italic">
-                        {isNewRow ? 'Add link' : 'No link'}
-                    </span>
-                </div>
-            );
-        }
-
         if (column.key === 'actions') {
             if (isNewRow) {
                 return (
@@ -834,14 +927,16 @@ const BugSpreadsheet = () => {
                             <>
                                 <button
                                     onClick={handleNewRowManualSave}
-                                    className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                    className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors"
                                     disabled={isCreatingBug}
+                                    title="Save"
                                 >
                                     <Save size={14} />
                                 </button>
                                 <button
                                     onClick={handleNewRowCancel}
-                                    className="p-1 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                    title="Cancel"
                                 >
                                     <Ban size={14} />
                                 </button>
@@ -852,10 +947,10 @@ const BugSpreadsheet = () => {
                 );
             }
 
-            const commentButtonRef = commentButtonRefs.current;
-
             return (
                 <div className="flex items-center justify-center h-full space-x-0.5 relative">
+                    {renderLinksDropdown(bug._id, bug.refLinks)}
+                    {renderImagesDropdown(bug._id, bug.images)}
                     <button
                         ref={(el) => {
                             if (el) commentButtonRefs.current[bug._id] = el;
@@ -870,18 +965,23 @@ const BugSpreadsheet = () => {
                             }
                         }}
                         className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
-                        tooltip-data="Comments"
-                        tooltip-placement="top"
+                        title="Comments"
                     >
                         <MessageSquare size={14} />
                     </button>
                     <button
                         onClick={() => moveBugToTrash(bug._id)}
                         className="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition-colors"
-                        tooltip-data="Achieve"
-                        tooltip-placement="top"
+                        title="Move to trash"
                     >
                         <Archive size={14} />
+                    </button>
+                    <button
+                        onClick={() => deleteBugPermanently(bug._id)}
+                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        title="Delete permanently"
+                    >
+                        <Trash2 size={14} />
                     </button>
                     {renderCommentModal(bug._id, commentButtonRefs.current[bug._id])}
                 </div>
@@ -902,34 +1002,33 @@ const BugSpreadsheet = () => {
 
         if (editingCell?.bugId === bugId && editingCell?.columnKey === column.key) {
             return (
-                <input
-                    type="text"
+                <textarea
                     value={editValue}
                     onChange={(e) => setEditValue(e.target.value)}
                     onBlur={stopEditing}
                     onKeyDown={(e) => {
-                        if (e.key === 'Enter') stopEditing();
+                        if (e.key === 'Enter' && !e.shiftKey) {
+                            e.preventDefault();
+                            stopEditing();
+                        }
                         if (e.key === 'Escape') {
                             setEditingCell(null);
                             setEditValue('');
                         }
                     }}
-                    className="w-full h-full border border-blue-500 outline-none bg-white px-2 py-1.5 text-xs"
+                    className="w-full h-full border-2 border-blue-500 outline-none bg-white px-2 py-1.5 text-xs resize-none"
                     autoFocus
+                    style={{ minHeight: rowHeight }}
                 />
             );
         }
 
         const displayValue = value || '';
-        const maxChars = Math.floor((columnWidths[column.key] - 32) / 6);
-        const truncatedValue = displayValue.length > maxChars ? displayValue.substring(0, maxChars) + '...' : displayValue;
 
         return (
             <div
-                className={`w-full h-full px-2 py-1.5 flex items-center text-xs ${column.editable ? 'cursor-pointer hover:bg-gray-50' : ''}`}
-                onClick={() => column.editable && (isNewRow ? handleNewRowCellClick(column.key) : startEditing(bugId, column.key, value))}
-                content-data={displayValue}
-                content-placement="top"
+                className={`w-full h-full px-2 py-1.5 flex items-center text-xs relative ${column.editable ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+                onDoubleClick={() => column.editable && (isNewRow ? handleNewRowCellClick(column.key) : startEditing(bugId, column.key, value))}
                 style={{
                     minHeight: rowHeight,
                     maxHeight: rowHeight,
@@ -937,17 +1036,17 @@ const BugSpreadsheet = () => {
                 }}
             >
                 <span
-                    className={`${!value && isNewRow ? 'text-gray-400 italic' : ''}`}
+                    className={`flex-1 ${!value && isNewRow ? 'text-gray-400 italic' : ''}`}
                     style={{
                         lineHeight: '1.4',
                         maxHeight: rowHeight - 12,
                         overflow: 'hidden',
                         display: '-webkit-box',
-                        WebkitLineClamp: Math.floor((rowHeight - 12) / 16),
+                        WebkitLineClamp: Math.floor((rowHeight - 12) / 18),
                         WebkitBoxOrient: 'vertical'
                     }}
                 >
-                    {value ? displayValue : (isNewRow ? 'Click to edit' : '')}
+                    {value ? displayValue : (isNewRow ? 'Double-click to edit' : '')}
                 </span>
                 {isSaving && <Loader2 size={12} className="ml-1 animate-spin text-blue-500 flex-shrink-0" />}
                 {hasError && <AlertCircle size={12} className="ml-1 text-red-500 flex-shrink-0" />}
@@ -970,6 +1069,14 @@ const BugSpreadsheet = () => {
         return position;
     };
 
+    const goToFirstPage = () => fetchBugs(1);
+    const goToLastPage = () => fetchBugs(totalPages);
+    const goToPage = (page) => {
+        if (page >= 1 && page <= totalPages) {
+            fetchBugs(page);
+        }
+    };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
@@ -982,14 +1089,71 @@ const BugSpreadsheet = () => {
     }
 
     return (
-        <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+        <div className="w-full h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+            {/* Alert Toast */}
+            <AnimatePresence>
+                {alert && (
+                    <motion.div
+                        initial={{ opacity: 0, y: -50 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        exit={{ opacity: 0, y: -50 }}
+                        className="fixed top-4 right-4 z-50"
+                    >
+                        <div className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${alert.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                            }`}>
+                            {alert.type === 'success' ? (
+                                <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center">
+                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                </div>
+                            ) : (
+                                <AlertCircle size={20} />
+                            )}
+                            <span className="text-sm font-medium">{alert.message}</span>
+                        </div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
+            {/* Image Preview Modal */}
+            <AnimatePresence>
+                {imagePreviewModal && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+                        onClick={() => setImagePreviewModal(null)}
+                    >
+                        <motion.div
+                            initial={{ scale: 0.9 }}
+                            animate={{ scale: 1 }}
+                            exit={{ scale: 0.9 }}
+                            className="relative max-w-4xl max-h-full"
+                            onClick={(e) => e.stopPropagation()}
+                        >
+                            <button
+                                onClick={() => setImagePreviewModal(null)}
+                                className="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors"
+                            >
+                                <X size={32} />
+                            </button>
+                            <img
+                                src={imagePreviewModal}
+                                alt="Preview"
+                                className="max-w-full max-h-[90vh] object-contain rounded-lg"
+                            />
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             {/* Spreadsheet */}
             <div className="flex-1 overflow-auto relative">
                 <div className="bg-white border border-gray-200 overflow-hidden">
                     <div className="overflow-x-auto overflow-y-auto">
                         <div className="inline-block min-w-full">
-                            {/* Enhanced Header */}
-                            <div className="flex sticky top-0 z-30 border-b border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100 border-r-0">
+                            {/* Header */}
+                            <div className="flex sticky top-0 z-30 border-b border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100">
                                 {columns.map((column) => (
                                     <div
                                         key={column.key}
@@ -998,7 +1162,7 @@ const BugSpreadsheet = () => {
                                             width: columnWidths[column.key],
                                             minWidth: columnWidths[column.key],
                                             left: column.sticky ? `${getStickyLeftPosition(column.key)}px` : 'auto',
-                                            background: `linear-gradient(135deg, ${column.color.replace('bg-', '')} 0%, ${column.color.replace('bg-', '').replace('50', '100')} 100%)`
+                                            background: column.color
                                         }}
                                     >
                                         <div className="flex items-center justify-between">
@@ -1015,11 +1179,10 @@ const BugSpreadsheet = () => {
                                         />
                                     </div>
                                 ))}
-                                {/* Add this empty div to ensure full width border */}
                                 <div className="flex-1 border-b border-gray-300 bg-gradient-to-r from-gray-100 to-gray-50"></div>
                             </div>
 
-                            {/* New Row - Always visible */}
+                            {/* New Row */}
                             <div className="flex border-b border-blue-200 bg-blue-50/50 relative group">
                                 {columns.map((column) => (
                                     <div
@@ -1035,7 +1198,6 @@ const BugSpreadsheet = () => {
                                         {renderCellContent(null, column, true)}
                                     </div>
                                 ))}
-                                {/* Fill remaining space */}
                                 <div className="flex-1 bg-blue-50/50 border-b border-blue-200"></div>
                                 <div
                                     className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -1060,7 +1222,6 @@ const BugSpreadsheet = () => {
                                             {renderCellContent(bug, column)}
                                         </div>
                                     ))}
-                                    {/* Fill remaining space for data rows */}
                                     <div className="flex-1 border-b border-gray-200 group-hover:bg-gray-50"></div>
                                     <div
                                         className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
@@ -1083,56 +1244,61 @@ const BugSpreadsheet = () => {
                 </div>
             </div>
 
-            {/* Unified Pagination + Info Bar */}
-<div className="border-t border-gray-200 bg-white px-4 py-1 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 sm:px-6">
-  
-  {/* Left Side: Info */}
-  <div className="flex flex-col sm:flex-row items-center gap-2 text-xs text-gray-700">
-    <div>
-      <span className="font-medium text-gray-600">Test Type:</span>{' '}
-      <span>{selectedTestType || 'Not selected'}</span>
-    </div>
-    <div className="hidden sm:block h-3 w-px bg-gray-300 mx-2" /> {/* Divider */}
-    <div>
-      Showing <span className="font-medium">{(currentPage - 1) * 1000000 + 1}</span> to{' '}
-      <span className="font-medium">{Math.min(currentPage * 1000000, totalBugs)}</span> of{' '}
-      <span className="font-medium">{totalBugs}</span> results
-    </div>
-    <div className="hidden sm:block h-3 w-px bg-gray-300 mx-2" /> {/* Divider */}
-    <div>
-      Total Bugs: <span className="font-medium">{totalBugs}</span>
-    </div>
-  </div>
+            {/* Pagination Bar */}
+            <div className="border-t border-gray-200 bg-white px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 sm:px-6">
+                {/* Left Side: Info */}
+                <div className="flex flex-col sm:flex-row items-center gap-2 text-xs text-gray-700">
+                    <div>
+                        <span className="font-medium text-gray-600">Test Type:</span>{' '}
+                        <span>{selectedTestType || 'Not selected'}</span>
+                    </div>
+                    <div className="hidden sm:block h-3 w-px bg-gray-300 mx-2" />
+                    <div>
+                        Showing <span className="font-medium">{(currentPage - 1) * ROWS_PER_PAGE + 1}</span> to{' '}
+                        <span className="font-medium">{Math.min(currentPage * ROWS_PER_PAGE, totalBugs)}</span> of{' '}
+                        <span className="font-medium">{totalBugs}</span> results
+                    </div>
+                </div>
 
-  {/* Right Side: Pagination Buttons */}
-  <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
-    <button
-      onClick={() => currentPage > 1 && fetchBugs(currentPage - 1)}
-      disabled={currentPage === 1}
-      className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      <span className="sr-only">Previous</span>
-      <ChevronLeft className="h-4 w-4" aria-hidden="true" />
-    </button>
-    <div className="relative inline-flex items-center px-4 py-2 text-xs font-semibold text-gray-900 ring-1 ring-inset ring-gray-300 focus:outline-offset-0">
-      Page {currentPage} of {totalPages}
-    </div>
-    <button
-      onClick={() => currentPage < totalPages && fetchBugs(currentPage + 1)}
-      disabled={currentPage === totalPages}
-      className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed"
-    >
-      <span className="sr-only">Next</span>
-      <ChevronRight className="h-4 w-4" aria-hidden="true" />
-    </button>
-  </nav>
-
-</div>
-
-            {/* Resize overlay */}
-            {resizing && (
-                <div className="fixed inset-0 z-50" style={{ cursor: resizing.type === 'column' ? 'col-resize' : 'row-resize' }} />
-            )}
+                {/* Right Side: Pagination Controls */}
+                <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                    <button
+                        onClick={goToFirstPage}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        aria-label="First page"
+                    >
+                        <span className="text-xs font-medium">&lt;&lt;</span>
+                    </button>
+                    <button
+                        onClick={() => goToPage(currentPage - 1)}
+                        disabled={currentPage === 1}
+                        className="relative inline-flex items-center px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Previous page"
+                    >
+                        <ChevronLeft className="h-4 w-4" />
+                    </button>
+                    <div className="relative inline-flex items-center px-4 py-2 text-xs font-semibold text-gray-900 ring-1 ring-inset ring-gray-300">
+                        Page {currentPage} of {totalPages}
+                    </div>
+                    <button
+                        onClick={() => goToPage(currentPage + 1)}
+                        disabled={currentPage === totalPages}
+                        className="relative inline-flex items-center px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Next page"
+                    >
+                        <ChevronRight className="h-4 w-4" />
+                    </button>
+                    <button
+                        onClick={goToLastPage}
+                        disabled={currentPage === totalPages}
+                        className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        aria-label="Last page"
+                    >
+                        <span className="text-xs font-medium">&gt;&gt;</span>
+                    </button>
+                </nav>
+            </div>
         </div>
     );
 };
