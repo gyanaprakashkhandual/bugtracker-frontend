@@ -3,6 +3,7 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Image as ImageIcon, Save, Ban, Link as LinkIcon, Copy, ZoomIn } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context';
+import { useAlert } from '@/app/script/Alert.context';
 
 const BugSpreadsheet = () => {
     const [bugs, setBugs] = useState([]);
@@ -59,21 +60,18 @@ const BugSpreadsheet = () => {
     const ROWS_PER_PAGE = 25;
 
     const columns = [
-        { key: 'serialNumber', label: 'S.No', width: 100, editable: false, color: 'bg-purple-50', sticky: true },
-        { key: 'bugType', label: 'Type', width: 140, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'], color: 'bg-blue-50', sticky: true },
-        { key: 'moduleName', label: 'Module', width: 150, editable: true, color: 'bg-green-50', sticky: true },
-        { key: 'bugDesc', label: 'Description', width: 300, editable: true, color: 'bg-yellow-50' },
-        { key: 'bugRequirement', label: 'Requirement', width: 300, editable: true, color: 'bg-pink-50' },
-        { key: 'priority', label: 'Priority', width: 120, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
-        { key: 'severity', label: 'Severity', width: 120, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50' },
-        { key: 'status', label: 'Status', width: 140, editable: true, type: 'select', options: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'], color: 'bg-teal-50' },
+        { key: 'serialNumber', label: 'S.No', width: 90, editable: false, color: 'bg-purple-50', sticky: true },
+        { key: 'bugType', label: 'Type', width: 130, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'], color: 'bg-blue-50', sticky: true },
+        { key: 'moduleName', label: 'Module', width: 140, editable: true, color: 'bg-green-50', sticky: true },
+        { key: 'bugDesc', label: 'Description', width: 370, editable: true, color: 'bg-yellow-50' },
+        { key: 'bugRequirement', label: 'Requirement', width: 368, editable: true, color: 'bg-pink-50' },
+        { key: 'priority', label: 'Priority', width: 90, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
+        { key: 'severity', label: 'Severity', width: 90, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50' },
+        { key: 'status', label: 'Status', width: 100, editable: true, type: 'select', options: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'], color: 'bg-teal-50' },
         { key: 'actions', label: 'Actions', width: 150, editable: false, color: 'bg-gray-100' }
     ];
 
-    const showAlert = ({ type, message }) => {
-        setAlert({ type, message });
-        setTimeout(() => setAlert(null), 3000);
-    };
+    const { showAlert } = useAlert();
 
     useEffect(() => {
         const initialWidths = {};
@@ -418,7 +416,7 @@ const BugSpreadsheet = () => {
     };
 
     const moveBugToTrash = async (bugId) => {
-        if (!confirm('Move this bug to trash?')) return;
+
 
         try {
             const response = await fetch(
@@ -442,7 +440,7 @@ const BugSpreadsheet = () => {
     };
 
     const deleteBugPermanently = async (bugId) => {
-        if (!confirm('Permanently delete this bug? This action cannot be undone!')) return;
+
 
         try {
             const response = await fetch(
@@ -596,10 +594,9 @@ const BugSpreadsheet = () => {
                     onClick={() => handleDropdownClick(cellKey)}
                     className="w-full h-full px-2 py-1.5 flex items-center justify-between hover:bg-gray-50 transition-colors group"
                 >
-                    <span className={`px-2 py-1 rounded text-xs font-medium border ${badgeClass}`}>
+                    <span className={`px-2 py-1 w-full rounded text-xs font-medium border ${badgeClass}`}>
                         {value || 'Select'}
                     </span>
-                    <ChevronDown size={12} className="text-gray-400 group-hover:text-gray-600" />
                 </button>
 
                 <AnimatePresence>
@@ -666,14 +663,8 @@ const BugSpreadsheet = () => {
                     }}
                     onClick={() => setActiveLinksDropdown(isActive ? null : cellKey)}
                     className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors relative"
-                    title="View links"
                 >
                     <LinkIcon size={14} />
-                    {validLinks.length > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-blue-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                            {validLinks.length}
-                        </span>
-                    )}
                 </button>
 
                 <AnimatePresence>
@@ -749,14 +740,8 @@ const BugSpreadsheet = () => {
                     }}
                     onClick={() => setActiveImagesDropdown(isActive ? null : cellKey)}
                     className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors relative"
-                    title="View images"
                 >
                     <ImageIcon size={14} />
-                    {validImages.length > 0 && (
-                        <span className="absolute -top-1 -right-1 bg-purple-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center">
-                            {validImages.length}
-                        </span>
-                    )}
                 </button>
 
                 <AnimatePresence>
@@ -1034,6 +1019,8 @@ const BugSpreadsheet = () => {
                     maxHeight: rowHeight,
                     overflow: 'hidden'
                 }}
+                content-data={(column.key === 'bugDesc' || column.key === 'bugRequirement') && value ? value : ''}
+                content-placement="top"
             >
                 <span
                     className={`flex-1 ${!value && isNewRow ? 'text-gray-400 italic' : ''}`}
@@ -1089,7 +1076,7 @@ const BugSpreadsheet = () => {
     }
 
     return (
-        <div className="w-full h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
+        <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
             {/* Alert Toast */}
             <AnimatePresence>
                 {alert && (
@@ -1245,12 +1232,12 @@ const BugSpreadsheet = () => {
             </div>
 
             {/* Pagination Bar */}
-            <div className="border-t border-gray-200 bg-white px-4 py-3 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 sm:px-6">
+            <div className="border-t border-gray-200 bg-white px-4 py-1 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 sm:px-6">
                 {/* Left Side: Info */}
                 <div className="flex flex-col sm:flex-row items-center gap-2 text-xs text-gray-700">
                     <div>
                         <span className="font-medium text-gray-600">Test Type:</span>{' '}
-                        <span>{selectedTestType || 'Not selected'}</span>
+                        <span>{selectedTestType?.testTypeName || selectedTestType || 'Not selected'}</span>
                     </div>
                     <div className="hidden sm:block h-3 w-px bg-gray-300 mx-2" />
                     <div>
