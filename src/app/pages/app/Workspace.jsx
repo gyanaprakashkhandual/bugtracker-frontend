@@ -13,6 +13,7 @@ import TestResultCardView from '../view/result-module/Card'
 import TestResultTableView from '../view/result-module/Table'
 import TestResultChartView from '../view/result-module/Chart'
 import TestResultSplitView from '../view/result-module/Split'
+import Dashboard from '../view/bug-module/Chart/App'
 
 function Workspace() {
     const [selectedView, setSelectedView] = useState(() => {
@@ -83,7 +84,7 @@ function Workspace() {
                     case 'card':
                         return <BugCardView />;
                     case 'chart':
-                        return <BugStatisticsDashboard />;
+                        return <Dashboard />;
                     case 'table':
                         return <BugSpreadsheet />;
                     default:

@@ -1,52 +1,94 @@
-"use client";
+'use client';
 
-import { useState, useEffect } from "react";
-import { motion } from "framer-motion";
-import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement } from "chart.js";
-import { Doughnut, Bar } from "react-chartjs-2";
-import { Bug, AlertCircle, CheckCircle, Clock, TrendingUp, FileText, Calendar } from "lucide-react";
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { 
+  FaBug, FaChartPie, FaExclamationTriangle, 
+  FaCheckCircle, FaClock, FaSearch, FaFilter,
+  FaChevronLeft, FaChevronRight, FaTimes
+} from 'react-icons/fa';
+import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, LineChart, Line } from 'recharts';
 
-ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement);
+const API_BASE_URL = 'http://localhost:5000/api/v1/bug';
 
-export default function BugStatisticsDashboard() {
+const BugDashboard = () => {
   const [stats, setStats] = useState(null);
+  const [projectStats, setProjectStats] = useState(null);
+  const [bugs, setBugs] = useState([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(1);
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filters, setFilters] = useState({
+    bugType: '',
+    status: '',
+    priority: '',
+    severity: ''
+  });
+  const [showFilters, setShowFilters] = useState(false);
+
+  const COLORS = {
+    primary: ['#3B82F6', '#8B5CF6', '#EC4899', '#F59E0B'],
+    status: ['#10B981', '#F59E0B', '#EF4444', '#6B7280'],
+    priority: ['#EF4444', '#F59E0B', '#3B82F6', '#10B981'],
+    severity: ['#DC2626', '#F59E0B', '#FBBF24', '#10B981']
+  };
 
   useEffect(() => {
-    fetchBugStats();
-  }, []);
+    fetchAllData();
+  }, [currentPage, searchTerm, filters]);
 
-  const fetchBugStats = async () => {
+  const fetchAllData = async () => {
+    setLoading(true);
+    setError(null);
+    
+    const projectId = localStorage.getItem("currentProjectId");
+    const testTypeId = localStorage.getItem("selectedTestTypeId");
+    const token = localStorage.getItem("token");
+
+    if (!projectId || !testTypeId || !token) {
+      setError("Missing required credentials. Please login again.");
+      setLoading(false);
+      return;
+    }
+
+    const headers = {
+      'Authorization': `Bearer ${token}`,
+      'Content-Type': 'application/json'
+    };
+
     try {
-      setLoading(true);
-      setError(null);
+      const filterParams = new URLSearchParams();
+      filterParams.append('page', currentPage);
+      filterParams.append('limit', 10);
+      if (searchTerm) filterParams.append('search', searchTerm);
+      if (filters.bugType) filterParams.append('bugType', filters.bugType);
+      if (filters.status) filterParams.append('status', filters.status);
+      if (filters.priority) filterParams.append('priority', filters.priority);
+      if (filters.severity) filterParams.append('severity', filters.severity);
 
-      // Get credentials from localStorage with Next.js safety check
-      const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
-      const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
-      const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+      const [statsRes, projectStatsRes, bugsRes] = await Promise.all([
+        fetch(`${API_BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/stats`, { headers }),
+        fetch(`${API_BASE_URL}/projects/${projectId}/stats`, { headers }),
+        fetch(`${API_BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs?${filterParams}`, { headers })
+      ]);
 
-      if (!projectId || !testTypeId || !token) {
-        throw new Error("Missing required credentials. Please login and select a project.");
+      if (!statsRes.ok || !bugsRes.ok) {
+        throw new Error('Failed to fetch data');
       }
 
-      const response = await fetch(
-        `http://localhost:5000/api/v1/bug/projects/${projectId}/test-types/${testTypeId}/bugs/stats`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      const statsData = await statsRes.json();
+      const bugsData = await bugsRes.json();
+      
+      setStats(statsData.stats);
+      setBugs(bugsData.bugs);
+      setTotalPages(bugsData.pagination.totalPages);
 
-      if (!response.ok) {
-        throw new Error("Failed to fetch bug statistics");
+      if (projectStatsRes.ok) {
+        const projectStatsData = await projectStatsRes.json();
+        setProjectStats(projectStatsData.stats);
       }
-
-      const data = await response.json();
-      setStats(data.stats);
     } catch (err) {
       setError(err.message);
     } finally {
@@ -54,373 +96,417 @@ export default function BugStatisticsDashboard() {
     }
   };
 
-  const getStatusColor = (status) => {
-    const colors = {
-      New: "#ef4444",
-      "In Review": "#f59e0b",
-      "Re Open": "#8b5cf6",
-      Resolved: "#10b981",
-      Closed: "#6b7280",
-    };
-    return colors[status] || "#6b7280";
+  const formatChartData = (data) => {
+    return data.map(item => ({
+      name: item._id || 'Unknown',
+      value: item.count
+    }));
   };
 
-  const getPriorityColor = (priority) => {
-    const colors = {
-      Critical: "#dc2626",
-      High: "#ea580c",
-      Medium: "#f59e0b",
-      Low: "#84cc16",
-    };
-    return colors[priority] || "#6b7280";
-  };
-
-  const getSeverityColor = (severity) => {
-    const colors = {
-      Critical: "#991b1b",
-      High: "#c2410c",
-      Medium: "#ca8a04",
-      Low: "#65a30d",
-    };
-    return colors[severity] || "#6b7280";
-  };
-
-  const createChartData = (dataArray, labelKey, colorFunc) => {
-    const labels = dataArray.map((item) => item[labelKey]);
-    const counts = dataArray.map((item) => item.count);
-    const colors = dataArray.map((item) => colorFunc(item[labelKey]));
-
-    return {
-      labels,
-      datasets: [
-        {
-          data: counts,
-          backgroundColor: colors,
-          borderColor: "#ffffff",
-          borderWidth: 2,
-        },
-      ],
-    };
-  };
-
-  const chartOptions = {
-    responsive: true,
-    maintainAspectRatio: false,
-    plugins: {
-      legend: {
-        position: "bottom",
-        labels: {
-          padding: 15,
-          font: {
-            size: 12,
-            family: "'Inter', sans-serif",
-          },
-        },
-      },
-      tooltip: {
-        backgroundColor: "rgba(0, 0, 0, 0.8)",
-        padding: 12,
-        titleFont: {
-          size: 14,
-        },
-        bodyFont: {
-          size: 13,
-        },
-      },
-    },
-  };
-
-  const formatDate = (dateString) => {
-    return new Date(dateString).toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
+  const clearFilters = () => {
+    setFilters({
+      bugType: '',
+      status: '',
+      priority: '',
+      severity: ''
     });
+    setSearchTerm('');
   };
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
         <motion.div
-          initial={{ opacity: 0, scale: 0.9 }}
-          animate={{ opacity: 1, scale: 1 }}
-          className="text-center"
-        >
-          <div className="w-16 h-16 border-4 border-blue-600 border-t-transparent rounded-full animate-spin mx-auto mb-4"></div>
-          <p className="text-gray-600 font-medium">Loading bug statistics...</p>
-        </motion.div>
+          animate={{ rotate: 360 }}
+          transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+          className="w-16 h-16 border-4 border-purple-500 border-t-transparent rounded-full"
+        />
       </div>
     );
   }
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-4">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full"
-        >
-          <AlertCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-          <h2 className="text-2xl font-bold text-gray-800 mb-2 text-center">Error</h2>
-          <p className="text-gray-600 text-center mb-6">{error}</p>
-          <button
-            onClick={fetchBugStats}
-            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-semibold py-3 rounded-lg transition-colors"
-          >
-            Retry
-          </button>
-        </motion.div>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 flex items-center justify-center">
+        <div className="bg-red-500/20 border border-red-500 rounded-lg p-6 max-w-md">
+          <p className="text-red-300 text-center">{error}</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 p-4 md:p-2">
-      <div className="max-w-full mx-auto">
+    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-purple-900 to-gray-900 p-6">
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="max-w-7xl mx-auto"
+      >
+        {/* Header */}
+        <div className="mb-8">
+          <h1 className="text-4xl font-bold text-white mb-2 flex items-center gap-3">
+            <FaBug className="text-purple-400" />
+            Bug Tracking Dashboard
+          </h1>
+          <p className="text-gray-400">Comprehensive bug analysis and metrics</p>
+        </div>
+
         {/* Stats Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-2">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.1 }}
-            className="bg-white rounded-md shadow-sm p-6 border-l-4 border-blue-600"
+            className="bg-gradient-to-br from-blue-500/20 to-blue-600/20 backdrop-blur-lg rounded-xl p-6 border border-blue-500/30"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 text-sm font-medium mb-1">Total Bugs</p>
-                <p className="text-3xl font-bold text-gray-800">{stats?.totalBugs || 0}</p>
+                <p className="text-blue-300 text-sm mb-1">Total Bugs</p>
+                <p className="text-3xl font-bold text-white">{stats?.totalBugs || 0}</p>
               </div>
-              <div className="bg-blue-100 p-3 rounded-lg">
-                <Bug className="w-8 h-8 text-blue-600" />
-              </div>
+              <FaBug className="text-4xl text-blue-400" />
             </div>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.2 }}
-            className="bg-white rounded-md shadow-sm p-6 border-l-4 border-red-600"
+            className="bg-gradient-to-br from-green-500/20 to-green-600/20 backdrop-blur-lg rounded-xl p-6 border border-green-500/30"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 text-sm font-medium mb-1">Critical</p>
-                <p className="text-3xl font-bold text-gray-800">
-                  {stats?.bugsByPriority?.find((b) => b.priority === "Critical")?.count || 0}
+                <p className="text-green-300 text-sm mb-1">Resolved</p>
+                <p className="text-3xl font-bold text-white">
+                  {stats?.bugsByStatus?.find(s => s._id === 'resolved')?.count || 0}
                 </p>
               </div>
-              <div className="bg-red-100 p-3 rounded-lg">
-                <AlertCircle className="w-8 h-8 text-red-600" />
-              </div>
+              <FaCheckCircle className="text-4xl text-green-400" />
             </div>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.3 }}
-            className="bg-white rounded-md shadow-sm p-6 border-l-4 border-orange-600"
+            className="bg-gradient-to-br from-yellow-500/20 to-yellow-600/20 backdrop-blur-lg rounded-xl p-6 border border-yellow-500/30"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 text-sm font-medium mb-1">In Review</p>
-                <p className="text-3xl font-bold text-gray-800">
-                  {stats?.bugsByStatus?.find((b) => b.status === "In Review")?.count || 0}
+                <p className="text-yellow-300 text-sm mb-1">In Progress</p>
+                <p className="text-3xl font-bold text-white">
+                  {stats?.bugsByStatus?.find(s => s._id === 'in-progress')?.count || 0}
                 </p>
               </div>
-              <div className="bg-orange-100 p-3 rounded-lg">
-                <Clock className="w-8 h-8 text-orange-600" />
-              </div>
+              <FaClock className="text-4xl text-yellow-400" />
             </div>
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
             transition={{ delay: 0.4 }}
-            className="bg-white rounded-md shadow-sm p-6 border-l-4 border-green-600"
+            className="bg-gradient-to-br from-red-500/20 to-red-600/20 backdrop-blur-lg rounded-xl p-6 border border-red-500/30"
           >
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-gray-500 text-sm font-medium mb-1">Resolved</p>
-                <p className="text-3xl font-bold text-gray-800">
-                  {stats?.bugsByStatus?.find((b) => b.status === "Resolved")?.count || 0}
+                <p className="text-red-300 text-sm mb-1">Critical</p>
+                <p className="text-3xl font-bold text-white">
+                  {stats?.bugsBySeverity?.find(s => s._id === 'critical')?.count || 0}
                 </p>
               </div>
-              <div className="bg-green-100 p-3 rounded-lg">
-                <CheckCircle className="w-8 h-8 text-green-600" />
-              </div>
+              <FaExclamationTriangle className="text-4xl text-red-400" />
             </div>
           </motion.div>
         </div>
 
         {/* Charts Section */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-2">
-          {/* Status Chart */}
-          {stats?.bugsByStatus && stats.bugsByStatus.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.5 }}
-              className="bg-white rounded-xl shadow-lg p-6"
-            >
-              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <TrendingUp className="w-6 h-6 text-blue-600" />
-                Bugs by Status
-              </h2>
-              <div className="h-80">
-                <Doughnut data={createChartData(stats.bugsByStatus, "status", getStatusColor)} options={chartOptions} />
-              </div>
-            </motion.div>
-          )}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          {/* Bug Status Pie Chart */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-gray-800/50 backdrop-blur-lg rounded-xl p-6 border border-gray-700"
+          >
+            <h3 className="text-xl font-semibold text-white mb-4 flex items-center gap-2">
+              <FaChartPie className="text-purple-400" />
+              Bugs by Status
+            </h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={formatChartData(stats?.bugsByStatus || [])}
+                  cx="50%"
+                  cy="50%"
+                  labelLine={false}
+                  label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                >
+                  {formatChartData(stats?.bugsByStatus || []).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS.status[index % COLORS.status.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+              </PieChart>
+            </ResponsiveContainer>
+          </motion.div>
 
-          {/* Priority Chart */}
-          {stats?.bugsByPriority && stats.bugsByPriority.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.6 }}
-              className="bg-white rounded-xl shadow-lg p-6"
-            >
-              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <AlertCircle className="w-6 h-6 text-red-600" />
-                Bugs by Priority
-              </h2>
-              <div className="h-80">
-                <Doughnut data={createChartData(stats.bugsByPriority, "priority", getPriorityColor)} options={chartOptions} />
-              </div>
-            </motion.div>
-          )}
+          {/* Bug Priority Bar Chart */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-gray-800/50 backdrop-blur-lg rounded-xl p-6 border border-gray-700"
+          >
+            <h3 className="text-xl font-semibold text-white mb-4">Bugs by Priority</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={formatChartData(stats?.bugsByPriority || [])}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis dataKey="name" stroke="#9CA3AF" />
+                <YAxis stroke="#9CA3AF" />
+                <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
+                <Bar dataKey="value" fill="#8B5CF6" radius={[8, 8, 0, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </motion.div>
 
-          {/* Severity Chart */}
-          {stats?.bugsBySeverity && stats.bugsBySeverity.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.7 }}
-              className="bg-white rounded-xl shadow-lg p-6"
-            >
-              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <FileText className="w-6 h-6 text-purple-600" />
-                Bugs by Severity
-              </h2>
-              <div className="h-80">
-                <Doughnut data={createChartData(stats.bugsBySeverity, "severity", getSeverityColor)} options={chartOptions} />
-              </div>
-            </motion.div>
-          )}
+          {/* Bug Type Distribution */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-gray-800/50 backdrop-blur-lg rounded-xl p-6 border border-gray-700"
+          >
+            <h3 className="text-xl font-semibold text-white mb-4">Bug Type Distribution</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <PieChart>
+                <Pie
+                  data={formatChartData(stats?.bugsByType || [])}
+                  cx="50%"
+                  cy="50%"
+                  outerRadius={100}
+                  fill="#8884d8"
+                  dataKey="value"
+                  label
+                >
+                  {formatChartData(stats?.bugsByType || []).map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={COLORS.primary[index % COLORS.primary.length]} />
+                  ))}
+                </Pie>
+                <Tooltip />
+                <Legend />
+              </PieChart>
+            </ResponsiveContainer>
+          </motion.div>
 
-          {/* Type Chart */}
-          {stats?.bugsByType && stats.bugsByType.length > 0 && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.95 }}
-              animate={{ opacity: 1, scale: 1 }}
-              transition={{ delay: 0.8 }}
-              className="bg-white rounded-xl shadow-lg p-6"
-            >
-              <h2 className="text-xl font-bold text-gray-800 mb-4 flex items-center gap-2">
-                <Bug className="w-6 h-6 text-indigo-600" />
-                Bugs by Type
-              </h2>
-              <div className="h-80">
-                <Doughnut
-                  data={{
-                    labels: stats.bugsByType.map((item) => item.bugType),
-                    datasets: [
-                      {
-                        data: stats.bugsByType.map((item) => item.count),
-                        backgroundColor: ["#6366f1", "#8b5cf6", "#ec4899", "#f59e0b", "#10b981"],
-                        borderColor: "#ffffff",
-                        borderWidth: 2,
-                      },
-                    ],
-                  }}
-                  options={chartOptions}
-                />
-              </div>
-            </motion.div>
-          )}
+          {/* Bug Severity */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            className="bg-gray-800/50 backdrop-blur-lg rounded-xl p-6 border border-gray-700"
+          >
+            <h3 className="text-xl font-semibold text-white mb-4">Bugs by Severity</h3>
+            <ResponsiveContainer width="100%" height={300}>
+              <BarChart data={formatChartData(stats?.bugsBySeverity || [])} layout="vertical">
+                <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
+                <XAxis type="number" stroke="#9CA3AF" />
+                <YAxis dataKey="name" type="category" stroke="#9CA3AF" />
+                <Tooltip contentStyle={{ backgroundColor: '#1F2937', border: 'none', borderRadius: '8px' }} />
+                <Bar dataKey="value" fill="#EC4899" radius={[0, 8, 8, 0]} />
+              </BarChart>
+            </ResponsiveContainer>
+          </motion.div>
         </div>
 
-        {/* Recent Bugs */}
-        {stats?.recentBugs && stats.recentBugs.length > 0 && (
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.9 }}
-            className="bg-white rounded-xl shadow-lg p-6"
-          >
-            <h2 className="text-2xl font-bold text-gray-800 mb-6 flex items-center gap-2">
-              <Calendar className="w-7 h-7 text-blue-600" />
-              Recent Bugs
-            </h2>
-            <div className="space-y-4">
-              {stats.recentBugs.map((bug, index) => (
-                <motion.div
-                  key={bug._id}
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: 1 + index * 0.1 }}
-                  className="border border-gray-200 rounded-lg p-5 hover:shadow-md transition-shadow"
-                >
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-2">
-                        <span className="bg-blue-100 text-blue-800 text-xs font-semibold px-3 py-1 rounded-full">
-                          {bug.serialNumber}
-                        </span>
-                        <span
-                          className="text-xs font-semibold px-3 py-1 rounded-full text-white"
-                          style={{ backgroundColor: getStatusColor(bug.status) }}
-                        >
-                          {bug.status}
-                        </span>
-                      </div>
-                      <h3 className="font-semibold text-gray-800 text-lg mb-1">{bug.moduleName}</h3>
-                      {bug.bugDesc && bug.bugDesc !== "No Bug Description" && (
-                        <p className="text-gray-600 text-sm mb-2">{bug.bugDesc}</p>
-                      )}
-                      <div className="flex flex-wrap gap-2 mb-2">
-                        <span
-                          className="text-xs font-medium px-2 py-1 rounded text-white"
-                          style={{ backgroundColor: getPriorityColor(bug.priority) }}
-                        >
-                          Priority: {bug.priority}
-                        </span>
-                        <span
-                          className="text-xs font-medium px-2 py-1 rounded text-white"
-                          style={{ backgroundColor: getSeverityColor(bug.severity) }}
-                        >
-                          Severity: {bug.severity}
-                        </span>
-                        <span className="text-xs font-medium px-2 py-1 rounded bg-gray-200 text-gray-700">
-                          {bug.bugType}
-                        </span>
-                      </div>
-                      <div className="flex items-center gap-2 text-xs text-gray-500">
-                        <Calendar className="w-4 h-4" />
-                        <span>{formatDate(bug.createdAt)}</span>
-                        <span className="mx-2">•</span>
-                        <span>By {bug.user.name}</span>
-                      </div>
-                    </div>
-                    {bug.image && bug.image !== "No Image provided" && (
-                      <div className="md:w-32 md:h-32 w-full h-48 flex-shrink-0">
-                        <img
-                          src={bug.image}
-                          alt="Bug screenshot"
-                          className="w-full h-full object-cover rounded-lg border border-gray-200"
-                        />
-                      </div>
-                    )}
-                  </div>
-                </motion.div>
-              ))}
+        {/* Search and Filter */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gray-800/50 backdrop-blur-lg rounded-xl p-6 border border-gray-700 mb-6"
+        >
+          <div className="flex flex-col md:flex-row gap-4 mb-4">
+            <div className="flex-1 relative">
+              <FaSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                placeholder="Search bugs..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="w-full pl-10 pr-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+              />
             </div>
-          </motion.div>
-        )}
-      </div>
+            <button
+              onClick={() => setShowFilters(!showFilters)}
+              className="flex items-center gap-2 px-6 py-2 bg-purple-600 hover:bg-purple-700 rounded-lg text-white transition-colors"
+            >
+              <FaFilter />
+              {showFilters ? 'Hide Filters' : 'Show Filters'}
+            </button>
+          </div>
+
+          {showFilters && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: 'auto' }}
+              className="grid grid-cols-1 md:grid-cols-4 gap-4"
+            >
+              <select
+                value={filters.bugType}
+                onChange={(e) => setFilters({ ...filters, bugType: e.target.value })}
+                className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="">All Types</option>
+                <option value="functional">Functional</option>
+                <option value="ui">UI</option>
+                <option value="performance">Performance</option>
+                <option value="security">Security</option>
+              </select>
+
+              <select
+                value={filters.status}
+                onChange={(e) => setFilters({ ...filters, status: e.target.value })}
+                className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="">All Status</option>
+                <option value="open">Open</option>
+                <option value="in-progress">In Progress</option>
+                <option value="resolved">Resolved</option>
+                <option value="closed">Closed</option>
+              </select>
+
+              <select
+                value={filters.priority}
+                onChange={(e) => setFilters({ ...filters, priority: e.target.value })}
+                className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="">All Priorities</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+
+              <select
+                value={filters.severity}
+                onChange={(e) => setFilters({ ...filters, severity: e.target.value })}
+                className="px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:outline-none focus:ring-2 focus:ring-purple-500"
+              >
+                <option value="">All Severities</option>
+                <option value="low">Low</option>
+                <option value="medium">Medium</option>
+                <option value="high">High</option>
+                <option value="critical">Critical</option>
+              </select>
+
+              <button
+                onClick={clearFilters}
+                className="md:col-span-4 flex items-center justify-center gap-2 px-4 py-2 bg-red-600 hover:bg-red-700 rounded-lg text-white transition-colors"
+              >
+                <FaTimes />
+                Clear Filters
+              </button>
+            </motion.div>
+          )}
+        </motion.div>
+
+        {/* Recent Bugs Table */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-gray-800/50 backdrop-blur-lg rounded-xl border border-gray-700 overflow-hidden"
+        >
+          <div className="p-6 border-b border-gray-700">
+            <h3 className="text-xl font-semibold text-white">Recent Bugs</h3>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-700/50">
+                <tr>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">ID</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Module</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Type</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Priority</th>
+                  <th className="px-6 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">Severity</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-700">
+                {bugs.map((bug, index) => (
+                  <motion.tr
+                    key={bug._id}
+                    initial={{ opacity: 0, x: -20 }}
+                    animate={{ opacity: 1, x: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="hover:bg-gray-700/30 transition-colors"
+                  >
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-300">{bug.serialNumber}</td>
+                    <td className="px-6 py-4 whitespace-nowrap text-sm text-white">{bug.moduleName}</td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className="px-2 py-1 text-xs font-semibold rounded-full bg-blue-500/20 text-blue-300">
+                        {bug.bugType}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        bug.status === 'resolved' ? 'bg-green-500/20 text-green-300' :
+                        bug.status === 'in-progress' ? 'bg-yellow-500/20 text-yellow-300' :
+                        'bg-gray-500/20 text-gray-300'
+                      }`}>
+                        {bug.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        bug.priority === 'critical' ? 'bg-red-500/20 text-red-300' :
+                        bug.priority === 'high' ? 'bg-orange-500/20 text-orange-300' :
+                        bug.priority === 'medium' ? 'bg-yellow-500/20 text-yellow-300' :
+                        'bg-green-500/20 text-green-300'
+                      }`}>
+                        {bug.priority}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 whitespace-nowrap">
+                      <span className={`px-2 py-1 text-xs font-semibold rounded-full ${
+                        bug.severity === 'critical' ? 'bg-red-500/20 text-red-300' :
+                        bug.severity === 'high' ? 'bg-orange-500/20 text-orange-300' :
+                        bug.severity === 'medium' ? 'bg-yellow-500/20 text-yellow-300' :
+                        'bg-green-500/20 text-green-300'
+                      }`}>
+                        {bug.severity}
+                      </span>
+                    </td>
+                  </motion.tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+
+          {/* Pagination */}
+          <div className="px-6 py-4 border-t border-gray-700 flex items-center justify-between">
+            <p className="text-sm text-gray-400">
+              Page {currentPage} of {totalPages}
+            </p>
+            <div className="flex gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="p-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white transition-colors"
+              >
+                <FaChevronLeft />
+              </button>
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="p-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg text-white transition-colors"
+              >
+                <FaChevronRight />
+              </button>
+            </div>
+          </div>
+        </motion.div>
+      </motion.div>
     </div>
   );
-}
+};
+
+export default BugDashboard;
