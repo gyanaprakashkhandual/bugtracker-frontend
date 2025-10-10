@@ -125,7 +125,7 @@ const ProjectManagement = () => {
 
   // Fetch statistics
   const fetchStats = async () => {
-    const result = await apiCall('/stats');
+    const result = await apiCall('/admin/stats');
     if (result) {
       setStats(result.stats);
     }
