@@ -29,6 +29,29 @@ import { GoogleArrowDown, GoogleArrowRight } from "@/app/components/utils/Icon";
 const BASE_URL = "http://localhost:5000/api/v1/test-case";
 const COMMENT_URL = "http://localhost:5000/api/v1/comment";
 
+// Project Events - Emit custom events for test case changes
+export const TEST_CASE_EVENTS = {
+    CREATED: 'testcase:created',
+    UPDATED: 'testcase:updated',
+    DELETED: 'testcase:deleted',
+    CHANGED: 'testcase:changed',
+};
+
+const emitTestCaseEvent = (eventType, testCaseData = null) => {
+    if (typeof window !== 'undefined') {
+        const event = new CustomEvent(eventType, {
+            detail: { testCase: testCaseData, timestamp: Date.now() }
+        });
+        window.dispatchEvent(event);
+
+        // Also emit generic change event
+        const changeEvent = new CustomEvent(TEST_CASE_EVENTS.CHANGED, {
+            detail: { type: eventType, testCase: testCaseData, timestamp: Date.now() }
+        });
+        window.dispatchEvent(changeEvent);
+    }
+};
+
 // GitHub-style Dropdown Component
 const GitHubDropdown = ({ value, options, onChange, label, className = "" }) => {
     const [isOpen, setIsOpen] = useState(false);
@@ -152,6 +175,16 @@ const TestCaseSplitView = () => {
 
             if (response.ok) {
                 setTestCases(data.testCases || []);
+
+                // If selected test case was deleted, select the last available one
+                if (selectedTestCase && !data.testCases.find(tc => tc._id === selectedTestCase._id)) {
+                    if (data.testCases.length > 0) {
+                        setSelectedTestCase(data.testCases[data.testCases.length - 1]);
+                        fetchComments(data.testCases[data.testCases.length - 1]._id);
+                    } else {
+                        setSelectedTestCase(null);
+                    }
+                }
             } else {
                 showAlert({ type: "error", message: data.message || "Failed to fetch test cases" });
             }
@@ -188,7 +221,7 @@ const TestCaseSplitView = () => {
         return matchesSearch;
     });
 
-    // Fetch Comments
+    // Fixed Comment Functions
     const fetchComments = async (testCaseId) => {
         if (!projectId || !testTypeId || !testCaseId || !token) return;
 
@@ -205,25 +238,22 @@ const TestCaseSplitView = () => {
 
             const data = await response.json();
 
-            if (response.ok) {
-                setComments(data.comments || []);
-            } else {
-                showAlert({
-                    type: "error",
-                    message: data.message || "Failed to fetch comments",
-                });
+            if (!response.ok) {
+                throw new Error(data.message || "Failed to fetch comments");
             }
+
+            setComments(Array.isArray(data.comments) ? data.comments : []);
         } catch (error) {
             showAlert({
                 type: "error",
-                message: "Error fetching comments. Please try again.",
+                message: error.message || "Error fetching comments. Please try again.",
             });
         } finally {
             setLoadingComments(false);
         }
     };
 
-    // Submit Comment
+    // Submit Comment - FIXED
     const submitComment = async (testCaseId) => {
         if (!newComment.trim()) {
             showAlert({ type: "warning", message: "Comment cannot be empty" });
@@ -242,7 +272,7 @@ const TestCaseSplitView = () => {
                         "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                    body: JSON.stringify({ content: newComment }),
+                    body: JSON.stringify({ comment: newComment }),
                 }
             );
 
@@ -251,8 +281,8 @@ const TestCaseSplitView = () => {
             if (response.ok) {
                 showAlert({ type: "success", message: "Comment added successfully" });
                 setNewComment("");
-                // Refresh comments list
-                fetchComments(testCaseId);
+                fetchComments(testCaseId); // refresh comments
+                emitTestCaseEvent(TEST_CASE_EVENTS.UPDATED, data.comment);
             } else {
                 showAlert({
                     type: "error",
@@ -268,7 +298,6 @@ const TestCaseSplitView = () => {
             setSubmittingComment(false);
         }
     };
-
 
     // Handle Edit
     const handleEditClick = () => {
@@ -316,6 +345,7 @@ const TestCaseSplitView = () => {
                 setSelectedTestCase(data.testCase);
                 setIsEditing(false);
                 fetchTestCases();
+                emitTestCaseEvent(TEST_CASE_EVENTS.UPDATED, data.testCase);
             } else {
                 showAlert({ type: "error", message: data.message || "Failed to update test case" });
             }
@@ -364,6 +394,7 @@ const TestCaseSplitView = () => {
                 if (data.testCase) {
                     setSelectedTestCase(data.testCase);
                     fetchTestCases();
+                    emitTestCaseEvent(TEST_CASE_EVENTS.UPDATED, data.testCase);
                 }
             } else {
                 console.error('Field update failed', data);
@@ -406,6 +437,7 @@ const TestCaseSplitView = () => {
                 showAlert({ type: "success", message: "Test case moved to trash" });
                 fetchTestCases();
                 setSelectedTestCase(null);
+                emitTestCaseEvent(TEST_CASE_EVENTS.DELETED, { _id: testCaseId });
             } else {
                 showAlert({ type: "error", message: data.message || "Failed to move test case to trash" });
             }
@@ -440,6 +472,7 @@ const TestCaseSplitView = () => {
                 showAlert({ type: "success", message: "Test case deleted permanently" });
                 fetchTestCases();
                 setSelectedTestCase(null);
+                emitTestCaseEvent(TEST_CASE_EVENTS.DELETED, { _id: testCaseId });
             } else {
                 showAlert({ type: "error", message: data.message || "Failed to delete test case" });
             }
@@ -480,6 +513,7 @@ const TestCaseSplitView = () => {
                 showAlert({ type: "success", message: data.message || "All test cases moved to trash" });
                 fetchTestCases();
                 setSelectedTestCase(null);
+                emitTestCaseEvent(TEST_CASE_EVENTS.DELETED, { testCaseIds });
             } else {
                 showAlert({ type: "error", message: data.message || "Failed to move test cases to trash" });
             }
@@ -520,6 +554,7 @@ const TestCaseSplitView = () => {
                 showAlert({ type: "success", message: data.message || "All test cases deleted permanently" });
                 fetchTestCases();
                 setSelectedTestCase(null);
+                emitTestCaseEvent(TEST_CASE_EVENTS.DELETED, { testCaseIds });
             } else {
                 showAlert({ type: "error", message: data.message || "Failed to delete test cases" });
             }
