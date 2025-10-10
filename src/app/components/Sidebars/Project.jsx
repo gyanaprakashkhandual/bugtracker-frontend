@@ -91,7 +91,7 @@ const ProjectSidebar = () => {
 
         try {
             const res = await axios.get(
-                "http://localhost:5000/api/v1/project/my-projects",
+                "http://localhost:5000/api/v1/project/",
                 {
                     headers: { Authorization: `Bearer ${token}` },
                 }
