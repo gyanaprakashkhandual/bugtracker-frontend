@@ -853,8 +853,8 @@ const TestCaseSplitView = () => {
                                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                                     }}
                                     className={`bg-white rounded-xl border-1 p-3 cursor-pointer transition-all duration-200 ${selectedTestCase?._id === testCase._id
-                                            ? "border-blue-500 bg-blue-50 shadow-md"
-                                            : "border-gray-200 hover:border-blue-300"
+                                        ? "border-blue-500 bg-blue-50 shadow-md"
+                                        : "border-gray-200 hover:border-blue-300"
                                         }`}
                                     onClick={() => {
                                         setSelectedTestCase(testCase);
@@ -985,7 +985,7 @@ const TestCaseSplitView = () => {
 
                     {selectedTestCase && (
                         <div className="flex items-center gap-3">
-                            {selectedTestCase.image && selectedTestCase.image.length > 0 && (
+                            {(Array.isArray(selectedTestCase.image) ? selectedTestCase.image.length : selectedTestCase.image ? 1 : 0) > 0 && (
                                 <div className="relative">
                                     <motion.button
                                         whileHover={{ scale: 1.05 }}
@@ -1004,7 +1004,7 @@ const TestCaseSplitView = () => {
                                             exit={{ opacity: 0, y: -10 }}
                                             className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] w-64 overflow-y-auto"
                                         >
-                                            {selectedTestCase.image.map((image, index) => (
+                                            {(Array.isArray(selectedTestCase.image) ? selectedTestCase.image : (selectedTestCase.image ? [selectedTestCase.image] : [])).map((image, index) => (
                                                 <a
                                                     key={index}
                                                     href={image}
@@ -1551,7 +1551,7 @@ const TestCaseSplitView = () => {
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-wrap gap-2">
-                                                        {selectedTestCase.image.map((image, index) => (
+                                                        {(Array.isArray(selectedTestCase.image) ? selectedTestCase.image : (selectedTestCase.image ? [selectedTestCase.image] : [])).map((image, index) => (
                                                             <motion.div
                                                                 key={index}
                                                                 whileHover={{ scale: 1.05 }}
