@@ -95,8 +95,8 @@ const AccessControlSystem = () => {
       const errorData = await response.json().catch(() => ({}));
       throw new Error(
         errorData.message ||
-          errorData.error ||
-          `HTTP error! status: ${response.status}`
+        errorData.error ||
+        `HTTP error! status: ${response.status}`
       );
     }
 
@@ -466,7 +466,7 @@ const AccessControlSystem = () => {
     <div className="max-h[calc(100vh-60px)] bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center justify-between">
             {/* Header */}
             <div className="py-6">
@@ -494,11 +494,10 @@ const AccessControlSystem = () => {
                   setAccessList([]);
                   setSelectedProject(null);
                 }}
-                className={`pb-4 px-1 relative ${
-                  activeTab === "projects"
+                className={`pb-4 px-1 relative ${activeTab === "projects"
                     ? "text-blue-600 font-medium"
                     : "text-gray-500 hover:text-gray-700"
-                }`}
+                  }`}
               >
                 <div className="flex items-center space-x-2">
                   <FolderOpen className="w-4 h-4" />
@@ -517,11 +516,10 @@ const AccessControlSystem = () => {
                   setSelectedItem(null);
                   setAccessList([]);
                 }}
-                className={`pb-4 px-1 relative ${
-                  activeTab === "testTypes"
+                className={`pb-4 px-1 relative ${activeTab === "testTypes"
                     ? "text-blue-600 font-medium"
                     : "text-gray-500 hover:text-gray-700"
-                }`}
+                  }`}
               >
                 <div className="flex items-center space-x-2">
                   <FileCode className="w-4 h-4" />
@@ -557,9 +555,8 @@ const AccessControlSystem = () => {
                   >
                     {selectedProject?.projectName || "All Test Types"}
                     <svg
-                      className={`w-4 h-4 text-gray-600 transition-transform ${
-                        projectDropdownOpen ? "rotate-180" : ""
-                      }`}
+                      className={`w-4 h-4 text-gray-600 transition-transform ${projectDropdownOpen ? "rotate-180" : ""
+                        }`}
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -621,11 +618,10 @@ const AccessControlSystem = () => {
                 </p>
               </div>
               <div
-                className={`overflow-y-auto ${
-                  activeTab === "projects"
+                className={`overflow-y-auto ${activeTab === "projects"
                     ? "max-h-[calc(100vh-275px)]"
                     : "max-h-[calc(100vh-410px)]"
-                }`}
+                  }`}
               >
                 {loading && !selectedItem ? (
                   <div className="space-y-3 p-4">
@@ -653,9 +649,8 @@ const AccessControlSystem = () => {
                     <p className="text-gray-500">
                       {activeTab === "testTypes" && selectedProject
                         ? `No test types found for ${selectedProject.projectName}`
-                        : `No ${
-                            activeTab === "projects" ? "projects" : "test types"
-                          } found`}
+                        : `No ${activeTab === "projects" ? "projects" : "test types"
+                        } found`}
                     </p>
                   </div>
                 ) : (
@@ -664,9 +659,8 @@ const AccessControlSystem = () => {
                       <button
                         key={item._id}
                         onClick={() => handleItemSelect(item)}
-                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 ${
-                          selectedItem?._id === item._id ? "bg-blue-50" : ""
-                        }`}
+                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 ${selectedItem?._id === item._id ? "bg-blue-50" : ""
+                          }`}
                       >
                         <h3 className="font-medium text-gray-900 mb-1">
                           {activeTab === "projects"
@@ -844,9 +838,8 @@ const AccessControlSystem = () => {
                           : "Select a user"}
                       </span>
                       <ChevronDown
-                        className={`w-4 h-4 text-gray-500 transition-transform ${
-                          showUserDropdown ? "rotate-180" : ""
-                        }`}
+                        className={`w-4 h-4 text-gray-500 transition-transform ${showUserDropdown ? "rotate-180" : ""
+                          }`}
                       />
                     </button>
 
@@ -936,25 +929,22 @@ const AccessControlSystem = () => {
                             })
                           }
                           disabled={loading}
-                          className={`p-3 rounded-md border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${
-                            grantForm.accessLevel === level.value
+                          className={`p-3 rounded-md border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${grantForm.accessLevel === level.value
                               ? "border-blue-600 bg-blue-50"
                               : "border-gray-200 hover:border-gray-300 bg-white"
-                          }`}
+                            }`}
                         >
                           <Icon
-                            className={`w-5 h-5 mx-auto mb-1 ${
-                              grantForm.accessLevel === level.value
+                            className={`w-5 h-5 mx-auto mb-1 ${grantForm.accessLevel === level.value
                                 ? "text-blue-600"
                                 : "text-gray-500"
-                            }`}
+                              }`}
                           />
                           <p
-                            className={`text-xs font-medium ${
-                              grantForm.accessLevel === level.value
+                            className={`text-xs font-medium ${grantForm.accessLevel === level.value
                                 ? "text-blue-900"
                                 : "text-gray-700"
-                            }`}
+                              }`}
                           >
                             {level.label}
                           </p>
@@ -986,9 +976,9 @@ const AccessControlSystem = () => {
                         <span className="text-sm text-gray-700">
                           {selectedDate
                             ? selectedDate.toLocaleDateString("en-US", {
-                                month: "short",
-                                day: "numeric",
-                              })
+                              month: "short",
+                              day: "numeric",
+                            })
                             : "Date"}
                         </span>
                         <Calendar className="w-4 h-4 text-gray-500" />
@@ -1069,11 +1059,10 @@ const AccessControlSystem = () => {
                                 py-1.5 text-sm rounded-md transition-all
                                 ${!day ? "invisible" : ""}
                                 ${isToday(day) ? "border border-blue-500" : ""}
-                                ${
-                                  isSelected(day)
-                                    ? "bg-blue-600 text-white font-semibold"
-                                    : "hover:bg-gray-100 text-gray-700"
-                                }
+                                ${isSelected(day)
+                                      ? "bg-blue-600 text-white font-semibold"
+                                      : "hover:bg-gray-100 text-gray-700"
+                                    }
                               `}
                                 >
                                   {day}
@@ -1155,11 +1144,10 @@ const AccessControlSystem = () => {
                                             onClick={() =>
                                               handleTimeChange("hours", hour)
                                             }
-                                            className={`w-full px-3 py-2 text-sm text-center hover:bg-gray-50 ${
-                                              selectedTime.hours === hour
+                                            className={`w-full px-3 py-2 text-sm text-center hover:bg-gray-50 ${selectedTime.hours === hour
                                                 ? "bg-blue-50 text-blue-600 font-medium"
                                                 : ""
-                                            }`}
+                                              }`}
                                           >
                                             {hour}
                                           </button>
@@ -1207,11 +1195,10 @@ const AccessControlSystem = () => {
                                                 minute
                                               )
                                             }
-                                            className={`w-full px-3 py-2 text-sm text-center hover:bg-gray-50 ${
-                                              selectedTime.minutes === minute
+                                            className={`w-full px-3 py-2 text-sm text-center hover:bg-gray-50 ${selectedTime.minutes === minute
                                                 ? "bg-blue-50 text-blue-600 font-medium"
                                                 : ""
-                                            }`}
+                                              }`}
                                           >
                                             {minute}
                                           </button>
@@ -1248,11 +1235,10 @@ const AccessControlSystem = () => {
                                           onClick={() =>
                                             handleTimeChange("period", period)
                                           }
-                                          className={`w-full px-3 py-2 text-sm text-center hover:bg-gray-50 ${
-                                            selectedTime.period === period
+                                          className={`w-full px-3 py-2 text-sm text-center hover:bg-gray-50 ${selectedTime.period === period
                                               ? "bg-blue-50 text-blue-600 font-medium"
                                               : ""
-                                          }`}
+                                            }`}
                                         >
                                           {period}
                                         </button>
