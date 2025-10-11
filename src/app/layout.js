@@ -10,6 +10,7 @@ import { ContentProvider } from "./script/Content.context";
 import Tooltip from "./components/utils/Tooltip";
 import Context from "./components/utils/Content";
 import Script from "next/script";
+import RouteLoaderFavicon from "./components/utils/Fab";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -58,6 +59,7 @@ export default function RootLayout({ children }) {
                   <ConfirmProvider>
                     <LoaderProvider>
                       {children}
+                      <RouteLoaderFavicon/>
                       <Tooltip />
                       <Context />
                     </LoaderProvider>
