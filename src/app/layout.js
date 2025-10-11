@@ -9,7 +9,7 @@ import { TooltipProvider } from "./script/Tooltip.context";
 import { ContentProvider } from "./script/Content.context";
 import Tooltip from "./components/utils/Tooltip";
 import Context from "./components/utils/Content";
-import RouteProgressBar from "./components/utils/Fab";
+import RouteProgressBar from "./components/utils/Progress";
 import Script from "next/script";
 
 const geistSans = Geist({
