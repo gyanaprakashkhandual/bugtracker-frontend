@@ -8,6 +8,7 @@ export default function CaffetestLanding() {
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const { scrollY } = useScroll()
   const headerOpacity = useTransform(scrollY, [0, 100], [1, 0.95])
+  
 
   const router = useRouter();
   const fadeInUp = {
