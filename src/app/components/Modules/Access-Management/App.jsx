@@ -28,6 +28,8 @@ const AccessControlSystem = () => {
   const [showPeriodDropdown, setShowPeriodDropdown] = useState(false)
   const [selectedDate, setSelectedDate] = useState(null)
   const [selectedTime, setSelectedTime] = useState({ hours: '12', minutes: '00', period: 'PM' })
+  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false)
+  const [lastSelectedItem, setLastSelectedItem] = useState(null)
 
   const userDropdownRef = useRef(null)
   const calendarRef = useRef(null)
@@ -296,6 +298,7 @@ const AccessControlSystem = () => {
 
   const handleItemSelect = (item) => {
     setSelectedItem(item)
+    setLastSelectedItem(item)
     fetchAccessList(item._id, activeTab === 'projects' ? 'project' : 'testtype')
   }
 
@@ -369,12 +372,13 @@ const AccessControlSystem = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="max-h[calc(100vh-60px)] bg-gray-50">
       {/* Header */}
       <div className="bg-white border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="py-6">
-            <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between">
+            {/* Header */}
+            <div className="py-6">
               <div className="flex items-center space-x-3">
                 <div className="p-2 bg-blue-100 rounded-lg">
                   <Shield className="w-6 h-6 text-blue-600" />
@@ -385,96 +389,61 @@ const AccessControlSystem = () => {
                 </div>
               </div>
             </div>
-          </div>
 
-          {/* Tabs */}
-          <div className="flex space-x-8 border-b border-gray-200">
-            <button
-              onClick={() => {
-                setActiveTab('projects')
-                setSelectedItem(null)
-                setAccessList([])
-                setSelectedProject(null)
-              }}
-              className={`pb-4 px-1 relative ${activeTab === 'projects'
-                ? 'text-blue-600 font-medium'
-                : 'text-gray-500 hover:text-gray-700'
-                }`}
-            >
-              <div className="flex items-center space-x-2">
-                <FolderOpen className="w-4 h-4" />
-                <span>Projects</span>
-              </div>
-              {activeTab === 'projects' && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
-                />
-              )}
-            </button>
-            <button
-              onClick={() => {
-                setActiveTab('testtypes')
-                setSelectedItem(null)
-                setAccessList([])
-              }}
-              className={`pb-4 px-1 relative ${activeTab === 'testtypes'
-                ? 'text-blue-600 font-medium'
-                : 'text-gray-500 hover:text-gray-700'
-                }`}
-            >
-              <div className="flex items-center space-x-2">
-                <FileCode className="w-4 h-4" />
-                <span>Test Types</span>
-              </div>
-              {activeTab === 'testtypes' && (
-                <motion.div
-                  layoutId="activeTab"
-                  className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
-                />
-              )}
-            </button>
+            {/* Tabs */}
+            <div className="flex space-x-8 border-b border-gray-200">
+              <button
+                onClick={() => {
+                  setActiveTab('projects')
+                  setSelectedItem(null)
+                  setAccessList([])
+                  setSelectedProject(null)
+                }}
+                className={`pb-4 px-1 relative ${activeTab === 'projects'
+                  ? 'text-blue-600 font-medium'
+                  : 'text-gray-500 hover:text-gray-700'
+                  }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <FolderOpen className="w-4 h-4" />
+                  <span>Projects</span>
+                </div>
+                {activeTab === 'projects' && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                  />
+                )}
+              </button>
+              <button
+                onClick={() => {
+                  setActiveTab('testtypes')
+                  setSelectedItem(null)
+                  setAccessList([])
+                }}
+                className={`pb-4 px-1 relative ${activeTab === 'testtypes'
+                  ? 'text-blue-600 font-medium'
+                  : 'text-gray-500 hover:text-gray-700'
+                  }`}
+              >
+                <div className="flex items-center space-x-2">
+                  <FileCode className="w-4 h-4" />
+                  <span>Test Types</span>
+                </div>
+                {activeTab === 'testtypes' && (
+                  <motion.div
+                    layoutId="activeTab"
+                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
+                  />
+                )}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Messages */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center space-x-3 mb-4"
-            >
-              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
-              <p className="text-red-800 flex-1">{error}</p>
-              <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800">
-                <X className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
-
-          {success && (
-            <motion.div
-              initial={{ opacity: 0, y: -10 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -10 }}
-              className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3 mb-4"
-            >
-              <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
-              <p className="text-green-800 flex-1">{success}</p>
-              <button onClick={() => setSuccess(null)} className="text-green-600 hover:text-green-800">
-                <X className="w-4 h-4" />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-      </div>
-
       {/* Main Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-2 py-2">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Sidebar - Items List */}
           <div className="lg:col-span-1 space-y-4">
@@ -484,21 +453,42 @@ const AccessControlSystem = () => {
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Select Project
                 </label>
-                <select
-                  value={selectedProject?._id || ''}
-                  onChange={(e) => {
-                    const project = projects.find(p => p._id === e.target.value)
-                    handleProjectSelect(project)
-                  }}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                >
-                  <option value="">All Test Types</option>
-                  {projects.map((project) => (
-                    <option key={project._id} value={project._id}>
-                      {project.projectName}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <button
+                    onClick={() => setProjectDropdownOpen(!projectDropdownOpen)}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-left text-gray-900 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors flex items-center justify-between"
+                  >
+                    {selectedProject?.projectName || 'All Test Types'}
+                    <svg className={`w-4 h-4 text-gray-600 transition-transform ${projectDropdownOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                    </svg>
+                  </button>
+                  {projectDropdownOpen && (
+                    <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50">
+                      <button
+                        onClick={() => {
+                          handleProjectSelect(null)
+                          setProjectDropdownOpen(false)
+                        }}
+                        className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 text-sm text-gray-900 transition-colors"
+                      >
+                        All Test Types
+                      </button>
+                      {projects.map((project) => (
+                        <button
+                          key={project._id}
+                          onClick={() => {
+                            handleProjectSelect(project)
+                            setProjectDropdownOpen(false)
+                          }}
+                          className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 text-sm text-gray-900 transition-colors last:border-b-0"
+                        >
+                          {project.projectName}
+                        </button>
+                      ))}
+                    </div>
+                  )}
+                </div>
                 {selectedProject && (
                   <p className="text-xs text-gray-500 mt-2">
                     Showing test types for: <span className="font-medium">{selectedProject.projectName}</span>
@@ -507,8 +497,9 @@ const AccessControlSystem = () => {
               </div>
             )}
 
+
             {/* Items List */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden sidebar-scrollbar">
               <div className="p-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">
                   {activeTab === 'projects' ? 'Projects' : 'Test Types'}
@@ -517,10 +508,16 @@ const AccessControlSystem = () => {
                   {(activeTab === 'projects' ? projects : testTypes).length} items
                 </p>
               </div>
-              <div className="divide-y divide-gray-100 max-h-[calc(100vh-400px)] overflow-y-auto">
+              <div className={`overflow-y-auto ${activeTab === 'projects' ? 'max-h-[calc(100vh-275px)]' : 'max-h-[calc(100vh-390px)]'}`}>
                 {loading && !selectedItem ? (
-                  <div className="p-8 text-center">
-                    <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                  <div className="space-y-3 p-4">
+                    {[...Array(6)].map((_, i) => (
+                      <div key={i} className="p-4 border-b border-gray-100 last:border-b-0">
+                        <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse mb-2"></div>
+                        <div className="h-3 bg-gray-200 rounded w-full animate-pulse mb-2"></div>
+                        <div className="h-3 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+                      </div>
+                    ))}
                   </div>
                 ) : (activeTab === 'projects' ? projects : testTypes).length === 0 ? (
                   <div className="p-8 text-center">
@@ -540,12 +537,10 @@ const AccessControlSystem = () => {
                   </div>
                 ) : (
                   (activeTab === 'projects' ? projects : testTypes).map((item) => (
-                    <motion.button
+                    <button
                       key={item._id}
                       onClick={() => handleItemSelect(item)}
-                      className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${selectedItem?._id === item._id ? 'bg-blue-50 border-l-4 border-blue-600' : ''
-                        }`}
-                      whileHover={{ x: 4 }}
+                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 ${selectedItem?._id === item._id ? 'bg-blue-50' : ''}`}
                     >
                       <h3 className="font-medium text-gray-900 mb-1">
                         {activeTab === 'projects' ? item.projectName : item.testTypeName}
@@ -558,23 +553,22 @@ const AccessControlSystem = () => {
                           {item.testFramework}
                         </span>
                       )}
-                    </motion.button>
+                    </button>
                   ))
                 )}
               </div>
             </div>
           </div>
-
           {/* Right Content - Access Management */}
           <div className="lg:col-span-2">
-            {selectedItem ? (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            {selectedItem || lastSelectedItem ? (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 min-h-[calc(100vh-190px)] sidebar-scrollbar">
                 {/* Header */}
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <h2 className="text-xl font-semibold text-gray-900">
-                        {activeTab === 'projects' ? selectedItem.projectName : selectedItem.testTypeName}
+                        {activeTab === 'projects' ? (selectedItem || lastSelectedItem).projectName : (selectedItem || lastSelectedItem).testTypeName}
                       </h2>
                       <p className="text-sm text-gray-500 mt-1">
                         Manage user access and permissions
@@ -594,9 +588,17 @@ const AccessControlSystem = () => {
                 {/* Access List */}
                 <div className="divide-y divide-gray-100 max-h-[calc(100vh-350px)] overflow-y-auto">
                   {loading ? (
-                    <div className="p-8 text-center">
-                      <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
-                      <p className="text-gray-500 mt-3">Loading access list...</p>
+                    <div className="space-y-3 p-4">
+                      {[...Array(5)].map((_, i) => (
+                        <div key={i} className="flex items-center space-x-3 p-4 bg-gray-50 rounded">
+                          <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                          <div className="flex-1 space-y-2">
+                            <div className="h-4 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+                            <div className="h-3 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+                          </div>
+                          <div className="h-8 bg-gray-200 rounded w-20 animate-pulse"></div>
+                        </div>
+                      ))}
                     </div>
                   ) : accessList.length === 0 ? (
                     <div className="p-8 text-center">
@@ -620,7 +622,7 @@ const AccessControlSystem = () => {
               <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
                 <Lock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
                 <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Select a {activeTab === 'projects' ? 'project' : 'test type'}
+                  Please select
                 </h3>
                 <p className="text-gray-500">
                   Choose an item from the list to manage access permissions
