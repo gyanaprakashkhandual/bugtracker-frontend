@@ -2,12 +2,13 @@
 
 import React, { useState, useRef, useEffect } from 'react'
 import { motion, AnimatePresence } from 'framer-motion'
-import { Users, Shield, Lock, ChevronDown, Search, X, Check, Plus, Trash2, Clock, User, FolderOpen, FileCode } from 'lucide-react'
+import { Users, Shield, Lock, ChevronDown, Search, X, Check, Plus, Trash2, Clock, User, FolderOpen, FileCode, AlertCircle } from 'lucide-react'
 
-const API_BASE_URL = 'http://localhost:5000/api/v1/access'
-const PROJECTS_API = 'http://localhost:5000/api/v1/project'
-const TESTTYPES_API = 'http://localhost:5000/api/v1/test-type'
-const USERS_API = 'http://localhost:5000/api/v1/auth'
+const API_BASE_URL = 'http://localhost:5000/api/v1'
+const ACCESS_API = `${API_BASE_URL}/access`
+const PROJECTS_API = `${API_BASE_URL}/project`
+const TESTTYPES_API = `${API_BASE_URL}/test-type`
+const USERS_API = `${API_BASE_URL}/auth`
 
 const AccessControlSystem = () => {
   const [activeTab, setActiveTab] = useState('projects')
@@ -19,6 +20,7 @@ const AccessControlSystem = () => {
   const [showGrantModal, setShowGrantModal] = useState(false)
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [success, setSuccess] = useState(null)
 
   // Grant access form state
   const [grantForm, setGrantForm] = useState({
@@ -27,10 +29,10 @@ const AccessControlSystem = () => {
     expiresAt: ''
   })
 
-  // Get auth token from localStorage
+  // Get auth token
   const getAuthToken = () => {
     if (typeof window !== 'undefined') {
-      return localStorage.getItem('token') || localStorage.getItem('token')
+      return localStorage.getItem('token')
     }
     return null
   }
@@ -53,7 +55,7 @@ const AccessControlSystem = () => {
 
     if (!response.ok) {
       const errorData = await response.json().catch(() => ({}))
-      throw new Error(errorData.message || `HTTP error! status: ${response.status}`)
+      throw new Error(errorData.message || errorData.error || `HTTP error! status: ${response.status}`)
     }
 
     return response.json()
@@ -65,6 +67,21 @@ const AccessControlSystem = () => {
     fetchTestTypes()
     fetchUsers()
   }, [])
+
+  // Auto-dismiss messages
+  useEffect(() => {
+    if (error) {
+      const timer = setTimeout(() => setError(null), 5000)
+      return () => clearTimeout(timer)
+    }
+  }, [error])
+
+  useEffect(() => {
+    if (success) {
+      const timer = setTimeout(() => setSuccess(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [success])
 
   const fetchProjects = async () => {
     try {
@@ -83,7 +100,7 @@ const AccessControlSystem = () => {
   const fetchTestTypes = async () => {
     try {
       setLoading(true)
-      const data = await fetchWithAuth(TESTTYPES_API)
+      const data = await fetchWithAuth(`${TESTTYPES_API}/test-types`)
       setTestTypes(data.testTypes || data || [])
       setError(null)
     } catch (err) {
@@ -96,10 +113,11 @@ const AccessControlSystem = () => {
 
   const fetchUsers = async () => {
     try {
-      const data = await fetchWithAuth(USERS_API)
+      const data = await fetchWithAuth(`${USERS_API}/admin/users`)
       setUsers(data.users || data || [])
     } catch (err) {
       console.error('Error fetching users:', err)
+      // Don't set error here as it might not be critical
     }
   }
 
@@ -107,11 +125,11 @@ const AccessControlSystem = () => {
     setLoading(true)
     try {
       const endpoint = type === 'project' 
-        ? `${API_BASE_URL}/project/${itemId}/users`
-        : `${API_BASE_URL}/testtype/${itemId}/users`
+        ? `${ACCESS_API}/project/${itemId}/users`
+        : `${ACCESS_API}/testtype/${itemId}/users`
       
       const data = await fetchWithAuth(endpoint)
-      setAccessList(data.accessList || [])
+      setAccessList(data.accessList || data.users || data || [])
       setError(null)
     } catch (err) {
       console.error('Error fetching access list:', err)
@@ -128,19 +146,22 @@ const AccessControlSystem = () => {
   }
 
   const handleGrantAccess = async () => {
-    if (!grantForm.userId || !selectedItem) return
+    if (!grantForm.userId || !selectedItem) {
+      setError('Please select a user')
+      return
+    }
 
     setLoading(true)
     try {
       const endpoint = activeTab === 'projects'
-        ? `${API_BASE_URL}/project/grant`
-        : `${API_BASE_URL}/testtype/grant`
+        ? `${ACCESS_API}/project/grant`
+        : `${ACCESS_API}/testtype/grant`
 
       const body = {
         [activeTab === 'projects' ? 'projectId' : 'testTypeId']: selectedItem._id,
         userId: grantForm.userId,
         accessLevel: grantForm.accessLevel,
-        expiresAt: grantForm.expiresAt || null
+        expiresAt: grantForm.expiresAt || undefined
       }
 
       await fetchWithAuth(endpoint, {
@@ -150,6 +171,7 @@ const AccessControlSystem = () => {
 
       setShowGrantModal(false)
       setGrantForm({ userId: '', accessLevel: 'view', expiresAt: '' })
+      setSuccess('Access granted successfully!')
       fetchAccessList(selectedItem._id, activeTab === 'projects' ? 'project' : 'testtype')
       setError(null)
     } catch (err) {
@@ -167,13 +189,14 @@ const AccessControlSystem = () => {
     setLoading(true)
     try {
       const endpoint = activeTab === 'projects'
-        ? `${API_BASE_URL}/project/revoke/${selectedItem._id}/${userId}`
-        : `${API_BASE_URL}/testtype/revoke/${selectedItem._id}/${userId}`
+        ? `${ACCESS_API}/project/revoke/${selectedItem._id}/${userId}`
+        : `${ACCESS_API}/testtype/revoke/${selectedItem._id}/${userId}`
 
       await fetchWithAuth(endpoint, {
         method: 'DELETE'
       })
 
+      setSuccess('Access revoked successfully!')
       fetchAccessList(selectedItem._id, activeTab === 'projects' ? 'project' : 'testtype')
       setError(null)
     } catch (err) {
@@ -255,22 +278,40 @@ const AccessControlSystem = () => {
         </div>
       </div>
 
-      {/* Error Message */}
-      {error && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
-          <motion.div
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center space-x-3"
-          >
-            <X className="w-5 h-5 text-red-600" />
-            <p className="text-red-800">{error}</p>
-            <button onClick={() => setError(null)} className="ml-auto text-red-600 hover:text-red-800">
-              <X className="w-4 h-4" />
-            </button>
-          </motion.div>
-        </div>
-      )}
+      {/* Messages */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-4">
+        <AnimatePresence>
+          {error && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-red-50 border border-red-200 rounded-lg p-4 flex items-center space-x-3 mb-4"
+            >
+              <AlertCircle className="w-5 h-5 text-red-600 flex-shrink-0" />
+              <p className="text-red-800 flex-1">{error}</p>
+              <button onClick={() => setError(null)} className="text-red-600 hover:text-red-800">
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+
+          {success && (
+            <motion.div
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              className="bg-green-50 border border-green-200 rounded-lg p-4 flex items-center space-x-3 mb-4"
+            >
+              <Check className="w-5 h-5 text-green-600 flex-shrink-0" />
+              <p className="text-green-800 flex-1">{success}</p>
+              <button onClick={() => setSuccess(null)} className="text-green-600 hover:text-green-800">
+                <X className="w-4 h-4" />
+              </button>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -282,14 +323,24 @@ const AccessControlSystem = () => {
                 <h2 className="text-lg font-semibold text-gray-900">
                   {activeTab === 'projects' ? 'Projects' : 'Test Types'}
                 </h2>
+                <p className="text-sm text-gray-500 mt-1">
+                  {(activeTab === 'projects' ? projects : testTypes).length} items
+                </p>
               </div>
-              <div className="divide-y divide-gray-100">
+              <div className="divide-y divide-gray-100 max-h-[calc(100vh-300px)] overflow-y-auto">
                 {loading && !selectedItem ? (
                   <div className="p-8 text-center">
                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
                   </div>
                 ) : (activeTab === 'projects' ? projects : testTypes).length === 0 ? (
                   <div className="p-8 text-center">
+                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                      {activeTab === 'projects' ? (
+                        <FolderOpen className="w-6 h-6 text-gray-400" />
+                      ) : (
+                        <FileCode className="w-6 h-6 text-gray-400" />
+                      )}
+                    </div>
                     <p className="text-gray-500">No {activeTab === 'projects' ? 'projects' : 'test types'} found</p>
                   </div>
                 ) : (
@@ -327,7 +378,7 @@ const AccessControlSystem = () => {
                 {/* Header */}
                 <div className="p-6 border-b border-gray-200">
                   <div className="flex items-center justify-between">
-                    <div>
+                    <div className="flex-1">
                       <h2 className="text-xl font-semibold text-gray-900">
                         {activeTab === 'projects' ? selectedItem.projectName : selectedItem.testTypeName}
                       </h2>
@@ -337,7 +388,8 @@ const AccessControlSystem = () => {
                     </div>
                     <button
                       onClick={() => setShowGrantModal(true)}
-                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                      disabled={loading}
+                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
                       <Plus className="w-4 h-4" />
                       <span>Grant Access</span>
@@ -346,15 +398,17 @@ const AccessControlSystem = () => {
                 </div>
 
                 {/* Access List */}
-                <div className="divide-y divide-gray-100">
+                <div className="divide-y divide-gray-100 max-h-[calc(100vh-350px)] overflow-y-auto">
                   {loading ? (
                     <div className="p-8 text-center">
                       <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
+                      <p className="text-gray-500 mt-3">Loading access list...</p>
                     </div>
                   ) : accessList.length === 0 ? (
                     <div className="p-8 text-center">
                       <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500">No users have access yet</p>
+                      <p className="text-gray-500 mb-2">No users have access yet</p>
+                      <p className="text-sm text-gray-400">Click "Grant Access" to add users</p>
                     </div>
                   ) : (
                     accessList.map((access) => (
@@ -362,6 +416,7 @@ const AccessControlSystem = () => {
                         key={access._id}
                         access={access}
                         onRevoke={handleRevokeAccess}
+                        loading={loading}
                       />
                     ))
                   )}
@@ -390,7 +445,7 @@ const AccessControlSystem = () => {
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
-            onClick={() => setShowGrantModal(false)}
+            onClick={() => !loading && setShowGrantModal(false)}
           >
             <motion.div
               initial={{ scale: 0.95, opacity: 0 }}
@@ -404,23 +459,28 @@ const AccessControlSystem = () => {
                   <h3 className="text-lg font-semibold text-gray-900">Grant Access</h3>
                   <button
                     onClick={() => setShowGrantModal(false)}
-                    className="text-gray-400 hover:text-gray-500"
+                    disabled={loading}
+                    className="text-gray-400 hover:text-gray-500 disabled:opacity-50"
                   >
                     <X className="w-5 h-5" />
                   </button>
                 </div>
+                <p className="text-sm text-gray-500 mt-1">
+                  Add user access to {selectedItem?.projectName || selectedItem?.testTypeName}
+                </p>
               </div>
 
               <div className="p-6 space-y-4">
                 {/* User Select */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    User
+                    User <span className="text-red-500">*</span>
                   </label>
                   <select
                     value={grantForm.userId}
                     onChange={(e) => setGrantForm({ ...grantForm, userId: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                   >
                     <option value="">Select a user</option>
                     {users.map((user) => (
@@ -434,41 +494,48 @@ const AccessControlSystem = () => {
                 {/* Access Level */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Access Level
+                    Access Level <span className="text-red-500">*</span>
                   </label>
                   <AccessLevelDropdown
                     value={grantForm.accessLevel}
                     onChange={(level) => setGrantForm({ ...grantForm, accessLevel: level })}
+                    disabled={loading}
                   />
                 </div>
 
                 {/* Expires At */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Expiration Date (Optional)
+                    Expiration Date <span className="text-gray-400 text-xs">(Optional)</span>
                   </label>
                   <input
                     type="datetime-local"
                     value={grantForm.expiresAt}
                     onChange={(e) => setGrantForm({ ...grantForm, expiresAt: e.target.value })}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    disabled={loading}
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed"
                   />
+                  <p className="text-xs text-gray-500 mt-1">Leave empty for permanent access</p>
                 </div>
               </div>
 
               <div className="p-6 bg-gray-50 border-t border-gray-200 flex justify-end space-x-3">
                 <button
                   onClick={() => setShowGrantModal(false)}
-                  className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium"
+                  disabled={loading}
+                  className="px-4 py-2 text-gray-700 hover:text-gray-900 font-medium disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   onClick={handleGrantAccess}
-                  disabled={!grantForm.userId}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  disabled={!grantForm.userId || loading}
+                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2"
                 >
-                  Grant Access
+                  {loading && (
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                  )}
+                  <span>Grant Access</span>
                 </button>
               </div>
             </motion.div>
@@ -479,8 +546,8 @@ const AccessControlSystem = () => {
   )
 }
 
-// Access Level Dropdown Component (GitHub-style)
-const AccessLevelDropdown = ({ value, onChange }) => {
+// Access Level Dropdown Component
+const AccessLevelDropdown = ({ value, onChange, disabled }) => {
   const [isOpen, setIsOpen] = useState(false)
   const dropdownRef = useRef(null)
 
@@ -506,8 +573,9 @@ const AccessLevelDropdown = ({ value, onChange }) => {
     <div ref={dropdownRef} className="relative">
       <button
         type="button"
-        onClick={() => setIsOpen(!isOpen)}
-        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg flex items-center justify-between hover:bg-gray-50 transition-colors"
+        onClick={() => !disabled && setIsOpen(!isOpen)}
+        disabled={disabled}
+        className="w-full px-3 py-2 bg-white border border-gray-300 rounded-lg flex items-center justify-between hover:bg-gray-50 transition-colors disabled:bg-gray-100 disabled:cursor-not-allowed"
       >
         <div className="flex items-center space-x-2">
           <span>{selectedLevel?.icon}</span>
@@ -557,7 +625,7 @@ const AccessLevelDropdown = ({ value, onChange }) => {
 }
 
 // Access List Item Component
-const AccessListItem = ({ access, onRevoke }) => {
+const AccessListItem = ({ access, onRevoke, loading }) => {
   const [showActions, setShowActions] = useState(false)
 
   const getLevelColor = (level) => {
@@ -569,6 +637,15 @@ const AccessListItem = ({ access, onRevoke }) => {
     }
   }
 
+  const formatDate = (dateString) => {
+    const date = new Date(dateString)
+    return date.toLocaleDateString('en-US', { 
+      year: 'numeric', 
+      month: 'short', 
+      day: 'numeric' 
+    })
+  }
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
@@ -578,21 +655,27 @@ const AccessListItem = ({ access, onRevoke }) => {
       onMouseLeave={() => setShowActions(false)}
     >
       <div className="flex items-center justify-between">
-        <div className="flex items-center space-x-3 flex-1">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold">
-            {access.userId.name.charAt(0).toUpperCase()}
+        <div className="flex items-center space-x-3 flex-1 min-w-0">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-semibold flex-shrink-0">
+            {access.userId?.name?.charAt(0).toUpperCase() || 'U'}
           </div>
-          <div className="flex-1">
+          <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2">
-              <h4 className="font-medium text-gray-900">{access.userId.name}</h4>
-              <span className={`px-2 py-1 text-xs font-medium rounded ${getLevelColor(access.accessLevel)}`}>
+              <h4 className="font-medium text-gray-900 truncate">
+                {access.userId?.name || 'Unknown User'}
+              </h4>
+              <span className={`px-2 py-1 text-xs font-medium rounded flex-shrink-0 ${getLevelColor(access.accessLevel)}`}>
                 {access.accessLevel}
               </span>
             </div>
-            <div className="flex items-center space-x-3 mt-1">
-              <p className="text-sm text-gray-500">{access.userId.email}</p>
-              <span className="text-gray-300">•</span>
-              <p className="text-sm text-gray-500">{access.userId.role}</p>
+            <div className="flex items-center space-x-3 mt-1 text-sm text-gray-500">
+              <p className="truncate">{access.userId?.email || 'No email'}</p>
+              {access.userId?.role && (
+                <>
+                  <span className="text-gray-300">•</span>
+                  <p className="capitalize">{access.userId.role}</p>
+                </>
+              )}
             </div>
           </div>
         </div>
@@ -604,7 +687,8 @@ const AccessListItem = ({ access, onRevoke }) => {
               animate={{ opacity: 1, scale: 1 }}
               exit={{ opacity: 0, scale: 0.9 }}
               onClick={() => onRevoke(access.userId._id)}
-              className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+              disabled={loading}
+              className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
               title="Revoke Access"
             >
               <Trash2 className="w-4 h-4" />
@@ -613,8 +697,25 @@ const AccessListItem = ({ access, onRevoke }) => {
         </AnimatePresence>
       </div>
 
-      <div className="mt-3 pl-13 text-xs text-gray-500">
-        Granted by {access.grantedBy.name} • {new Date(access.createdAt).toLocaleDateString()}
+      <div className="mt-3 pl-13 flex items-center space-x-3 text-xs text-gray-500">
+        <div className="flex items-center space-x-1">
+          <User className="w-3 h-3" />
+          <span>Granted by {access.grantedBy?.name || 'Unknown'}</span>
+        </div>
+        <span className="text-gray-300">•</span>
+        <div className="flex items-center space-x-1">
+          <Clock className="w-3 h-3" />
+          <span>{formatDate(access.createdAt)}</span>
+        </div>
+        {access.expiresAt && (
+          <>
+            <span className="text-gray-300">•</span>
+            <div className="flex items-center space-x-1 text-orange-600">
+              <Clock className="w-3 h-3" />
+              <span>Expires {formatDate(access.expiresAt)}</span>
+            </div>
+          </>
+        )}
       </div>
     </motion.div>
   )
