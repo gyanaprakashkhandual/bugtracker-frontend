@@ -15,6 +15,7 @@ const AccessControlSystem = () => {
   const [projects, setProjects] = useState([])
   const [testTypes, setTestTypes] = useState([])
   const [selectedItem, setSelectedItem] = useState(null)
+  const [selectedProject, setSelectedProject] = useState(null) // Track selected project for test types
   const [accessList, setAccessList] = useState([])
   const [users, setUsers] = useState([])
   const [showGrantModal, setShowGrantModal] = useState(false)
@@ -64,9 +65,15 @@ const AccessControlSystem = () => {
   // Fetch initial data
   useEffect(() => {
     fetchProjects()
-    fetchTestTypes()
     fetchUsers()
   }, [])
+
+  // Fetch test types when tab changes to testtypes or when selected project changes
+  useEffect(() => {
+    if (activeTab === 'testtypes') {
+      fetchTestTypes(selectedProject?._id)
+    }
+  }, [activeTab, selectedProject])
 
   // Auto-dismiss messages
   useEffect(() => {
@@ -86,7 +93,7 @@ const AccessControlSystem = () => {
   const fetchProjects = async () => {
     try {
       setLoading(true)
-      const data = await fetchWithAuth(PROJECTS_API)
+      const data = await fetchWithAuth('http://localhost:5000/api/v1/project')
       setProjects(data.projects || data || [])
       setError(null)
     } catch (err) {
@@ -97,15 +104,23 @@ const AccessControlSystem = () => {
     }
   }
 
-  const fetchTestTypes = async () => {
+  const fetchTestTypes = async (projectId = null) => {
     try {
       setLoading(true)
-      const data = await fetchWithAuth(`${TESTTYPES_API}/test-types`)
+      let endpoint = 'http://localhost:5000/api/v1/test-type/accessible-test-types'
+
+      // If projectId is provided, fetch project-specific test types
+      if (projectId) {
+        endpoint = `http://localhost:5000/api/v1/test-type/projects/${projectId}/test-types`
+      }
+
+      const data = await fetchWithAuth(endpoint)
       setTestTypes(data.testTypes || data || [])
       setError(null)
     } catch (err) {
       console.error('Error fetching test types:', err)
       setError(err.message)
+      setTestTypes([])
     } finally {
       setLoading(false)
     }
@@ -113,7 +128,7 @@ const AccessControlSystem = () => {
 
   const fetchUsers = async () => {
     try {
-      const data = await fetchWithAuth(`${USERS_API}/admin/users`)
+      const data = await fetchWithAuth('http://localhost:5000/api/v1/auth/admin/users')
       setUsers(data.users || data || [])
     } catch (err) {
       console.error('Error fetching users:', err)
@@ -124,10 +139,10 @@ const AccessControlSystem = () => {
   const fetchAccessList = async (itemId, type) => {
     setLoading(true)
     try {
-      const endpoint = type === 'project' 
-        ? `${ACCESS_API}/project/${itemId}/users`
-        : `${ACCESS_API}/testtype/${itemId}/users`
-      
+      const endpoint = type === 'project'
+        ? `http://localhost:5000/api/v1/access/project/${itemId}/users`
+        : `http://localhost:5000/api/v1/access/testtype/${itemId}/users`
+
       const data = await fetchWithAuth(endpoint)
       setAccessList(data.accessList || data.users || data || [])
       setError(null)
@@ -145,6 +160,13 @@ const AccessControlSystem = () => {
     fetchAccessList(item._id, activeTab === 'projects' ? 'project' : 'testtype')
   }
 
+  const handleProjectSelect = (project) => {
+    setSelectedProject(project)
+    setSelectedItem(null)
+    setAccessList([])
+    fetchTestTypes(project._id)
+  }
+
   const handleGrantAccess = async () => {
     if (!grantForm.userId || !selectedItem) {
       setError('Please select a user')
@@ -154,8 +176,8 @@ const AccessControlSystem = () => {
     setLoading(true)
     try {
       const endpoint = activeTab === 'projects'
-        ? `${ACCESS_API}/project/grant`
-        : `${ACCESS_API}/testtype/grant`
+        ? 'http://localhost:5000/api/v1/access/project/grant'
+        : 'http://localhost:5000/api/v1/access/testtype/grant'
 
       const body = {
         [activeTab === 'projects' ? 'projectId' : 'testTypeId']: selectedItem._id,
@@ -189,8 +211,8 @@ const AccessControlSystem = () => {
     setLoading(true)
     try {
       const endpoint = activeTab === 'projects'
-        ? `${ACCESS_API}/project/revoke/${selectedItem._id}/${userId}`
-        : `${ACCESS_API}/testtype/revoke/${selectedItem._id}/${userId}`
+        ? `http://localhost:5000/api/v1/access/project/revoke/${selectedItem._id}/${userId}`
+        : `http://localhost:5000/api/v1/access/testtype/revoke/${selectedItem._id}/${userId}`
 
       await fetchWithAuth(endpoint, {
         method: 'DELETE'
@@ -233,12 +255,12 @@ const AccessControlSystem = () => {
                 setActiveTab('projects')
                 setSelectedItem(null)
                 setAccessList([])
+                setSelectedProject(null)
               }}
-              className={`pb-4 px-1 relative ${
-                activeTab === 'projects'
+              className={`pb-4 px-1 relative ${activeTab === 'projects'
                   ? 'text-blue-600 font-medium'
                   : 'text-gray-500 hover:text-gray-700'
-              }`}
+                }`}
             >
               <div className="flex items-center space-x-2">
                 <FolderOpen className="w-4 h-4" />
@@ -257,11 +279,10 @@ const AccessControlSystem = () => {
                 setSelectedItem(null)
                 setAccessList([])
               }}
-              className={`pb-4 px-1 relative ${
-                activeTab === 'testtypes'
+              className={`pb-4 px-1 relative ${activeTab === 'testtypes'
                   ? 'text-blue-600 font-medium'
                   : 'text-gray-500 hover:text-gray-700'
-              }`}
+                }`}
             >
               <div className="flex items-center space-x-2">
                 <FileCode className="w-4 h-4" />
@@ -317,7 +338,37 @@ const AccessControlSystem = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* Left Sidebar - Items List */}
-          <div className="lg:col-span-1">
+          <div className="lg:col-span-1 space-y-4">
+            {/* Project Selector for Test Types */}
+            {activeTab === 'testtypes' && (
+              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Select Project
+                </label>
+                <select
+                  value={selectedProject?._id || ''}
+                  onChange={(e) => {
+                    const project = projects.find(p => p._id === e.target.value)
+                    handleProjectSelect(project)
+                  }}
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                >
+                  <option value="">All Test Types</option>
+                  {projects.map((project) => (
+                    <option key={project._id} value={project._id}>
+                      {project.projectName}
+                    </option>
+                  ))}
+                </select>
+                {selectedProject && (
+                  <p className="text-xs text-gray-500 mt-2">
+                    Showing test types for: <span className="font-medium">{selectedProject.projectName}</span>
+                  </p>
+                )}
+              </div>
+            )}
+
+            {/* Items List */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200">
               <div className="p-4 border-b border-gray-200">
                 <h2 className="text-lg font-semibold text-gray-900">
@@ -327,7 +378,7 @@ const AccessControlSystem = () => {
                   {(activeTab === 'projects' ? projects : testTypes).length} items
                 </p>
               </div>
-              <div className="divide-y divide-gray-100 max-h-[calc(100vh-300px)] overflow-y-auto">
+              <div className="divide-y divide-gray-100 max-h-[calc(100vh-400px)] overflow-y-auto">
                 {loading && !selectedItem ? (
                   <div className="p-8 text-center">
                     <div className="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -341,16 +392,20 @@ const AccessControlSystem = () => {
                         <FileCode className="w-6 h-6 text-gray-400" />
                       )}
                     </div>
-                    <p className="text-gray-500">No {activeTab === 'projects' ? 'projects' : 'test types'} found</p>
+                    <p className="text-gray-500">
+                      {activeTab === 'testtypes' && selectedProject
+                        ? `No test types found for ${selectedProject.projectName}`
+                        : `No ${activeTab === 'projects' ? 'projects' : 'test types'} found`
+                      }
+                    </p>
                   </div>
                 ) : (
                   (activeTab === 'projects' ? projects : testTypes).map((item) => (
                     <motion.button
                       key={item._id}
                       onClick={() => handleItemSelect(item)}
-                      className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${
-                        selectedItem?._id === item._id ? 'bg-blue-50 border-l-4 border-blue-600' : ''
-                      }`}
+                      className={`w-full text-left p-4 hover:bg-gray-50 transition-colors ${selectedItem?._id === item._id ? 'bg-blue-50 border-l-4 border-blue-600' : ''
+                        }`}
                       whileHover={{ x: 4 }}
                     >
                       <h3 className="font-medium text-gray-900 mb-1">
@@ -639,10 +694,10 @@ const AccessListItem = ({ access, onRevoke, loading }) => {
 
   const formatDate = (dateString) => {
     const date = new Date(dateString)
-    return date.toLocaleDateString('en-US', { 
-      year: 'numeric', 
-      month: 'short', 
-      day: 'numeric' 
+    return date.toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric'
     })
   }
 
@@ -721,4 +776,4 @@ const AccessListItem = ({ access, onRevoke, loading }) => {
   )
 }
 
-export default AccessControlSystem;
+export default AccessControlSystem
