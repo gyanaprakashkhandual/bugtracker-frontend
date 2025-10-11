@@ -20,6 +20,7 @@ import UserProfileInterface from '../Modules/User/App';
 import TestTypeManagement from '../Modules/Test-Type-Management/App';
 import { useRouter } from 'next/navigation';
 import Messaging from '../Modules/Messaging/App';
+import AccessControlSystem from '../Modules/Access-Management/App';
 
 const TestTypeConfiguration = () => (
     <div className="p-8">
@@ -198,7 +199,7 @@ const AppNavbar = () => {
             case 'UserManagement':
                 return <UserManagementDashboard />
             case 'Notifications':
-                return <NotificationsPanel />
+                return <AccessControlSystem />
             case 'Messages':
                 return <Messaging />
             case 'UserPanel':
