@@ -10,7 +10,8 @@ import {
     LayoutDashboard,
     ExternalLink,
     FileText,
-    UserCog
+    UserCog,
+    Lock
 } from 'lucide-react';
 import { useProject } from '@/app/script/Project.context';
 import { GoogleArrowDown } from '@/app/components/utils/Icon';
@@ -21,86 +22,9 @@ import TestTypeManagement from '../Modules/Test-Type-Management/App';
 import { useRouter } from 'next/navigation';
 import Messaging from '../Modules/Messaging/App';
 import AccessControlSystem from '../Modules/Access-Management/App';
+import Dashboard from '../Modules/Dashboard/App';
+import Notification from '../Modules/Notification/App';
 
-const TestTypeConfiguration = () => (
-    <div className="p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Test Type Configuration</h2>
-        <p className="text-gray-600">Configure your test types here...</p>
-    </div>
-)
-
-const UserManagement = () => (
-    <div className="p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">User Management</h2>
-        <p className="text-gray-600">Manage users and permissions here...</p>
-    </div>
-)
-
-const Dashboard = () => (
-    <div className="p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Dashboard</h2>
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mt-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Analytics</h3>
-                <p className="text-gray-600">View your project analytics</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Reports</h3>
-                <p className="text-gray-600">Generate and view reports</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-2">Activity</h3>
-                <p className="text-gray-600">Recent project activity</p>
-            </div>
-        </div>
-    </div>
-)
-
-const NotificationsPanel = () => (
-    <div className="p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Notifications</h2>
-        <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <p className="text-sm text-gray-600">New user registered</p>
-                <p className="text-xs text-gray-400 mt-1">2 hours ago</p>
-            </div>
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <p className="text-sm text-gray-600">Project updated successfully</p>
-                <p className="text-xs text-gray-400 mt-1">5 hours ago</p>
-            </div>
-        </div>
-    </div>
-)
-
-const MessagesPanel = () => (
-    <div className="p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Messages</h2>
-        <div className="space-y-4">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <p className="font-medium text-gray-900">John Doe</p>
-                <p className="text-sm text-gray-600 mt-1">Hey, how's the project going?</p>
-                <p className="text-xs text-gray-400 mt-2">1 hour ago</p>
-            </div>
-        </div>
-    </div>
-)
-
-const UserPanel = () => (
-    <div className="p-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">User Profile</h2>
-        <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-            <div className="flex items-center space-x-4">
-                <div className="w-16 h-16 rounded-full bg-blue-500 flex items-center justify-center text-white text-xl font-bold">
-                    JD
-                </div>
-                <div>
-                    <p className="font-semibold text-gray-900">John Doe</p>
-                    <p className="text-sm text-gray-600">john.doe@example.com</p>
-                </div>
-            </div>
-        </div>
-    </div>
-)
 
 const AppNavbar = () => {
     const [activeComponent, setActiveComponent] = useState('Dashboard');
@@ -164,10 +88,10 @@ const AppNavbar = () => {
             setLoading(false);
         }
     };
+
     useEffect(() => {
         fetchUserData();
     }, []);
-
 
     useEffect(() => {
         const savedComponent = localStorage.getItem('activeComponent')
@@ -199,11 +123,13 @@ const AppNavbar = () => {
             case 'UserManagement':
                 return <UserManagementDashboard />
             case 'Notifications':
-                return <AccessControlSystem />
+                return <Notification />
             case 'Messages':
                 return <Messaging />
             case 'UserPanel':
                 return <UserProfileInterface />
+            case 'Access Control':
+                return <AccessControlSystem />
             default:
                 return <Dashboard />
         }
@@ -220,18 +146,13 @@ const AppNavbar = () => {
                             {/* Project Info */}
                             <div className="hidden lg:block min-w-0 max-w-xs xl:max-w-md">
                                 {!selectedProject ? (
-                                    <div className="flex flex-col">
-                                        <h1 className="text-lg font-semibold text-gray-900 truncate">
-                                            Please tart by creating a project
-                                        </h1>
-                                    </div>
+                                    <div className="h-5 bg-gray-200 rounded w-3/4 animate-pulse"></div>
                                 ) : (
                                     <h1 className="text-lg font-semibold text-gray-900 truncate">
                                         {`${selectedProject.projectName} - ${selectedProject.projectDesc}`}
                                     </h1>
                                 )}
                             </div>
-
 
                             {/* Mobile Project Name */}
                             <div className="lg:hidden min-w-0 flex-shrink">
@@ -329,13 +250,12 @@ const AppNavbar = () => {
                                 onClick={() => handleComponentChange('Notifications')}
                                 className={`p-2 rounded-lg transition-all relative ${activeComponent === 'Notifications'
                                     ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-100'
+                                    : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
                                     }`}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >
                                 <Bell className="w-5 h-5" />
-                                <span className="absolute top-1 right-1 w-2 h-2 bg-red-500 rounded-full" />
                             </motion.button>
 
                             {/* Message Icon */}
@@ -345,13 +265,27 @@ const AppNavbar = () => {
                                 onClick={() => handleComponentChange('Messages')}
                                 className={`p-2 rounded-lg transition-all relative ${activeComponent === 'Messages'
                                     ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 hover:bg-gray-100'
+                                    : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
                                     }`}
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >
                                 <MessageCircle className="w-5 h-5" />
-                                <span className="absolute top-1 right-1 w-2 h-2 bg-green-500 rounded-full" />
+                            </motion.button>
+
+                            {/* Access Control Button */}
+                            <motion.button
+                                tooltip-data="Access Control"
+                                tooltip-placement="bottom"
+                                onClick={() => handleComponentChange('Access Control')}
+                                className={`p-2 rounded-lg transition-all relative ${activeComponent === 'Access Control'
+                                    ? 'bg-blue-50 text-blue-700'
+                                    : 'text-gray-600 bg-gray-100 hover:bg-gray-100'
+                                    }`}
+                                whileHover={{ scale: 1.05 }}
+                                whileTap={{ scale: 0.95 }}
+                            >
+                                <Lock className="w-5 h-5" />
                             </motion.button>
 
                             {/* User Icon */}
