@@ -37,6 +37,7 @@ import { GoogleArrowDown } from '../utils/Icon';
 import { GiBranchArrow } from 'react-icons/gi';
 import { SiChatbot } from 'react-icons/si';
 import { GoReport } from 'react-icons/go';
+import DocComponent from '../Modules/Test-data/App';
 
 // ============================================
 // STYLED DROPDOWN COMPONENT
@@ -640,7 +641,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
         }}
       />
 
-      <TestDataSidebar
+      <DocComponent
         isOpen={testDataSidebarOpen}
         onClose={() => {
           setTestDataSidebarOpen(false);
