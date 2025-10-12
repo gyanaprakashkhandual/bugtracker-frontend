@@ -272,9 +272,14 @@ const useTestTypes = (projectId, searchQuery = '', page = 1, limit = 50) => {
   };
 };
 
+const SkeletonMicroCard = () => (
+  <div className="bg-white rounded-lg border p-2 animate-pulse">
+    <div className="h-3 bg-gray-200 rounded w-3/4 mb-2"></div>
+    <div className="h-5 bg-gray-200 rounded w-1/2"></div>
+  </div>
+);
 
-
-
+// ==================== MAIN DASHBOARD COMPONENT ====================
 const Dashboard = ({ selectedProjectId, projects }) => {
   const [dashboardData, setDashboardData] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -284,6 +289,7 @@ const Dashboard = ({ selectedProjectId, projects }) => {
 
   const selectedProject = projects.find(p => p._id === selectedProjectId);
 
+  // ==================== FETCH DATA ON PROJECT CHANGE ====================
   useEffect(() => {
     if (selectedProjectId) {
       fetchDashboardData();
@@ -292,6 +298,7 @@ const Dashboard = ({ selectedProjectId, projects }) => {
     }
   }, [selectedProjectId, retryCount]);
 
+  // ==================== API DATA FETCHING FUNCTION ====================
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
@@ -352,6 +359,7 @@ const Dashboard = ({ selectedProjectId, projects }) => {
     setRetryCount(prev => prev + 1);
   };
 
+  // ==================== PROCESS TEST CASE DATA ====================
   const processTestCaseData = () => {
     if (!dashboardData?.testCases?.testCases) return { byPriority: [], byStatus: [], byType: [] };
 
@@ -374,6 +382,7 @@ const Dashboard = ({ selectedProjectId, projects }) => {
     };
   };
 
+  // ==================== PROCESS BUG DATA ====================
   const processBugData = () => {
     if (!dashboardData?.bugs?.bugs) return { byPriority: [], bySeverity: [], byStatus: [], byType: [] };
 
@@ -399,27 +408,35 @@ const Dashboard = ({ selectedProjectId, projects }) => {
     };
   };
 
+  // ==================== LOADING STATE ====================
   if (loading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-        <nav className="bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-200">
+        <nav className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
-            <div className="flex justify-between items-center h-20">
-              <div className="flex-1 animate-pulse">
-                <div className="h-7 bg-gray-200 rounded w-1/4 mb-2"></div>
-                <div className="h-4 bg-gray-200 rounded w-1/3"></div>
+            <div className="flex justify-between items-center h-16">
+              <div className="animate-pulse">
+                <div className="h-6 bg-gray-200 rounded w-48 mb-1"></div>
+              </div>
+              <div className="flex gap-3">
+                <SkeletonCard />
+                <SkeletonCard />
+                <SkeletonCard />
+                <SkeletonCard />
               </div>
             </div>
           </div>
         </nav>
 
-        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-10">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
-            <SkeletonCard />
+        <div className="bg-gray-50 border-b border-gray-200 py-3">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+              {[...Array(8)].map((_, i) => <SkeletonMicroCard key={i} />)}
+            </div>
           </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
             <SkeletonChart />
             <SkeletonChart />
@@ -429,6 +446,7 @@ const Dashboard = ({ selectedProjectId, projects }) => {
     );
   }
 
+  // ==================== ERROR STATE ====================
   if (error) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-6">
@@ -437,14 +455,14 @@ const Dashboard = ({ selectedProjectId, projects }) => {
           animate={{ opacity: 1, scale: 1 }}
           className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-red-100"
         >
-          <div className="bg-red-50 rounded-full w-20 h-20 flex items-center justify-center mx-auto mb-6">
-            <FiAlertTriangle className="text-4xl text-red-500" />
+          <div className="bg-red-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+            <FiAlertTriangle className="text-3xl text-red-500" />
           </div>
-          <h3 className="text-2xl font-bold text-gray-900 mb-3">Failed to Load</h3>
-          <p className="text-gray-600 mb-6">{error}</p>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Failed to Load</h3>
+          <p className="text-sm text-gray-600 mb-6">{error}</p>
           <button
             onClick={handleRetry}
-            className="px-6 py-3 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center mx-auto font-medium"
+            className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center mx-auto text-sm font-medium"
           >
             <FiRefreshCw className="mr-2" />
             Retry Loading
@@ -454,6 +472,7 @@ const Dashboard = ({ selectedProjectId, projects }) => {
     );
   }
 
+  // ==================== NO DATA STATE ====================
   if (!dashboardData) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
@@ -466,7 +485,7 @@ const Dashboard = ({ selectedProjectId, projects }) => {
           <h3 className="text-lg font-semibold text-gray-900 mb-2">No Data Available</h3>
           <button
             onClick={handleRetry}
-            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
           >
             <FiRefreshCw className="inline mr-2" />
             Retry
@@ -476,6 +495,7 @@ const Dashboard = ({ selectedProjectId, projects }) => {
     );
   }
 
+  // ==================== CALCULATE STATISTICS ====================
   const testCaseStats = processTestCaseData();
   const bugStats = processBugData();
 
@@ -488,209 +508,204 @@ const Dashboard = ({ selectedProjectId, projects }) => {
   const criticalBugs = bugStats.bySeverity.find(s => s.name === 'Critical')?.value || 0;
   const openBugs = bugStats.byStatus.find(s => s.name === 'Open')?.value || 0;
 
+  const testCasePriorityCounts = {
+    Critical: testCaseStats.byPriority.find(p => p.name === 'Critical')?.value || 0,
+    High: testCaseStats.byPriority.find(p => p.name === 'High')?.value || 0,
+    Medium: testCaseStats.byPriority.find(p => p.name === 'Medium')?.value || 0,
+    Low: testCaseStats.byPriority.find(p => p.name === 'Low')?.value || 0,
+  };
+
+  const testCaseTypeCounts = {
+    Functional: testCaseStats.byType.find(t => t.name === 'Functional')?.value || 0,
+    'User-Interface': testCaseStats.byType.find(t => t.name === 'User-Interface')?.value || 0,
+    Performance: testCaseStats.byType.find(t => t.name === 'Performance')?.value || 0,
+    API: testCaseStats.byType.find(t => t.name === 'API')?.value || 0,
+  };
+
+  const bugPriorityCounts = {
+    Critical: bugStats.byPriority.find(p => p.name === 'Critical')?.value || 0,
+    High: bugStats.byPriority.find(p => p.name === 'High')?.value || 0,
+    Medium: bugStats.byPriority.find(p => p.name === 'Medium')?.value || 0,
+    Low: bugStats.byPriority.find(p => p.name === 'Low')?.value || 0,
+  };
+
+  const bugSeverityCounts = {
+    Critical: bugStats.bySeverity.find(s => s.name === 'Critical')?.value || 0,
+    High: bugStats.bySeverity.find(s => s.name === 'High')?.value || 0,
+    Medium: bugStats.bySeverity.find(s => s.name === 'Medium')?.value || 0,
+    Low: bugStats.bySeverity.find(s => s.name === 'Low')?.value || 0,
+  };
+
+  const bugStatusCounts = {
+    New: bugStats.byStatus.find(s => s.name === 'New')?.value || 0,
+    Open: bugStats.byStatus.find(s => s.name === 'Open')?.value || 0,
+    'In Progress': bugStats.byStatus.find(s => s.name === 'In Progress')?.value || 0,
+    'In Review': bugStats.byStatus.find(s => s.name === 'In Review')?.value || 0,
+    Closed: bugStats.byStatus.find(s => s.name === 'Closed')?.value || 0,
+    'Re Open': bugStats.byStatus.find(s => s.name === 'Re Open')?.value || 0,
+  };
+
+  // ==================== MAIN DASHBOARD RENDER ====================
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      <nav className="bg-white/80 backdrop-blur-lg shadow-sm border-b border-gray-200 sticky top-0 z-50">
+    <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* ==================== TOP NAVBAR WITH SUMMARY CARDS ==================== */}
+      <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
-          <div className="flex justify-between items-center h-20">
+          <div className="flex justify-between items-center h-16">
             <motion.div
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex-1"
             >
-              <h1 className="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+              <h1 className="text-xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                 {selectedProject?.projectName || 'Project Dashboard'}
               </h1>
-              <p className="text-sm text-gray-600 mt-1">
-                {selectedProject?.projectDesc || 'Real-time analytics and insights'}
-              </p>
             </motion.div>
 
             <motion.div
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
-              className="flex items-center gap-6"
+              className="flex items-center gap-2"
             >
-              <div className="text-right">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Test Cases</p>
-                <p className="text-2xl font-bold text-blue-600">{totalTestCases}</p>
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 px-3 py-1.5 flex items-center gap-2">
+                <FiCheckSquare className="text-blue-600 text-base" />
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[9px] font-semibold text-blue-700 uppercase">Test Cases</p>
+                  <p className="text-lg font-bold text-blue-900">{totalTestCases}</p>
+                  <p className="text-[8px] text-blue-600">Pass: {passRate}%</p>
+                </div>
               </div>
-              <div className="h-12 w-px bg-gray-300"></div>
-              <div className="text-right">
-                <p className="text-xs font-medium text-gray-500 uppercase tracking-wider">Bugs</p>
-                <p className="text-2xl font-bold text-red-600">{totalBugs}</p>
+
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 px-3 py-1.5 flex items-center gap-2">
+                <FiCheckCircle className="text-green-600 text-base" />
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[9px] font-semibold text-green-700 uppercase">Passed</p>
+                  <p className="text-lg font-bold text-green-900">{passedTests}</p>
+                  <p className="text-[8px] text-green-600">Failed: {failedTests}</p>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-200 px-3 py-1.5 flex items-center gap-2">
+                <FaBug className="text-red-600 text-base" />
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[9px] font-semibold text-red-700 uppercase">Total Bugs</p>
+                  <p className="text-lg font-bold text-red-900">{totalBugs}</p>
+                  <p className="text-[8px] text-red-600">Open: {openBugs}</p>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border border-orange-200 px-3 py-1.5 flex items-center gap-2">
+                <FiAlertTriangle className="text-orange-600 text-base" />
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[9px] font-semibold text-orange-700 uppercase">Critical</p>
+                  <p className="text-lg font-bold text-orange-900">{criticalBugs}</p>
+                  <p className="text-[8px] text-orange-600">Attention</p>
+                </div>
               </div>
             </motion.div>
           </div>
         </div>
       </nav>
 
-      <div className="max-w-7xl mx-auto px-6 lg:px-8 py-10" ref={chartRef}>
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1 }}
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-10"
-        >
-          <div className="bg-white rounded-2xl shadow-lg border border-blue-100 p-6 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-blue-50 rounded-xl p-3">
-                <FiCheckSquare className="text-3xl text-blue-600" />
-              </div>
-              <span className="text-xs font-semibold text-blue-600 bg-blue-50 px-3 py-1 rounded-full">
-                Total
-              </span>
-            </div>
-            <p className="text-sm font-medium text-gray-600 mb-1">Test Cases</p>
-            <p className="text-4xl font-bold text-gray-900">{totalTestCases}</p>
-            <p className="text-xs text-gray-500 mt-2">Pass Rate: {passRate}%</p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-lg border border-green-100 p-6 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-green-50 rounded-xl p-3">
-                <FiCheckCircle className="text-3xl text-green-600" />
-              </div>
-              <span className="text-xs font-semibold text-green-600 bg-green-50 px-3 py-1 rounded-full">
-                Passed
-              </span>
-            </div>
-            <p className="text-sm font-medium text-gray-600 mb-1">Passed Tests</p>
-            <p className="text-4xl font-bold text-gray-900">{passedTests}</p>
-            <p className="text-xs text-gray-500 mt-2">Failed: {failedTests}</p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-lg border border-red-100 p-6 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-red-50 rounded-xl p-3">
-                <FaBug className="text-3xl text-red-600" />
-              </div>
-              <span className="text-xs font-semibold text-red-600 bg-red-50 px-3 py-1 rounded-full">
-                Total
-              </span>
-            </div>
-            <p className="text-sm font-medium text-gray-600 mb-1">Total Bugs</p>
-            <p className="text-4xl font-bold text-gray-900">{totalBugs}</p>
-            <p className="text-xs text-gray-500 mt-2">Open: {openBugs}</p>
-          </div>
-
-          <div className="bg-white rounded-2xl shadow-lg border border-orange-100 p-6 hover:shadow-xl transition-shadow">
-            <div className="flex items-center justify-between mb-4">
-              <div className="bg-orange-50 rounded-xl p-3">
-                <FiAlertTriangle className="text-3xl text-orange-600" />
-              </div>
-              <span className="text-xs font-semibold text-orange-600 bg-orange-50 px-3 py-1 rounded-full">
-                Critical
-              </span>
-            </div>
-            <p className="text-sm font-medium text-gray-600 mb-1">Critical Bugs</p>
-            <p className="text-4xl font-bold text-gray-900">{criticalBugs}</p>
-            <p className="text-xs text-gray-500 mt-2">Requires attention</p>
-          </div>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+      {/* ==================== MICRO STATISTICS BAR ==================== */}
+      <div className="bg-gray-50 border-b border-gray-200 py-3">
+        <div className="max-w-full mx-auto px-6 lg:px-8">
           <motion.div
-            initial={{ opacity: 0, x: -20 }}
-            animate={{ opacity: 1, x: 0 }}
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 hover:shadow-xl transition-shadow"
+            className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3"
           >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                <FiBarChart2 className="mr-3 text-blue-600" />
-                Test Case Priority
-              </h3>
-              <FiTrendingUp className="text-gray-400" />
+            <div className="bg-white rounded-lg border border-red-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-red-600 mb-1">Critical Bugs</p>
+              <p className="text-lg font-bold text-red-700">{bugPriorityCounts.Critical}</p>
             </div>
-            <div className="h-80">
-              {testCaseStats.byPriority.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={testCaseStats.byPriority}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                    <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb' }} />
-                    <Bar dataKey="value" fill="#3b82f6" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-400">
-                  No priority data available
-                </div>
-              )}
-            </div>
-          </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, x: 20 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.3 }}
-            className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 hover:shadow-xl transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                <FiBarChart2 className="mr-3 text-green-600" />
-                Test Case Status
-              </h3>
-              <FiActivity className="text-gray-400" />
+            <div className="bg-white rounded-lg border border-orange-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-orange-600 mb-1">High Bugs</p>
+              <p className="text-lg font-bold text-orange-700">{bugPriorityCounts.High}</p>
             </div>
-            <div className="h-80">
-              {testCaseStats.byStatus.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={testCaseStats.byStatus}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                    <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb' }} />
-                    <Bar dataKey="value" fill="#10b981" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-400">
-                  No status data available
-                </div>
-              )}
+
+            <div className="bg-white rounded-lg border border-yellow-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-yellow-600 mb-1">Medium Bugs</p>
+              <p className="text-lg font-bold text-yellow-700">{bugPriorityCounts.Medium}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-green-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-green-600 mb-1">Low Bugs</p>
+              <p className="text-lg font-bold text-green-700">{bugPriorityCounts.Low}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-blue-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-blue-600 mb-1">New Bugs</p>
+              <p className="text-lg font-bold text-blue-700">{bugStatusCounts.New}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-indigo-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-indigo-600 mb-1">In Progress</p>
+              <p className="text-lg font-bold text-indigo-700">{bugStatusCounts['In Progress']}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-purple-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-purple-600 mb-1">In Review</p>
+              <p className="text-lg font-bold text-purple-700">{bugStatusCounts['In Review']}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-gray-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-gray-600 mb-1">Closed</p>
+              <p className="text-lg font-bold text-gray-700">{bugStatusCounts.Closed}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-red-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-red-600 mb-1">Critical Tests</p>
+              <p className="text-lg font-bold text-red-700">{testCasePriorityCounts.Critical}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-orange-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-orange-600 mb-1">High Tests</p>
+              <p className="text-lg font-bold text-orange-700">{testCasePriorityCounts.High}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-yellow-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-yellow-600 mb-1">Medium Tests</p>
+              <p className="text-lg font-bold text-yellow-700">{testCasePriorityCounts.Medium}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-green-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-green-600 mb-1">Low Tests</p>
+              <p className="text-lg font-bold text-green-700">{testCasePriorityCounts.Low}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-blue-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-blue-600 mb-1">Functional</p>
+              <p className="text-lg font-bold text-blue-700">{testCaseTypeCounts.Functional}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-indigo-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-indigo-600 mb-1">UI Tests</p>
+              <p className="text-lg font-bold text-indigo-700">{testCaseTypeCounts['User-Interface']}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-purple-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-purple-600 mb-1">Performance</p>
+              <p className="text-lg font-bold text-purple-700">{testCaseTypeCounts.Performance}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-pink-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-pink-600 mb-1">API Tests</p>
+              <p className="text-lg font-bold text-pink-700">{testCaseTypeCounts.API}</p>
             </div>
           </motion.div>
         </div>
+      </div>
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.4 }}
-          className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 mb-10 hover:shadow-xl transition-shadow"
-        >
-          <div className="flex items-center justify-between mb-6">
-            <h3 className="text-xl font-bold text-gray-900 flex items-center">
-              <FiPieChart className="mr-3 text-purple-600" />
-              Test Case Types Distribution
-            </h3>
-          </div>
-          <div className="h-96">
-            {testCaseStats.byType.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={testCaseStats.byType}>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                  <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 11 }} angle={-15} textAnchor="end" height={80} />
-                  <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
-                  <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb' }} />
-                  <Bar dataKey="value" fill="#8b5cf6" radius={[8, 8, 0, 0]} />
-                </BarChart>
-              </ResponsiveContainer>
-            ) : (
-              <div className="h-full flex items-center justify-center text-gray-400">
-                No test type data available
-              </div>
-            )}
-          </div>
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-10">
+      {/* ==================== MAIN CONTENT AREA - CHARTS ==================== */}
+      <div className="max-w-full mx-auto px-6 lg:px-8 py-8" ref={chartRef}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Bug Status Distribution Chart */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.5 }}
+            transition={{ delay: 0.3 }}
             className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 hover:shadow-xl transition-shadow"
           >
             <div className="flex items-center justify-between mb-6">
@@ -699,15 +714,28 @@ const Dashboard = ({ selectedProjectId, projects }) => {
                 Bug Status Distribution
               </h3>
             </div>
-            <div className="h-80">
+            <div className="h-96">
               {bugStats.byStatus.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={bugStats.byStatus}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 10 }} angle={-15} textAnchor="end" height={70} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: '#6b7280', fontSize: 11 }}
+                      angle={-15}
+                      textAnchor="end"
+                      height={80}
+                    />
                     <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb' }} />
-                    <Bar dataKey="value" fill="#ef4444" radius={[8, 8, 0, 0]} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="value" fill="#ef4444" radius={[8, 8, 0, 0]} name="Bugs" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -718,91 +746,41 @@ const Dashboard = ({ selectedProjectId, projects }) => {
             </div>
           </motion.div>
 
+          {/* Bug Type Distribution Chart */}
           <motion.div
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            transition={{ delay: 0.6 }}
-            className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 hover:shadow-xl transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                <FiAlertTriangle className="mr-3 text-orange-600" />
-                Bug Severity Levels
-              </h3>
-            </div>
-            <div className="h-80">
-              {bugStats.bySeverity.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={bugStats.bySeverity}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                    <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb' }} />
-                    <Bar dataKey="value" fill="#f97316" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-400">
-                  No severity data available
-                </div>
-              )}
-            </div>
-          </motion.div>
-        </div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.7 }}
-            className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 hover:shadow-xl transition-shadow"
-          >
-            <div className="flex items-center justify-between mb-6">
-              <h3 className="text-xl font-bold text-gray-900 flex items-center">
-                <FiBarChart2 className="mr-3 text-indigo-600" />
-                Bug Priority Levels
-              </h3>
-            </div>
-            <div className="h-80">
-              {bugStats.byPriority.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
-                  <BarChart data={bugStats.byPriority}>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 12 }} />
-                    <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb' }} />
-                    <Bar dataKey="value" fill="#6366f1" radius={[8, 8, 0, 0]} />
-                  </BarChart>
-                </ResponsiveContainer>
-              ) : (
-                <div className="h-full flex items-center justify-center text-gray-400">
-                  No priority data available
-                </div>
-              )}
-            </div>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay: 0.8 }}
+            transition={{ delay: 0.4 }}
             className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 hover:shadow-xl transition-shadow"
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-gray-900 flex items-center">
                 <FaBug className="mr-3 text-pink-600" />
-                Bug Types Distribution
+                Bug Type Distribution
               </h3>
             </div>
-            <div className="h-80">
+            <div className="h-96">
               {bugStats.byType.length > 0 ? (
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={bugStats.byType}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                    <XAxis dataKey="name" tick={{ fill: '#6b7280', fontSize: 10 }} angle={-15} textAnchor="end" height={70} />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: '#6b7280', fontSize: 11 }}
+                      angle={-15}
+                      textAnchor="end"
+                      height={80}
+                    />
                     <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
-                    <Tooltip contentStyle={{ borderRadius: '12px', border: '1px solid #e5e7eb' }} />
-                    <Bar dataKey="value" fill="#ec4899" radius={[8, 8, 0, 0]} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="value" fill="#ec4899" radius={[8, 8, 0, 0]} name="Bugs" />
                   </BarChart>
                 </ResponsiveContainer>
               ) : (
@@ -818,19 +796,6 @@ const Dashboard = ({ selectedProjectId, projects }) => {
   );
 };
 
-const CustomTooltip = ({ active, payload, label }) => {
-  if (active && payload && payload.length) {
-    return (
-      <div className="bg-white px-4 py-3 rounded-xl shadow-xl border border-gray-200">
-        <p className="font-semibold text-gray-900 mb-1">{label}</p>
-        <p className="text-sm text-gray-600">
-          Count: <span className="font-bold text-blue-600">{payload[0].value}</span>
-        </p>
-      </div>
-    );
-  }
-  return null;
-};
 
 // TestType Dashboard (Placeholder)
 const TestTypeDashboard = () => {
