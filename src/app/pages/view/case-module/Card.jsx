@@ -1,32 +1,117 @@
 'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Image as ImageIcon } from 'lucide-react';
+import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Image as ImageIcon, Link as LinkIcon, Copy, Plus, Trash, Upload, CheckCircle } from 'lucide-react';
+import { useTestType } from '@/app/script/TestType.context';
+import { useAlert } from '@/app/script/Alert.context';
+
+// Test Case Events
+const TEST_CASE_EVENTS = {
+    CREATED: 'testCase:created',
+    UPDATED: 'testCase:updated',
+    DELETED: 'testCase:deleted',
+    TRASHED: 'testCase:trashed',
+    RESTORED: 'testCase:restored',
+    CHANGED: 'testCase:changed',
+};
+
+const emitTestCaseEvent = (eventType, testCaseData = null) => {
+    if (typeof window !== 'undefined') {
+        const event = new CustomEvent(eventType, {
+            detail: { testCase: testCaseData, timestamp: Date.now() }
+        });
+        window.dispatchEvent(event);
+
+        const changeEvent = new CustomEvent(TEST_CASE_EVENTS.CHANGED, {
+            detail: { type: eventType, testCase: testCaseData, timestamp: Date.now() }
+        });
+        window.dispatchEvent(changeEvent);
+    }
+};
 
 const TestCaseCardView = () => {
     const [testCases, setTestCases] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchTerm, setSearchTerm] = useState('');
     const [selectedTestCase, setSelectedTestCase] = useState(null);
-    const [comments, setComments] = useState([]);
-    const [loadingComments, setLoadingComments] = useState(false);
-    const [newComment, setNewComment] = useState('');
-    const [submittingComment, setSubmittingComment] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
-    const [showImageModal, setShowImageModal] = useState(false);
     const [editFormData, setEditFormData] = useState({
         moduleName: '',
+        testCaseType: '',
         testCaseDescription: '',
         actualResult: '',
-        expectedResult: ''
+        expectedResult: '',
+        severity: '',
+        priority: '',
+        status: '',
+        image: ''
     });
+    const [uploadingImage, setUploadingImage] = useState(false);
+    const [currentPage, setCurrentPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [totalTestCases, setTotalTestCases] = useState(0);
+    const itemsPerPage = 12;
+    const fileInputRef = useRef(null);
+
+    const { showAlert } = useAlert();
 
     const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
-    const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
+    const { testTypeId, testTypeName } = useTestType();
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
     const BASE_URL = 'http://localhost:5000/api/v1/test-case';
-    const COMMENT_BASE_URL = 'http://localhost:5000/api/v1/comment';
+    const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
+    const CLOUDINARY_PRESET = 'test_case_preset';
+
+    const copyText = (text) => {
+        navigator.clipboard.writeText(text).then(() => {
+            alert('Copied: ' + text);
+        }).catch(() => {
+            alert('Failed to copy!');
+        });
+    };
+
+    const uploadImageToCloudinary = async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_PRESET);
+
+        try {
+            const response = await fetch(CLOUDINARY_URL, {
+                method: 'POST',
+                body: formData
+            });
+
+            if (!response.ok) throw new Error('Failed to upload image');
+
+            const data = await response.json();
+            return data.secure_url;
+        } catch (error) {
+            console.error('Error uploading image:', error);
+            throw error;
+        }
+    };
+
+    const handleImageUpload = async (e) => {
+        const file = e.target.files?.[0];
+        if (!file) return;
+
+        setUploadingImage(true);
+        try {
+            const imageUrl = await uploadImageToCloudinary(file);
+            setEditFormData(prev => ({
+                ...prev,
+                image: imageUrl
+            }));
+        } catch (error) {
+            alert('Failed to upload image');
+        } finally {
+            setUploadingImage(false);
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        }
+    };
 
     const fetchTestCases = useCallback(async () => {
         if (!projectId || !testTypeId || !token) {
@@ -37,7 +122,7 @@ const TestCaseCardView = () => {
         try {
             setLoading(true);
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases?page=1&limit=1000000`,
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases?page=${currentPage}&limit=${itemsPerPage}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -49,73 +134,16 @@ const TestCaseCardView = () => {
 
             const data = await response.json();
             setTestCases(data.testCases || []);
+            setTotalPages(data.pagination?.totalPages || 1);
+            setTotalTestCases(data.pagination?.totalTestCases || 0);
         } catch (error) {
             console.error('Error fetching test cases:', error);
         } finally {
             setLoading(false);
         }
-    }, [projectId, testTypeId, token]);
+    }, [projectId, testTypeId, token, currentPage]);
 
-    const fetchComments = async (testCaseId) => {
-        if (!token || !testCaseId) return;
-
-        setLoadingComments(true);
-
-        try {
-            const response = await fetch(
-                `${COMMENT_BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/${testCaseId}/comments`,
-                {
-                    headers: {
-                        'Authorization': `Bearer ${token}`
-                    }
-                }
-            );
-
-            if (!response.ok) throw new Error('Failed to fetch comments');
-
-            const data = await response.json();
-            setComments(data.comments || []);
-        } catch (error) {
-            console.error('Error fetching comments:', error);
-        } finally {
-            setLoadingComments(false);
-        }
-    };
-
-    const submitComment = async (testCaseId) => {
-        if (!newComment.trim() || submittingComment) return;
-
-        setSubmittingComment(true);
-
-        try {
-            const response = await fetch(
-                `${COMMENT_BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/${testCaseId}/comments`,
-                {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${token}`
-                    },
-                    body: JSON.stringify({
-                        comment: newComment,
-                        testCaseId: testCaseId
-                    })
-                }
-            );
-
-            if (!response.ok) throw new Error('Failed to submit comment');
-
-            const data = await response.json();
-            setComments(prev => [data.comment, ...prev]);
-            setNewComment('');
-        } catch (error) {
-            console.error('Error submitting comment:', error);
-        } finally {
-            setSubmittingComment(false);
-        }
-    };
-
-    const updateTestCase = async (testCaseId, field, value) => {
+    const updateTestCaseField = async (testCaseId, field, value) => {
         try {
             const response = await fetch(
                 `${BASE_URL}/test-cases/${testCaseId}`,
@@ -131,15 +159,25 @@ const TestCaseCardView = () => {
 
             if (!response.ok) throw new Error('Failed to update test case');
 
+            const data = await response.json();
+
             setTestCases(prev => prev.map(tc =>
-                tc._id === testCaseId ? { ...tc, [field]: value } : tc
+                tc._id === testCaseId ? data.testCase : tc
             ));
 
             if (selectedTestCase?._id === testCaseId) {
-                setSelectedTestCase(prev => ({ ...prev, [field]: value }));
+                setSelectedTestCase(data.testCase);
             }
+
+            emitTestCaseEvent(TEST_CASE_EVENTS.UPDATED, data.testCase);
+            showAlert({
+                type: "success",
+                message: "Test case updated successfully!"
+            });
+            return true;
         } catch (error) {
             console.error('Error updating test case:', error);
+            return false;
         }
     };
 
@@ -159,14 +197,21 @@ const TestCaseCardView = () => {
 
             if (!response.ok) throw new Error('Failed to update test case');
 
+            const data = await response.json();
+
             setTestCases(prev => prev.map(tc =>
-                tc._id === testCaseId ? { ...tc, ...fields } : tc
+                tc._id === testCaseId ? data.testCase : tc
             ));
 
             if (selectedTestCase?._id === testCaseId) {
-                setSelectedTestCase(prev => ({ ...prev, ...fields }));
+                setSelectedTestCase(data.testCase);
             }
 
+            emitTestCaseEvent(TEST_CASE_EVENTS.UPDATED, data.testCase);
+            showAlert({
+                type: "success",
+                message: "Test case fields updated successfully!"
+            });
             return true;
         } catch (error) {
             console.error('Error updating test case:', error);
@@ -175,8 +220,6 @@ const TestCaseCardView = () => {
     };
 
     const moveTestCaseToTrash = async (testCaseId) => {
-        if (!confirm('Move this test case to trash?')) return;
-
         try {
             const response = await fetch(
                 `${BASE_URL}/test-cases/${testCaseId}/trash`,
@@ -190,21 +233,26 @@ const TestCaseCardView = () => {
 
             if (!response.ok) throw new Error('Failed to move test case to trash');
 
+            const data = await response.json();
             setTestCases(prev => prev.filter(tc => tc._id !== testCaseId));
             if (selectedTestCase?._id === testCaseId) {
                 setSelectedTestCase(null);
             }
+            emitTestCaseEvent(TEST_CASE_EVENTS.TRASHED, data.testCase);
+            fetchTestCases();
+            showAlert({
+                type: "success",
+                message: "Test case moved to trash successfully!"
+            });
         } catch (error) {
             console.error('Error moving test case to trash:', error);
         }
     };
 
     const deleteTestCasePermanently = async (testCaseId) => {
-        if (!confirm('Permanently delete this test case? This action cannot be undone!')) return;
-
         try {
             const response = await fetch(
-                `${BASE_URL}/test-cases/${testCaseId}`,
+                `${BASE_URL}/test-cases/${testCaseId}/permanent`,
                 {
                     method: 'DELETE',
                     headers: {
@@ -219,22 +267,29 @@ const TestCaseCardView = () => {
             if (selectedTestCase?._id === testCaseId) {
                 setSelectedTestCase(null);
             }
+            emitTestCaseEvent(TEST_CASE_EVENTS.DELETED, { _id: testCaseId });
+            fetchTestCases();
+            showAlert({
+                type: "success",
+                message: "Test case deleted permanently!"
+            });
         } catch (error) {
             console.error('Error deleting test case permanently:', error);
         }
-    };
-
-    const handleFieldEdit = (field, value) => {
-        updateTestCase(selectedTestCase._id, field, value);
     };
 
     const handleEditClick = () => {
         setIsEditing(true);
         setEditFormData({
             moduleName: selectedTestCase.moduleName || '',
+            testCaseType: selectedTestCase.testCaseType || 'Functional',
             testCaseDescription: selectedTestCase.testCaseDescription || '',
             actualResult: selectedTestCase.actualResult || '',
-            expectedResult: selectedTestCase.expectedResult || ''
+            expectedResult: selectedTestCase.expectedResult || '',
+            severity: selectedTestCase.severity || 'Medium',
+            priority: selectedTestCase.priority || 'Medium',
+            status: selectedTestCase.status || 'Not Executed',
+            image: selectedTestCase.image || ''
         });
     };
 
@@ -247,12 +302,13 @@ const TestCaseCardView = () => {
 
     const handleCancelClick = () => {
         setIsEditing(false);
-        setEditFormData({
-            moduleName: selectedTestCase.moduleName || '',
-            testCaseDescription: selectedTestCase.testCaseDescription || '',
-            actualResult: selectedTestCase.actualResult || '',
-            expectedResult: selectedTestCase.expectedResult || ''
-        });
+    };
+
+    const removeImage = () => {
+        setEditFormData(prev => ({
+            ...prev,
+            image: ''
+        }));
     };
 
     const goToNextTestCase = () => {
@@ -260,7 +316,6 @@ const TestCaseCardView = () => {
         if (currentIndex < filteredTestCases.length - 1) {
             const nextTestCase = filteredTestCases[currentIndex + 1];
             setSelectedTestCase(nextTestCase);
-            fetchComments(nextTestCase._id);
             setIsEditing(false);
         }
     };
@@ -270,7 +325,6 @@ const TestCaseCardView = () => {
         if (currentIndex > 0) {
             const prevTestCase = filteredTestCases[currentIndex - 1];
             setSelectedTestCase(prevTestCase);
-            fetchComments(prevTestCase._id);
             setIsEditing(false);
         }
     };
@@ -287,37 +341,27 @@ const TestCaseCardView = () => {
 
     const getTestCaseTypeColor = (type) => {
         const colors = {
-            'Functional': 'bg-blue-100 text-blue-700 border-blue-300',
-            'Non-Functional': 'bg-purple-100 text-purple-700 border-purple-300',
-            'Performance': 'bg-orange-100 text-orange-700 border-orange-300',
-            'Security': 'bg-red-100 text-red-700 border-red-300',
-            'Usability': 'bg-green-100 text-green-700 border-green-300'
+            'Functional': 'bg-blue-500',
+            'Non-Functional': 'bg-purple-500',
+            'Integration': 'bg-green-500',
+            'Regression': 'bg-orange-500',
+            'Performance': 'bg-red-500'
         };
-        return colors[type] || 'bg-gray-100 text-gray-700 border-gray-300';
+        return colors[type] || 'bg-gray-500';
     };
 
     const getStatusColor = (status) => {
         const colors = {
-            'New': 'bg-blue-100 text-blue-700 border-blue-300',
-            'Pass': 'bg-green-100 text-green-700 border-green-300',
-            'Fail': 'bg-red-100 text-red-700 border-red-300',
-            'Blocked': 'bg-yellow-100 text-yellow-700 border-yellow-300',
-            'Skipped': 'bg-gray-100 text-gray-700 border-gray-300'
+            'Not Executed': 'bg-gray-500',
+            'Pass': 'bg-green-500',
+            'Fail': 'bg-red-500',
+            'Blocked': 'bg-orange-500',
+            'In Progress': 'bg-yellow-500'
         };
-        return colors[status] || 'bg-gray-100 text-gray-700 border-gray-300';
+        return colors[status] || 'bg-gray-500';
     };
 
-    const getPriorityColor = (priority) => {
-        const colors = {
-            'Critical': 'bg-red-100 text-red-700 border-red-300',
-            'High': 'bg-orange-100 text-orange-700 border-orange-300',
-            'Medium': 'bg-yellow-100 text-yellow-700 border-yellow-300',
-            'Low': 'bg-green-100 text-green-700 border-green-300'
-        };
-        return colors[priority] || 'bg-gray-100 text-gray-700 border-gray-300';
-    };
-
-    const GitHubDropdown = ({ value, options, onChange, className = "" }) => {
+    const ModernDropdown = ({ value, options, onChange, className = "" }) => {
         const [isOpen, setIsOpen] = useState(false);
         const dropdownRef = useRef(null);
 
@@ -338,14 +382,14 @@ const TestCaseCardView = () => {
         };
 
         return (
-            <div className={`relative inline-block text-left ${className}`} ref={dropdownRef}>
+            <div className={`relative inline-block ${className}`} ref={dropdownRef}>
                 <button
                     type="button"
-                    className="inline-flex justify-between items-center w-full px-3 py-1.5 text-xs font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="inline-flex items-center justify-between w-full px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     onClick={() => setIsOpen(!isOpen)}
                 >
-                    <span>{value}</span>
-                    <svg className="-mr-1 ml-2 h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <span className="truncate">{value}</span>
+                    <svg className={`ml-2 h-4 w-4 transition-transform ${isOpen ? 'rotate-180' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
@@ -353,21 +397,23 @@ const TestCaseCardView = () => {
                 <AnimatePresence>
                     {isOpen && (
                         <motion.div
-                            initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
                             animate={{ opacity: 1, scale: 1, y: 0 }}
-                            exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                            transition={{ duration: 0.1 }}
-                            className="origin-top-right absolute right-0 mt-1 w-full rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-10"
+                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            transition={{ duration: 0.15 }}
+                            className="absolute right-0 mt-2 w-full min-w-[140px] rounded-lg shadow-xl bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden"
                         >
-                            <div className="py-1" role="menu">
+                            <div className="py-1">
                                 {options.map((option) => (
                                     <button
                                         key={option}
-                                        className={`block w-full text-left px-3 py-1.5 text-xs hover:bg-gray-100 ${value === option ? 'bg-blue-50 text-blue-700' : 'text-gray-700'}`}
+                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 transition-colors ${value === option ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'}`}
                                         onClick={() => handleSelect(option)}
-                                        role="menuitem"
                                     >
-                                        {option}
+                                        <div className="flex items-center justify-between">
+                                            <span>{option}</span>
+                                            {value === option && <CheckCircle size={14} className="text-blue-600" />}
+                                        </div>
                                     </button>
                                 ))}
                             </div>
@@ -380,96 +426,114 @@ const TestCaseCardView = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-gray-50">
+            <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
                 <div className="text-center">
-                    <Loader2 size={40} className="animate-spin text-blue-600 mx-auto mb-3" />
-                    <p className="text-gray-600 text-sm">Loading test cases...</p>
+                    <Loader2 size={48} className="animate-spin text-blue-600 mx-auto mb-4" />
+                    <p className="text-gray-600 font-medium">Loading test cases...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 p-4">
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-2">
             <div className="max-w-full mx-auto">
                 {filteredTestCases.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-16">
-                        <AlertCircle size={48} className="text-gray-400 mb-3" />
-                        <p className="text-gray-600 text-sm">No test cases found</p>
+                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm">
+                        <AlertCircle size={64} className="text-gray-300 mb-4" />
+                        <p className="text-gray-500 text-lg font-medium">No test cases found</p>
                     </div>
                 ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
-                        {filteredTestCases.map((testCase) => (
-                            <motion.div
-                                key={testCase._id}
-                                initial={{ opacity: 0, y: 20 }}
-                                animate={{ opacity: 1, y: 0 }}
-                                className="bg-white rounded-lg border border-gray-200 p-3 hover:shadow-lg transition-shadow"
-                            >
-                                <div className="flex items-center justify-between gap-2 mb-2">
-                                    <span className="text-xs font-semibold text-gray-500">{testCase.serialNumber}</span>
-                                    <div className="flex items-center gap-1.5">
-                                        <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getTestCaseTypeColor(testCase.testCaseType)}`}>
-                                            {testCase.testCaseType}
-                                        </span>
-                                        <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getStatusColor(testCase.status)}`}>
-                                            {testCase.status}
-                                        </span>
+                    <>
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 mb-6">
+                            {filteredTestCases.map((testCase) => (
+                                <motion.div
+                                    key={testCase._id}
+                                    initial={{ opacity: 0, y: 20 }}
+                                    animate={{ opacity: 1, y: 0 }}
+                                    className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden"
+                                >
+                                    <div className="p-4">
+                                        <div className="flex items-center justify-between mb-3">
+                                            <span className="text-xs font-bold text-gray-500">{testCase.serialNumber}</span>
+                                            <div className="flex gap-1.5">
+                                                <span className={`w-2 h-2 rounded-full ${getTestCaseTypeColor(testCase.testCaseType)}`} title={testCase.testCaseType}></span>
+                                                <span className={`w-2 h-2 rounded-full ${getStatusColor(testCase.status)}`} title={testCase.status}></span>
+                                            </div>
+                                        </div>
+
+                                        <p
+                                            content-data={testCase.testCaseDescription}
+                                            content-placement="top"
+                                            className="text-sm text-gray-800 mb-3 line-clamp-2 min-h-[2.5rem] font-medium">
+                                            {testCase.testCaseDescription || 'No description'}
+                                        </p>
+
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+                                            <Clock size={12} />
+                                            <span>{new Date(testCase.updatedAt || testCase.createdAt).toLocaleDateString()}</span>
+                                        </div>
+
+                                        <div className="flex items-center justify-between gap-2">
+                                            <button
+                                                onClick={() => {
+                                                    setSelectedTestCase(testCase);
+                                                }}
+                                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                                            >
+                                                <Eye size={14} />
+                                                View
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    moveTestCaseToTrash(testCase._id);
+                                                }}
+                                                className="p-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                                            >
+                                                <Archive size={14} />
+                                            </button>
+                                            <button
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    deleteTestCasePermanently(testCase._id);
+                                                }}
+                                                className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                                            >
+                                                <Trash2 size={14} />
+                                            </button>
+                                        </div>
                                     </div>
-                                </div>
+                                </motion.div>
+                            ))}
+                        </div>
 
-                                <p className="text-xs text-gray-700 mb-2 line-clamp-2 min-h-[2rem]">
-                                    {testCase.testCaseDescription || 'No description'}
-                                </p>
-
-                                <div className="flex items-center gap-1 text-xs text-gray-500 mb-2">
-                                    <Clock size={12} />
-                                    <span>
-                                        {testCase.updatedAt
-                                            ? `Updated: ${new Date(testCase.updatedAt).toLocaleDateString()} ${new Date(testCase.updatedAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                                            : `Created: ${new Date(testCase.createdAt).toLocaleDateString()} ${new Date(testCase.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}`
-                                        }
-                                    </span>
-                                </div>
-
-                                <div className="flex items-center justify-between pt-2 border-t border-gray-100">
-                                    <button
-                                        onClick={() => {
-                                            setSelectedTestCase(testCase);
-                                            fetchComments(testCase._id);
-                                        }}
-                                        className="flex items-center gap-1 px-2 py-1 text-blue-600 hover:bg-blue-50 rounded text-xs"
-                                    >
-                                        <Eye size={12} />
-                                        View
-                                    </button>
-                                    <div className="flex items-center gap-1">
-                                        <button
-                                            onClick={() => {
-                                                setSelectedTestCase(testCase);
-                                                fetchComments(testCase._id);
-                                            }}
-                                            className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-                                        >
-                                            <MessageSquare size={12} />
-                                        </button>
-                                        <button
-                                            onClick={() => moveTestCaseToTrash(testCase._id)}
-                                            className="p-1 text-orange-600 hover:bg-orange-50 rounded"
-                                        >
-                                            <Archive size={12} />
-                                        </button>
-                                        <button
-                                            onClick={() => deleteTestCasePermanently(testCase._id)}
-                                            className="p-1 text-red-600 hover:bg-red-50 rounded"
-                                        >
-                                            <Trash2 size={12} />
-                                        </button>
-                                    </div>
-                                </div>
-                            </motion.div>
-                        ))}
-                    </div>
+                        {/* Pagination */}
+                        <div className="flex items-center user-select-none justify-between bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-3">
+                            <div className="text-sm text-gray-600">
+                                Page <span className="font-bold text-gray-900">{currentPage}</span> of <span className="font-bold text-gray-900">{totalPages}</span>
+                            </div>
+                            <div className="text-sm text-gray-600">
+                                Current Test Type: <span className="font-bold text-gray-900">{testTypeName}</span>
+                            </div>
+                            <div className="flex items-center gap-2">
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                                    disabled={currentPage === 1}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    <ChevronLeft size={16} />
+                                </button>
+                                <button
+                                    onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                                    disabled={currentPage === totalPages}
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                >
+                                    <ChevronRight size={16} />
+                                </button>
+                            </div>
+                        </div>
+                    </>
                 )}
             </div>
 
@@ -480,320 +544,397 @@ const TestCaseCardView = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center"
+                        className="fixed inset-0 backdrop-blur-sm z-50 flex items-center justify-center"
                         onClick={() => setSelectedTestCase(null)}
                     >
                         <motion.div
-                            initial={{ scale: 0.9, opacity: 0 }}
+                            initial={{ scale: 0.95, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.9, opacity: 0 }}
+                            exit={{ scale: 0.95, opacity: 0 }}
+                            transition={{ type: "spring", duration: 0.3 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white w-full h-full max-w-full max-h-100vh overflow-hidden flex flex-col"
+                            className="bg-white w-full max-w-full h-full sidebar-scrollbar overflow-hidden flex flex-col"
                         >
-                            <div className="flex items-center justify-between px-4 py-3 border-b border-gray-200 bg-gray-50">
-                                <div className="flex items-center gap-3">
-                                    <h2 className="text-sm font-semibold text-gray-800">{selectedTestCase.serialNumber}</h2>
-                                    <span className={`px-2 py-0.5 rounded text-xs font-medium border ${getTestCaseTypeColor(selectedTestCase.testCaseType)}`}>
-                                        {selectedTestCase.testCaseType}
-                                    </span>
+                            {/* Modal Header */}
+                            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 flex-shrink-0">
+                                <div className="flex items-center gap-3 flex-wrap">
+                                    <h2
+                                        onClick={() => copyText(selectedTestCase.serialNumber)}
+                                        className="text-lg font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
+                                    >
+                                        {selectedTestCase.serialNumber}
+                                    </h2>
 
-                                    <div className="flex items-center gap-2">
-                                        <GitHubDropdown
-                                            value={selectedTestCase.priority || 'Medium'}
-                                            options={['Critical', 'High', 'Medium', 'Low']}
-                                            onChange={(value) => handleFieldEdit('priority', value)}
-                                            className="min-w-[100px]"
-                                        />
-                                        <GitHubDropdown
-                                            value={selectedTestCase.severity || 'Medium'}
-                                            options={['Critical', 'High', 'Medium', 'Low']}
-                                            onChange={(value) => handleFieldEdit('severity', value)}
-                                            className="min-w-[100px]"
-                                        />
-                                        <GitHubDropdown
-                                            value={selectedTestCase.status || 'New'}
-                                            options={['New', 'Pass', 'Fail', 'Blocked', 'Skipped']}
-                                            onChange={(value) => handleFieldEdit('status', value)}
-                                            className="min-w-[120px]"
-                                        />
-                                    </div>
+                                    <ModernDropdown
+                                        value={selectedTestCase.testCaseType || 'Functional'}
+                                        options={['Functional', 'Non-Functional', 'Integration', 'Regression', 'Performance']}
+                                        onChange={(value) => updateTestCaseField(selectedTestCase._id, 'testCaseType', value)}
+                                        className="w-40"
+                                    />
+                                    <ModernDropdown
+                                        value={selectedTestCase.priority || 'Medium'}
+                                        options={['Critical', 'High', 'Medium', 'Low']}
+                                        onChange={(value) => updateTestCaseField(selectedTestCase._id, 'priority', value)}
+                                        className="w-32"
+                                    />
+                                    <ModernDropdown
+                                        value={selectedTestCase.severity || 'Medium'}
+                                        options={['Critical', 'High', 'Medium', 'Low']}
+                                        onChange={(value) => updateTestCaseField(selectedTestCase._id, 'severity', value)}
+                                        className="w-32"
+                                    />
+                                    <ModernDropdown
+                                        value={selectedTestCase.status || 'Not Executed'}
+                                        options={['Not Executed', 'Pass', 'Fail', 'Blocked', 'In Progress']}
+                                        onChange={(value) => updateTestCaseField(selectedTestCase._id, 'status', value)}
+                                        className="w-36"
+                                    />
                                 </div>
 
-                                <div className="flex items-center gap-2">
-                                    <div className="text-xs text-gray-600 mr-2">
-                                        Test Case {filteredTestCases.findIndex(tc => tc._id === selectedTestCase._id) + 1} of {filteredTestCases.length}
-                                    </div>
+                                <div className="flex items-center gap-2 flex-shrink-0">
+                                    <span className="text-sm text-gray-600 font-medium">
+                                        {filteredTestCases.findIndex(tc => tc._id === selectedTestCase._id) + 1} / {filteredTestCases.length}
+                                    </span>
 
                                     {!isEditing ? (
                                         <button
                                             onClick={handleEditClick}
-                                            className="flex items-center gap-1 px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700"
+                                            className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                                         >
-                                            <Edit size={12} />
+                                            <Edit size={14} />
                                             Edit
                                         </button>
                                     ) : (
-                                        <div className="flex items-center gap-1">
+                                        <>
                                             <button
                                                 onClick={handleSaveClick}
-                                                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-green-600 text-white rounded hover:bg-green-700"
+                                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                                             >
-                                                <Save size={12} />
+                                                <Save size={14} />
                                                 Save
                                             </button>
                                             <button
                                                 onClick={handleCancelClick}
-                                                className="flex items-center gap-1 px-3 py-1.5 text-xs bg-gray-600 text-white rounded hover:bg-gray-700"
+                                                className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                                             >
-                                                <X size={12} />
+                                                <X size={14} />
                                                 Cancel
                                             </button>
-                                        </div>
+                                        </>
                                     )}
 
                                     <button
                                         onClick={() => moveTestCaseToTrash(selectedTestCase._id)}
-                                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-orange-600 text-white rounded hover:bg-orange-700"
+                                        className="p-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
                                     >
-                                        <Archive size={12} />
-                                        Archive
+                                        <Archive size={18} />
                                     </button>
                                     <button
                                         onClick={() => deleteTestCasePermanently(selectedTestCase._id)}
-                                        className="flex items-center gap-1 px-3 py-1.5 text-xs bg-red-600 text-white rounded hover:bg-red-700"
+                                        className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
                                     >
-                                        <Trash2 size={12} />
-                                        Delete
+                                        <Trash2 size={18} />
                                     </button>
+
+                                    <div className="w-px h-6 bg-gray-300 mx-1"></div>
 
                                     <button
                                         onClick={goToPreviousTestCase}
                                         disabled={filteredTestCases.findIndex(tc => tc._id === selectedTestCase._id) === 0}
-                                        className="p-1.5 hover:bg-gray-200 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
-                                        <ChevronLeft size={16} />
+                                        <ChevronLeft size={20} />
                                     </button>
                                     <button
                                         onClick={goToNextTestCase}
                                         disabled={filteredTestCases.findIndex(tc => tc._id === selectedTestCase._id) === filteredTestCases.length - 1}
-                                        className="p-1.5 hover:bg-gray-300 bg-gray-200 rounded disabled:opacity-50 disabled:cursor-not-allowed"
+                                        className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
-                                        <ChevronRight size={16} />
+                                        <ChevronRight size={20} />
                                     </button>
                                     <button
                                         onClick={() => setSelectedTestCase(null)}
-                                        className="p-1.5 hover:bg-gray-300 bg-gray-200 rounded"
+                                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                     >
-                                        <X size={16} />
+                                        <X size={20} />
                                     </button>
                                 </div>
                             </div>
 
-                            <div className="flex-1 overflow-y-auto">
-                                <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 p-4">
-                                    <div className="lg:col-span-2 space-y-4">
-                                        <div>
-                                            <label className="text-xs font-semibold text-gray-600 mb-1 block">Module</label>
-                                            {isEditing ? (
-                                                <input
-                                                    type="text"
-                                                    value={editFormData.moduleName}
-                                                    onChange={(e) => setEditFormData(prev => ({ ...prev, moduleName: e.target.value }))}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                />
-                                            ) : (
-                                                <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded border">
-                                                    {selectedTestCase.moduleName || 'No module specified'}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-semibold text-gray-600 mb-1 block">Test Case Description</label>
-                                            {isEditing ? (
-                                                <textarea
-                                                    value={editFormData.testCaseDescription}
-                                                    onChange={(e) => setEditFormData(prev => ({ ...prev, testCaseDescription: e.target.value }))}
-                                                    rows={4}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                />
-                                            ) : (
-                                                <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded border min-h-[100px]">
-                                                    {selectedTestCase.testCaseDescription || 'No description'}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-semibold text-gray-600 mb-1 block">Expected Result</label>
-                                            {isEditing ? (
-                                                <textarea
-                                                    value={editFormData.expectedResult}
-                                                    onChange={(e) => setEditFormData(prev => ({ ...prev, expectedResult: e.target.value }))}
-                                                    rows={3}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                />
-                                            ) : (
-                                                <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded border min-h-[80px]">
-                                                    {selectedTestCase.expectedResult || 'No expected result specified'}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-semibold text-gray-600 mb-1 block">Actual Result</label>
-                                            {isEditing ? (
-                                                <textarea
-                                                    value={editFormData.actualResult}
-                                                    onChange={(e) => setEditFormData(prev => ({ ...prev, actualResult: e.target.value }))}
-                                                    rows={3}
-                                                    className="w-full px-3 py-2 border border-gray-300 rounded text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                />
-                                            ) : (
-                                                <p className="text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded border min-h-[80px]">
-                                                    {selectedTestCase.actualResult || 'Not executed'}
-                                                </p>
-                                            )}
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-semibold text-gray-600 mb-1 block">Screenshot</label>
-                                            <div className="flex gap-2">
-                                                <p className="flex-1 text-sm text-gray-700 bg-gray-50 px-3 py-2 rounded border truncate">
-                                                    {selectedTestCase.image && selectedTestCase.image !== 'No image provided' ? 'Image available' : 'No image provided'}
-                                                </p>
-                                                {selectedTestCase.image && selectedTestCase.image !== 'No image provided' && (
-                                                    <button
-                                                        onClick={() => setShowImageModal(true)}
-                                                        className="px-3 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1 text-xs"
-                                                    >
-                                                        <ImageIcon size={12} />
-                                                        View
-                                                    </button>
-                                                )}
-                                            </div>
-                                        </div>
-
-                                        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-200">
-                                            <div>
-                                                <label className="text-xs font-semibold text-gray-600">Created At</label>
-                                                <p className="text-xs text-gray-700 mt-0.5">
-                                                    {new Date(selectedTestCase.createdAt).toLocaleString()}
-                                                </p>
-                                            </div>
-                                            {selectedTestCase.updatedAt && (
-                                                <div>
-                                                    <label className="text-xs font-semibold text-gray-600">Updated At</label>
-                                                    <p className="text-xs text-gray-700 mt-0.5">
-                                                        {new Date(selectedTestCase.updatedAt).toLocaleString()}
-                                                    </p>
-                                                </div>
-                                            )}
-                                        </div>
-                                    </div>
-
-                                    <div className="lg:col-span-1 border-l border-gray-200 pl-4">
-                                        <h3 className="text-sm font-semibold text-gray-800 mb-3 flex items-center gap-1.5">
-                                            <MessageSquare size={14} />
-                                            Comments
-                                        </h3>
-
-                                        <div className="mb-3">
-                                            <textarea
-                                                value={newComment}
-                                                onChange={(e) => setNewComment(e.target.value)}
-                                                placeholder="Add a comment..."
-                                                rows={2}
-                                                className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 mb-1.5"
+                            {/* Modal Content */}
+                            <div className="flex-1 overflow-y-auto bg-gray-50">
+                                <div className="max-w-7xl mx-auto p-6 space-y-4">
+                                    {/* Module Name */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
+                                    >
+                                        <label className="text-xs font-bold text-gray-700 mb-2 block uppercase tracking-wide">Module</label>
+                                        {isEditing ? (
+                                            <input
+                                                type="text"
+                                                value={editFormData.moduleName}
+                                                onChange={(e) => setEditFormData(prev => ({ ...prev, moduleName: e.target.value }))}
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                                                placeholder="Enter module name..."
                                             />
-                                            <button
-                                                onClick={() => submitComment(selectedTestCase._id)}
-                                                disabled={!newComment.trim() || submittingComment}
-                                                className="w-full px-3 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-1"
-                                            >
-                                                {submittingComment ? (
-                                                    <>
-                                                        <Loader2 size={12} className="animate-spin" />
-                                                        Posting...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Send size={12} />
-                                                        Post Comment
-                                                    </>
+                                        ) : (
+                                            <div className="text-sm text-gray-800 font-medium">
+                                                {selectedTestCase.moduleName || 'No module specified'}
+                                            </div>
+                                        )}
+                                    </motion.div>
+
+                                    {/* Test Case Description */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.1 }}
+                                        className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
+                                    >
+                                        <label className="text-xs font-bold text-gray-700 mb-2 block uppercase tracking-wide">Test Case Description</label>
+                                        {isEditing ? (
+                                            <textarea
+                                                value={editFormData.testCaseDescription}
+                                                onChange={(e) => setEditFormData(prev => ({ ...prev, testCaseDescription: e.target.value }))}
+                                                rows={5}
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                                placeholder="Describe the test case..."
+                                            />
+                                        ) : (
+                                            <div className="text-sm text-gray-800 leading-relaxed">
+                                                {selectedTestCase.testCaseDescription || 'No description'}
+                                            </div>
+                                        )}
+                                    </motion.div>
+
+                                    {/* Expected Result */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.2 }}
+                                        className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
+                                    >
+                                        <label className="text-xs font-bold text-gray-700 mb-2 block uppercase tracking-wide">Expected Result</label>
+                                        {isEditing ? (
+                                            <textarea
+                                                value={editFormData.expectedResult}
+                                                onChange={(e) => setEditFormData(prev => ({ ...prev, expectedResult: e.target.value }))}
+                                                rows={4}
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                                placeholder="Enter expected result..."
+                                            />
+                                        ) : (
+                                            <div className="text-sm text-gray-800 leading-relaxed">
+                                                {selectedTestCase.expectedResult || 'No expected result specified'}
+                                            </div>
+                                        )}
+                                    </motion.div>
+
+                                    {/* Actual Result */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.3 }}
+                                        className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
+                                    >
+                                        <label className="text-xs font-bold text-gray-700 mb-2 block uppercase tracking-wide">Actual Result</label>
+                                        {isEditing ? (
+                                            <textarea
+                                                value={editFormData.actualResult}
+                                                onChange={(e) => setEditFormData(prev => ({ ...prev, actualResult: e.target.value }))}
+                                                rows={4}
+                                                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                                placeholder="Enter actual result..."
+                                            />
+                                        ) : (
+                                            <div className="text-sm text-gray-800 leading-relaxed">
+                                                {selectedTestCase.actualResult || 'No actual result specified'}
+                                            </div>
+                                        )}
+                                    </motion.div>
+
+                                    {/* Screenshot/Image */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.4 }}
+                                        className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
+                                    >
+                                        <label className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+                                            <ImageIcon size={14} />
+                                            Screenshot
+                                        </label>
+                                        {isEditing ? (
+                                            <div className="space-y-3">
+                                                {editFormData.image && (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, scale: 0.9 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        className="relative group"
+                                                    >
+                                                        <img
+                                                            src={editFormData.image}
+                                                            alt="Test case screenshot"
+                                                            className="w-full max-w-md h-64 object-cover rounded-lg border-2 border-gray-200"
+                                                        />
+                                                        <button
+                                                            onClick={removeImage}
+                                                            className="absolute top-2 right-2 p-2 bg-red-500 text-white rounded-lg hover:bg-red-600 shadow-lg transition-all opacity-0 group-hover:opacity-100"
+                                                        >
+                                                            <Trash size={14} />
+                                                        </button>
+                                                    </motion.div>
                                                 )}
-                                            </button>
-                                        </div>
-
-                                        <div className="space-y-2 max-h-96 overflow-y-auto">
-                                            {loadingComments ? (
-                                                <div className="flex items-center justify-center py-6">
-                                                    <Loader2 size={20} className="animate-spin text-blue-600" />
+                                                <div className="border-2 border-dashed border-gray-300 rounded-lg p-6 hover:border-blue-400 transition-colors">
+                                                    <input
+                                                        ref={fileInputRef}
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={handleImageUpload}
+                                                        className="hidden"
+                                                        id="image-upload"
+                                                    />
+                                                    <label
+                                                        htmlFor="image-upload"
+                                                        className="flex flex-col items-center justify-center cursor-pointer"
+                                                    >
+                                                        {uploadingImage ? (
+                                                            <>
+                                                                <Loader2 size={32} className="text-blue-600 animate-spin mb-2" />
+                                                                <span className="text-sm text-gray-600">Uploading...</span>
+                                                            </>
+                                                        ) : (
+                                                            <>
+                                                                <Upload size={32} className="text-gray-400 mb-2" />
+                                                                <span className="text-sm font-medium text-gray-700">Click to upload screenshot</span>
+                                                                <span className="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 10MB</span>
+                                                            </>
+                                                        )}
+                                                    </label>
                                                 </div>
-                                            ) : comments.length === 0 ? (
-                                                <div className="text-center py-6 text-gray-500 text-xs">
-                                                    No comments yet
-                                                </div>
-                                            ) : (
-                                                comments.map((comment, index) => (
-                                                    <div key={index} className="bg-gray-50 rounded p-2">
-                                                        <div className="flex items-center gap-1.5 mb-1">
-                                                            <div className="w-5 h-5 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                                                <span className="text-xs font-semibold text-blue-600">
-                                                                    {comment.commentBy?.charAt(0).toUpperCase() || 'U'}
-                                                                </span>
-                                                            </div>
-                                                            <span className="text-xs font-semibold text-gray-800">
-                                                                {comment.commentBy || 'Unknown'}
-                                                            </span>
-                                                            <span className="text-xs text-gray-500">
-                                                                {new Date(comment.createdAt).toLocaleDateString()}
-                                                            </span>
+                                            </div>
+                                        ) : (
+                                            <div>
+                                                {selectedTestCase.image ? (
+                                                    <motion.div
+                                                        initial={{ opacity: 0, scale: 0.9 }}
+                                                        animate={{ opacity: 1, scale: 1 }}
+                                                        className="relative group"
+                                                    >
+                                                        <img
+                                                            src={selectedTestCase.image}
+                                                            alt="Test case screenshot"
+                                                            className="w-full max-w-md h-64 object-cover rounded-lg border-2 border-gray-200 cursor-pointer hover:border-blue-400 transition-all"
+                                                            onClick={() => window.open(selectedTestCase.image, '_blank')}
+                                                        />
+                                                        <div className="absolute top-2 right-2 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                            <a
+                                                                href={selectedTestCase.image}
+                                                                target="_blank"
+                                                                rel="noopener noreferrer"
+                                                                className="p-2 bg-white rounded-lg shadow-lg hover:bg-gray-100 transition-colors inline-block"
+                                                            >
+                                                                <ExternalLink size={14} />
+                                                            </a>
                                                         </div>
-                                                        <p className="text-xs text-gray-700 pl-6">{comment.comment}</p>
+                                                    </motion.div>
+                                                ) : (
+                                                    <div className="text-sm text-gray-500 text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
+                                                        No screenshot available
                                                     </div>
-                                                ))
-                                            )}
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
+                                                )}
+                                            </div>
+                                        )}
+                                    </motion.div>
 
-            {/* Image Modal */}
-            <AnimatePresence>
-                {showImageModal && selectedTestCase?.image && selectedTestCase.image !== 'No image provided' && (
-                    <motion.div
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black/80 z-[60] flex items-center justify-center p-4"
-                        onClick={() => setShowImageModal(false)}
-                    >
-                        <motion.div
-                            initial={{ scale: 0.8, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.8, opacity: 0 }}
-                            onClick={(e) => e.stopPropagation()}
-                            className="relative max-w-5xl max-h-[90vh] bg-white rounded-lg overflow-hidden"
-                        >
-                            <div className="absolute top-2 right-2 z-10">
-                                <button
-                                    onClick={() => setShowImageModal(false)}
-                                    className="p-2 bg-white rounded-full shadow-lg hover:bg-gray-100"
-                                >
-                                    <X size={20} />
-                                </button>
-                            </div>
-                            <div className="p-4">
-                                <img
-                                    src={selectedTestCase.image}
-                                    alt="Test Case Screenshot"
-                                    className="max-w-full max-h-[85vh] object-contain mx-auto"
-                                />
+                                    {/* Timestamps */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.5 }}
+                                        className="grid grid-cols-2 gap-4"
+                                    >
+                                        <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                                            <label className="text-xs font-bold text-blue-700 uppercase tracking-wide flex items-center gap-1 mb-1">
+                                                <Calendar size={12} />
+                                                Created At
+                                            </label>
+                                            <p className="text-sm text-blue-900 font-medium">
+                                                {new Date(selectedTestCase.createdAt).toLocaleString()}
+                                            </p>
+                                        </div>
+                                        {selectedTestCase.updatedAt && (
+                                            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                                                <label className="text-xs font-bold text-purple-700 uppercase tracking-wide flex items-center gap-1 mb-1">
+                                                    <Clock size={12} />
+                                                    Updated At
+                                                </label>
+                                                <p className="text-sm text-purple-900 font-medium">
+                                                    {new Date(selectedTestCase.updatedAt).toLocaleString()}
+                                                </p>
+                                            </div>
+                                        )}
+                                    </motion.div>
+
+                                    {/* Created By & Test Type Info */}
+                                    <motion.div
+                                        initial={{ opacity: 0, y: 10 }}
+                                        animate={{ opacity: 1, y: 0 }}
+                                        transition={{ delay: 0.6 }}
+                                        className="grid grid-cols-2 gap-4"
+                                    >
+                                        {selectedTestCase.user && (
+                                            <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                                                <label className="text-xs font-bold text-green-700 uppercase tracking-wide mb-1 block">
+                                                    Created By
+                                                </label>
+                                                <p className="text-sm text-green-900 font-medium">
+                                                    {selectedTestCase.user.name || selectedTestCase.user.email}
+                                                </p>
+                                                <p className="text-xs text-green-700 mt-1">
+                                                    {selectedTestCase.user.role}
+                                                </p>
+                                            </div>
+                                        )}
+                                        {selectedTestCase.testType && (
+                                            <div className="bg-gradient-to-br from-indigo-50 to-indigo-100 rounded-xl p-4 border border-indigo-200">
+                                                <label className="text-xs font-bold text-indigo-700 uppercase tracking-wide mb-1 block">
+                                                    Test Type
+                                                </label>
+                                                <p className="text-sm text-indigo-900 font-medium">
+                                                    {selectedTestCase.testType.testTypeName}
+                                                </p>
+                                                {selectedTestCase.testType.testTypeDesc && (
+                                                    <p className="text-xs text-indigo-700 mt-1 line-clamp-1">
+                                                        {selectedTestCase.testType.testTypeDesc}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        )}
+                                    </motion.div>
+
+                                    {/* Project Info */}
+                                    {selectedTestCase.project && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.7 }}
+                                            className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
+                                        >
+                                            <label className="text-xs font-bold text-gray-700 mb-2 block uppercase tracking-wide">Project</label>
+                                            <p className="text-sm text-gray-800 font-medium">
+                                                {selectedTestCase.project.projectName}
+                                            </p>
+                                            {selectedTestCase.project.projectDesc && (
+                                                <p className="text-xs text-gray-600 mt-1">
+                                                    {selectedTestCase.project.projectDesc}
+                                                </p>
+                                            )}
+                                        </motion.div>
+                                    )}
+                                </div>
                             </div>
                         </motion.div>
                     </motion.div>
