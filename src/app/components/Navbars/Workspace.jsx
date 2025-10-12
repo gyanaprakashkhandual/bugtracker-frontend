@@ -2,7 +2,6 @@ import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TestTypeList from '../Sidebars/TestType';
 import { useProject } from '@/app/utils/Get.project';
-import { useTestType } from '@/app/script/TestType.context';
 import { useParams } from 'next/navigation';
 import TestCaseSidebar from '../Sidebars/TestCase';
 import BugSidebar from '../Sidebars/Bug';
@@ -13,9 +12,6 @@ import {
   Menu,
   X,
   Search,
-  Filter,
-  Settings,
-  User,
   BarChart3,
   Table,
   LayoutGrid,
@@ -23,21 +19,12 @@ import {
   FileText,
   SplitIcon,
   Plus,
-  CodeSquareIcon,
-  ChevronDown,
-  MoreVertical,
   CodeSquare,
-  GitBranch,
-  MoreVerticalIcon,
-  Dock,
   DockIcon
 } from 'lucide-react';
 import { FiFilter, FiTrash2, FiSettings } from "react-icons/fi";
 import { GoogleArrowDown } from '../utils/Icon';
-import { GiBranchArrow } from 'react-icons/gi';
 import { SiChatbot } from 'react-icons/si';
-import { GoReport } from 'react-icons/go';
-import DocComponent from '../Modules/Test-data/App';
 
 // ============================================
 // STYLED DROPDOWN COMPONENT
@@ -88,7 +75,7 @@ const StyledDropdown = ({ options, placeholder, value, onChange, size = "sm", cl
             animate={{ opacity: 1, y: 0, scale: 1 }}
             exit={{ opacity: 0, y: -10, scale: 0.95 }}
             transition={{ duration: 0.2 }}
-            className="absolute left-0 right-0 z-50 mt-1 overflow-hidden border rounded-lg shadow-lg top-full bg-white/90 backdrop-blur-md border-blue-200/50"
+            className="absolute left-0 right-0 z-100 mt-1 overflow-hidden border rounded-lg shadow-lg top-full bg-white/90 backdrop-blur-md border-blue-200/50"
           >
             {options.map((option, index) => (
               <motion.button
@@ -126,7 +113,6 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
   const [selectedView, setSelectedView] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
   const [selectedManual, setSelectedManual] = useState(null);
-  const [selectedData, setSelectedData] = useState(null);
 
   // Sidebar states
   const [testTypeSidebarOpen, setTestTypeSidebarOpen] = useState(false);
@@ -137,6 +123,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
 
   const { slug } = useParams();
   const { project, loading, error } = useProject(slug);
+  const router = useRouter();
 
   const toggleMenu = () => setIsOpen(!isOpen);
 
@@ -147,6 +134,16 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
     setBugSidebarOpen(false);
     setTestDataSidebarOpen(false);
     setFilterSidebarOpen(false);
+  };
+
+  // Emit event for state changes
+  const emitStateChange = (type, value) => {
+    if (typeof window !== 'undefined') {
+      const event = new CustomEvent('workspaceStateChange', {
+        detail: { type, value }
+      });
+      window.dispatchEvent(event);
+    }
   };
 
   // Handle manual add selection with proper state management
@@ -204,59 +201,20 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
   const handleViewChange = (value) => {
     closeAllSidebars();
     setSelectedView(value);
-    onViewChange?.(value); // Add this line
+    onViewChange?.(value);
+    emitStateChange('view', value);
   };
 
   // Handle report change - close sidebars when changing report
   const handleReportChange = (value) => {
     closeAllSidebars();
     setSelectedReport(value);
-    onReportChange?.(value); // Add this line
+    onReportChange?.(value);
+    emitStateChange('report', value);
   };
-
-  // Handle data source change - close sidebars when changing data source
-  const handleDataChange = (value) => {
-    closeAllSidebars();
-    setSelectedData(value);
-    onDataChange?.(value); // Add this line
-  };
-
-  const router = useRouter();
-
-  // Three dots dropdown options
-  const getOptions = () => [
-    {
-      label: "Filters",
-      icon: <FiFilter size={16} />,
-      onClick: handleFilterOpen,
-    },
-    {
-      label: "Trash",
-      icon: <FiTrash2 size={16} />,
-      onClick: () => {
-        router.push(`/app/projects/${project?.slug}/trash`)
-      },
-      danger: true,
-    },
-    {
-      label: "Code Space",
-      icon: <CodeSquare size={16} />,
-      onClick: () => {
-        router.push(`/app/projects/${project?.slug}/code-space`)
-      },
-    },
-    {
-      label: "Test Data",
-      icon: <DockIcon size={16} />,
-      onClick: () => {
-        router.push(`/app/projects/${project?.slug}/test-data`)
-      },
-    },
-  ];
 
   // View options
   const viewOptions = [
-    { value: 'chart', label: 'Chart', icon: <BarChart3 className="w-4 h-4" /> },
     { value: 'table', label: 'Table', icon: <Table className="w-4 h-4" /> },
     { value: 'card', label: 'Card', icon: <LayoutGrid className="w-4 h-4" /> },
     { value: 'split', label: 'Split', icon: <SplitIcon className='w-4 h-4' /> }
@@ -271,14 +229,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
   // Manual add options with sidebar handlers
   const manualAddOptions = [
     { value: 'addBug', label: 'Bug', icon: <Plus className="h-4 w-4" /> },
-    { value: 'addTestCase', label: 'Case', icon: <Plus className="h-4 w-4" /> },
-    { value: 'addData', label: 'Data', icon: <Plus className="h-4 w-4" /> },
-  ];
-
-  // Data options
-  const dataOption = [
-    { value: 'fromVsCode', label: 'VS Code', icon: <CodeSquareIcon className='h-4 w-4' /> },
-    { value: 'fromManual', label: 'Manual', icon: <FileText className='h-4 w-4' /> },
+    { value: 'addTestCase', label: 'Case', icon: <Plus className="h-4 w-4" /> }
   ];
 
   return (
@@ -288,7 +239,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
         <div className="w-full px-4 mx-auto sm:px-6 lg:px-8">
           <div className="flex items-center justify-between h-16 gap-2">
 
-            {/* Left Section: Desktop Menu + Mobile hamburger + Brand */}
+            {/* Left Section: Desktop Menu + Mobile hamburger + Brand + Search */}
             <div className="flex items-center gap-3 flex-shrink-0">
               {/* Desktop Menu Icon */}
               <motion.button
@@ -336,7 +287,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                 </motion.button>
               </div>
 
-              {/* Brand */}
+              {/* Brand with Skeleton Loader */}
               {loading ? (
                 <div className="flex items-center">
                   <motion.div
@@ -348,7 +299,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
               ) : (
                 <motion.h1
                   initial={{ opacity: 0, x: -20 }}
-                  tooltip-data={project.projectName}
+                  tooltip-data={project?.projectName}
                   tooltip-placement="right"
                   animate={{ opacity: 1, x: 0 }}
                   className="text-xl font-bold text-transparent bg-gradient-to-r from-blue-600 to-blue-800 bg-clip-text"
@@ -360,11 +311,9 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                     : "No Project Selected"}
                 </motion.h1>
               )}
-            </div>
 
-            {/* Center Section: Search Bar - Desktop Only */}
-            <div className="hidden lg:flex flex-1 max-w-md">
-              <motion.div className="relative w-full">
+              {/* Search Bar - After Project Name */}
+              <motion.div className="hidden lg:block relative w-[480px]">
                 <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
                   <Search className={`h-4 w-4 transition-colors duration-200 ${searchFocus ? 'text-blue-500' : 'text-gray-400'}`} />
                 </div>
@@ -410,44 +359,49 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                 className='w-28'
               />
 
-              {/* Data From Dropdown */}
-              <StyledDropdown
-                options={dataOption}
-                placeholder="Data"
-                value={selectedData}
-                onChange={handleDataChange}
-                size='sm'
-                className='w-28'
-              />
-
               {/* Divider */}
               <div className="w-px h-8 bg-blue-200/50" />
 
-              {/* Filter Button */}
+              {/* Filter Button with Text */}
               <motion.button
                 tooltip-data="Filters"
                 tooltip-placement="bottom"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={handleFilterOpen}
-                className={`p-2 transition-all duration-200 rounded-lg ${filterSidebarOpen ? 'bg-blue-100 text-blue-600' : 'hover:bg-blue-50/50 text-gray-600'}`}
+                className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition-all duration-200 rounded-lg ${filterSidebarOpen ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}
               >
-                <FiFilter size={18} />
+                <FiFilter size={16} />
+                <span>Filter</span>
               </motion.button>
 
-              {/* Trash Button */}
+              {/* Chatbot Button with Text */}
               <motion.button
-                tooltip-data="Trash"
+                tooltip-data="Chat Bot"
                 tooltip-placement="bottom"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push(`/app/projects/${project?.slug}/trash`)}
-                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-red-50/50 hover:text-red-600"
+                onClick={() => router.push(`/app/projects/${project?.slug}/chat`)}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-purple-100 text-purple-700 transition-all duration-200 rounded-lg hover:bg-purple-200"
               >
-                <FiTrash2 size={18} />
+                <SiChatbot size={16} />
+                <span>Chatbot</span>
               </motion.button>
 
-              {/* Code Space Button */}
+              {/* Doc Button with Text */}
+              <motion.button
+                tooltip-data="Documents"
+                tooltip-placement="bottom"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={() => router.push(`/app/projects/${project?.slug}/test-data`)}
+                className="flex items-center gap-2 px-3 py-1.5 text-sm font-medium bg-green-100 text-green-700 transition-all duration-200 rounded-lg hover:bg-green-200"
+              >
+                <DockIcon size={16} />
+                <span>Doc</span>
+              </motion.button>
+
+              {/* Code Space Icon */}
               <motion.button
                 tooltip-data="Code Space"
                 tooltip-placement="bottom"
@@ -459,49 +413,25 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                 <CodeSquare size={18} />
               </motion.button>
 
-              {/* Chart Button */}
+              {/* Trash Icon */}
               <motion.button
-                tooltip-data="Chat Bot"
+                tooltip-data="Trash"
                 tooltip-placement="bottom"
+                whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push(`/app/projects/${project?.slug}/chat`)}
-                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-blue-50/50 hover:text-blue-600"
+                onClick={() => router.push(`/app/projects/${project?.slug}/trash`)}
+                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-red-50/50 hover:text-red-600"
               >
-                <SiChatbot size={18} />
+                <FiTrash2 size={18} />
               </motion.button>
 
-              {/* Settings Button */}
-              <motion.button
-                tooltip-data="Report"
-                tooltip-placement="bottom"
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push(`/app/projects/${project?.slug}/reports`)}
-                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-blue-50/50 hover:text-blue-600"
-              >
-                <Dock size={18} />
-              </motion.button>
-              {/* Settings Button */}
-              <motion.button
-                tooltip-data="Test Data"
-                tooltip-placement="bottom"
-                whileHover={{ scale: 1.05, rotate: 90 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push(`/app/projects/${project?.slug}/test-data`)}
-                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-blue-50/50 hover:text-blue-600"
-              >
-                <DockIcon size={18} />
-              </motion.button>
-
-              {/* Settings Button */}
+              {/* Settings Icon */}
               <motion.button
                 tooltip-data="Settings"
                 tooltip-placement="bottom"
                 whileHover={{ scale: 1.05, rotate: 90 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => {
-                  closeAllSidebars();
-                  console.log("Settings clicked");
-                }}
+                onClick={() => router.push(`/app/projects/${project?.slug}/settings`)}
                 className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-blue-50/50 hover:text-blue-600"
               >
                 <FiSettings size={18} />
@@ -560,15 +490,6 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                     className='w-full'
                   />
 
-                  <StyledDropdown
-                    options={dataOption}
-                    placeholder="Data From"
-                    value={selectedData}
-                    onChange={handleDataChange}
-                    size='sm'
-                    className='w-full'
-                  />
-
                   {/* Mobile Action Buttons */}
                   <motion.button
                     whileHover={{ scale: 1.02 }}
@@ -583,11 +504,21 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => router.push(`/app/projects/${project?.slug}/trash`)}
-                    className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-red-600 hover:bg-red-50/50"
+                    onClick={() => router.push(`/app/projects/${project?.slug}/chat`)}
+                    className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
                   >
-                    <FiTrash2 className="w-4 h-4" />
-                    <span>Trash</span>
+                    <SiChatbot className="w-4 h-4" />
+                    <span>Chatbot</span>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push(`/app/projects/${project?.slug}/reports`)}
+                    className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
+                  >
+                    <DockIcon className="w-4 h-4" />
+                    <span>Documents</span>
                   </motion.button>
 
                   <motion.button
@@ -603,10 +534,17 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => {
-                      closeAllSidebars();
-                      console.log("Settings clicked");
-                    }}
+                    onClick={() => router.push(`/app/projects/${project?.slug}/trash`)}
+                    className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-red-600 hover:bg-red-50/50"
+                  >
+                    <FiTrash2 className="w-4 h-4" />
+                    <span>Trash</span>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push(`/app/projects/${project?.slug}/settings`)}
                     className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
                   >
                     <FiSettings className="w-4 h-4" />
