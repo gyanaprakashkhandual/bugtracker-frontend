@@ -3,16 +3,39 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Send,
     Github,
-    FileSpreadsheet,
-    Upload,
     Link,
-    File
+    X,
+    Loader2
 } from 'lucide-react';
 import { useAlert } from '@/app/script/Alert.context';
 import { GoogleArrowDown } from '../utils/Icon';
 
+// Test Case Events
+export const TESTCASE_EVENTS = {
+    CREATED: 'testcase:created',
+    UPDATED: 'testcase:updated',
+    DELETED: 'testcase:deleted',
+    IMPORTED: 'testcase:imported',
+    CHANGED: 'testcase:changed',
+};
+
+const emitTestCaseEvent = (eventType, testCaseData = null) => {
+    if (typeof window !== 'undefined') {
+        const event = new CustomEvent(eventType, {
+            detail: { testCase: testCaseData, timestamp: Date.now() }
+        });
+        window.dispatchEvent(event);
+
+        const changeEvent = new CustomEvent(TESTCASE_EVENTS.CHANGED, {
+            detail: { type: eventType, testCase: testCaseData, timestamp: Date.now() }
+        });
+        window.dispatchEvent(changeEvent);
+    }
+};
+
 const TestCaseSidebar = ({ isOpen, onClose }) => {
     if (!isOpen) return null;
+
     const [activeTab, setActiveTab] = useState('text-prompt');
     const [formData, setFormData] = useState({
         moduleName: '',
@@ -28,8 +51,13 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
     const [prompt, setPrompt] = useState('');
     const [openDropdowns, setOpenDropdowns] = useState({});
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [showGoogleSheetModal, setShowGoogleSheetModal] = useState(false);
+    const [showGithubModal, setShowGithubModal] = useState(false);
+    const [googleSheetUrl, setGoogleSheetUrl] = useState('');
+    const [githubRepoUrl, setGithubRepoUrl] = useState('');
+    const [importResults, setImportResults] = useState(null);
 
-    const {showAlert} = useAlert();
+    const { showAlert } = useAlert();
 
     const BASE_URL = 'http://localhost:5000/api/v1/test-case';
 
@@ -43,16 +71,8 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
         testCaseType: ['Functional', 'User-Interface', 'Performance', 'API', 'Database', 'Security', 'Others'],
         severity: ['Critical', 'High', 'Medium', 'Low'],
         priority: ['Critical', 'High', 'Medium', 'Low'],
-        status: ['New', 'Reviewed', 'Working', 'Solved', 'Reopen', 'Open', 'Closed']
+        status: ['Pass', 'Fail']
     };
-
-    const uploadOptions = [
-        { id: 'github', label: 'Connect with Github', icon: Github },
-        { id: 'google-sheet', label: 'Upload Google Sheet Link', icon: Link },
-        { id: 'file', label: 'Upload File', icon: File },
-        { id: 'microsoft', label: 'Upload Microsoft Spreadsheet Link', icon: FileSpreadsheet },
-        { id: 'csv', label: 'Upload CSV', icon: Upload }
-    ];
 
     const handleInputChange = (field, value) => {
         setFormData(prev => ({ ...prev, [field]: value }));
@@ -62,14 +82,13 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
         setOpenDropdowns(prev => ({ ...prev, [field]: !prev[field] }));
     };
 
-    // Function to upload image to Cloudinary
     const uploadImageToCloudinary = async (file) => {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('upload_preset', 'test_case_preset'); // Make sure this preset exists in your Cloudinary
-            formData.append('cloud_name', 'dvytvjplt'); // Added cloud_name parameter
-            
+            formData.append('upload_preset', 'test_case_preset');
+            formData.append('cloud_name', 'dvytvjplt');
+
             const response = await fetch('https://api.cloudinary.com/v1_1/dvytvjplt/image/upload', {
                 method: 'POST',
                 body: formData
@@ -78,13 +97,11 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             const data = await response.json();
 
             if (!response.ok) {
-                console.error('Cloudinary error details:', data);
                 throw new Error(data.error?.message || 'Image upload failed');
             }
 
             return data.secure_url;
         } catch (error) {
-            console.error('Error uploading image to Cloudinary:', error);
             throw error;
         }
     };
@@ -92,26 +109,28 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
     const handleSubmit = async () => {
         try {
             setIsSubmitting(true);
-            
+
             const token = localStorage.getItem("token");
             const projectId = localStorage.getItem("currentProjectId");
             const testTypeId = localStorage.getItem("selectedTestTypeId");
 
             if (!token || !projectId || !testTypeId) {
-                alert('Missing required information. Please make sure you have selected a project and test type.');
+                showAlert({
+                    type: "error",
+                    message: "Missing required information. Please select a project and test type."
+                });
                 return;
             }
 
             let imageUrl = '';
             if (formData.image) {
                 try {
-                    console.log('Uploading image to Cloudinary:', formData.image);
                     imageUrl = await uploadImageToCloudinary(formData.image);
-                    console.log('Image uploaded successfully:', imageUrl);
                 } catch (error) {
-                    console.error('Failed to upload image:', error);
-                    // Continue without image if upload fails
-                    alert('Image upload failed. Submitting without image.');
+                    showAlert({
+                        type: "warning",
+                        message: "Image upload failed. Submitting without image."
+                    });
                     imageUrl = 'No image provided';
                 }
             }
@@ -124,11 +143,9 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 expectedResult: formData.expectedResult || 'Expected behavior not defined',
                 severity: formData.severity || 'Medium',
                 priority: formData.priority || 'Medium',
-                status: formData.status || 'New',
+                status: formData.status || 'Pass',
                 image: imageUrl || 'No image provided'
             };
-
-            console.log('Submitting test case:', payload);
 
             const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases`, {
                 method: 'POST',
@@ -142,13 +159,9 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             const responseData = await response.json();
 
             if (!response.ok) {
-                throw new Error(responseData.message || `Failed to create test case: ${response.status}`);
+                throw new Error(responseData.message || 'Failed to create test case');
             }
 
-            console.log('Test case created successfully:', responseData);
-            
-            
-            // Reset form and close sidebar
             setFormData({
                 moduleName: '',
                 testCaseType: '',
@@ -160,57 +173,45 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 status: '',
                 image: null
             });
-            
-            if (onClose) onClose();
+
             showAlert({
                 type: "success",
-                message: "Testcase added successfully"
+                message: "Test case added successfully"
             });
-            
-            
+
+            emitTestCaseEvent(TESTCASE_EVENTS.CREATED, responseData);
+
         } catch (error) {
-            console.error('Error creating test case:', error);
-            alert(error.message || 'Failed to create test case. Please try again.');
+            showAlert({
+                type: "error",
+                message: error.message || 'Failed to create test case'
+            });
         } finally {
             setIsSubmitting(false);
         }
     };
 
-    const handleCancel = () => {
-        setFormData({
-            moduleName: '',
-            testCaseType: '',
-            testCaseDescription: '',
-            actualResult: '',
-            expectedResult: '',
-            severity: '',
-            priority: '',
-            status: '',
-            image: null
-        });
-        if (onClose) onClose();
-    };
-
     const handlePromptSubmit = async () => {
         try {
             if (!prompt.trim()) return;
-            
+
             setIsSubmitting(true);
-            
+
             const token = localStorage.getItem("token");
             const projectId = localStorage.getItem("currentProjectId");
             const testTypeId = localStorage.getItem("selectedTestTypeId");
 
             if (!token || !projectId || !testTypeId) {
-                alert('Missing required information. Please make sure you have selected a project and test type.');
+                showAlert({
+                    type: "error",
+                    message: "Missing required information. Please select a project and test type."
+                });
                 return;
             }
 
             const payload = {
                 rawText: prompt.trim()
             };
-
-            console.log('Submitting AI test case with text:', payload);
 
             const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/ai-text`, {
                 method: 'POST',
@@ -224,18 +225,139 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             const responseData = await response.json();
 
             if (!response.ok) {
-                throw new Error(responseData.message || `Failed to create test case from text: ${response.status}`);
+                throw new Error(responseData.message || 'Failed to create test case from text');
             }
 
-            console.log('AI test case created successfully:', responseData);
-            
             setPrompt('');
-            if (onClose) onClose();
-            alert('Test case created successfully from text!');
-            
+
+            showAlert({
+                type: "success",
+                message: "Test case created successfully from text"
+            });
+
+            emitTestCaseEvent(TESTCASE_EVENTS.CREATED, responseData);
+
         } catch (error) {
-            console.error('Error creating AI test case:', error);
-            alert(error.message || 'Failed to create test case from text. Please try again.');
+            showAlert({
+                type: "error",
+                message: error.message || 'Failed to create test case from text'
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleGoogleSheetImport = async () => {
+        try {
+            setIsSubmitting(true);
+
+            const token = localStorage.getItem("token");
+            const projectId = localStorage.getItem("currentProjectId");
+            const testTypeId = localStorage.getItem("selectedTestTypeId");
+
+            if (!token || !projectId || !testTypeId) {
+                showAlert({
+                    type: "error",
+                    message: "Missing required information"
+                });
+                return;
+            }
+
+            if (!googleSheetUrl.trim()) {
+                showAlert({
+                    type: "error",
+                    message: "Please enter a Google Sheet URL"
+                });
+                return;
+            }
+
+            const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/import/google-sheets`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ googleSheetUrl: googleSheetUrl.trim() })
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+                throw new Error(responseData.message || 'Failed to import from Google Sheets');
+            }
+
+            setImportResults(responseData);
+
+            showAlert({
+                type: "success",
+                message: `Successfully imported ${responseData.importedCount} test cases`
+            });
+
+            emitTestCaseEvent(TESTCASE_EVENTS.IMPORTED, responseData);
+
+        } catch (error) {
+            showAlert({
+                type: "error",
+                message: error.message || 'Failed to import from Google Sheets'
+            });
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
+    const handleGithubImport = async () => {
+        try {
+            setIsSubmitting(true);
+
+            const token = localStorage.getItem("token");
+            const projectId = localStorage.getItem("currentProjectId");
+            const testTypeId = localStorage.getItem("selectedTestTypeId");
+
+            if (!token || !projectId || !testTypeId) {
+                showAlert({
+                    type: "error",
+                    message: "Missing required information"
+                });
+                return;
+            }
+
+            if (!githubRepoUrl.trim()) {
+                showAlert({
+                    type: "error",
+                    message: "Please enter a GitHub repository URL"
+                });
+                return;
+            }
+
+            const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/generate/github`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify({ githubRepoUrl: githubRepoUrl.trim() })
+            });
+
+            const responseData = await response.json();
+
+            if (!response.ok) {
+                throw new Error(responseData.message || 'Failed to generate from GitHub');
+            }
+
+            setImportResults(responseData);
+
+            showAlert({
+                type: "success",
+                message: `Successfully generated ${responseData.statistics?.successfullyImported || 0} test cases`
+            });
+
+            emitTestCaseEvent(TESTCASE_EVENTS.IMPORTED, responseData);
+
+        } catch (error) {
+            showAlert({
+                type: "error",
+                message: error.message || 'Failed to generate from GitHub'
+            });
         } finally {
             setIsSubmitting(false);
         }
@@ -259,26 +381,24 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             transition={{ duration: 0.3 }}
             className="flex flex-col h-full"
         >
-            {/* Chat messages area - placeholder for now */}
-            <div className="flex-1 p-6 overflow-y-auto">
-                <div className="text-center text-gray-500 mt-20">
-                    <p>Start a conversation...</p>
+            <div className="flex-1 p-4 overflow-y-auto">
+                <div className="text-center text-gray-400 mt-20">
+                    <p className="text-xs">Start a conversation...</p>
                 </div>
             </div>
 
-            {/* Chat input at bottom */}
-            <div className="p-6 border-t bg-white">
+            <div className="p-4 border-t bg-white">
                 <div className="relative">
                     <textarea
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         placeholder="Message..."
-                        className="w-full p-4 pr-12 border border-gray-200 rounded-2xl  focus:ring-0.5 focus:ring-blue-900   resize-none bg-gray-50 hover:bg-gray-100 transition-colors"
+                        className="w-full p-3 pr-10 border border-gray-200 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none bg-gray-50 hover:bg-gray-100 transition-colors text-xs"
                         rows="1"
-                        style={{ minHeight: '52px', maxHeight: '120px' }}
+                        style={{ minHeight: '180px', maxHeight: '480px' }}
                         onInput={(e) => {
                             e.target.style.height = 'auto';
-                            e.target.style.height = Math.min(e.target.scrollHeight, 120) + 'px';
+                            e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px';
                         }}
                     />
                     <motion.button
@@ -286,9 +406,9 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                         whileTap={{ scale: 0.95 }}
                         onClick={handlePromptSubmit}
                         disabled={!prompt.trim() || isSubmitting}
-                        className="absolute right-3 top-1/2 transform -translate-y-1/2 p-2 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        <Send size={16} />
+                        {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                     </motion.button>
                 </div>
             </div>
@@ -299,7 +419,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
         <div className="relative flex-1">
             <button
                 onClick={() => toggleDropdown(field)}
-                className="w-full p-3 border border-gray-200 rounded-xl text-left flex items-center justify-between hover:border-gray-300 transition-all duration-200 bg-gray-50 hover:bg-gray-100"
+                className="w-full p-2.5 border border-gray-200 rounded-lg text-left flex items-center justify-between hover:border-gray-300 transition-all duration-200 bg-gray-50 hover:bg-gray-100 text-xs"
             >
                 <span className={formData[field] ? 'text-gray-900 font-medium' : 'text-gray-500'}>
                     {formData[field] || getDropdownPlaceholder(field)}
@@ -308,7 +428,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                     animate={{ rotate: openDropdowns[field] ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
                 >
-                    <GoogleArrowDown size={16} className="text-gray-400" />
+                    <GoogleArrowDown size={14} className="text-gray-400" />
                 </motion.div>
             </button>
 
@@ -319,7 +439,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-xl shadow-lg z-10 max-h-48 overflow-y-auto"
+                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto"
                     >
                         {options.map((option) => (
                             <button
@@ -328,7 +448,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                                     handleInputChange(field, option);
                                     toggleDropdown(field);
                                 }}
-                                className="w-full p-3 text-left hover:bg-gray-50 first:rounded-t-xl last:rounded-b-xl transition-colors font-medium text-gray-700 hover:text-gray-900"
+                                className="w-full p-2.5 text-left hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors font-medium text-gray-700 hover:text-gray-900 text-xs"
                             >
                                 {option}
                             </button>
@@ -345,69 +465,60 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="p-6 space-y-6 max-h-[calc(100vh-12rem)] overflow-y-auto"
+            className="p-4 space-y-3 max-h-[calc(100vh-12rem)] overflow-y-auto"
         >
-            {/* Dropdowns in one row */}
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
                 {renderDropdown('testCaseType', dropdownOptions.testCaseType)}
                 {renderDropdown('severity', dropdownOptions.severity)}
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-2">
                 {renderDropdown('priority', dropdownOptions.priority)}
                 {renderDropdown('status', dropdownOptions.status)}
             </div>
 
-            {/* Module Name */}
             <div>
                 <input
                     type="text"
                     value={formData.moduleName}
                     onChange={(e) => handleInputChange('moduleName', e.target.value)}
-                    className="w-full p-4 border border-gray-200 rounded-xl  focus:ring-0.5 focus:ring-blue-900   bg-gray-50 hover:bg-gray-100 transition-all duration-200 font-medium"
+                    className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-gray-100 transition-all duration-200 font-medium text-xs"
                     placeholder="Module Name"
                 />
             </div>
 
-            {/* Test Case Description */}
             <div>
                 <textarea
                     value={formData.testCaseDescription}
                     onChange={(e) => handleInputChange('testCaseDescription', e.target.value)}
-                    className="w-full p-4 border border-gray-200 rounded-xl  focus:ring-0.5 focus:ring-blue-900   h-28 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                    className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 h-20 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-xs"
                     placeholder="Test Case Description"
                 />
             </div>
 
-            {/* Actual Result */}
             <div>
                 <textarea
                     value={formData.actualResult}
                     onChange={(e) => handleInputChange('actualResult', e.target.value)}
-                    className="w-full p-4 border border-gray-200 rounded-xl  focus:ring-0.5 focus:ring-blue-900   h-28 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                    className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 h-20 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-xs"
                     placeholder="Actual Result"
                 />
             </div>
 
-            {/* Expected Result */}
             <div>
                 <textarea
                     value={formData.expectedResult}
                     onChange={(e) => handleInputChange('expectedResult', e.target.value)}
-                    className="w-full p-4 border border-gray-200 rounded-xl  focus:ring-0.5 focus:ring-blue-900   h-28 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200"
+                    className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 h-20 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-xs"
                     placeholder="Expected Result"
                 />
             </div>
 
-            {/* Image Upload */}
             <div>
                 <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-36 border-2 border-gray-200 border-dashed rounded-xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all duration-200 group">
-                        <div className="flex flex-col items-center justify-center pt-5 pb-6">
-                            <div className="p-3 bg-white rounded-full mb-4 group-hover:bg-blue-50 transition-colors">
-                                <Upload className="w-6 h-6 text-gray-400 group-hover:text-blue-500" />
-                            </div>
-                            <p className="mb-2 text-sm text-gray-600 font-medium">
+                    <label className="flex flex-col items-center justify-center w-full h-16 border-2 border-gray-200 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all duration-200 group">
+                        <div className="flex flex-col items-center justify-center">
+                            <p className="mb-1 text-xs text-gray-600 font-medium">
                                 <span className="text-blue-600">Click to upload</span> or drag and drop
                             </p>
                             <p className="text-xs text-gray-500">PNG, JPG or GIF (MAX. 10MB)</p>
@@ -424,34 +535,50 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mt-3 p-3 bg-green-50 border border-green-200 rounded-xl"
+                        className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg"
                     >
-                        <p className="text-sm text-green-700 font-medium">
-                            ✓ {formData.image.name}
+                        <p className="text-xs text-green-700 font-medium">
+                            {formData.image.name}
                         </p>
                     </motion.div>
                 )}
             </div>
 
-            {/* Action Buttons */}
-            <div className="flex gap-4 pt-4">
+            <div className="flex gap-3 pt-2">
                 <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-6 py-3 rounded-xl font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-2"
                 >
-                    {isSubmitting ? 'Submitting...' : 'Submit'}
+                    {isSubmitting ? (
+                        <>
+                            <Loader2 size={14} className="animate-spin" />
+                            Submitting...
+                        </>
+                    ) : (
+                        'Submit'
+                    )}
                 </motion.button>
                 <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={handleCancel}
+                    onClick={() => setFormData({
+                        moduleName: '',
+                        testCaseType: '',
+                        testCaseDescription: '',
+                        actualResult: '',
+                        expectedResult: '',
+                        severity: '',
+                        priority: '',
+                        status: '',
+                        image: null
+                    })}
                     disabled={isSubmitting}
-                    className="flex-1 bg-gray-100 text-gray-700 px-6 py-3 rounded-xl font-semibold hover:bg-gray-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg font-semibold hover:bg-gray-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
                 >
-                    Cancel
+                    Clear
                 </motion.button>
             </div>
         </motion.div>
@@ -463,53 +590,196 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="p-6 space-y-4"
+            className="p-4 space-y-3"
         >
-            <div className="text-center mb-8">
-                <h3 className="text-xl font-bold text-gray-800 mb-2">Choose Upload Method</h3>
-                <p className="text-sm text-gray-600">Select how you want to upload your test cases</p>
+            <div className="text-center mb-4">
+                <h3 className="text-base font-bold text-gray-800 mb-1">Import Test Cases</h3>
+                <p className="text-xs text-gray-600">Select your import method</p>
             </div>
 
-            <div className="space-y-3">
-                {uploadOptions.map((option, index) => (
-                    <motion.button
-                        key={option.id}
-                        initial={{ opacity: 0, x: -20 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.3, delay: index * 0.1 }}
-                        whileHover={{ scale: 1.02, x: 4 }}
-                        whileTap={{ scale: 0.98 }}
-                        className="w-full p-4 border border-gray-200 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 flex items-center gap-4 group bg-gray-50 hover:shadow-md"
-                    >
-                        <div className="p-3 bg-white rounded-lg group-hover:bg-blue-100 transition-colors shadow-sm">
-                            <option.icon size={22} className="text-gray-600 group-hover:text-blue-600" />
-                        </div>
-                        <span className="text-gray-700 font-semibold group-hover:text-blue-700">
-                            {option.label}
-                        </span>
-                    </motion.button>
-                ))}
+            <div className="space-y-2">
+                <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowGoogleSheetModal(true)}
+                    className="w-full p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 flex items-center gap-3 group bg-gray-50"
+                >
+                    <div className="p-2 bg-white rounded-lg group-hover:bg-blue-100 transition-colors">
+                        <Link size={18} className="text-gray-600 group-hover:text-blue-600" />
+                    </div>
+                    <span className="text-xs text-gray-700 font-semibold group-hover:text-blue-700">
+                        Import from Google Sheet
+                    </span>
+                </motion.button>
+
+                <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                    onClick={() => setShowGithubModal(true)}
+                    className="w-full p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 flex items-center gap-3 group bg-gray-50"
+                >
+                    <div className="p-2 bg-white rounded-lg group-hover:bg-blue-100 transition-colors">
+                        <Github size={18} className="text-gray-600 group-hover:text-blue-600" />
+                    </div>
+                    <span className="text-xs text-gray-700 font-semibold group-hover:text-blue-700">
+                        Connect with GitHub
+                    </span>
+                </motion.button>
             </div>
         </motion.div>
     );
 
+    const renderImportModal = (title, url, setUrl, onSubmit, icon) => (
+        <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0  bg-white/10 backdrop-blur-sm flex items-center justify-center z-50"
+            onClick={() => {
+                setUrl('');
+                setImportResults(null);
+                title.includes('Google') ? setShowGoogleSheetModal(false) : setShowGithubModal(false);
+            }}
+        >
+            <motion.div
+                initial={{ scale: 0.9, y: 20 }}
+                animate={{ scale: 1, y: 0 }}
+                exit={{ scale: 0.9, y: 20 }}
+                onClick={(e) => e.stopPropagation()}
+                className="bg-white rounded-xl shadow-2xl w-[500px] max-h-[80vh] overflow-y-auto"
+            >
+                <div className="p-4 border-b flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                        {React.createElement(icon, { size: 18, className: "text-blue-600" })}
+                        <h3 className="text-sm font-bold text-gray-800">{title}</h3>
+                    </div>
+                    <button
+                        onClick={() => {
+                            setUrl('');
+                            setImportResults(null);
+                            title.includes('Google') ? setShowGoogleSheetModal(false) : setShowGithubModal(false);
+                        }}
+                        className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                        <X size={16} className="text-gray-600" />
+                    </button>
+                </div>
+
+                <div className="p-4 space-y-3">
+                    {!importResults ? (
+                        <>
+                            <div>
+                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                    {title.includes('Google') ? 'Google Sheet URL' : 'GitHub Repository URL'}
+                                </label>
+                                <input
+                                    type="text"
+                                    value={url}
+                                    onChange={(e) => setUrl(e.target.value)}
+                                    placeholder={title.includes('Google')
+                                        ? 'https://docs.google.com/spreadsheets/d/...'
+                                        : 'https://github.com/owner/repo'}
+                                    className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs"
+                                />
+                            </div>
+
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={onSubmit}
+                                disabled={!url.trim() || isSubmitting}
+                                className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-2"
+                            >
+                                {isSubmitting ? (
+                                    <>
+                                        <Loader2 size={14} className="animate-spin" />
+                                        Importing...
+                                    </>
+                                ) : (
+                                    'Import Test Cases'
+                                )}
+                            </motion.button>
+                        </>
+                    ) : (
+                        <div className="space-y-3">
+                            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
+                                <p className="text-xs font-semibold text-green-800 mb-1">
+                                    Import Successful
+                                </p>
+                                <p className="text-xs text-green-700">
+                                    {importResults.importedCount || importResults.statistics?.successfullyImported || 0} test cases imported
+                                </p>
+                            </div>
+
+                            {importResults.testCases && importResults.testCases.length > 0 && (
+                                <div className="max-h-60 overflow-y-auto space-y-2">
+                                    {importResults.testCases.slice(0, 5).map((testCase, index) => (
+                                        <div key={index} className="p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
+                                            <p className="text-xs font-semibold text-gray-800">{testCase.moduleName}</p>
+                                            <p className="text-xs text-gray-600 truncate">{testCase.testCaseDescription}</p>
+                                            <div className="flex gap-2 mt-1">
+                                                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">{testCase.priority}</span>
+                                                <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded">{testCase.status}</span>
+                                            </div>
+                                        </div>
+                                    ))}
+                                    {importResults.testCases.length > 5 && (
+                                        <p className="text-xs text-gray-600 text-center">
+                                            +{importResults.testCases.length - 5} more test cases
+                                        </p>
+                                    )}
+                                </div>
+                            )}
+
+                            {importResults.errors && importResults.errors.length > 0 && (
+                                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                                    <p className="text-xs font-semibold text-yellow-800 mb-1">
+                                        ⚠ Some errors occurred
+                                    </p>
+                                    <div className="max-h-20 overflow-y-auto space-y-1">
+                                        {importResults.errors.map((error, index) => (
+                                            <p key={index} className="text-xs text-yellow-700">{error}</p>
+                                        ))}
+                                    </div>
+                                </div>
+                            )}
+
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
+                                onClick={() => {
+                                    setUrl('');
+                                    setImportResults(null);
+                                    title.includes('Google') ? setShowGoogleSheetModal(false) : setShowGithubModal(false);
+                                }}
+                                className="w-full bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg font-semibold hover:bg-gray-200 transition-all text-xs"
+                            >
+                                Close
+                            </motion.button>
+                        </div>
+                    )}
+                </div>
+            </motion.div>
+        </motion.div>
+    );
+
     return (
-        <div className="h-[calc(100vh-4rem)] fixed right-0 sidebar-scrollbar mt-16 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 w-[28rem] flex flex-col shadow-xl">
+        <div className="h-[calc(100vh-4rem)] fixed right-0 sidebar-scrollbar mt-16 bg-gradient-to-b from-white to-gray-50 border-l border-gray-200 w-[28rem] flex flex-col shadow-xl z-50">
             {/* Navigation Header */}
             <div className="border-b border-gray-200 bg-white">
                 <div className="flex">
-                    {navItems.map((item, index) => (
+                    {navItems.map((item) => (
                         <motion.button
                             key={item.id}
                             whileHover={{ backgroundColor: '#f8fafc' }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => setActiveTab(item.id)}
-                            className={`flex-1 p-4 text-center transition-all duration-200 border-r border-gray-200 last:border-r-0 ${activeTab === item.id
+                            className={`flex-1 p-3 text-center transition-all duration-200 border-r border-gray-200 last:border-r-0 ${activeTab === item.id
                                 ? 'bg-blue-50 border-b-2 border-blue-600 text-blue-700'
                                 : 'text-gray-700 hover:text-gray-900'
                                 }`}
                         >
-                            <span className="font-semibold text-sm">{item.label}</span>
+                            <span className="font-semibold text-xs">{item.label}</span>
                         </motion.button>
                     ))}
                 </div>
@@ -523,6 +793,24 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                     {activeTab === 'cloud-upload' && renderCloudUpload()}
                 </AnimatePresence>
             </div>
+
+            {/* Modals */}
+            <AnimatePresence>
+                {showGoogleSheetModal && renderImportModal(
+                    'Import from Google Sheets',
+                    googleSheetUrl,
+                    setGoogleSheetUrl,
+                    handleGoogleSheetImport,
+                    Link
+                )}
+                {showGithubModal && renderImportModal(
+                    'Import from GitHub',
+                    githubRepoUrl,
+                    setGithubRepoUrl,
+                    handleGithubImport,
+                    Github
+                )}
+            </AnimatePresence>
         </div>
     );
 };

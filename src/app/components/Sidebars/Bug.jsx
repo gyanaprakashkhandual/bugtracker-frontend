@@ -10,8 +10,6 @@ import {
 } from 'lucide-react';
 import { GoogleArrowDown } from '../utils/Icon';
 import { useAlert } from '@/app/script/Alert.context';
-
-// Bug Events - Emit custom events for bug changes
 export const BUG_EVENTS = {
     CREATED: 'bug:created',
     UPDATED: 'bug:updated',
@@ -644,7 +642,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
 
             <div>
                 <div className="flex items-center justify-center w-full">
-                    <label className={`flex flex-col items-center justify-center w-full h-24 border-2 border-gray-200 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all duration-200 group ${isSubmitting || isUploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                    <label className={`flex flex-col items-center justify-center w-full h-20 border-2 border-gray-200 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all duration-200 group ${isSubmitting || isUploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
                         <div className="flex flex-col items-center justify-center pt-3 pb-4">
                             <p className="mb-1 text-[10px] text-gray-600 font-medium">
                                 <span className="text-blue-600">Click to upload</span> or drag

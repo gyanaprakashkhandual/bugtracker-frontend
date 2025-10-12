@@ -641,7 +641,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
         }}
       />
 
-      <DocComponent
+      <TestDataSidebar
         isOpen={testDataSidebarOpen}
         onClose={() => {
           setTestDataSidebarOpen(false);
