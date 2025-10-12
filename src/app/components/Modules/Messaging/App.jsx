@@ -23,34 +23,167 @@ import {
   AlertCircle,
   Wifi,
   WifiOff,
-  Image,
+  Image as ImageIcon,
   Download,
 } from "lucide-react";
+import { io } from 'socket.io-client';
 
-// Mock socket client for demo - Replace with your actual socket client
-const socketClient = {
-  connect: () => console.log("Socket connected"),
-  disconnect: () => console.log("Socket disconnected"),
-  isConnected: () => true,
-  joinOrganization: (id) => console.log("Joined org:", id),
-  leaveOrganization: (id) => console.log("Left org:", id),
-  onNewMessage: (callback) => { },
-  onMessageEdited: (callback) => { },
-  onMessageDeleted: (callback) => { },
-  onMessageReaction: (callback) => { },
-  onMessagePinned: (callback) => { },
-  onMessageRead: (callback) => { },
-  onUserTyping: (callback) => { },
-  emitTyping: (isTyping) => { },
-  getSocket: () => ({ on: () => { } }),
-  removeAllListeners: () => { },
-};
+class SocketClient {
+  constructor() {
+    this.socket = null;
+    this.listeners = new Map();
+  }
+
+  connect(url = 'http://localhost:5000') {
+    const token = this.getToken();
+    
+    if (!token) {
+      console.error('No authentication token found');
+      return;
+    }
+
+    if (this.socket?.connected) {
+      console.log('Socket already connected');
+      return this.socket;
+    }
+
+    this.socket = io(url, {
+      auth: { token },
+      reconnection: true,
+      reconnectionDelay: 1000,
+      reconnectionDelayMax: 5000,
+      reconnectionAttempts: 5,
+    });
+
+    this.setupDefaultListeners();
+    return this.socket;
+  }
+
+  setupDefaultListeners() {
+    if (!this.socket) return;
+
+    this.socket.on('connect', () => {
+      console.log('✅ Socket connected:', this.socket.id);
+    });
+
+    this.socket.on('disconnect', (reason) => {
+      console.log('❌ Socket disconnected:', reason);
+    });
+
+    this.socket.on('connect_error', (error) => {
+      console.error('Connection error:', error.message);
+    });
+  }
+
+  getToken() {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token');
+    }
+    return null;
+  }
+
+  joinOrganization(organizationId) {
+    if (this.socket?.connected) {
+      this.socket.emit('join_organization', organizationId);
+      console.log('📥 Joined organization:', organizationId);
+    }
+  }
+
+  leaveOrganization(organizationId) {
+    if (this.socket?.connected) {
+      this.socket.emit('leave_organization', organizationId);
+      console.log('📤 Left organization:', organizationId);
+    }
+  }
+
+  onNewMessage(callback) {
+    if (this.socket) {
+      this.socket.on('new_message', callback);
+      this.listeners.set('new_message', callback);
+    }
+  }
+
+  onMessageEdited(callback) {
+    if (this.socket) {
+      this.socket.on('message_edited', callback);
+      this.listeners.set('message_edited', callback);
+    }
+  }
+
+  onMessageDeleted(callback) {
+    if (this.socket) {
+      this.socket.on('message_deleted', callback);
+      this.listeners.set('message_deleted', callback);
+    }
+  }
+
+  onMessageReaction(callback) {
+    if (this.socket) {
+      this.socket.on('message_reaction', callback);
+      this.listeners.set('message_reaction', callback);
+    }
+  }
+
+  onMessagePinned(callback) {
+    if (this.socket) {
+      this.socket.on('message_pinned', callback);
+      this.listeners.set('message_pinned', callback);
+    }
+  }
+
+  onMessageRead(callback) {
+    if (this.socket) {
+      this.socket.on('message_read', callback);
+      this.listeners.set('message_read', callback);
+    }
+  }
+
+  onUserTyping(callback) {
+    if (this.socket) {
+      this.socket.on('user_typing', callback);
+      this.listeners.set('user_typing', callback);
+    }
+  }
+
+  emitTyping(isTyping) {
+    if (this.socket?.connected) {
+      this.socket.emit('typing', isTyping);
+    }
+  }
+
+  removeAllListeners() {
+    if (this.socket) {
+      this.listeners.forEach((callback, eventName) => {
+        this.socket.off(eventName, callback);
+      });
+      this.listeners.clear();
+    }
+  }
+
+  disconnect() {
+    if (this.socket) {
+      this.removeAllListeners();
+      this.socket.disconnect();
+      this.socket = null;
+      console.log('🔌 Socket disconnected');
+    }
+  }
+
+  isConnected() {
+    return this.socket?.connected || false;
+  }
+
+  getSocket() {
+    return this.socket;
+  }
+}
+
+const socketClient = new SocketClient();
 
 const API_BASE_URL = "http://localhost:5000/api/v1/message";
 const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/upload";
 const CLOUDINARY_UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
 
-// Get current user info from localStorage
 const getCurrentUser = () => {
   if (typeof window !== "undefined") {
     return {
@@ -77,7 +210,7 @@ const Messaging = () => {
   const [newMessage, setNewMessage] = useState("");
   const [replyingTo, setReplyingTo] = useState(null);
   const [editingMessage, setEditingMessage] = useState(null);
-  const [showReplies, setShowReplies] = useState({});
+  const [showRepliesModal, setShowRepliesModal] = useState(null);
   const [replies, setReplies] = useState({});
   const [stats, setStats] = useState(null);
   const [showStats, setShowStats] = useState(false);
@@ -89,6 +222,7 @@ const Messaging = () => {
   const [uploadingImage, setUploadingImage] = useState(false);
   const [selectedImage, setSelectedImage] = useState(null);
   const messagesEndRef = useRef(null);
+  const messagesContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
   const currentUser = getCurrentUser();
@@ -97,7 +231,7 @@ const Messaging = () => {
 
   useEffect(() => {
     const organizationId = currentUser.organizationId;
-
+    
     if (!organizationId) {
       setError("Organization ID not found. Please log in again.");
       return;
@@ -124,7 +258,7 @@ const Messaging = () => {
         }
         return [...prev, message];
       });
-      scrollToBottom();
+      setTimeout(() => scrollToBottom(), 100);
       showNotification("New message received", "success");
     });
 
@@ -213,11 +347,11 @@ const Messaging = () => {
 
   const handleTyping = (isTyping) => {
     socketClient.emitTyping(isTyping);
-
+    
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-
+    
     if (isTyping) {
       typingTimeoutRef.current = setTimeout(() => {
         socketClient.emitTyping(false);
@@ -242,6 +376,7 @@ const Messaging = () => {
         setMessages(data.messages);
         setCurrentPage(data.pagination.currentPage);
         setTotalPages(data.pagination.totalPages);
+        setTimeout(() => scrollToBottom(), 100);
       } else {
         setError(data.message || "Failed to fetch messages");
       }
@@ -275,7 +410,7 @@ const Messaging = () => {
       const data = await response.json();
       if (response.ok) {
         setReplies((prev) => ({ ...prev, [messageId]: data.replies }));
-        setShowReplies((prev) => ({ ...prev, [messageId]: true }));
+        setShowRepliesModal(messageId);
       }
     } catch (error) {
       console.error("Error fetching replies:", error);
@@ -335,7 +470,7 @@ const Messaging = () => {
         if (response.ok) {
           setEditingMessage(null);
           setNewMessage("");
-          fetchMessages(currentPage, searchQuery);
+          await fetchMessages(currentPage, searchQuery);
         } else {
           const data = await response.json();
           setError(data.message || "Failed to update message");
@@ -368,8 +503,8 @@ const Messaging = () => {
           setReplyingTo(null);
           setSelectedImage(null);
           handleTyping(false);
-          fetchMessages(currentPage, searchQuery);
-          scrollToBottom();
+          await fetchMessages(currentPage, searchQuery);
+          setTimeout(() => scrollToBottom(), 100);
         } else {
           const data = await response.json();
           setError(data.message || "Failed to send message");
@@ -391,7 +526,7 @@ const Messaging = () => {
       });
 
       if (response.ok) {
-        fetchMessages(currentPage, searchQuery);
+        await fetchMessages(currentPage, searchQuery);
       } else {
         const data = await response.json();
         setError(data.message || "Failed to delete message");
@@ -411,7 +546,7 @@ const Messaging = () => {
       });
 
       if (response.ok) {
-        fetchMessages(currentPage, searchQuery);
+        await fetchMessages(currentPage, searchQuery);
       }
     } catch (error) {
       console.error("Error adding reaction:", error);
@@ -427,7 +562,7 @@ const Messaging = () => {
       });
 
       if (response.ok) {
-        fetchMessages(currentPage, searchQuery);
+        await fetchMessages(currentPage, searchQuery);
       } else {
         const data = await response.json();
         setError(data.message || "Failed to pin message");
@@ -444,13 +579,19 @@ const Messaging = () => {
   };
 
   const scrollToBottom = () => {
-    messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
+    if (messagesEndRef.current) {
+      messagesEndRef.current.scrollIntoView({ behavior: "smooth", block: "end" });
+    }
   };
 
   useEffect(() => {
     fetchMessages();
     fetchStats();
   }, []);
+
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
 
   const startEdit = (message) => {
     setEditingMessage(message);
@@ -462,22 +603,9 @@ const Messaging = () => {
     setNewMessage("");
   };
 
-  const toggleReplies = (messageId) => {
-    if (showReplies[messageId]) {
-      setShowReplies((prev) => ({ ...prev, [messageId]: false }));
-    } else {
-      fetchReplies(messageId);
-    }
-  };
-
   const isMyMessage = (message) => {
-    return message.senderId === currentUser.id;
+    return String(message.senderId) === String(currentUser.id);
   };
-
-  // Scroll to bottom whenever messages change
-  useEffect(() => {
-    scrollToBottom();
-  }, [messages]);
 
   return (
     <div className="flex h-screen bg-white">
@@ -488,7 +616,7 @@ const Messaging = () => {
             initial={{ x: -300, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -300, opacity: 0 }}
-            className="fixed left-0 top-0 h-full w-72 bg-white shadow-2xl z-50 overflow-y-auto"
+            className="fixed left-0 top-0 h-full w-72 bg-white shadow-2xl z-50 overflow-y-auto border-r"
           >
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
@@ -534,7 +662,7 @@ const Messaging = () => {
                       Top Contributors
                     </h3>
                     <div className="space-y-1.5">
-                      {stats.topContributors.map((contributor, idx) => (
+                      {stats.topContributors?.map((contributor, idx) => (
                         <motion.div
                           key={idx}
                           initial={{ opacity: 0, x: -20 }}
@@ -569,50 +697,116 @@ const Messaging = () => {
         )}
       </AnimatePresence>
 
+      {/* Replies Modal */}
+      <AnimatePresence>
+        {showRepliesModal && replies[showRepliesModal] && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4"
+            onClick={() => setShowRepliesModal(null)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex items-center justify-between p-4 border-b">
+                <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+                  <MessageSquare size={16} />
+                  Replies ({replies[showRepliesModal]?.length})
+                </h3>
+                <button
+                  onClick={() => setShowRepliesModal(null)}
+                  className="p-1 hover:bg-slate-100 rounded-full"
+                >
+                  <X size={16} />
+                </button>
+              </div>
+              <div className="overflow-y-auto max-h-[calc(80vh-120px)] p-4 space-y-3">
+                {replies[showRepliesModal]?.map((reply, idx) => (
+                  <motion.div
+                    key={reply._id}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: idx * 0.05 }}
+                    className={`rounded-lg p-3 ${
+                      String(reply.senderId) === String(currentUser.id)
+                        ? "bg-[#dcf8c6] ml-auto"
+                        : "bg-slate-100 mr-auto"
+                    } max-w-[85%]`}
+                  >
+                    <div className="flex items-center gap-2 mb-1">
+                      <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-[9px] font-bold">
+                        {reply.senderName?.charAt(0).toUpperCase()}
+                      </div>
+                      <span className="font-semibold text-[11px] text-slate-800">
+                        {reply.senderName}
+                      </span>
+                      <span className="text-[9px] text-slate-500 ml-auto">
+                        {new Date(reply.createdAt).toLocaleTimeString([], {
+                          hour: "2-digit",
+                          minute: "2-digit",
+                        })}
+                      </span>
+                    </div>
+                    <p className="text-[12px] text-slate-700 leading-relaxed">
+                      {reply.content}
+                    </p>
+                  </motion.div>
+                ))}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* Main Chat Container */}
-      <div className="flex-1 flex flex-col h-screen bg-[#e5ddd5]">
-
-        {/* Notifications */}
-        <AnimatePresence>
-          {error && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mx-4 mt-2 p-2 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2"
-            >
-              <AlertCircle className="text-red-600" size={14} />
-              <p className="text-[11px] text-red-800">{error}</p>
-              <button
-                onClick={() => setError(null)}
-                className="ml-auto text-red-600"
-              >
-                <X size={14} />
-              </button>
-            </motion.div>
-          )}
-
-          {success && (
-            <motion.div
-              initial={{ opacity: 0, y: -20 }}
-              animate={{ opacity: 1, y: 0 }}
-              exit={{ opacity: 0, y: -20 }}
-              className="mx-4 mt-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2"
-            >
-              <Check className="text-green-600" size={14} />
-              <p className="text-[11px] text-green-800">{success}</p>
-              <button
-                onClick={() => setSuccess(null)}
-                className="ml-auto text-green-600"
-              >
-                <X size={14} />
-              </button>
-            </motion.div>
-          )}
-        </AnimatePresence>
-
+      <div className="flex-1 flex flex-col h-screen">
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-1.5">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 bg-white">
+          {/* Notifications at top */}
+          <AnimatePresence>
+            {error && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="mb-2 p-2 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2"
+              >
+                <AlertCircle className="text-red-600" size={14} />
+                <p className="text-[11px] text-red-800">{error}</p>
+                <button
+                  onClick={() => setError(null)}
+                  className="ml-auto text-red-600"
+                >
+                  <X size={14} />
+                </button>
+              </motion.div>
+            )}
+
+            {success && (
+              <motion.div
+                initial={{ opacity: 0, y: -20 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -20 }}
+                className="mb-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2"
+              >
+                <Check className="text-green-600" size={14} />
+                <p className="text-[11px] text-green-800">{success}</p>
+                <button
+                  onClick={() => setSuccess(null)}
+                  className="ml-auto text-green-600"
+                >
+                  <X size={14} />
+                </button>
+              </motion.div>
+            )}
+          </AnimatePresence>
+
           {loading ? (
             <div className="flex flex-col justify-center items-center h-full">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600"></div>
@@ -625,29 +819,25 @@ const Messaging = () => {
               <p className="text-[10px]">Start a conversation!</p>
             </div>
           ) : (
-            <>
-              <AnimatePresence>
-                {messages.map((message, index) => (
-                  <MessageBubble
-                    key={message._id}
-                    message={message}
-                    index={index}
-                    isMyMessage={isMyMessage(message)}
-                    onReply={() => setReplyingTo(message)}
-                    onEdit={() => startEdit(message)}
-                    onDelete={() => handleDeleteMessage(message._id)}
-                    onReaction={(emoji) => handleReaction(message._id, emoji)}
-                    onPin={() => handleTogglePin(message._id)}
-                    onToggleReplies={() => toggleReplies(message._id)}
-                    showReplies={showReplies[message._id]}
-                    replies={replies[message._id]}
-                    showEmojiPicker={showEmojiPicker === message._id}
-                    setShowEmojiPicker={setShowEmojiPicker}
-                    emojis={emojis}
-                  />
-                ))}
-              </AnimatePresence>
-
+            <div className="space-y-2">
+              {messages.map((message, index) => (
+                <MessageBubble
+                  key={message._id}
+                  message={message}
+                  index={index}
+                  isMyMessage={isMyMessage(message)}
+                  onReply={() => setReplyingTo(message)}
+                  onEdit={() => startEdit(message)}
+                  onDelete={() => handleDeleteMessage(message._id)}
+                  onReaction={(emoji) => handleReaction(message._id, emoji)}
+                  onPin={() => handleTogglePin(message._id)}
+                  onToggleReplies={() => fetchReplies(message._id)}
+                  showEmojiPicker={showEmojiPicker === message._id}
+                  setShowEmojiPicker={setShowEmojiPicker}
+                  emojis={emojis}
+                />
+              ))}
+              
               {typingUsers.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -676,9 +866,9 @@ const Messaging = () => {
                   </span>
                 </motion.div>
               )}
-
+              
               <div ref={messagesEndRef} />
-            </>
+            </div>
           )}
         </div>
 
@@ -710,20 +900,20 @@ const Messaging = () => {
         )}
 
         {/* Input Area */}
-        <div className="bg-[#f0f2f5] border-t px-4 py-2.5">
+        <div className="bg-white border-t px-4 py-3">
           <AnimatePresence>
             {replyingTo && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex items-center justify-between mb-2 p-2 bg-white rounded-lg border-l-4 border-green-500"
+                className="flex items-center justify-between mb-2 p-2 bg-green-50 rounded-lg border-l-4 border-green-500"
               >
                 <div className="flex items-center gap-2">
                   <Reply size={12} className="text-green-600" />
                   <div>
                     <span className="text-[10px] font-semibold text-slate-700">
-                      {replyingTo.senderName}
+                      Replying to {replyingTo.senderName}
                     </span>
                     <p className="text-[10px] text-slate-500 truncate max-w-xs">
                       {replyingTo.content}
@@ -744,7 +934,7 @@ const Messaging = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex items-center justify-between mb-2 p-2 bg-white rounded-lg border-l-4 border-amber-500"
+                className="flex items-center justify-between mb-2 p-2 bg-amber-50 rounded-lg border-l-4 border-amber-500"
               >
                 <div className="flex items-center gap-2">
                   <Edit2 size={12} className="text-amber-600" />
@@ -766,7 +956,7 @@ const Messaging = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex items-center justify-between mb-2 p-2 bg-white rounded-lg"
+                className="flex items-center justify-between mb-2 p-2 bg-blue-50 rounded-lg"
               >
                 <div className="flex items-center gap-2">
                   <img
@@ -786,14 +976,14 @@ const Messaging = () => {
             )}
           </AnimatePresence>
 
-          <div className="flex items-center gap-2 bg-white rounded-full px-3 py-2">
+          <div className="flex items-center gap-2 bg-slate-50 rounded-full px-3 py-2">
             <button
               onClick={() => setShowEmojiPicker(showEmojiPicker ? null : "input")}
               className="p-1 hover:bg-slate-100 rounded-full"
             >
               <Smile size={18} className="text-slate-600" />
             </button>
-
+            
             <input
               type="file"
               ref={fileInputRef}
@@ -801,7 +991,7 @@ const Messaging = () => {
               accept="image/*"
               className="hidden"
             />
-
+            
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingImage}
@@ -813,7 +1003,7 @@ const Messaging = () => {
                 <Paperclip size={18} className="text-slate-600" />
               )}
             </button>
-
+            
             <input
               type="text"
               placeholder="Type a message"
@@ -828,9 +1018,9 @@ const Messaging = () => {
                   handleSendMessage();
                 }
               }}
-              className="flex-1 px-3 py-1.5 text-xs bg-transparent focus:outline-none"
+              className="flex-1 px-3 py-1.5 text-[13px] bg-transparent focus:outline-none"
             />
-
+            
             <button
               onClick={handleSendMessage}
               disabled={!newMessage.trim() && !selectedImage}
@@ -881,8 +1071,6 @@ const MessageBubble = ({
   onReaction,
   onPin,
   onToggleReplies,
-  showReplies,
-  replies,
   showEmojiPicker,
   setShowEmojiPicker,
   emojis,
@@ -898,26 +1086,26 @@ const MessageBubble = ({
       className={`flex ${isMyMessage ? "justify-end" : "justify-start"} mb-1`}
     >
       <div
-        className={`relative max-w-[65%] group ${message.isPinned ? "mb-1" : ""
-          }`}
+        className={`relative max-w-[65%] group`}
       >
         {message.isPinned && (
-          <div className="flex items-center gap-1 mb-1 px-2">
+          <div className={`flex items-center gap-1 mb-1 px-2 ${isMyMessage ? "justify-end" : "justify-start"}`}>
             <Pin size={10} className="text-yellow-600" />
             <span className="text-[9px] text-yellow-700 font-medium">Pinned</span>
           </div>
         )}
 
         <div
-          className={`rounded-lg px-3 py-1.5 shadow-sm ${isMyMessage
+          className={`rounded-lg px-3 py-2 shadow-sm ${
+            isMyMessage
               ? "bg-[#dcf8c6] rounded-tr-none"
-              : "bg-white rounded-tl-none"
-            }`}
+              : "bg-white rounded-tl-none border border-slate-200"
+          }`}
         >
           {/* Sender Name (for received messages) */}
           {!isMyMessage && (
             <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-[10px] font-semibold text-green-700">
+              <span className="text-[11px] font-semibold text-green-700">
                 {message.senderName}
               </span>
               <span className="text-[8px] px-1.5 py-0.5 bg-green-100 rounded-full text-green-700">
@@ -929,7 +1117,7 @@ const MessageBubble = ({
           {/* Reply Reference */}
           {message.parentMessageId && (
             <div className="mb-1.5 p-1.5 bg-white/50 border-l-2 border-green-600 rounded">
-              <p className="text-[9px] text-slate-600 font-medium">Reply to message</p>
+              <p className="text-[9px] text-slate-600 font-medium">↩ Reply to message</p>
             </div>
           )}
 
@@ -945,9 +1133,11 @@ const MessageBubble = ({
           )}
 
           {/* Message Content */}
-          <p className="text-[13px] text-slate-800 leading-relaxed break-words">
-            {message.content}
-          </p>
+          {message.content && (
+            <p className="text-[13px] text-slate-800 leading-relaxed break-words">
+              {message.content}
+            </p>
+          )}
 
           {/* Message Footer */}
           <div className="flex items-center justify-end gap-1 mt-1">
@@ -994,8 +1184,9 @@ const MessageBubble = ({
 
         {/* Hover Actions */}
         <div
-          className={`absolute top-0 ${isMyMessage ? "left-0 -translate-x-full" : "right-0 translate-x-full"
-            } opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-2`}
+          className={`absolute top-0 ${
+            isMyMessage ? "left-0 -translate-x-full" : "right-0 translate-x-full"
+          } opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-2`}
         >
           <button
             onClick={() => setShowEmojiPicker(showEmojiPicker ? null : message._id)}
@@ -1003,7 +1194,7 @@ const MessageBubble = ({
           >
             <Smile size={12} className="text-slate-600" />
           </button>
-
+          
           <button
             onClick={onReply}
             className="p-1 hover:bg-slate-200 rounded-full bg-white shadow-md"
@@ -1025,8 +1216,9 @@ const MessageBubble = ({
                   initial={{ opacity: 0, scale: 0.95, y: -10 }}
                   animate={{ opacity: 1, scale: 1, y: 0 }}
                   exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                  className={`absolute ${isMyMessage ? "right-0" : "left-0"
-                    } mt-1 w-32 bg-white rounded-lg shadow-xl py-1 z-20 border border-slate-200`}
+                  className={`absolute ${
+                    isMyMessage ? "right-0" : "left-0"
+                  } mt-1 w-32 bg-white rounded-lg shadow-xl py-1 z-20 border border-slate-200`}
                 >
                   {isMyMessage && (
                     <button
@@ -1074,8 +1266,9 @@ const MessageBubble = ({
               initial={{ opacity: 0, scale: 0.8, y: 10 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
               exit={{ opacity: 0, scale: 0.8, y: 10 }}
-              className={`absolute ${isMyMessage ? "right-0" : "left-0"
-                } bottom-full mb-2 p-2 bg-white rounded-lg shadow-xl flex gap-1 z-10 border border-slate-200`}
+              className={`absolute ${
+                isMyMessage ? "right-0" : "left-0"
+              } bottom-full mb-2 p-2 bg-white rounded-lg shadow-xl flex gap-1 z-10 border border-slate-200`}
             >
               {emojis.map((emoji) => (
                 <button
@@ -1090,58 +1283,20 @@ const MessageBubble = ({
           )}
         </AnimatePresence>
 
-        {/* Replies Toggle */}
+        {/* Replies Button */}
         {message.replyCount > 0 && (
           <button
             onClick={onToggleReplies}
-            className={`flex items-center gap-1 mt-1 text-[10px] text-slate-600 hover:text-slate-800 ${isMyMessage ? "justify-end" : "justify-start"
-              }`}
+            className={`flex items-center gap-1 mt-1 text-[10px] text-blue-600 hover:text-blue-800 font-medium ${
+              isMyMessage ? "justify-end" : "justify-start"
+            }`}
           >
             <MessageSquare size={10} />
             <span>
-              {message.replyCount} {message.replyCount === 1 ? "reply" : "replies"}
+              View {message.replyCount} {message.replyCount === 1 ? "reply" : "replies"}
             </span>
-            {showReplies ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
           </button>
         )}
-
-        {/* Replies */}
-        <AnimatePresence>
-          {showReplies && replies && (
-            <motion.div
-              initial={{ opacity: 0, height: 0 }}
-              animate={{ opacity: 1, height: "auto" }}
-              exit={{ opacity: 0, height: 0 }}
-              className={`mt-2 space-y-1 ${isMyMessage ? "pr-4" : "pl-4"}`}
-            >
-              {replies.map((reply, idx) => (
-                <motion.div
-                  key={reply._id}
-                  initial={{ opacity: 0, x: isMyMessage ? 20 : -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ delay: idx * 0.1 }}
-                  className={`rounded-lg p-2 text-[11px] ${reply.senderId === getCurrentUser().id
-                      ? "bg-[#e1f5d1] ml-auto max-w-[85%]"
-                      : "bg-slate-100 mr-auto max-w-[85%]"
-                    }`}
-                >
-                  <div className="flex items-center gap-1.5 mb-0.5">
-                    <span className="font-semibold text-[10px] text-slate-800">
-                      {reply.senderName}
-                    </span>
-                    <span className="text-[8px] text-slate-500">
-                      {new Date(reply.createdAt).toLocaleTimeString([], {
-                        hour: "2-digit",
-                        minute: "2-digit",
-                      })}
-                    </span>
-                  </div>
-                  <p className="text-slate-700 leading-relaxed">{reply.content}</p>
-                </motion.div>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
       </div>
     </motion.div>
   );
