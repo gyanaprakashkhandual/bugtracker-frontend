@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Search, Folder, FileCode, X, ChevronLeft, ChevronRight } from 'lucide-react';
 import { useProjects } from '@/app/hooks/project.hook';
 import { useTestTypes } from '@/app/hooks/test.type.hook';
+import Dashboard from './Project';
+import TestTypeDashboard from './TestType';
 
 // Skeleton Loader Component
 const SkeletonLoader = ({ count = 3 }) => (
@@ -52,7 +54,7 @@ export default function DashboardSidebar() {
     const handleProjectClick = (projectId) => {
         selectProject(projectId);
         setTestTypePage(1);
-        setShowProjectDetail(false);
+        setShowProjectDetail(true);
         setShowTestTypeDetail(false);
     };
 
@@ -267,51 +269,7 @@ export default function DashboardSidebar() {
                                     exit={{ opacity: 0, x: 20 }}
                                     className="bg-white border border-gray-200 shadow-sm"
                                 >
-                                    <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-gray-50">
-                                        <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Project Details</h2>
-                                        <button
-                                            onClick={() => setShowProjectDetail(false)}
-                                            className="p-1.5 hover:bg-gray-200 rounded-md transition-colors"
-                                        >
-                                            <X className="w-4 h-4 text-gray-600" />
-                                        </button>
-                                    </div>
-
-                                    <div className="p-5 space-y-4">
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Project ID</label>
-                                            <p className="text-xs text-gray-600 mt-1 font-mono bg-gray-50 p-2 rounded-md border border-gray-200">{selectedProject._id}</p>
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Project Name</label>
-                                            <p className="text-sm text-gray-900 mt-1 font-semibold">{selectedProject.projectName}</p>
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Description</label>
-                                            <p className="text-xs text-gray-700 mt-1 leading-relaxed">{selectedProject.projectDesc || 'No description'}</p>
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Created By</label>
-                                            <p className="text-xs text-gray-900 mt-1 font-medium">{selectedProject.user?.name || 'Unknown'}</p>
-                                            <p className="text-xs text-gray-500">{selectedProject.user?.email || ''}</p>
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Created At</label>
-                                            <p className="text-xs text-gray-700 mt-1">
-                                                {new Date(selectedProject.createdAt).toLocaleDateString('en-US', {
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </p>
-                                        </div>
-                                    </div>
+                                    <Dashboard/>
                                 </motion.div>
                             )}
 
@@ -323,69 +281,7 @@ export default function DashboardSidebar() {
                                     exit={{ opacity: 0, x: 20 }}
                                     className="bg-white border border-gray-200 shadow-sm"
                                 >
-                                    <div className="flex items-center justify-between px-5 py-3 border-b border-gray-200 bg-gray-50">
-                                        <h2 className="text-sm font-bold text-gray-900 uppercase tracking-wide">Test Type Details</h2>
-                                        <button
-                                            onClick={() => setShowTestTypeDetail(false)}
-                                            className="p-1.5 hover:bg-gray-200 rounded-md transition-colors"
-                                        >
-                                            <X className="w-4 h-4 text-gray-600" />
-                                        </button>
-                                    </div>
-
-                                    <div className="p-5 space-y-4">
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Test Type ID</label>
-                                            <p className="text-xs text-gray-600 mt-1 font-mono bg-gray-50 p-2 rounded-md border border-gray-200">{selectedTestType._id}</p>
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Test Type Name</label>
-                                            <p className="text-sm text-gray-900 mt-1 font-semibold">{selectedTestType.testTypeName}</p>
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Description</label>
-                                            <p className="text-xs text-gray-700 mt-1 leading-relaxed">{selectedTestType.testTypeDesc || 'No description'}</p>
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Framework</label>
-                                            <p className="text-xs text-gray-900 mt-1 font-medium">{selectedTestType.testFramework}</p>
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Project</label>
-                                            <p className="text-xs text-gray-900 mt-1 font-medium">{selectedTestType.project?.projectName || 'N/A'}</p>
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Created By</label>
-                                            <p className="text-xs text-gray-900 mt-1 font-medium">{selectedTestType.user?.name || 'Unknown'}</p>
-                                            <p className="text-xs text-gray-500">{selectedTestType.user?.email || ''}</p>
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Status</label>
-                                            <span className={`inline-block px-2 py-0.5 rounded-md text-xs mt-1 font-bold uppercase tracking-wide ${selectedTestType.status === 'active' ? 'bg-green-100 text-green-700 border border-green-300' : 'bg-red-100 text-red-700 border border-red-300'
-                                                }`}>
-                                                {selectedTestType.status}
-                                            </span>
-                                        </div>
-
-                                        <div>
-                                            <label className="text-xs font-bold text-gray-500 uppercase tracking-wide">Created At</label>
-                                            <p className="text-xs text-gray-700 mt-1">
-                                                {new Date(selectedTestType.createdAt).toLocaleDateString('en-US', {
-                                                    year: 'numeric',
-                                                    month: 'long',
-                                                    day: 'numeric',
-                                                    hour: '2-digit',
-                                                    minute: '2-digit'
-                                                })}
-                                            </p>
-                                        </div>
-                                    </div>
+                                    <TestTypeDashboard/>
                                 </motion.div>
                             )}
                         </AnimatePresence>

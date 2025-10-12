@@ -1,9 +1,9 @@
 import React from 'react'
 
-function TestType() {
+function TestTypeDashboard() {
   return (
     <div>TestType</div>
   )
 }
 
-export default TestType
+export default TestTypeDashboard
