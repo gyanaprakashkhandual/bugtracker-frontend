@@ -47,13 +47,12 @@ const TestCaseSpreadsheet = () => {
     const columns = [
         { key: 'serialNumber', label: 'S.No', width: 90, editable: false, color: 'bg-purple-50', sticky: true },
         { key: 'testCaseType', label: 'Type', width: 140, editable: true, type: 'select', options: ['Functional', 'Non-Functional', 'Integration', 'UI/UX', 'Security', 'Performance'], color: 'bg-blue-50', sticky: true },
-        { key: 'moduleName', label: 'Module', width: 140, editable: true, color: 'bg-green-50', sticky: true },
-        { key: 'testCaseDescription', label: 'Description', width: 370, editable: true, color: 'bg-yellow-50' },
-        { key: 'expectedResult', label: 'Expected Result', width: 368, editable: true, color: 'bg-pink-50' },
-        { key: 'actualResult', label: 'Actual Result', width: 368, editable: true, color: 'bg-indigo-50' },
+        { key: 'moduleName', label: 'Module', width: 115, editable: true, color: 'bg-green-50', sticky: true },
+        { key: 'testCaseDescription', label: 'Description', width: 290, editable: true, color: 'bg-yellow-50' },
+        { key: 'expectedResult', label: 'Expected Result', width: 290, editable: true, color: 'bg-pink-50' },
+        { key: 'actualResult', label: 'Actual Result', width: 290, editable: true, color: 'bg-indigo-50' },
         { key: 'priority', label: 'Priority', width: 90, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
-        { key: 'severity', label: 'Severity', width: 90, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50' },
-        { key: 'status', label: 'Status', width: 100, editable: true, type: 'select', options: ['Pass', 'Fail', 'Pending', 'Blocked'], color: 'bg-teal-50' },
+        { key: 'status', label: 'Status', width: 100, editable: true, type: 'select', options: ['Pass', 'Fail'], color: 'bg-teal-50' },
         { key: 'actions', label: 'Actions', width: 120, editable: false, color: 'bg-gray-100' }
     ];
 
@@ -106,14 +105,8 @@ const TestCaseSpreadsheet = () => {
             if (!response.ok) throw new Error('Failed to fetch test cases');
 
             const data = await response.json();
-            
-            // Add serial numbers
-            const testCasesWithSerial = (data.testCases || []).map((tc, index) => ({
-                ...tc,
-                serialNumber: (page - 1) * ROWS_PER_PAGE + index + 1
-            }));
 
-            setTestCases(testCasesWithSerial);
+            setTestCases(data.testCases || []);
             setTotalPages(data.pagination?.totalPages || 1);
             setTotalTestCases(data.pagination?.totalTestCases || 0);
             setCurrentPage(page);
@@ -488,7 +481,7 @@ const TestCaseSpreadsheet = () => {
         const openUpward = dropdownOpenUpward[cellKey] || false;
 
         let badgeClass = '';
-        if (column.key === 'priority' || column.key === 'severity') {
+        if (column.key === 'priority') {
             badgeClass = getPriorityColor(value);
         } else if (column.key === 'status') {
             badgeClass = getStatusColor(value);
@@ -523,7 +516,7 @@ const TestCaseSpreadsheet = () => {
                             <div className="py-1 max-h-64 overflow-y-auto">
                                 {column.options.map((option) => {
                                     let optionBadgeClass = '';
-                                    if (column.key === 'priority' || column.key === 'severity') {
+                                    if (column.key === 'priority') {
                                         optionBadgeClass = getPriorityColor(option);
                                     } else if (column.key === 'status') {
                                         optionBadgeClass = getStatusColor(option);
