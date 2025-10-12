@@ -2,13 +2,11 @@
 import Navbar from '@/app/components/Navbars/Workspace'
 import React, { useState, useEffect } from 'react'
 import TestCaseCardView from '../view/case-module/Card'
-import TestCaseChartView from '../view/case-module/Chart'
 import TestCaseSplitView from '../view/case-module/Split'
 import TestCaseSpreadsheet from '../view/case-module/Table'
 import BugSpreadsheet from '../view/bug-module/Table'
 import BugCardView from '../view/bug-module/Card'
 import BugSplitView from '../view/bug-module/Split'
-import Dashboard from '../view/bug-module/Chart/App'
 
 function Workspace() {
     const [selectedView, setSelectedView] = useState(() => {
@@ -75,8 +73,6 @@ function Workspace() {
                     return <BugSplitView />;
                 case 'card':
                     return <BugCardView />;
-                case 'chart':
-                    return <Dashboard />;
                 case 'table':
                     return <BugSpreadsheet />;
                 default:
@@ -91,8 +87,6 @@ function Workspace() {
                     return <TestCaseSplitView />;
                 case 'card':
                     return <TestCaseCardView />;
-                case 'chart':
-                    return <TestCaseChartView />;
                 case 'table':
                     return <TestCaseSpreadsheet />;
                 default:
