@@ -24,34 +24,36 @@ const SkeletonLoader = ({ count = 3 }) => (
 );
 
 const SkeletonCard = () => (
-  <div className="bg-white rounded-xl shadow-sm border p-6 animate-pulse">
-    <div className="flex items-center justify-between">
-      <div className="space-y-2 flex-1">
-        <div className="h-4 bg-gray-200 rounded w-1/2"></div>
-        <div className="h-8 bg-gray-200 rounded w-3/4"></div>
+  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-3 animate-pulse h-24 w-full">
+    <div className="flex items-center justify-between h-full">
+      <div className="space-y-1.5 flex-1">
+        <div className="h-2 bg-gray-200 rounded w-1/3"></div>
+        <div className="h-5 bg-gray-200 rounded w-1/2"></div>
+        <div className="h-2 bg-gray-200 rounded w-1/4"></div>
       </div>
-      <div className="h-10 w-10 bg-gray-200 rounded-full"></div>
+      <div className="h-8 w-8 bg-gray-200 rounded-full ml-2"></div>
     </div>
+  </div>
+);
+
+const SkeletonStatCard = () => (
+  <div className="bg-white rounded-lg border border-gray-200 p-2 animate-pulse">
+    <div className="h-3 bg-gray-200 rounded w-2/3 mb-1"></div>
+    <div className="h-6 bg-gray-200 rounded w-1/2"></div>
   </div>
 );
 
 const SkeletonChart = () => (
-  <div className="bg-white rounded-xl shadow-sm border p-6 animate-pulse">
-    <div className="h-6 bg-gray-200 rounded w-1/3 mb-4"></div>
-    <div className="h-80 bg-gray-100 rounded"></div>
+  <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 animate-pulse">
+    <div className="flex items-center justify-between mb-6">
+      <div className="h-6 bg-gray-200 rounded w-1/3"></div>
+    </div>
+    <div className="h-96 bg-gray-100 rounded-lg"></div>
   </div>
 );
 
-const SkeletonTestTypeCard = () => (
-  <div className="bg-gray-50 rounded-lg p-4 border animate-pulse">
-    <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-    <div className="h-3 bg-gray-200 rounded w-full mb-3"></div>
-    <div className="flex justify-between">
-      <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-      <div className="h-3 bg-gray-200 rounded w-1/4"></div>
-    </div>
-  </div>
-);
+
+
 
 // Hooks
 const useProjects = (searchQuery = '', page = 1, limit = 50) => {
@@ -411,7 +413,7 @@ const Dashboard = ({ selectedProjectId, projects }) => {
   // ==================== LOADING STATE ====================
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
         <nav className="bg-white shadow-sm border-b border-gray-200">
           <div className="max-w-7xl mx-auto px-6 lg:px-8">
             <div className="flex justify-between items-center h-16">
@@ -449,7 +451,7 @@ const Dashboard = ({ selectedProjectId, projects }) => {
   // ==================== ERROR STATE ====================
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-6">
+      <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center p-6">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
@@ -475,7 +477,7 @@ const Dashboard = ({ selectedProjectId, projects }) => {
   // ==================== NO DATA STATE ====================
   if (!dashboardData) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -547,7 +549,7 @@ const Dashboard = ({ selectedProjectId, projects }) => {
 
   // ==================== MAIN DASHBOARD RENDER ====================
   return (
-    <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-[calc(100vh-72px)] max-h-[calc(100vh-72px)] overflow-y-auto">
       {/* ==================== TOP NAVBAR WITH SUMMARY CARDS ==================== */}
       <nav className="bg-white shadow-sm border-b border-gray-200">
         <div className="max-w-7xl mx-auto px-6 lg:px-8">
@@ -872,9 +874,9 @@ export default function DashboardSidebar() {
   const selectedTestType = getSelectedTestType();
 
   return (
-    <div className="sidebar-scrollbar">
+    <div className="sidebar-scrollbar sticky top-0 z-40">
       <div className="max-w-full mx-auto">
-        <div className="flex  sticky top-0">
+        <div className="flex sticky top-0">
           <div className="flex flex-col border-r border-gray-200">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
