@@ -23,31 +23,49 @@ import {
   AlertCircle,
   Wifi,
   WifiOff,
+  Image,
+  Download,
 } from "lucide-react";
-import socketClient from "@/app/client/socket.client";
+
+// Mock socket client for demo - Replace with your actual socket client
+const socketClient = {
+  connect: () => console.log("Socket connected"),
+  disconnect: () => console.log("Socket disconnected"),
+  isConnected: () => true,
+  joinOrganization: (id) => console.log("Joined org:", id),
+  leaveOrganization: (id) => console.log("Left org:", id),
+  onNewMessage: (callback) => { },
+  onMessageEdited: (callback) => { },
+  onMessageDeleted: (callback) => { },
+  onMessageReaction: (callback) => { },
+  onMessagePinned: (callback) => { },
+  onMessageRead: (callback) => { },
+  onUserTyping: (callback) => { },
+  emitTyping: (isTyping) => { },
+  getSocket: () => ({ on: () => { } }),
+  removeAllListeners: () => { },
+};
 
 const API_BASE_URL = "http://localhost:5000/api/v1/message";
+const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/upload";
+const CLOUDINARY_UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
 
-// Utility function to get token
-const getToken = () => {
+// Get current user info from localStorage
+const getCurrentUser = () => {
   if (typeof window !== "undefined") {
-    return localStorage.getItem("token");
+    return {
+      id: localStorage.getItem("userId"),
+      name: localStorage.getItem("userName"),
+      token: localStorage.getItem("token"),
+      organizationId: localStorage.getItem("organizationId"),
+    };
   }
-  return null;
+  return { id: null, name: null, token: null, organizationId: null };
 };
 
-// Utility function to get organization ID
-const getOrganizationId = () => {
-  if (typeof window !== "undefined") {
-    return localStorage.getItem("organizationId");
-  }
-  return null;
-};
-
-// API Headers
 const getHeaders = () => ({
   "Content-Type": "application/json",
-  Authorization: `Bearer ${getToken()}`,
+  Authorization: `Bearer ${getCurrentUser().token}`,
 });
 
 const Messaging = () => {
@@ -68,31 +86,28 @@ const Messaging = () => {
   const [success, setSuccess] = useState(null);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [selectedImage, setSelectedImage] = useState(null);
   const messagesEndRef = useRef(null);
   const typingTimeoutRef = useRef(null);
+  const fileInputRef = useRef(null);
+  const currentUser = getCurrentUser();
 
   const emojis = ["👍", "❤️", "😊", "🎉", "🔥", "👏", "😮", "😢", "✨", "💯"];
 
-  // Initialize socket connection
   useEffect(() => {
-    const organizationId = getOrganizationId();
-    
+    const organizationId = currentUser.organizationId;
+
     if (!organizationId) {
       setError("Organization ID not found. Please log in again.");
       return;
     }
 
-    // Connect to socket
     socketClient.connect();
     setIsSocketConnected(socketClient.isConnected());
-
-    // Join organization room
     socketClient.joinOrganization(organizationId);
-
-    // Setup socket listeners
     setupSocketListeners();
 
-    // Cleanup on unmount
     return () => {
       socketClient.leaveOrganization(organizationId);
       socketClient.removeAllListeners();
@@ -100,23 +115,19 @@ const Messaging = () => {
     };
   }, []);
 
-  // Setup socket event listeners
   const setupSocketListeners = () => {
-    // Listen for new messages
     socketClient.onNewMessage((message) => {
       console.log("📨 New message received:", message);
       setMessages((prev) => {
-        // Check if message already exists
         if (prev.some((m) => m._id === message._id)) {
           return prev;
         }
-        return [message, ...prev];
+        return [...prev, message];
       });
       scrollToBottom();
       showNotification("New message received", "success");
     });
 
-    // Listen for message edits
     socketClient.onMessageEdited((updatedMessage) => {
       console.log("✏️ Message edited:", updatedMessage);
       setMessages((prev) =>
@@ -127,26 +138,21 @@ const Messaging = () => {
       showNotification("Message updated", "success");
     });
 
-    // Listen for message deletions
     socketClient.onMessageDeleted((data) => {
       console.log("🗑️ Message deleted:", data);
       setMessages((prev) => prev.filter((m) => m._id !== data.messageId));
       showNotification("Message deleted", "success");
     });
 
-    // Listen for message reactions
     socketClient.onMessageReaction((data) => {
       console.log("😊 Reaction added:", data);
       setMessages((prev) =>
         prev.map((m) =>
-          m._id === data.messageId
-            ? { ...m, reactions: data.reactions }
-            : m
+          m._id === data.messageId ? { ...m, reactions: data.reactions } : m
         )
       );
     });
 
-    // Listen for message pins
     socketClient.onMessagePinned((data) => {
       console.log("📌 Message pinned:", data);
       setMessages((prev) =>
@@ -160,7 +166,6 @@ const Messaging = () => {
       );
     });
 
-    // Listen for message reads
     socketClient.onMessageRead((data) => {
       console.log("✅ Message read:", data);
       setMessages((prev) =>
@@ -170,7 +175,6 @@ const Messaging = () => {
       );
     });
 
-    // Listen for typing indicators
     socketClient.onUserTyping((data) => {
       console.log("⌨️ User typing:", data);
       if (data.isTyping) {
@@ -185,22 +189,18 @@ const Messaging = () => {
       }
     });
 
-    // Monitor connection status
     const socket = socketClient.getSocket();
     if (socket) {
       socket.on("connect", () => {
         setIsSocketConnected(true);
-        showNotification("Connected to real-time updates", "success");
       });
 
       socket.on("disconnect", () => {
         setIsSocketConnected(false);
-        showNotification("Disconnected from real-time updates", "error");
       });
     }
   };
 
-  // Show notification helper
   const showNotification = (message, type = "success") => {
     if (type === "success") {
       setSuccess(message);
@@ -211,14 +211,13 @@ const Messaging = () => {
     }
   };
 
-  // Handle typing indicator
   const handleTyping = (isTyping) => {
     socketClient.emitTyping(isTyping);
-    
+
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    
+
     if (isTyping) {
       typingTimeoutRef.current = setTimeout(() => {
         socketClient.emitTyping(false);
@@ -226,7 +225,6 @@ const Messaging = () => {
     }
   };
 
-  // Fetch messages
   const fetchMessages = async (page = 1, search = "") => {
     try {
       setLoading(true);
@@ -255,7 +253,6 @@ const Messaging = () => {
     }
   };
 
-  // Fetch stats
   const fetchStats = async () => {
     try {
       const response = await fetch(`${API_BASE_URL}/stats`, {
@@ -270,7 +267,6 @@ const Messaging = () => {
     }
   };
 
-  // Fetch replies
   const fetchReplies = async (messageId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/${messageId}/replies`, {
@@ -286,13 +282,50 @@ const Messaging = () => {
     }
   };
 
-  // Send message
+  const uploadImageToCloudinary = async (file) => {
+    const formData = new FormData();
+    formData.append("file", file);
+    formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
+
+    try {
+      const response = await fetch(CLOUDINARY_UPLOAD_URL, {
+        method: "POST",
+        body: formData,
+      });
+      const data = await response.json();
+      return data.secure_url;
+    } catch (error) {
+      console.error("Error uploading image:", error);
+      throw error;
+    }
+  };
+
+  const handleImageSelect = async (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+
+    if (!file.type.startsWith("image/")) {
+      setError("Please select an image file");
+      return;
+    }
+
+    setUploadingImage(true);
+    try {
+      const imageUrl = await uploadImageToCloudinary(file);
+      setSelectedImage(imageUrl);
+      showNotification("Image uploaded successfully", "success");
+    } catch (error) {
+      setError("Failed to upload image");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
   const handleSendMessage = async () => {
-    if (!newMessage.trim() && !editingMessage) return;
+    if (!newMessage.trim() && !selectedImage && !editingMessage) return;
 
     try {
       if (editingMessage) {
-        // Edit message
         const response = await fetch(`${API_BASE_URL}/${editingMessage._id}`, {
           method: "PUT",
           headers: getHeaders(),
@@ -302,28 +335,40 @@ const Messaging = () => {
         if (response.ok) {
           setEditingMessage(null);
           setNewMessage("");
-          // Socket will handle the update
+          fetchMessages(currentPage, searchQuery);
         } else {
           const data = await response.json();
           setError(data.message || "Failed to update message");
         }
       } else {
-        // Send new message
+        const messageData = {
+          content: newMessage,
+          messageType: selectedImage ? "image" : "text",
+          parentMessageId: replyingTo?._id || null,
+        };
+
+        if (selectedImage) {
+          messageData.attachments = [
+            {
+              url: selectedImage,
+              type: "image",
+              name: "image.jpg",
+            },
+          ];
+        }
+
         const response = await fetch(API_BASE_URL, {
           method: "POST",
           headers: getHeaders(),
-          body: JSON.stringify({
-            content: newMessage,
-            messageType: "text",
-            parentMessageId: replyingTo?._id || null,
-          }),
+          body: JSON.stringify(messageData),
         });
 
         if (response.ok) {
           setNewMessage("");
           setReplyingTo(null);
+          setSelectedImage(null);
           handleTyping(false);
-          // Socket will handle adding the message
+          fetchMessages(currentPage, searchQuery);
           scrollToBottom();
         } else {
           const data = await response.json();
@@ -336,7 +381,6 @@ const Messaging = () => {
     }
   };
 
-  // Delete message
   const handleDeleteMessage = async (messageId) => {
     if (!confirm("Are you sure you want to delete this message?")) return;
 
@@ -347,7 +391,7 @@ const Messaging = () => {
       });
 
       if (response.ok) {
-        // Socket will handle the deletion
+        fetchMessages(currentPage, searchQuery);
       } else {
         const data = await response.json();
         setError(data.message || "Failed to delete message");
@@ -358,7 +402,6 @@ const Messaging = () => {
     }
   };
 
-  // Add reaction
   const handleReaction = async (messageId, emoji) => {
     try {
       const response = await fetch(`${API_BASE_URL}/${messageId}/reaction`, {
@@ -368,7 +411,7 @@ const Messaging = () => {
       });
 
       if (response.ok) {
-        // Socket will handle the reaction update
+        fetchMessages(currentPage, searchQuery);
       }
     } catch (error) {
       console.error("Error adding reaction:", error);
@@ -376,20 +419,6 @@ const Messaging = () => {
     setShowEmojiPicker(null);
   };
 
-  // Mark as read
-  const handleMarkAsRead = async (messageId) => {
-    try {
-      await fetch(`${API_BASE_URL}/${messageId}/read`, {
-        method: "POST",
-        headers: getHeaders(),
-      });
-      // Socket will handle the read status update
-    } catch (error) {
-      console.error("Error marking as read:", error);
-    }
-  };
-
-  // Toggle pin
   const handleTogglePin = async (messageId) => {
     try {
       const response = await fetch(`${API_BASE_URL}/${messageId}/pin`, {
@@ -398,7 +427,7 @@ const Messaging = () => {
       });
 
       if (response.ok) {
-        // Socket will handle the pin update
+        fetchMessages(currentPage, searchQuery);
       } else {
         const data = await response.json();
         setError(data.message || "Failed to pin message");
@@ -409,7 +438,6 @@ const Messaging = () => {
     }
   };
 
-  // Search messages
   const handleSearch = () => {
     setCurrentPage(1);
     fetchMessages(1, searchQuery);
@@ -442,83 +470,92 @@ const Messaging = () => {
     }
   };
 
+  const isMyMessage = (message) => {
+    return message.senderId === currentUser.id;
+  };
+
+  // Scroll to bottom whenever messages change
+  useEffect(() => {
+    scrollToBottom();
+  }, [messages]);
+
   return (
-    <div className="flex min-h-[calc(100vh-69px)] bg-gradient-to-br from-slate-50 to-slate-100">
-      {/* Sidebar - Stats */}
+    <div className="flex h-screen bg-white">
+      {/* Stats Sidebar */}
       <AnimatePresence>
         {showStats && (
           <motion.div
             initial={{ x: -300, opacity: 0 }}
             animate={{ x: 0, opacity: 1 }}
             exit={{ x: -300, opacity: 0 }}
-            className="fixed left-0 top-0 h-full w-80 bg-white shadow-2xl z-50 overflow-y-auto"
+            className="fixed left-0 top-0 h-full w-72 bg-white shadow-2xl z-50 overflow-y-auto"
           >
             <div className="p-4">
               <div className="flex justify-between items-center mb-4">
-                <h2 className="text-lg font-bold text-slate-800">Statistics</h2>
+                <h2 className="text-sm font-semibold text-slate-800">Statistics</h2>
                 <button
                   onClick={() => setShowStats(false)}
-                  className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="p-1 hover:bg-slate-100 rounded-full"
                 >
-                  <X size={18} />
+                  <X size={16} />
                 </button>
               </div>
 
               {stats && (
-                <div className="space-y-3">
+                <div className="space-y-2">
                   <StatCard
-                    icon={<MessageSquare size={16} />}
+                    icon={<MessageSquare size={14} />}
                     label="Total Messages"
                     value={stats.totalMessages}
                     color="blue"
                   />
                   <StatCard
-                    icon={<Reply size={16} />}
+                    icon={<Reply size={14} />}
                     label="Total Replies"
                     value={stats.totalReplies}
                     color="green"
                   />
                   <StatCard
-                    icon={<Pin size={16} />}
+                    icon={<Pin size={14} />}
                     label="Pinned"
                     value={stats.pinnedMessages}
                     color="yellow"
                   />
                   <StatCard
-                    icon={<TrendingUp size={16} />}
+                    icon={<TrendingUp size={14} />}
                     label="Today"
                     value={stats.todayMessages}
                     color="purple"
                   />
 
-                  <div className="mt-6">
-                    <h3 className="text-sm font-semibold mb-3 flex items-center gap-2 text-slate-800">
-                      <Users size={16} />
+                  <div className="mt-4">
+                    <h3 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-slate-800">
+                      <Users size={14} />
                       Top Contributors
                     </h3>
-                    <div className="space-y-2">
+                    <div className="space-y-1.5">
                       {stats.topContributors.map((contributor, idx) => (
                         <motion.div
                           key={idx}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           transition={{ delay: idx * 0.1 }}
-                          className="flex items-center justify-between p-2 bg-gradient-to-r from-slate-50 to-slate-100 rounded-lg hover:shadow-md transition-shadow"
+                          className="flex items-center justify-between p-2 bg-slate-50 rounded-lg"
                         >
                           <div className="flex items-center gap-2">
-                            <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-xs font-bold">
+                            <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
                               {contributor.senderName?.charAt(0).toUpperCase()}
                             </div>
                             <div>
-                              <p className="text-xs font-medium text-slate-800">
+                              <p className="text-[10px] font-medium text-slate-800">
                                 {contributor.senderName}
                               </p>
-                              <p className="text-xs text-slate-500">
+                              <p className="text-[9px] text-slate-500">
                                 {contributor.senderRole}
                               </p>
                             </div>
                           </div>
-                          <span className="text-sm font-bold text-blue-600">
+                          <span className="text-xs font-bold text-blue-600">
                             {contributor.messageCount}
                           </span>
                         </motion.div>
@@ -532,68 +569,8 @@ const Messaging = () => {
         )}
       </AnimatePresence>
 
-      {/* Main Container */}
-      <div className="flex-1 flex flex-col max-full max-h-[calc(100vh-69px)] mx-auto w-full">
-        {/* Header */}
-        <motion.div
-          initial={{ y: -50, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          className="bg-white shadow-md px-4 py-3 flex items-center justify-between"
-        >
-          <div className="flex items-center gap-3">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={() => setShowStats(!showStats)}
-              className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <TrendingUp size={20} className="text-slate-700" />
-            </motion.button>
-            <h1 className="text-lg font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-              Messaging
-            </h1>
-            
-            {/* Connection Status */}
-            <div className="flex items-center gap-2">
-              {isSocketConnected ? (
-                <div className="flex items-center gap-1 text-green-600">
-                  <Wifi size={14} />
-                  <span className="text-xs font-medium">Connected</span>
-                </div>
-              ) : (
-                <div className="flex items-center gap-1 text-red-600">
-                  <WifiOff size={14} />
-                  <span className="text-xs font-medium">Disconnected</span>
-                </div>
-              )}
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <input
-                type="text"
-                placeholder="Search messages..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                className="pl-8 pr-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 w-56 transition-all"
-              />
-              <Search
-                className="absolute left-2 top-2.5 text-slate-400"
-                size={16}
-              />
-            </div>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleSearch}
-              className="px-3 py-2 text-sm bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors font-medium"
-            >
-              Search
-            </motion.button>
-          </div>
-        </motion.div>
+      {/* Main Chat Container */}
+      <div className="flex-1 flex flex-col h-screen bg-[#e5ddd5]">
 
         {/* Notifications */}
         <AnimatePresence>
@@ -602,15 +579,15 @@ const Messaging = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="mx-4 mt-3 p-3 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2"
+              className="mx-4 mt-2 p-2 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2"
             >
-              <AlertCircle className="text-red-600" size={16} />
-              <p className="text-xs text-red-800">{error}</p>
+              <AlertCircle className="text-red-600" size={14} />
+              <p className="text-[11px] text-red-800">{error}</p>
               <button
                 onClick={() => setError(null)}
-                className="ml-auto text-red-600 hover:text-red-800"
+                className="ml-auto text-red-600"
               >
-                <X size={16} />
+                <X size={14} />
               </button>
             </motion.div>
           )}
@@ -620,41 +597,42 @@ const Messaging = () => {
               initial={{ opacity: 0, y: -20 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -20 }}
-              className="mx-4 mt-3 p-3 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2"
+              className="mx-4 mt-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2"
             >
-              <Check className="text-green-600" size={16} />
-              <p className="text-xs text-green-800">{success}</p>
+              <Check className="text-green-600" size={14} />
+              <p className="text-[11px] text-green-800">{success}</p>
               <button
                 onClick={() => setSuccess(null)}
-                className="ml-auto text-green-600 hover:text-green-800"
+                className="ml-auto text-green-600"
               >
-                <X size={16} />
+                <X size={14} />
               </button>
             </motion.div>
           )}
         </AnimatePresence>
 
         {/* Messages Area */}
-        <div className="flex-1 overflow-y-auto p-4 space-y-3">
+        <div className="flex-1 overflow-y-auto p-4 space-y-1.5">
           {loading ? (
             <div className="flex flex-col justify-center items-center h-full">
-              <div className="animate-spin rounded-full h-12 w-12 border-b-4 border-blue-600"></div>
-              <p className="mt-3 text-xs text-slate-600 font-medium">Loading messages...</p>
+              <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600"></div>
+              <p className="mt-2 text-[11px] text-slate-600">Loading messages...</p>
             </div>
           ) : messages.length === 0 ? (
             <div className="flex flex-col justify-center items-center h-full text-slate-500">
-              <MessageSquare size={48} className="mb-3 opacity-50" />
-              <p className="text-sm font-medium">No messages yet</p>
-              <p className="text-xs">Start a conversation!</p>
+              <MessageSquare size={40} className="mb-2 opacity-50" />
+              <p className="text-xs font-medium">No messages yet</p>
+              <p className="text-[10px]">Start a conversation!</p>
             </div>
           ) : (
             <>
               <AnimatePresence>
                 {messages.map((message, index) => (
-                  <MessageCard
+                  <MessageBubble
                     key={message._id}
                     message={message}
                     index={index}
+                    isMyMessage={isMyMessage(message)}
                     onReply={() => setReplyingTo(message)}
                     onEdit={() => startEdit(message)}
                     onDelete={() => handleDeleteMessage(message._id)}
@@ -669,29 +647,28 @@ const Messaging = () => {
                   />
                 ))}
               </AnimatePresence>
-              
-              {/* Typing Indicator */}
+
               {typingUsers.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-2 text-slate-500 text-xs px-3"
+                  className="flex items-center gap-2 text-slate-500 text-[10px] px-3"
                 >
                   <div className="flex gap-1">
                     <motion.span
                       animate={{ opacity: [0.4, 1, 0.4] }}
                       transition={{ duration: 1, repeat: Infinity, delay: 0 }}
-                      className="w-2 h-2 bg-slate-400 rounded-full"
+                      className="w-1.5 h-1.5 bg-slate-400 rounded-full"
                     />
                     <motion.span
                       animate={{ opacity: [0.4, 1, 0.4] }}
                       transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
-                      className="w-2 h-2 bg-slate-400 rounded-full"
+                      className="w-1.5 h-1.5 bg-slate-400 rounded-full"
                     />
                     <motion.span
                       animate={{ opacity: [0.4, 1, 0.4] }}
                       transition={{ duration: 1, repeat: Infinity, delay: 0.4 }}
-                      className="w-2 h-2 bg-slate-400 rounded-full"
+                      className="w-1.5 h-1.5 bg-slate-400 rounded-full"
                     />
                   </div>
                   <span>
@@ -699,7 +676,7 @@ const Messaging = () => {
                   </span>
                 </motion.div>
               )}
-              
+
               <div ref={messagesEndRef} />
             </>
           )}
@@ -710,58 +687,54 @@ const Messaging = () => {
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex justify-center items-center gap-2 py-3 bg-white border-t"
+            className="flex justify-center items-center gap-2 py-2 bg-white border-t"
           >
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => fetchMessages(currentPage - 1, searchQuery)}
               disabled={currentPage === 1}
-              className="px-3 py-1 text-sm bg-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-300 transition-colors font-medium"
+              className="px-2.5 py-1 text-[11px] bg-slate-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-300 font-medium"
             >
               Previous
-            </motion.button>
-            <span className="px-2 py-1 text-xs font-medium text-slate-700">
-              Page {currentPage} of {totalPages}
+            </button>
+            <span className="px-2 py-1 text-[10px] font-medium text-slate-700">
+              {currentPage} / {totalPages}
             </span>
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+            <button
               onClick={() => fetchMessages(currentPage + 1, searchQuery)}
               disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm bg-slate-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-300 transition-colors font-medium"
+              className="px-2.5 py-1 text-[11px] bg-slate-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-300 font-medium"
             >
               Next
-            </motion.button>
+            </button>
           </motion.div>
         )}
 
         {/* Input Area */}
-        <div className="bg-white border-t px-4 py-3">
+        <div className="bg-[#f0f2f5] border-t px-4 py-2.5">
           <AnimatePresence>
             {replyingTo && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex items-center justify-between mb-2 p-2 bg-blue-50 rounded-lg border border-blue-200"
+                className="flex items-center justify-between mb-2 p-2 bg-white rounded-lg border-l-4 border-green-500"
               >
                 <div className="flex items-center gap-2">
-                  <Reply size={14} className="text-blue-600" />
+                  <Reply size={12} className="text-green-600" />
                   <div>
-                    <span className="text-xs font-medium text-slate-700">
-                      Replying to {replyingTo.senderName}
+                    <span className="text-[10px] font-semibold text-slate-700">
+                      {replyingTo.senderName}
                     </span>
-                    <p className="text-xs text-slate-500 truncate max-w-xs">
+                    <p className="text-[10px] text-slate-500 truncate max-w-xs">
                       {replyingTo.content}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setReplyingTo(null)}
-                  className="text-slate-500 hover:text-slate-700 transition-colors"
+                  className="text-slate-500 hover:text-slate-700"
                 >
-                  <X size={14} />
+                  <X size={12} />
                 </button>
               </motion.div>
             )}
@@ -771,35 +744,79 @@ const Messaging = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex items-center justify-between mb-2 p-2 bg-amber-50 rounded-lg border border-amber-200"
+                className="flex items-center justify-between mb-2 p-2 bg-white rounded-lg border-l-4 border-amber-500"
               >
                 <div className="flex items-center gap-2">
-                  <Edit2 size={14} className="text-amber-600" />
-                  <span className="text-xs font-medium text-slate-700">
+                  <Edit2 size={12} className="text-amber-600" />
+                  <span className="text-[10px] font-semibold text-slate-700">
                     Editing message
                   </span>
                 </div>
                 <button
                   onClick={cancelEdit}
-                  className="text-slate-500 hover:text-slate-700 transition-colors"
+                  className="text-slate-500 hover:text-slate-700"
                 >
-                  <X size={14} />
+                  <X size={12} />
+                </button>
+              </motion.div>
+            )}
+
+            {selectedImage && (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                exit={{ opacity: 0, height: 0 }}
+                className="flex items-center justify-between mb-2 p-2 bg-white rounded-lg"
+              >
+                <div className="flex items-center gap-2">
+                  <img
+                    src={selectedImage}
+                    alt="Selected"
+                    className="w-12 h-12 object-cover rounded"
+                  />
+                  <span className="text-[10px] text-slate-700">Image ready to send</span>
+                </div>
+                <button
+                  onClick={() => setSelectedImage(null)}
+                  className="text-slate-500 hover:text-slate-700"
+                >
+                  <X size={12} />
                 </button>
               </motion.div>
             )}
           </AnimatePresence>
 
-          <div className="flex items-center gap-2">
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
+          <div className="flex items-center gap-2 bg-white rounded-full px-3 py-2">
+            <button
+              onClick={() => setShowEmojiPicker(showEmojiPicker ? null : "input")}
+              className="p-1 hover:bg-slate-100 rounded-full"
             >
-              <Paperclip size={18} className="text-slate-600" />
-            </motion.button>
+              <Smile size={18} className="text-slate-600" />
+            </button>
+
+            <input
+              type="file"
+              ref={fileInputRef}
+              onChange={handleImageSelect}
+              accept="image/*"
+              className="hidden"
+            />
+
+            <button
+              onClick={() => fileInputRef.current?.click()}
+              disabled={uploadingImage}
+              className="p-1 hover:bg-slate-100 rounded-full"
+            >
+              {uploadingImage ? (
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-600"></div>
+              ) : (
+                <Paperclip size={18} className="text-slate-600" />
+              )}
+            </button>
+
             <input
               type="text"
-              placeholder="Type your message..."
+              placeholder="Type a message"
               value={newMessage}
               onChange={(e) => {
                 setNewMessage(e.target.value);
@@ -811,29 +828,53 @@ const Messaging = () => {
                   handleSendMessage();
                 }
               }}
-              className="flex-1 px-3 py-2 text-sm border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all"
+              className="flex-1 px-3 py-1.5 text-xs bg-transparent focus:outline-none"
             />
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+
+            <button
               onClick={handleSendMessage}
-              disabled={!newMessage.trim()}
-              className="px-4 py-2 text-sm bg-gradient-to-r from-blue-600 to-purple-600 text-white rounded-lg hover:from-blue-700 hover:to-purple-700 transition-all flex items-center gap-1 disabled:opacity-50 disabled:cursor-not-allowed font-medium"
+              disabled={!newMessage.trim() && !selectedImage}
+              className="p-2 bg-green-500 hover:bg-green-600 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
-              <Send size={16} />
-              {editingMessage ? "Update" : "Send"}
-            </motion.button>
+              <Send size={16} className="text-white" />
+            </button>
           </div>
+
+          {/* Emoji Picker for Input */}
+          <AnimatePresence>
+            {showEmojiPicker === "input" && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8, y: 10 }}
+                animate={{ opacity: 1, scale: 1, y: 0 }}
+                exit={{ opacity: 0, scale: 0.8, y: 10 }}
+                className="absolute bottom-full left-4 mb-2 p-3 bg-white rounded-lg shadow-xl flex gap-1.5 z-10 border border-slate-200"
+              >
+                {emojis.map((emoji) => (
+                  <button
+                    key={emoji}
+                    onClick={() => {
+                      setNewMessage((prev) => prev + emoji);
+                      setShowEmojiPicker(null);
+                    }}
+                    className="text-lg hover:bg-slate-100 rounded p-1.5 transition-colors"
+                  >
+                    {emoji}
+                  </button>
+                ))}
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </div>
   );
 };
 
-// Message Card Component
-const MessageCard = ({
+// WhatsApp-Style Message Bubble Component
+const MessageBubble = ({
   message,
   index,
+  isMyMessage,
   onReply,
   onEdit,
   onDelete,
@@ -852,238 +893,255 @@ const MessageCard = ({
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, x: -100 }}
-      transition={{ delay: index * 0.05 }}
-      className={`bg-white rounded-lg shadow-sm p-3 hover:shadow-md transition-all ${
-        message.isPinned ? "border-l-4 border-yellow-500 bg-yellow-50" : ""
-      }`}
+      exit={{ opacity: 0, x: isMyMessage ? 100 : -100 }}
+      transition={{ delay: index * 0.02 }}
+      className={`flex ${isMyMessage ? "justify-end" : "justify-start"} mb-1`}
     >
-      <div className="flex items-start justify-between">
-        <div className="flex items-start gap-3 flex-1">
-          <motion.div
-            whileHover={{ scale: 1.1 }}
-            className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-sm shadow-md flex-shrink-0"
-          >
-            {message.senderName?.charAt(0).toUpperCase()}
-          </motion.div>
+      <div
+        className={`relative max-w-[65%] group ${message.isPinned ? "mb-1" : ""
+          }`}
+      >
+        {message.isPinned && (
+          <div className="flex items-center gap-1 mb-1 px-2">
+            <Pin size={10} className="text-yellow-600" />
+            <span className="text-[9px] text-yellow-700 font-medium">Pinned</span>
+          </div>
+        )}
 
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 mb-1 flex-wrap">
-              <h3 className="font-semibold text-slate-800 text-xs">
+        <div
+          className={`rounded-lg px-3 py-1.5 shadow-sm ${isMyMessage
+              ? "bg-[#dcf8c6] rounded-tr-none"
+              : "bg-white rounded-tl-none"
+            }`}
+        >
+          {/* Sender Name (for received messages) */}
+          {!isMyMessage && (
+            <div className="flex items-center gap-1.5 mb-1">
+              <span className="text-[10px] font-semibold text-green-700">
                 {message.senderName}
-              </h3>
-              <span className="text-xs px-2 py-0.5 bg-gradient-to-r from-slate-100 to-slate-200 rounded-full text-slate-600 font-medium">
+              </span>
+              <span className="text-[8px] px-1.5 py-0.5 bg-green-100 rounded-full text-green-700">
                 {message.senderRole}
               </span>
-              {message.isPinned && (
-                <motion.div
-                  initial={{ rotate: 0 }}
-                  animate={{ rotate: [0, -10, 10, -10, 0] }}
-                  transition={{ duration: 0.5 }}
-                >
-                  <Pin size={14} className="text-yellow-600 fill-yellow-600" />
-                </motion.div>
-              )}
             </div>
+          )}
 
-            <p className="text-slate-700 mb-2 leading-relaxed text-sm">{message.content}</p>
+          {/* Reply Reference */}
+          {message.parentMessageId && (
+            <div className="mb-1.5 p-1.5 bg-white/50 border-l-2 border-green-600 rounded">
+              <p className="text-[9px] text-slate-600 font-medium">Reply to message</p>
+            </div>
+          )}
 
+          {/* Image Attachment */}
+          {message.messageType === "image" && message.attachments?.[0]?.url && (
+            <div className="mb-1.5">
+              <img
+                src={message.attachments[0].url}
+                alt="Attachment"
+                className="max-w-full rounded-lg max-h-64 object-cover"
+              />
+            </div>
+          )}
+
+          {/* Message Content */}
+          <p className="text-[13px] text-slate-800 leading-relaxed break-words">
+            {message.content}
+          </p>
+
+          {/* Message Footer */}
+          <div className="flex items-center justify-end gap-1 mt-1">
             {message.isEdited && (
-              <span className="text-xs text-slate-500 italic flex items-center gap-1">
-                <Edit2 size={10} />
-                edited
+              <span className="text-[9px] text-slate-500 italic">edited</span>
+            )}
+            <span className="text-[9px] text-slate-500">
+              {new Date(message.createdAt).toLocaleTimeString([], {
+                hour: "2-digit",
+                minute: "2-digit",
+              })}
+            </span>
+            {isMyMessage && (
+              <span className="text-blue-600">
+                {message.readBy?.length > 1 ? (
+                  <CheckCheck size={12} />
+                ) : (
+                  <Check size={12} />
+                )}
               </span>
             )}
+          </div>
 
-            {/* Reactions */}
-            {message.reactions && message.reactions.length > 0 && (
-              <div className="flex gap-1.5 mt-2 flex-wrap">
-                {Object.entries(
-                  message.reactions.reduce((acc, r) => {
-                    acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-                    return acc;
-                  }, {})
-                ).map(([emoji, count]) => (
-                  <motion.button
-                    key={emoji}
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.9 }}
-                    onClick={() => onReaction(emoji)}
-                    className="px-2 py-0.5 bg-slate-100 hover:bg-slate-200 rounded-full text-xs transition-colors font-medium shadow-sm"
-                  >
-                    {emoji} {count}
-                  </motion.button>
-                ))}
-              </div>
-            )}
-
-            {/* Actions */}
-            <div className="flex items-center gap-3 mt-2 text-slate-500 flex-wrap text-xs">
-              <motion.button
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={onReply}
-                className="flex items-center gap-1 hover:text-blue-600 transition-colors"
-              >
-                <Reply size={14} />
-                <span className="font-medium">Reply</span>
-              </motion.button>
-
-              <div className="relative">
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={() =>
-                    setShowEmojiPicker(showEmojiPicker ? null : message._id)
-                  }
-                  className="flex items-center gap-1 hover:text-blue-600 transition-colors"
+          {/* Reactions */}
+          {message.reactions && message.reactions.length > 0 && (
+            <div className="flex gap-1 mt-1.5 flex-wrap">
+              {Object.entries(
+                message.reactions.reduce((acc, r) => {
+                  acc[r.emoji] = (acc[r.emoji] || 0) + 1;
+                  return acc;
+                }, {})
+              ).map(([emoji, count]) => (
+                <button
+                  key={emoji}
+                  onClick={() => onReaction(emoji)}
+                  className="px-1.5 py-0.5 bg-white/80 hover:bg-white rounded-full text-[10px] shadow-sm border border-slate-200"
                 >
-                  <Smile size={14} />
-                  <span className="font-medium">React</span>
-                </motion.button>
-
-                <AnimatePresence>
-                  {showEmojiPicker && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                      animate={{ opacity: 1, scale: 1, y: 0 }}
-                      exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                      className="absolute bottom-full left-0 mb-2 p-2 bg-white rounded-lg shadow-lg flex gap-1 z-10 border border-slate-200"
-                    >
-                      {emojis.map((emoji) => (
-                        <motion.button
-                          key={emoji}
-                          whileHover={{ scale: 1.3 }}
-                          whileTap={{ scale: 0.9 }}
-                          onClick={() => onReaction(emoji)}
-                          className="text-lg hover:bg-slate-100 rounded p-1 transition-colors"
-                        >
-                          {emoji}
-                        </motion.button>
-                      ))}
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-
-              {message.replyCount > 0 && (
-                <motion.button
-                  whileHover={{ scale: 1.05 }}
-                  whileTap={{ scale: 0.95 }}
-                  onClick={onToggleReplies}
-                  className="flex items-center gap-1 hover:text-blue-600 transition-colors"
-                >
-                  <MessageSquare size={14} />
-                  <span className="font-medium">
-                    {message.replyCount} {message.replyCount === 1 ? "reply" : "replies"}
-                  </span>
-                  {showReplies ? (
-                    <ChevronUp size={12} />
-                  ) : (
-                    <ChevronDown size={12} />
-                  )}
-                </motion.button>
-              )}
-
-              <span className="text-xs ml-auto text-slate-400">
-                {new Date(message.createdAt).toLocaleString()}
-              </span>
+                  {emoji} {count}
+                </button>
+              ))}
             </div>
+          )}
+        </div>
 
-            {/* Replies */}
+        {/* Hover Actions */}
+        <div
+          className={`absolute top-0 ${isMyMessage ? "left-0 -translate-x-full" : "right-0 translate-x-full"
+            } opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-2`}
+        >
+          <button
+            onClick={() => setShowEmojiPicker(showEmojiPicker ? null : message._id)}
+            className="p-1 hover:bg-slate-200 rounded-full bg-white shadow-md"
+          >
+            <Smile size={12} className="text-slate-600" />
+          </button>
+
+          <button
+            onClick={onReply}
+            className="p-1 hover:bg-slate-200 rounded-full bg-white shadow-md"
+          >
+            <Reply size={12} className="text-slate-600" />
+          </button>
+
+          <div className="relative">
+            <button
+              onClick={() => setShowActions(!showActions)}
+              className="p-1 hover:bg-slate-200 rounded-full bg-white shadow-md"
+            >
+              <MoreVertical size={12} className="text-slate-600" />
+            </button>
+
             <AnimatePresence>
-              {showReplies && replies && (
+              {showActions && (
                 <motion.div
-                  initial={{ opacity: 0, height: 0 }}
-                  animate={{ opacity: 1, height: "auto" }}
-                  exit={{ opacity: 0, height: 0 }}
-                  className="mt-3 pl-3 border-l-2 border-blue-200 space-y-2"
+                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                  animate={{ opacity: 1, scale: 1, y: 0 }}
+                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                  className={`absolute ${isMyMessage ? "right-0" : "left-0"
+                    } mt-1 w-32 bg-white rounded-lg shadow-xl py-1 z-20 border border-slate-200`}
                 >
-                  {replies.map((reply, idx) => (
-                    <motion.div
-                      key={reply._id}
-                      initial={{ opacity: 0, x: -20 }}
-                      animate={{ opacity: 1, x: 0 }}
-                      transition={{ delay: idx * 0.1 }}
-                      className="bg-slate-50 rounded-lg p-2 hover:bg-slate-100 transition-colors"
+                  {isMyMessage && (
+                    <button
+                      onClick={() => {
+                        onEdit();
+                        setShowActions(false);
+                      }}
+                      className="w-full px-3 py-1.5 text-left hover:bg-slate-100 flex items-center gap-2 text-slate-700 text-[11px]"
                     >
-                      <div className="flex items-center gap-2 mb-1">
-                        <div className="w-7 h-7 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-xs font-bold flex-shrink-0">
-                          {reply.senderName?.charAt(0).toUpperCase()}
-                        </div>
-                        <span className="font-medium text-xs text-slate-800">
-                          {reply.senderName}
-                        </span>
-                        <span className="text-xs text-slate-500">
-                          {new Date(reply.createdAt).toLocaleString()}
-                        </span>
-                      </div>
-                      <p className="text-xs text-slate-700 leading-relaxed">
-                        {reply.content}
-                      </p>
-                    </motion.div>
-                  ))}
+                      <Edit2 size={12} />
+                      <span>Edit</span>
+                    </button>
+                  )}
+                  <button
+                    onClick={() => {
+                      onPin();
+                      setShowActions(false);
+                    }}
+                    className="w-full px-3 py-1.5 text-left hover:bg-slate-100 flex items-center gap-2 text-slate-700 text-[11px]"
+                  >
+                    <Pin size={12} />
+                    <span>{message.isPinned ? "Unpin" : "Pin"}</span>
+                  </button>
+                  <div className="border-t border-slate-200 my-0.5"></div>
+                  <button
+                    onClick={() => {
+                      onDelete();
+                      setShowActions(false);
+                    }}
+                    className="w-full px-3 py-1.5 text-left hover:bg-red-50 flex items-center gap-2 text-red-600 text-[11px]"
+                  >
+                    <Trash2 size={12} />
+                    <span>Delete</span>
+                  </button>
                 </motion.div>
               )}
             </AnimatePresence>
           </div>
         </div>
 
-        <div className="relative ml-2 flex-shrink-0">
-          <motion.button
-            whileHover={{ scale: 1.1 }}
-            whileTap={{ scale: 0.9 }}
-            onClick={() => setShowActions(!showActions)}
-            className="p-1 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <MoreVertical size={16} className="text-slate-600" />
-          </motion.button>
+        {/* Emoji Picker */}
+        <AnimatePresence>
+          {showEmojiPicker && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.8, y: 10 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.8, y: 10 }}
+              className={`absolute ${isMyMessage ? "right-0" : "left-0"
+                } bottom-full mb-2 p-2 bg-white rounded-lg shadow-xl flex gap-1 z-10 border border-slate-200`}
+            >
+              {emojis.map((emoji) => (
+                <button
+                  key={emoji}
+                  onClick={() => onReaction(emoji)}
+                  className="text-base hover:bg-slate-100 rounded p-1 transition-colors"
+                >
+                  {emoji}
+                </button>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
 
-          <AnimatePresence>
-            {showActions && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-lg py-1 z-10 border border-slate-200"
-              >
-                <button
-                  onClick={() => {
-                    onEdit();
-                    setShowActions(false);
-                  }}
-                  className="w-full px-3 py-1 text-left hover:bg-slate-100 flex items-center gap-2 text-slate-700 transition-colors text-xs font-medium"
+        {/* Replies Toggle */}
+        {message.replyCount > 0 && (
+          <button
+            onClick={onToggleReplies}
+            className={`flex items-center gap-1 mt-1 text-[10px] text-slate-600 hover:text-slate-800 ${isMyMessage ? "justify-end" : "justify-start"
+              }`}
+          >
+            <MessageSquare size={10} />
+            <span>
+              {message.replyCount} {message.replyCount === 1 ? "reply" : "replies"}
+            </span>
+            {showReplies ? <ChevronUp size={10} /> : <ChevronDown size={10} />}
+          </button>
+        )}
+
+        {/* Replies */}
+        <AnimatePresence>
+          {showReplies && replies && (
+            <motion.div
+              initial={{ opacity: 0, height: 0 }}
+              animate={{ opacity: 1, height: "auto" }}
+              exit={{ opacity: 0, height: 0 }}
+              className={`mt-2 space-y-1 ${isMyMessage ? "pr-4" : "pl-4"}`}
+            >
+              {replies.map((reply, idx) => (
+                <motion.div
+                  key={reply._id}
+                  initial={{ opacity: 0, x: isMyMessage ? 20 : -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: idx * 0.1 }}
+                  className={`rounded-lg p-2 text-[11px] ${reply.senderId === getCurrentUser().id
+                      ? "bg-[#e1f5d1] ml-auto max-w-[85%]"
+                      : "bg-slate-100 mr-auto max-w-[85%]"
+                    }`}
                 >
-                  <Edit2 size={14} />
-                  <span>Edit</span>
-                </button>
-                <button
-                  onClick={() => {
-                    onPin();
-                    setShowActions(false);
-                  }}
-                  className="w-full px-3 py-1 text-left hover:bg-slate-100 flex items-center gap-2 text-slate-700 transition-colors text-xs font-medium"
-                >
-                  <Pin size={14} />
-                  <span>
-                    {message.isPinned ? "Unpin" : "Pin"}
-                  </span>
-                </button>
-                <div className="border-t border-slate-200 my-0.5"></div>
-                <button
-                  onClick={() => {
-                    onDelete();
-                    setShowActions(false);
-                  }}
-                  className="w-full px-3 py-1 text-left hover:bg-red-50 flex items-center gap-2 text-red-600 transition-colors text-xs font-medium"
-                >
-                  <Trash2 size={14} />
-                  <span>Delete</span>
-                </button>
-              </motion.div>
-            )}
-          </AnimatePresence>
-        </div>
+                  <div className="flex items-center gap-1.5 mb-0.5">
+                    <span className="font-semibold text-[10px] text-slate-800">
+                      {reply.senderName}
+                    </span>
+                    <span className="text-[8px] text-slate-500">
+                      {new Date(reply.createdAt).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
+                  </div>
+                  <p className="text-slate-700 leading-relaxed">{reply.content}</p>
+                </motion.div>
+              ))}
+            </motion.div>
+          )}
+        </AnimatePresence>
       </div>
     </motion.div>
   );
@@ -1101,13 +1159,13 @@ const StatCard = ({ icon, label, value, color }) => {
   return (
     <motion.div
       whileHover={{ scale: 1.02 }}
-      className={`bg-gradient-to-br ${colors[color]} rounded-lg p-3 text-white shadow-md hover:shadow-lg transition-shadow`}
+      className={`bg-gradient-to-br ${colors[color]} rounded-lg p-2.5 text-white shadow-md`}
     >
       <div className="flex items-center justify-between mb-1">
-        <div className="p-1 bg-white bg-opacity-20 rounded-lg">{icon}</div>
-        <span className="text-2xl font-bold">{value}</span>
+        <div className="p-1 bg-white bg-opacity-20 rounded">{icon}</div>
+        <span className="text-xl font-bold">{value}</span>
       </div>
-      <p className="text-xs opacity-90 font-medium">{label}</p>
+      <p className="text-[10px] opacity-90 font-medium">{label}</p>
     </motion.div>
   );
 };

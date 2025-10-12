@@ -10,7 +10,7 @@ class SocketClient {
   // Initialize socket connection
   connect(url = 'http://localhost:5000') {
     const token = this.getToken();
-    
+
     if (!token) {
       console.error('No authentication token found');
       return;
