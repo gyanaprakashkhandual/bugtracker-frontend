@@ -1,117 +1,94 @@
-import React, { useState, useEffect, useRef } from "react";
+"use client";
+import React, { useState, useEffect, useCallback, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
-    Menu,
+    Trash2,
     Search,
+    AlertCircle,
+    Loader2,
+    Archive,
+    MessageSquare,
+    X,
+    Send,
+    ChevronLeft,
+    ChevronRight,
     Calendar,
     Clock,
     Edit,
     Save,
-    X,
-    Archive,
-    Trash2,
-    ChevronLeft,
-    ChevronRight,
-    MessageSquare,
-    Send,
-    Loader2,
+    Menu,
+    ChevronRight as ChevronRightIcon,
+    Image as ImageIcon,
+    Link2,
+    Upload,
     Copy,
     Check,
-    Upload,
-    Link2,
-    Image as ImageIcon,
+    Play,
+    Square
 } from "lucide-react";
 import { useAlert } from "@/app/script/Alert.context";
 import { useTestType } from "@/app/script/TestType.context";
 import { useConfirm } from "@/app/script/Confirm.context";
 import { GoogleArrowDown, GoogleArrowRight } from "@/app/components/utils/Icon";
-
-const BASE_URL = "http://localhost:5000/api/v1/test-case";
-const COMMENT_URL = "http://localhost:5000/api/v1/comment";
-
-// Project Events - Emit custom events for test case changes
-export const TEST_CASE_EVENTS = {
-    CREATED: 'testcase:created',
-    UPDATED: 'testcase:updated',
-    DELETED: 'testcase:deleted',
-    CHANGED: 'testcase:changed',
-};
-
-const emitTestCaseEvent = (eventType, testCaseData = null) => {
-    if (typeof window !== 'undefined') {
-        const event = new CustomEvent(eventType, {
-            detail: { testCase: testCaseData, timestamp: Date.now() }
-        });
-        window.dispatchEvent(event);
-
-        // Also emit generic change event
-        const changeEvent = new CustomEvent(TEST_CASE_EVENTS.CHANGED, {
-            detail: { type: eventType, testCase: testCaseData, timestamp: Date.now() }
-        });
-        window.dispatchEvent(changeEvent);
-    }
-};
-
-// GitHub-style Dropdown Component
-const GitHubDropdown = ({ value, options, onChange, label, className = "" }) => {
-    const [isOpen, setIsOpen] = useState(false);
-    const dropdownRef = useRef(null);
-
-    useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-                setIsOpen(false);
-            }
-        };
-
-        document.addEventListener("mousedown", handleClickOutside);
-        return () => document.removeEventListener("mousedown", handleClickOutside);
-    }, []);
-
-    return (
-        <div ref={dropdownRef} className={`relative ${className}`}>
-            <motion.button
-                whileHover={{ scale: 1.02 }}
-                whileTap={{ scale: 0.98 }}
-                onClick={() => setIsOpen(!isOpen)}
-                className="w-full px-3 py-1.5 text-xs bg-white border border-gray-300 rounded-lg hover:border-gray-400 transition-colors flex items-center justify-between gap-2"
-            >
-                <span className="font-medium text-gray-700 truncate">{value}</span>
-                <GoogleArrowDown size={12} className="text-gray-500 flex-shrink-0" />
-            </motion.button>
-
-            <AnimatePresence>
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -10 }}
-                        className="absolute top-full left-0 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden"
-                    >
-                        {options.map((option) => (
-                            <motion.button
-                                key={option}
-                                whileHover={{ backgroundColor: "#f3f4f6" }}
-                                onClick={() => {
-                                    onChange(option);
-                                    setIsOpen(false);
-                                }}
-                                className="w-full px-3 py-2 text-xs text-left text-gray-700 hover:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0"
-                            >
-                                {option}
-                            </motion.button>
-                        ))}
-                    </motion.div>
-                )}
-            </AnimatePresence>
-        </div>
-    );
-};
+import { copyToClipboard } from "@/app/utils/Copy.text";
+import Loader from "@/app/components/utils/Loader";
 
 const TestCaseSplitView = () => {
+    const [imageDropdownOpen, setImageDropdownOpen] = useState(false);
+    const [testCases, setTestCases] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [searchTerm, setSearchTerm] = useState("");
+    const [selectedTestCase, setSelectedTestCase] = useState(null);
+    const [loadingTestCase, setLoadingTestCase] = useState(false);
+    const [editingField, setEditingField] = useState(null);
+    const [editValue, setEditValue] = useState("");
+    const [savingField, setSavingField] = useState(null);
+    const [isEditing, setIsEditing] = useState(false);
+    const [sidebarWidth, setSidebarWidth] = useState(300);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isResizing, setIsResizing] = useState(false);
+    const [dateFilter, setDateFilter] = useState({ start: "", end: "" });
+    const [showDatePicker, setShowDatePicker] = useState(false);
+    const [uploadingImage, setUploadingImage] = useState(false);
+    const [selectedImage, setSelectedImage] = useState(null);
+    const [selectedImageModal, setSelectedImageModal] = useState(null);
+    const sidebarRef = useRef(null);
+    const datePickerRef = useRef(null);
+    const fileInputRef = useRef(null);
+
     const { showAlert } = useAlert();
     const { showConfirm } = useConfirm();
     const { testTypeId, testTypeName } = useTestType();
+
+    const handleCopy = (text) => {
+        copyToClipboard(text, showAlert);
+    };
+
+    const [editFormData, setEditFormData] = useState({
+        moduleName: "",
+        testCaseType: "",
+        testCaseDescription: "",
+        actualResult: "",
+        expectedResult: "",
+        priority: "",
+        severity: "",
+        status: "",
+        image: "",
+    });
+
+    const copyText = (text) => {
+        navigator.clipboard
+            .writeText(text)
+            .then(() => {
+                showAlert({
+                    type: "success",
+                    message: "Serial Number Copied",
+                });
+            })
+            .catch(() => {
+                console.log("Failed to copy");
+            });
+    };
 
     const projectId =
         typeof window !== "undefined"
@@ -120,186 +97,336 @@ const TestCaseSplitView = () => {
     const token =
         typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
-    // State Management
-    const [testCases, setTestCases] = useState([]);
-    const [selectedTestCase, setSelectedTestCase] = useState(null);
-    const [loading, setLoading] = useState(false);
-    const [searchTerm, setSearchTerm] = useState("");
-    const [dateFilter, setDateFilter] = useState({ start: "", end: "" });
-    const [showDatePicker, setShowDatePicker] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
-    const [sidebarWidth, setSidebarWidth] = useState(300);
-    const [isResizing, setIsResizing] = useState(false);
-    const [isEditing, setIsEditing] = useState(false);
-    const [editFormData, setEditFormData] = useState({});
-    const [comments, setComments] = useState([]);
-    const [newComment, setNewComment] = useState("");
-    const [loadingComments, setLoadingComments] = useState(false);
-    const [submittingComment, setSubmittingComment] = useState(false);
-    const [selectedImages, setSelectedImages] = useState([]);
-    const [uploadingImages, setUploadingImages] = useState(false);
-    const [selectedImageModal, setSelectedImageModal] = useState(null);
-    const [imageDropdownOpen, setImageDropdownOpen] = useState(false);
-    const [refLinkDropdownOpen, setRefLinkDropdownOpen] = useState(false);
-    const [copiedIndex, setCopiedIndex] = useState(null);
+    const BASE_URL = "http://localhost:5000/api/v1/test-case";
 
-    const sidebarRef = useRef(null);
-    const datePickerRef = useRef(null);
-    const fileInputRef = useRef(null);
-
-    // Fetch Test Cases
-    const fetchTestCases = async () => {
-        if (!projectId || !testTypeId || !token) return;
-
-        setLoading(true);
-        try {
-            let url = `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases`;
-
-            // Add date filter if present
-            if (dateFilter.start && dateFilter.end) {
-                url = `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/filter/custom-date-range?startDate=${dateFilter.start}&endDate=${dateFilter.end}`;
-            }
-
-            // Add search if present
-            if (searchTerm.trim()) {
-                url = `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/search?search=${encodeURIComponent(searchTerm)}`;
-            }
-
-            const response = await fetch(url, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                setTestCases(data.testCases || []);
-
-                // If selected test case was deleted, select the last available one
-                if (selectedTestCase && !data.testCases.find(tc => tc._id === selectedTestCase._id)) {
-                    if (data.testCases.length > 0) {
-                        setSelectedTestCase(data.testCases[data.testCases.length - 1]);
-                        fetchComments(data.testCases[data.testCases.length - 1]._id);
-                    } else {
-                        setSelectedTestCase(null);
-                    }
-                }
-            } else {
-                showAlert({ type: "error", message: data.message || "Failed to fetch test cases" });
-            }
-        } catch (error) {
-            showAlert({ type: "error", message: "Error fetching test cases" });
-        } finally {
+    // Get all test cases API
+    const fetchTestCases = useCallback(async () => {
+        if (!projectId || !testTypeId || !token) {
             setLoading(false);
-        }
-    };
-
-    useEffect(() => {
-        fetchTestCases();
-    }, [projectId, testTypeId, dateFilter]);
-
-    // Handle Search with Debounce
-    useEffect(() => {
-        const delaySearch = setTimeout(() => {
-            if (searchTerm) {
-                fetchTestCases();
-            }
-        }, 500);
-
-        return () => clearTimeout(delaySearch);
-    }, [searchTerm]);
-
-    // Filter Test Cases
-    const filteredTestCases = testCases.filter((tc) => {
-        const matchesSearch =
-            searchTerm === "" ||
-            tc.testCaseId?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            tc.testCaseDescription?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            tc.moduleName?.toLowerCase().includes(searchTerm.toLowerCase());
-
-        return matchesSearch;
-    });
-
-    // Fixed Comment Functions
-    const fetchComments = async (testCaseId) => {
-        if (!projectId || !testTypeId || !testCaseId || !token) return;
-
-        setLoadingComments(true);
-        try {
-            const response = await fetch(
-                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/${testCaseId}/comments`,
-                {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-
-            const data = await response.json();
-
-            if (!response.ok) {
-                throw new Error(data.message || "Failed to fetch comments");
-            }
-
-            setComments(Array.isArray(data.comments) ? data.comments : []);
-        } catch (error) {
-            showAlert({
-                type: "error",
-                message: error.message || "Error fetching comments. Please try again.",
-            });
-        } finally {
-            setLoadingComments(false);
-        }
-    };
-
-    // Submit Comment - FIXED
-    const submitComment = async (testCaseId) => {
-        if (!newComment.trim()) {
-            showAlert({ type: "warning", message: "Comment cannot be empty" });
             return;
         }
 
-        if (!projectId || !testTypeId || !testCaseId || !token) return;
-
-        setSubmittingComment(true);
         try {
+            setLoading(true);
             const response = await fetch(
-                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/${testCaseId}/comments`,
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases?page=1&limit=1000000`,
                 {
-                    method: "POST",
                     headers: {
-                        "Content-Type": "application/json",
                         Authorization: `Bearer ${token}`,
                     },
-                    body: JSON.stringify({ comment: newComment }),
                 }
             );
 
-            const data = await response.json();
+            if (!response.ok) throw new Error("Failed to fetch test cases");
 
-            if (response.ok) {
-                showAlert({ type: "success", message: "Comment added successfully" });
-                setNewComment("");
-                fetchComments(testCaseId); // refresh comments
-                emitTestCaseEvent(TEST_CASE_EVENTS.UPDATED, data.comment);
-            } else {
-                showAlert({
-                    type: "error",
-                    message: data.message || "Failed to add comment",
-                });
-            }
+            const data = await response.json();
+            setTestCases(data.testCases || []);
         } catch (error) {
-            showAlert({
-                type: "error",
-                message: "Error submitting comment. Please try again.",
-            });
+            console.error("Error fetching test cases:", error);
+            showAlert({ type: "error", message: "Failed to fetch test cases" });
         } finally {
-            setSubmittingComment(false);
+            setLoading(false);
+        }
+    }, [projectId, testTypeId, token]);
+
+    // Get single test case by ID
+    const fetchTestCaseById = async (testCaseId) => {
+        if (!token || !testCaseId) return;
+
+        setLoadingTestCase(true);
+        try {
+            const response = await fetch(
+                `${BASE_URL}/test-cases/${testCaseId}`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) throw new Error("Failed to fetch test case");
+
+            const data = await response.json();
+            setSelectedTestCase(data.testCase);
+        } catch (error) {
+            console.error("Error fetching test case:", error);
+            showAlert({ type: "error", message: "Failed to fetch test case" });
+        } finally {
+            setLoadingTestCase(false);
         }
     };
 
-    // Handle Edit
+    // Update test case API
+    const updateTestCase = async (testCaseId, field, value) => {
+        setSavingField(field);
+
+        try {
+            const response = await fetch(`${BASE_URL}/test-cases/${testCaseId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify({ [field]: value }),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Failed to update test case");
+            }
+
+            const data = await response.json();
+
+            setTestCases((prev) =>
+                prev.map((testCase) =>
+                    testCase._id === testCaseId ? { ...testCase, [field]: value } : testCase
+                )
+            );
+
+            if (selectedTestCase?._id === testCaseId) {
+                setSelectedTestCase((prev) => ({ ...prev, [field]: value }));
+            }
+
+            showAlert({ type: "success", message: "Test case updated successfully" });
+            setTimeout(() => setSavingField(null), 500);
+        } catch (error) {
+            console.error("Error updating test case:", error);
+            showAlert({
+                type: "error",
+                message: error.message || "Failed to update test case",
+            });
+            setSavingField(null);
+        }
+    };
+
+    // Update test case fields (Edit)
+    const updateTestCaseFields = async (testCaseId, fields) => {
+        try {
+            const response = await fetch(`${BASE_URL}/test-cases/${testCaseId}`, {
+                method: "PUT",
+                headers: {
+                    "Content-Type": "application/json",
+                    Authorization: `Bearer ${token}`,
+                },
+                body: JSON.stringify(fields),
+            });
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Failed to update test case");
+            }
+
+            const data = await response.json();
+
+            setTestCases((prev) =>
+                prev.map((testCase) => (testCase._id === testCaseId ? { ...testCase, ...fields } : testCase))
+            );
+
+            if (selectedTestCase?._id === testCaseId) {
+                setSelectedTestCase((prev) => ({ ...prev, ...fields }));
+            }
+
+            showAlert({ type: "success", message: "Test case updated successfully" });
+            return true;
+        } catch (error) {
+            console.error("Error updating test case:", error);
+            showAlert({
+                type: "error",
+                message: error.message || "Failed to update test case",
+            });
+            return false;
+        }
+    };
+
+    // Move test case to trash API
+    const moveTestCaseToTrash = async (testCaseId) => {
+        try {
+            const response = await fetch(
+                `${BASE_URL}/test-cases/${testCaseId}/trash`,
+                {
+                    method: "PATCH",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Failed to move test case to trash");
+            }
+
+            const data = await response.json();
+
+            setTestCases((prev) => prev.filter((testCase) => testCase._id !== testCaseId));
+            if (selectedTestCase?._id === testCaseId) {
+                setSelectedTestCase(null);
+            }
+
+            showAlert({
+                type: "success",
+                message: "Test case moved to trash successfully",
+            });
+        } catch (error) {
+            console.error("Error moving test case to trash:", error);
+            showAlert({
+                type: "error",
+                message: error.message || "Failed to move test case to trash",
+            });
+        }
+    };
+
+    // Delete test case permanently API
+    const deleteTestCasePermanently = async (testCaseId) => {
+        try {
+            const response = await fetch(
+                `${BASE_URL}/test-cases/${testCaseId}/permanent`,
+                {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(
+                    errorData.message || "Failed to delete test case permanently"
+                );
+            }
+
+            const data = await response.json();
+
+            setTestCases((prev) => prev.filter((testCase) => testCase._id !== testCaseId));
+            if (selectedTestCase?._id === testCaseId) {
+                setSelectedTestCase(null);
+            }
+
+            showAlert({ type: "success", message: "Test case deleted permanently" });
+        } catch (error) {
+            console.error("Error deleting test case permanently:", error);
+            showAlert({
+                type: "error",
+                message: error.message || "Failed to delete test case",
+            });
+        }
+    };
+
+    // Move all test cases to trash API
+    const moveAllTestCasesToTrash = async () => {
+        try {
+            const result = await showConfirm({
+                title: "Move All Test Cases to Trash",
+                message: "Are you sure you want to move all test cases to trash? This action cannot be undone!",
+                confirmText: "Move to Trash",
+                cancelText: "Cancel",
+                type: "warning",
+            });
+
+            if (!result) return;
+
+            // Move each test case individually
+            const promises = testCases.map(testCase =>
+                moveTestCaseToTrash(testCase._id)
+            );
+
+            await Promise.all(promises);
+
+            showAlert({
+                type: "success",
+                message: "All test cases moved to trash successfully",
+            });
+        } catch (error) {
+            console.error("Error moving all test cases to trash:", error);
+            showAlert({
+                type: "error",
+                message: error.message || "Failed to move test cases to trash",
+            });
+        }
+    };
+
+    // Delete all test cases permanently API
+    const deleteAllTestCasesPermanently = async () => {
+        try {
+            const result = await showConfirm({
+                title: "Delete All Test Cases Permanently",
+                message: "Are you sure you want to permanently delete all test cases? This action cannot be undone!",
+                confirmText: "Delete All",
+                cancelText: "Cancel",
+                type: "warning",
+            });
+
+            if (!result) return;
+
+            // Delete each test case individually
+            const promises = testCases.map(testCase =>
+                deleteTestCasePermanently(testCase._id)
+            );
+
+            await Promise.all(promises);
+
+            showAlert({ type: "success", message: "All test cases deleted permanently" });
+        } catch (error) {
+            console.error("Error deleting all test cases:", error);
+            showAlert({
+                type: "error",
+                message: error.message || "Failed to delete all test cases",
+            });
+        }
+    };
+
+    // Cloudinary image upload function
+    const uploadToCloudinary = async (file) => {
+        const formData = new FormData();
+        formData.append("file", file);
+        formData.append("upload_preset", "test_case_preset");
+
+        try {
+            const response = await fetch(
+                "https://api.cloudinary.com/v1_1/dvytvjplt/image/upload",
+                {
+                    method: "POST",
+                    body: formData,
+                }
+            );
+
+            if (!response.ok) throw new Error("Upload failed");
+
+            const data = await response.json();
+            return data.secure_url;
+        } catch (error) {
+            console.error("Error uploading to Cloudinary:", error);
+            throw error;
+        }
+    };
+
+    // Image Uploading
+    const handleImageUpload = async (file) => {
+        setUploadingImage(true);
+
+        try {
+            const imageUrl = await uploadToCloudinary(file);
+
+            setSelectedImage(imageUrl);
+            setEditFormData((prev) => ({
+                ...prev,
+                image: imageUrl,
+            }));
+
+            showAlert({ type: "success", message: "Image uploaded successfully" });
+        } catch (error) {
+            console.error("Error uploading image:", error);
+            showAlert({ type: "error", message: "Failed to upload image" });
+        } finally {
+            setUploadingImage(false);
+        }
+    };
+
+    const handleFieldEdit = (field, value) => {
+        updateTestCase(selectedTestCase._id, field, value);
+    };
+
     const handleEditClick = () => {
         setIsEditing(true);
         setEditFormData({
@@ -308,348 +435,99 @@ const TestCaseSplitView = () => {
             testCaseDescription: selectedTestCase.testCaseDescription || "",
             actualResult: selectedTestCase.actualResult || "",
             expectedResult: selectedTestCase.expectedResult || "",
-            severity: selectedTestCase.severity || "Medium",
-            priority: selectedTestCase.priority || "Medium",
-            status: selectedTestCase.status || "New",
-            image: selectedTestCase.image || [],
+            priority: selectedTestCase.priority || "",
+            severity: selectedTestCase.severity || "",
+            status: selectedTestCase.status || "",
+            image: selectedTestCase.image || "",
         });
-        setSelectedImages(Array.isArray(selectedTestCase.image) ? selectedTestCase.image : (selectedTestCase.image ? [selectedTestCase.image] : []));
+        setSelectedImage(selectedTestCase.image || null);
     };
 
     const handleSaveClick = async () => {
-        try {
-            const testCaseId = String(selectedTestCase._id);
-            const url = `${BASE_URL}/test-cases/${testCaseId}`;
-
-            // Prepare payload: ensure image is a single string to match backend schema
-            const payload = {
-                ...editFormData,
-                image: Array.isArray(selectedImages) ? (selectedImages[0] || '') : (selectedImages || ''),
-            };
-
-            console.log('Updating test case', { url, payload });
-
-            const response = await fetch(url, {
-                method: "PUT",
-                headers: {
-                    "Content-Type": "application/json",
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                showAlert({ type: "success", message: "Test case updated successfully" });
-                setSelectedTestCase(data.testCase);
-                setIsEditing(false);
-                fetchTestCases();
-                emitTestCaseEvent(TEST_CASE_EVENTS.UPDATED, data.testCase);
-            } else {
-                showAlert({ type: "error", message: data.message || "Failed to update test case" });
-            }
-        } catch (error) {
-            showAlert({ type: "error", message: "Error updating test case" });
+        const success = await updateTestCaseFields(selectedTestCase._id, editFormData);
+        if (success) {
+            setIsEditing(false);
         }
     };
 
     const handleCancelClick = () => {
         setIsEditing(false);
-        setEditFormData({});
-        setSelectedImages(Array.isArray(selectedTestCase.image) ? selectedTestCase.image : (selectedTestCase.image ? [selectedTestCase.image] : []));
-    };
-
-    // Handle Field Edit (Dropdowns)
-    const handleFieldEdit = async (field, value) => {
-        // Optimistic UI update
-        const prevSelected = selectedTestCase;
-        try {
-            setSelectedTestCase((prev) => ({ ...prev, [field]: value }));
-            setTestCases((prev) => prev.map((tc) => (tc._id === prevSelected._id ? { ...tc, [field]: value } : tc)));
-
-            // Warn about fields that backend may not persist
-            if (field === 'severity') {
-                showAlert({ type: 'info', message: 'Severity updated locally. Backend schema may not persist this field.' });
-            }
-
-            const testCaseId = String(prevSelected._id);
-            const url = `${BASE_URL}/test-cases/${testCaseId}`;
-            const payload = { [field]: value };
-            console.log('handleFieldEdit PUT', { url, payload });
-
-            const response = await fetch(url, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${token}`,
-                },
-                body: JSON.stringify(payload),
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                showAlert({ type: 'success', message: `${field} updated successfully` });
-                if (data.testCase) {
-                    setSelectedTestCase(data.testCase);
-                    fetchTestCases();
-                    emitTestCaseEvent(TEST_CASE_EVENTS.UPDATED, data.testCase);
-                }
-            } else {
-                console.error('Field update failed', data);
-                // revert optimistic update
-                setSelectedTestCase(prevSelected);
-                fetchTestCases();
-                showAlert({ type: 'error', message: data.message || 'Failed to update test case' });
-            }
-        } catch (error) {
-            console.error('Error updating field', error);
-            setSelectedTestCase(prevSelected);
-            fetchTestCases();
-            showAlert({ type: 'error', message: 'Error updating test case' });
-        }
-    };
-
-    // Move to Trash
-    const moveTestCaseToTrash = async (testCaseId) => {
-        const result = await showConfirm({
-            title: "Move Test Case to Trash",
-            message: "Are you sure you want to move this test case to trash?",
-            confirmText: "Move to Trash",
-            cancelText: "Cancel",
-            type: "warning",
+        setEditFormData({
+            moduleName: selectedTestCase.moduleName || "",
+            testCaseType: selectedTestCase.testCaseType || "",
+            testCaseDescription: selectedTestCase.testCaseDescription || "",
+            actualResult: selectedTestCase.actualResult || "",
+            expectedResult: selectedTestCase.expectedResult || "",
+            priority: selectedTestCase.priority || "",
+            severity: selectedTestCase.severity || "",
+            status: selectedTestCase.status || "",
+            image: selectedTestCase.image || "",
         });
-
-        if (!result) return;
-
-        try {
-            const response = await fetch(`${BASE_URL}/test-cases/${testCaseId}/trash`, {
-                method: "PATCH",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                showAlert({ type: "success", message: "Test case moved to trash" });
-                fetchTestCases();
-                setSelectedTestCase(null);
-                emitTestCaseEvent(TEST_CASE_EVENTS.DELETED, { _id: testCaseId });
-            } else {
-                showAlert({ type: "error", message: data.message || "Failed to move test case to trash" });
-            }
-        } catch (error) {
-            showAlert({ type: "error", message: "Error moving test case to trash" });
-        }
-    };
-
-    // Delete Permanently
-    const deleteTestCasePermanently = async (testCaseId) => {
-        const result = await showConfirm({
-            title: "Delete Test Case Permanently",
-            message: "This action cannot be undone! Are you sure you want to permanently delete this test case?",
-            confirmText: "Delete Permanently",
-            cancelText: "Cancel",
-            type: "danger",
-        });
-
-        if (!result) return;
-
-        try {
-            const response = await fetch(`${BASE_URL}/test-cases/${testCaseId}/permanent`, {
-                method: "DELETE",
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            const data = await response.json();
-
-            if (response.ok) {
-                showAlert({ type: "success", message: "Test case deleted permanently" });
-                fetchTestCases();
-                setSelectedTestCase(null);
-                emitTestCaseEvent(TEST_CASE_EVENTS.DELETED, { _id: testCaseId });
-            } else {
-                showAlert({ type: "error", message: data.message || "Failed to delete test case" });
-            }
-        } catch (error) {
-            showAlert({ type: "error", message: "Error deleting test case" });
-        }
-    };
-
-    // Bulk Move to Trash
-    const moveAllTestCasesToTrash = async () => {
-        const result = await showConfirm({
-            title: "Move All Test Cases to Trash",
-            message: "Are you sure you want to move all test cases to trash? This action cannot be undone!",
-            confirmText: "Move to Trash",
-            cancelText: "Cancel",
-            type: "warning",
-        });
-
-        if (!result) return;
-
-        try {
-            const testCaseIds = testCases.map((tc) => tc._id);
-            const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/bulk-move-to-trash`,
-                {
-                    method: "PATCH",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({ testCaseIds }),
-                }
-            );
-
-            const data = await response.json();
-
-            if (response.ok) {
-                showAlert({ type: "success", message: data.message || "All test cases moved to trash" });
-                fetchTestCases();
-                setSelectedTestCase(null);
-                emitTestCaseEvent(TEST_CASE_EVENTS.DELETED, { testCaseIds });
-            } else {
-                showAlert({ type: "error", message: data.message || "Failed to move test cases to trash" });
-            }
-        } catch (error) {
-            showAlert({ type: "error", message: "Error moving test cases to trash" });
-        }
-    };
-
-    // Bulk Delete Permanently
-    const deleteAllTestCasesPermanently = async () => {
-        const result = await showConfirm({
-            title: "Delete All Test Cases Permanently",
-            message: "This action cannot be undone! Are you sure you want to permanently delete all test cases?",
-            confirmText: "Delete Permanently",
-            cancelText: "Cancel",
-            type: "danger",
-        });
-
-        if (!result) return;
-
-        try {
-            const testCaseIds = testCases.map((tc) => tc._id);
-            const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/bulk-delete`,
-                {
-                    method: "DELETE",
-                    headers: {
-                        "Content-Type": "application/json",
-                        Authorization: `Bearer ${token}`,
-                    },
-                    body: JSON.stringify({ testCaseIds }),
-                }
-            );
-
-            const data = await response.json();
-
-            if (response.ok) {
-                showAlert({ type: "success", message: data.message || "All test cases deleted permanently" });
-                fetchTestCases();
-                setSelectedTestCase(null);
-                emitTestCaseEvent(TEST_CASE_EVENTS.DELETED, { testCaseIds });
-            } else {
-                showAlert({ type: "error", message: data.message || "Failed to delete test cases" });
-            }
-        } catch (error) {
-            showAlert({ type: "error", message: "Error deleting test cases" });
-        }
-    };
-
-    // Navigation
-    const goToPreviousTestCase = () => {
-        const currentIndex = filteredTestCases.findIndex((tc) => tc._id === selectedTestCase._id);
-        if (currentIndex > 0) {
-            setSelectedTestCase(filteredTestCases[currentIndex - 1]);
-            fetchComments(filteredTestCases[currentIndex - 1]._id);
-        }
+        setSelectedImage(selectedTestCase.image || null);
     };
 
     const goToNextTestCase = () => {
-        const currentIndex = filteredTestCases.findIndex((tc) => tc._id === selectedTestCase._id);
+        const currentIndex = filteredTestCases.findIndex(
+            (testCase) => testCase._id === selectedTestCase._id
+        );
         if (currentIndex < filteredTestCases.length - 1) {
-            setSelectedTestCase(filteredTestCases[currentIndex + 1]);
-            fetchComments(filteredTestCases[currentIndex + 1]._id);
+            const nextTestCase = filteredTestCases[currentIndex + 1];
+            setSelectedTestCase(nextTestCase);
+            setIsEditing(false);
         }
     };
 
-    // Image Upload
-    const handleImageUpload = async (files) => {
-        if (!files || files.length === 0) return;
-
-        setUploadingImages(true);
-        try {
-            // Placeholder - implement image upload to your backend
-            const uploadedUrls = Array.from(files).map((file) => URL.createObjectURL(file));
-            setSelectedImages((prev) => [...prev, ...uploadedUrls]);
-            showAlert({ type: "success", message: "Images uploaded successfully" });
-        } catch (error) {
-            showAlert({ type: "error", message: "Error uploading images" });
-        } finally {
-            setUploadingImages(false);
+    const goToPreviousTestCase = () => {
+        const currentIndex = filteredTestCases.findIndex(
+            (testCase) => testCase._id === selectedTestCase._id
+        );
+        if (currentIndex > 0) {
+            const prevTestCase = filteredTestCases[currentIndex - 1];
+            setSelectedTestCase(prevTestCase);
+            setIsEditing(false);
         }
     };
 
-    const removeImage = (index) => {
-        setSelectedImages((prev) => prev.filter((_, i) => i !== index));
-    };
-
-    // Utility Functions
-    const copyText = (text) => {
-        navigator.clipboard.writeText(text);
-        showAlert({ type: "success", message: "Copied to clipboard" });
-    };
-
-    const copyToClipboard = (text, showAlert) => {
-        navigator.clipboard.writeText(text);
-        showAlert({ type: "success", message: "Copied to clipboard" });
-    };
-
-    const handleCopy = (text) => {
-        navigator.clipboard.writeText(text);
-        showAlert({ type: "success", message: "Link copied to clipboard" });
-    };
-
-    // Sidebar Resize
-    const startResizing = () => {
+    const startResizing = useCallback((e) => {
+        e.preventDefault();
         setIsResizing(true);
-    };
+    }, []);
+
+    const stopResizing = useCallback(() => {
+        setIsResizing(false);
+    }, []);
+
+    const resize = useCallback(
+        (e) => {
+            if (isResizing) {
+                const newWidth = e.clientX;
+                if (newWidth >= 300 && newWidth <= 600) {
+                    setSidebarWidth(newWidth);
+                }
+            }
+        },
+        [isResizing]
+    );
 
     useEffect(() => {
-        const handleMouseMove = (e) => {
-            if (!isResizing) return;
-            const newWidth = e.clientX;
-            if (newWidth >= 300 && newWidth <= 600) {
-                setSidebarWidth(newWidth);
-            }
-        };
-
-        const handleMouseUp = () => {
-            setIsResizing(false);
-        };
-
-        if (isResizing) {
-            document.addEventListener("mousemove", handleMouseMove);
-            document.addEventListener("mouseup", handleMouseUp);
-        }
-
+        document.addEventListener("mousemove", resize);
+        document.addEventListener("mouseup", stopResizing);
         return () => {
-            document.removeEventListener("mousemove", handleMouseMove);
-            document.removeEventListener("mouseup", handleMouseUp);
+            document.removeEventListener("mousemove", resize);
+            document.removeEventListener("mouseup", stopResizing);
         };
-    }, [isResizing]);
+    }, [resize, stopResizing]);
 
-    // Close Date Picker on Outside Click
+    useEffect(() => {
+        fetchTestCases();
+    }, [fetchTestCases]);
+
     useEffect(() => {
         const handleClickOutside = (event) => {
-            if (datePickerRef.current && !datePickerRef.current.contains(event.target)) {
+            if (
+                datePickerRef.current &&
+                !datePickerRef.current.contains(event.target)
+            ) {
                 setShowDatePicker(false);
             }
         };
@@ -658,28 +536,150 @@ const TestCaseSplitView = () => {
         return () => document.removeEventListener("mousedown", handleClickOutside);
     }, []);
 
-    // Color Helper Functions
+    // Search functionality
+    useEffect(() => {
+        const delayDebounceFn = setTimeout(() => {
+            if (searchTerm.trim()) {
+                // Implement search logic here if needed
+                // For now, we'll just filter the existing test cases
+                const filtered = testCases.filter(testCase =>
+                    testCase.moduleName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    testCase.testCaseDescription?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                    testCase.serialNumber?.toLowerCase().includes(searchTerm.toLowerCase())
+                );
+                setTestCases(filtered);
+            } else if (dateFilter.start || dateFilter.end) {
+                // Implement date filtering here if needed
+                fetchTestCases();
+            } else {
+                fetchTestCases();
+            }
+        }, 500);
+
+        return () => clearTimeout(delayDebounceFn);
+    }, [searchTerm, dateFilter.start, dateFilter.end]);
+
+    const filteredTestCases = testCases;
+
     const getTestCaseTypeColor = (type) => {
         const colors = {
-            Functional: "bg-blue-50 text-blue-700 border-blue-200",
-            Performance: "bg-purple-50 text-purple-700 border-purple-200",
-            Security: "bg-red-50 text-red-700 border-red-200",
-            Usability: "bg-green-50 text-green-700 border-green-200",
-            Compatibility: "bg-yellow-50 text-yellow-700 border-yellow-200",
+            Functional: "bg-blue-100 text-blue-800 border-blue-300",
+            "User-Interface": "bg-purple-100 text-purple-800 border-purple-300",
+            Performance: "bg-orange-100 text-orange-800 border-orange-300",
+            API: "bg-green-100 text-green-800 border-green-300",
+            Database: "bg-indigo-100 text-indigo-800 border-indigo-300",
+            Security: "bg-red-100 text-red-800 border-red-300",
+            Others: "bg-gray-100 text-gray-800 border-gray-300",
         };
-        return colors[type] || "bg-gray-50 text-gray-700 border-gray-200";
+        return colors[type] || "bg-gray-100 text-gray-800 border-gray-300";
     };
 
     const getStatusColor = (status) => {
         const colors = {
-            New: "bg-blue-50 text-blue-700 border-blue-200",
-            "In Progress": "bg-yellow-50 text-yellow-700 border-yellow-200",
-            Passed: "bg-green-50 text-green-700 border-green-200",
-            Failed: "bg-red-50 text-red-700 border-red-200",
-            Blocked: "bg-gray-50 text-gray-700 border-gray-200",
+            Pass: "bg-green-100 text-green-800 border-green-300",
+            Fail: "bg-red-100 text-red-800 border-red-300",
         };
-        return colors[status] || "bg-gray-50 text-gray-700 border-gray-200";
+        return colors[status] || "bg-gray-100 text-gray-800 border-gray-300";
     };
+
+    const getPriorityColor = (priority) => {
+        const colors = {
+            Critical: "bg-red-100 text-red-800 border-red-300",
+            High: "bg-orange-100 text-orange-800 border-orange-300",
+            Medium: "bg-yellow-100 text-yellow-800 border-yellow-300",
+            Low: "bg-green-100 text-green-800 border-green-300",
+        };
+        return colors[priority] || "bg-gray-100 text-gray-800 border-gray-300";
+    };
+
+    const GitHubDropdown = ({
+        value,
+        options,
+        onChange,
+        label,
+        className = "",
+    }) => {
+        const [isOpen, setIsOpen] = useState(false);
+        const dropdownRef = useRef(null);
+
+        useEffect(() => {
+            const handleClickOutside = (event) => {
+                if (
+                    dropdownRef.current &&
+                    !dropdownRef.current.contains(event.target)
+                ) {
+                    setIsOpen(false);
+                }
+            };
+
+            document.addEventListener("mousedown", handleClickOutside);
+            return () =>
+                document.removeEventListener("mousedown", handleClickOutside);
+        }, []);
+
+        const handleSelect = (option) => {
+            onChange(option);
+            setIsOpen(false);
+        };
+
+        const getDropdownColor = () => {
+            if (label === "Priority") return getPriorityColor(value);
+            if (label === "Status") return getStatusColor(value);
+            if (label === "TestCase Type") return getTestCaseTypeColor(value);
+            return "bg-white text-gray-900 border-gray-200";
+        };
+
+        return (
+            <div className={`relative inline-block text-left`} ref={dropdownRef}>
+                <button
+                    type="button"
+                    className={`inline-flex justify-between items-center px-2 py-1.5 text-xs font-semibold border rounded-md transition-all duration-200 hover:shadow-sm hover:border-opacity-60 focus:outline-none ${getDropdownColor()}`}
+                    onClick={() => setIsOpen(!isOpen)}
+                >
+                    <span className="mr-1">{value}</span>
+                    <motion.div
+                        animate={{ rotate: isOpen ? 180 : 0 }}
+                        transition={{ duration: 0.2 }}
+                    >
+                        <GoogleArrowDown className="h-4 w-4" />
+                    </motion.div>
+                </button>
+
+                <AnimatePresence>
+                    {isOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -8 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -8 }}
+                            transition={{ duration: 0.12 }}
+                            className="origin-top-right absolute right-0 mt-2 w-full rounded-md shadow-xl bg-white ring-1 ring-gray-200 z-20 overflow-hidden"
+                        >
+                            <div className="py-1" role="menu">
+                                {options.map((option) => (
+                                    <motion.button
+                                        key={option}
+                                        whileHover={{ backgroundColor: "rgba(59, 130, 246, 0.08)" }}
+                                        className={`block w-full text-left px-2.5 py-1.5 text-xs transition-colors font-medium ${value === option
+                                            ? "bg-blue-50 text-blue-600 border-l-2 border-blue-500"
+                                            : "text-gray-700 hover:text-gray-900"
+                                            }`}
+                                        onClick={() => handleSelect(option)}
+                                        role="menuitem"
+                                    >
+                                        {option}
+                                    </motion.button>
+                                ))}
+                            </div>
+                        </motion.div>
+                    )}
+                </AnimatePresence>
+            </div>
+        );
+    };
+
+    if (loading) {
+        return <Loader />;
+    }
 
     return (
         <div className="flex h-[calc(100vh-4rem)] w-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
@@ -705,12 +705,14 @@ const TestCaseSplitView = () => {
                 <div className="flex items-center justify-between p-[14px] border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
                     <h2
                         onClick={() => copyToClipboard(testTypeName, showAlert)}
-                        className="text-sm font-bold text-gray-800 tracking-wide cursor-pointer"
+                        className="text-sm font-bold text-gray-800 tracking-wide"
                     >
-                        {testTypeName || "Select Test Type"}
+                        {testTypeName || 'Select Test Type'}
                     </h2>
 
                     <motion.button
+                        tooltip-data="Close Sidebar"
+                        tooltip-placement="right"
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => setIsSidebarOpen(false)}
@@ -827,6 +829,7 @@ const TestCaseSplitView = () => {
                 {/* Test Cases List */}
                 <div className="flex-1 overflow-y-auto bg-gray-50">
                     {loading ? (
+                        // Skeleton Loader
                         <div className="space-y-2 p-3">
                             {[...Array(5)].map((_, index) => (
                                 <motion.div
@@ -836,6 +839,7 @@ const TestCaseSplitView = () => {
                                     transition={{ delay: index * 0.05 }}
                                     className="bg-white rounded-xl border border-gray-200 p-3"
                                 >
+                                    {/* Header Skeleton */}
                                     <div className="flex items-center justify-between gap-2 mb-2">
                                         <motion.div
                                             animate={{ opacity: [0.5, 1, 0.5] }}
@@ -855,6 +859,8 @@ const TestCaseSplitView = () => {
                                             />
                                         </div>
                                     </div>
+
+                                    {/* Description Skeleton */}
                                     <div className="space-y-1.5 mb-2">
                                         <motion.div
                                             animate={{ opacity: [0.5, 1, 0.5] }}
@@ -867,6 +873,8 @@ const TestCaseSplitView = () => {
                                             className="h-3 bg-gray-200 rounded w-3/4"
                                         />
                                     </div>
+
+                                    {/* Date Skeleton */}
                                     <motion.div
                                         animate={{ opacity: [0.5, 1, 0.5] }}
                                         transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
@@ -881,12 +889,14 @@ const TestCaseSplitView = () => {
                             animate={{ opacity: 1, y: 0 }}
                             className="flex flex-col items-center justify-center py-16"
                         >
+                            {/* Animated Icon Container */}
                             <motion.div
                                 initial={{ scale: 0 }}
                                 animate={{ scale: 1 }}
                                 transition={{ delay: 0.2, type: "spring", stiffness: 200 }}
                                 className="relative mb-6"
                             >
+                                {/* Outer Circle with Gradient */}
                                 <motion.div
                                     animate={{ rotate: 360 }}
                                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
@@ -894,7 +904,9 @@ const TestCaseSplitView = () => {
                                     style={{ width: '120px', height: '120px', left: '-10px', top: '-10px' }}
                                 />
 
+                                {/* Main Circle */}
                                 <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 flex items-center justify-center">
+                                    {/* Checkmark SVG */}
                                     <motion.svg
                                         initial={{ pathLength: 0 }}
                                         animate={{ pathLength: 1 }}
@@ -918,6 +930,7 @@ const TestCaseSplitView = () => {
                                     </motion.svg>
                                 </div>
 
+                                {/* Floating Particles */}
                                 {[...Array(3)].map((_, i) => (
                                     <motion.div
                                         key={i}
@@ -940,6 +953,7 @@ const TestCaseSplitView = () => {
                                 ))}
                             </motion.div>
 
+                            {/* Text Content */}
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -950,10 +964,11 @@ const TestCaseSplitView = () => {
                                     All Clear!
                                 </h3>
                                 <p className="text-sm text-gray-500 max-w-xs">
-                                    No test cases found. Your test suite is empty.
+                                    No test cases found. Create your first test case to get started.
                                 </p>
                             </motion.div>
 
+                            {/* Decorative Elements */}
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -983,9 +998,9 @@ const TestCaseSplitView = () => {
                                         }`}
                                     onClick={() => {
                                         setSelectedTestCase(testCase);
-                                        fetchComments(testCase._id);
                                     }}
                                 >
+                                    {/* Header */}
                                     <div className="flex items-center justify-between gap-2 mb-2">
                                         <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
                                             {testCase.serialNumber}
@@ -1008,10 +1023,12 @@ const TestCaseSplitView = () => {
                                         </div>
                                     </div>
 
+                                    {/* Description */}
                                     <p className="text-xs text-gray-700 mb-2 line-clamp-2 min-h-[2rem] leading-relaxed">
                                         {testCase.testCaseDescription || "No description"}
                                     </p>
 
+                                    {/* Date */}
                                     <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-2">
                                         <Clock size={12} className="text-gray-400" />
                                         <span>
@@ -1035,7 +1052,7 @@ const TestCaseSplitView = () => {
             {isSidebarOpen && (
                 <motion.div
                     whileHover={{ backgroundColor: "rgb(59, 130, 246)" }}
-                    className="w-[2px] bg-gray-200 cursor-col-resize transition-colors"
+                    className="w-[1px] bg-gray-200 cursor-col-resize transition-colors"
                     onMouseDown={startResizing}
                 />
             )}
@@ -1047,6 +1064,8 @@ const TestCaseSplitView = () => {
                     <div className="flex items-center gap-3">
                         {!isSidebarOpen && (
                             <motion.button
+                                tooltip-data="Open Sidebar"
+                                tooltip-placement="right"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => setIsSidebarOpen(true)}
@@ -1055,6 +1074,7 @@ const TestCaseSplitView = () => {
                                 <Menu size={18} className="text-gray-700" />
                             </motion.button>
                         )}
+                        {/* Header with Serial Number and Dropdowns */}
                         {selectedTestCase && (
                             <div className="flex items-center gap-2 ml-4">
                                 <motion.h2
@@ -1068,13 +1088,15 @@ const TestCaseSplitView = () => {
                                     value={selectedTestCase.testCaseType || "Functional"}
                                     options={[
                                         "Functional",
+                                        "User-Interface",
                                         "Performance",
+                                        "API",
+                                        "Database",
                                         "Security",
-                                        "Usability",
-                                        "Compatibility",
+                                        "Others",
                                     ]}
                                     onChange={(value) => handleFieldEdit("testCaseType", value)}
-                                    label="Test Case Type"
+                                    label="TestCase Type"
                                     className="min-w-[130px]"
                                 />
                                 <GitHubDropdown
@@ -1085,21 +1107,11 @@ const TestCaseSplitView = () => {
                                     className="min-w-[110px]"
                                 />
                                 <GitHubDropdown
-                                    value={selectedTestCase.severity || "Medium"}
-                                    options={["Critical", "High", "Medium", "Low"]}
-                                    onChange={(value) => handleFieldEdit("severity", value)}
-                                    label="Severity"
-                                    className="min-w-[110px]"
-                                />
-                                <GitHubDropdown
-                                    value={selectedTestCase.status || "New"}
-                                    options={[
-                                        "Pass",
-                                        "Fail"
-                                    ]}
+                                    value={selectedTestCase.status || "Pass"}
+                                    options={["Pass", "Fail"]}
                                     onChange={(value) => handleFieldEdit("status", value)}
                                     label="Status"
-                                    className="min-w-[130px]"
+                                    className="min-w-[110px]"
                                 />
                             </div>
                         )}
@@ -1107,9 +1119,12 @@ const TestCaseSplitView = () => {
 
                     {selectedTestCase && (
                         <div className="flex items-center gap-3">
-                            {(Array.isArray(selectedTestCase.image) ? selectedTestCase.image.length : selectedTestCase.image ? 1 : 0) > 0 && (
+                            {/* Image Button with Dropdown */}
+                            {selectedTestCase.image && (
                                 <div className="relative">
                                     <motion.button
+                                        tooltip-data="View Image"
+                                        tooltip-placement="bottom"
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
                                         onClick={() => setImageDropdownOpen(!imageDropdownOpen)}
@@ -1118,43 +1133,44 @@ const TestCaseSplitView = () => {
                                         <ImageIcon size={13} />
                                     </motion.button>
 
+                                    {/* Image Dropdown */}
                                     {imageDropdownOpen && (
                                         <motion.div
                                             initial={{ opacity: 0, y: -10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
-                                            className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] w-64 overflow-y-auto"
+                                            className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 w-64"
                                         >
-                                            {(Array.isArray(selectedTestCase.image) ? selectedTestCase.image : (selectedTestCase.image ? [selectedTestCase.image] : [])).map((image, index) => (
-                                                <a
-                                                    key={index}
-                                                    href={image}
-                                                    target="_blank"
-                                                    rel="noopener noreferrer"
-                                                    onClick={() => setImageDropdownOpen(false)}
-                                                    className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-purple-100 hover:text-purple-700 transition-colors border-b border-gray-100 last:border-b-0 truncate"
-                                                >
-                                                    {image}
-                                                </a>
-                                            ))}
+                                            <a
+                                                href={selectedTestCase.image}
+                                                target="_blank"
+                                                rel="noopener noreferrer"
+                                                onClick={() => setImageDropdownOpen(false)}
+                                                className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-purple-100 hover:text-purple-700 transition-colors truncate"
+                                            >
+                                                {selectedTestCase.image}
+                                            </a>
                                         </motion.div>
                                     )}
                                 </div>
                             )}
 
+                            {/* Test Case counter */}
                             <div className="text-xs text-gray-600 font-medium bg-gray-100 px-3 py-1.5 rounded-lg">
                                 Test Case{" "}
-                                {filteredTestCases.findIndex((tc) => tc._id === selectedTestCase._id) + 1}{" "}
+                                {filteredTestCases.findIndex((b) => b._id === selectedTestCase._id) + 1}{" "}
                                 of {filteredTestCases.length}
                             </div>
 
+                            {/* Navigation buttons */}
                             <div className="flex items-center gap-1">
                                 <motion.button
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={goToPreviousTestCase}
                                     disabled={
-                                        filteredTestCases.findIndex((tc) => tc._id === selectedTestCase._id) === 0
+                                        filteredTestCases.findIndex((b) => b._id === selectedTestCase._id) ===
+                                        0
                                     }
                                     className="p-2 hover:bg-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
@@ -1165,7 +1181,7 @@ const TestCaseSplitView = () => {
                                     whileTap={{ scale: 0.95 }}
                                     onClick={goToNextTestCase}
                                     disabled={
-                                        filteredTestCases.findIndex((tc) => tc._id === selectedTestCase._id) ===
+                                        filteredTestCases.findIndex((b) => b._id === selectedTestCase._id) ===
                                         filteredTestCases.length - 1
                                     }
                                     className="p-2 hover:bg-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -1174,8 +1190,11 @@ const TestCaseSplitView = () => {
                                 </motion.button>
                             </div>
 
+                            {/* Edit/Save buttons */}
                             {!isEditing ? (
                                 <motion.button
+                                    tooltip-data="Edit"
+                                    tooltip-placement="bottom"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={handleEditClick}
@@ -1186,6 +1205,8 @@ const TestCaseSplitView = () => {
                             ) : (
                                 <div className="flex items-center gap-2">
                                     <motion.button
+                                        tooltip-data="Save"
+                                        tooltip-placement="bottom"
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
                                         onClick={handleSaveClick}
@@ -1194,6 +1215,8 @@ const TestCaseSplitView = () => {
                                         <Save size={13} />
                                     </motion.button>
                                     <motion.button
+                                        tooltip-data="Cancel"
+                                        tooltip-placement="bottom"
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
                                         onClick={handleCancelClick}
@@ -1204,7 +1227,10 @@ const TestCaseSplitView = () => {
                                 </div>
                             )}
 
+                            {/* Archive and Delete buttons */}
                             <motion.button
+                                tooltip-data="Archive"
+                                tooltip-placement="bottom"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => moveTestCaseToTrash(selectedTestCase._id)}
@@ -1213,6 +1239,8 @@ const TestCaseSplitView = () => {
                                 <Archive size={13} />
                             </motion.button>
                             <motion.button
+                                tooltip-data="Delete"
+                                tooltip-placement="bottom"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => deleteTestCasePermanently(selectedTestCase._id)}
@@ -1232,6 +1260,7 @@ const TestCaseSplitView = () => {
                             animate={{ opacity: 1, scale: 1 }}
                             className="flex flex-col items-center justify-center h-full text-gray-500 px-8"
                         >
+                            {/* Animated Icon Container */}
                             <motion.div
                                 initial={{ scale: 0, rotate: -180 }}
                                 animate={{ scale: 1, rotate: 0 }}
@@ -1243,6 +1272,7 @@ const TestCaseSplitView = () => {
                                 }}
                                 className="relative mb-8"
                             >
+                                {/* Orbiting Rings */}
                                 <motion.div
                                     animate={{ rotate: 360 }}
                                     transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
@@ -1259,9 +1289,12 @@ const TestCaseSplitView = () => {
                                     <div className="absolute inset-0 rounded-full border-2 border-dotted border-purple-200 opacity-30" />
                                 </motion.div>
 
+                                {/* Main Circle Background */}
                                 <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200 flex items-center justify-center shadow-xl">
+                                    {/* Inner Glow */}
                                     <div className="absolute inset-2 rounded-full bg-gradient-to-br from-blue-100/50 to-purple-100/50 blur-md" />
 
+                                    {/* Icon */}
                                     <motion.div
                                         animate={{
                                             scale: [1, 1.1, 1],
@@ -1296,6 +1329,7 @@ const TestCaseSplitView = () => {
                                     </motion.div>
                                 </div>
 
+                                {/* Floating Dots */}
                                 {[...Array(4)].map((_, i) => (
                                     <motion.div
                                         key={i}
@@ -1318,6 +1352,7 @@ const TestCaseSplitView = () => {
                                 ))}
                             </motion.div>
 
+                            {/* Text Content */}
                             <motion.div
                                 initial={{ opacity: 0, y: 20 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -1328,9 +1363,10 @@ const TestCaseSplitView = () => {
                                     No Test Case Selected
                                 </h3>
                                 <p className="text-sm text-gray-500 leading-relaxed mb-4">
-                                    Choose a test case from the list to view its details and information
+                                    Choose a test case from the list to view its details and execution information
                                 </p>
 
+                                {/* Visual Indicator */}
                                 <motion.div
                                     animate={{ x: [0, 8, 0] }}
                                     transition={{
@@ -1350,9 +1386,11 @@ const TestCaseSplitView = () => {
                                             strokeLinejoin="round"
                                         />
                                     </svg>
+
                                 </motion.div>
                             </motion.div>
 
+                            {/* Bottom Decorative Elements */}
                             <motion.div
                                 initial={{ opacity: 0 }}
                                 animate={{ opacity: 1 }}
@@ -1384,6 +1422,7 @@ const TestCaseSplitView = () => {
                             className="max-w-full mx-auto"
                         >
                             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                                {/* Left Column - Test Case Details */}
                                 <div className="lg:col-span-2 space-y-4">
                                     {/* Module Name */}
                                     <motion.div
@@ -1415,7 +1454,7 @@ const TestCaseSplitView = () => {
                                         )}
                                     </motion.div>
 
-                                    {/* Description */}
+                                    {/* Test Case Description */}
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
@@ -1423,7 +1462,7 @@ const TestCaseSplitView = () => {
                                         className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
                                     >
                                         <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
-                                            DESCRIPTION
+                                            TEST CASE DESCRIPTION
                                         </label>
                                         {isEditing ? (
                                             <textarea
@@ -1470,7 +1509,8 @@ const TestCaseSplitView = () => {
                                             />
                                         ) : (
                                             <p className="text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 min-h-[80px] leading-relaxed">
-                                                {selectedTestCase.expectedResult || "No expected result specified"}
+                                                {selectedTestCase.expectedResult ||
+                                                    "No expected result specified"}
                                             </p>
                                         )}
                                     </motion.div>
@@ -1500,51 +1540,58 @@ const TestCaseSplitView = () => {
                                             />
                                         ) : (
                                             <p className="text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 min-h-[80px] leading-relaxed">
-                                                {selectedTestCase.actualResult || "No actual result specified"}
+                                                {selectedTestCase.actualResult ||
+                                                    "No actual result specified"}
                                             </p>
                                         )}
                                     </motion.div>
-                                    {/* Test Case Images */}
-                                    {selectedTestCase.image && selectedTestCase.image.length > 0 && (
+
+                                    {/* Image Display */}
+                                    {selectedTestCase.image && (
                                         <>
                                             <motion.div
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
-                                                transition={{ delay: 0.35 }}
+                                                transition={{ delay: 0.3 }}
                                                 className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
                                             >
                                                 <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
-                                                    TEST CASE IMAGES
+                                                    TEST CASE IMAGE
                                                 </label>
                                                 {isEditing ? (
                                                     <div className="space-y-3">
                                                         <div className="flex flex-wrap gap-2">
-                                                            {selectedImages.map((image, index) => (
-                                                                <div key={index} className="relative group">
+                                                            {selectedImage && (
+                                                                <div className="relative group">
                                                                     <img
-                                                                        src={image}
-                                                                        alt={`Test case screenshot ${index + 1}`}
+                                                                        src={selectedImage}
+                                                                        alt="Test case screenshot"
                                                                         className="w-24 h-24 object-cover rounded-lg border border-gray-200"
                                                                     />
                                                                     <motion.button
                                                                         whileHover={{ scale: 1.1 }}
                                                                         whileTap={{ scale: 0.9 }}
-                                                                        onClick={() => removeImage(index)}
+                                                                        onClick={() => {
+                                                                            setSelectedImage(null);
+                                                                            setEditFormData((prev) => ({
+                                                                                ...prev,
+                                                                                image: "",
+                                                                            }));
+                                                                        }}
                                                                         className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                                     >
                                                                         <X size={12} />
                                                                     </motion.button>
                                                                 </div>
-                                                            ))}
+                                                            )}
                                                         </div>
                                                         <div className="flex gap-2">
                                                             <input
                                                                 ref={fileInputRef}
                                                                 type="file"
-                                                                multiple
                                                                 accept="image/*"
                                                                 onChange={(e) =>
-                                                                    handleImageUpload(e.target.files)
+                                                                    handleImageUpload(e.target.files[0])
                                                                 }
                                                                 className="hidden"
                                                             />
@@ -1552,31 +1599,28 @@ const TestCaseSplitView = () => {
                                                                 whileHover={{ scale: 1.02 }}
                                                                 whileTap={{ scale: 0.98 }}
                                                                 onClick={() => fileInputRef.current?.click()}
-                                                                disabled={uploadingImages}
+                                                                disabled={uploadingImage}
                                                                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-xs font-medium"
                                                             >
                                                                 <Upload size={14} />
-                                                                {uploadingImages ? "Uploading..." : "Add Images"}
+                                                                {uploadingImage ? "Uploading..." : "Change Image"}
                                                             </motion.button>
                                                         </div>
                                                     </div>
                                                 ) : (
                                                     <div className="flex flex-wrap gap-2">
-                                                        {(Array.isArray(selectedTestCase.image) ? selectedTestCase.image : (selectedTestCase.image ? [selectedTestCase.image] : [])).map((image, index) => (
-                                                            <motion.div
-                                                                key={index}
-                                                                whileHover={{ scale: 1.05 }}
-                                                                className="block"
-                                                            >
-                                                                <img
-                                                                    src={image}
-                                                                    alt={`Test case screenshot ${index + 1}`}
-                                                                    className="w-24 h-24 object-cover rounded-lg border border-gray-200 hover:border-blue-500 transition-colors cursor-pointer"
-                                                                    onClick={() => setSelectedImageModal(image)}
-                                                                    onDoubleClick={() => window.open(image, "_blank")}
-                                                                />
-                                                            </motion.div>
-                                                        ))}
+                                                        <motion.div
+                                                            whileHover={{ scale: 1.05 }}
+                                                            className="block"
+                                                        >
+                                                            <img
+                                                                src={selectedTestCase.image}
+                                                                alt="Test case screenshot"
+                                                                className="w-24 h-24 object-cover rounded-lg border border-gray-200 hover:border-blue-500 transition-colors cursor-pointer"
+                                                                onClick={() => setSelectedImageModal(selectedTestCase.image)}
+                                                                onDoubleClick={() => window.open(selectedTestCase.image, "_blank")}
+                                                            />
+                                                        </motion.div>
                                                     </div>
                                                 )}
                                             </motion.div>
@@ -1616,11 +1660,75 @@ const TestCaseSplitView = () => {
                                         </>
                                     )}
 
+                                    {/* Image Upload in Edit Mode */}
+                                    {isEditing && !selectedTestCase.image && (
+                                        <motion.div
+                                            initial={{ opacity: 0, y: 10 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: 0.3 }}
+                                            className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+                                        >
+                                            <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">
+                                                ADD TEST CASE IMAGE
+                                            </label>
+                                            <div className="space-y-3">
+                                                {selectedImage && (
+                                                    <div className="flex flex-wrap gap-2">
+                                                        <div className="relative group">
+                                                            <img
+                                                                src={selectedImage}
+                                                                alt="Test case screenshot"
+                                                                className="w-24 h-24 object-cover rounded-lg border border-gray-200"
+                                                            />
+                                                            <motion.button
+                                                                whileHover={{ scale: 1.1 }}
+                                                                whileTap={{ scale: 0.9 }}
+                                                                onClick={() => {
+                                                                    setSelectedImage(null);
+                                                                    setEditFormData((prev) => ({
+                                                                        ...prev,
+                                                                        image: "",
+                                                                    }));
+                                                                }}
+                                                                className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                            >
+                                                                <X size={12} />
+                                                            </motion.button>
+                                                        </div>
+                                                    </div>
+                                                )}
+                                                <div className="flex gap-2">
+                                                    <input
+                                                        ref={fileInputRef}
+                                                        type="file"
+                                                        accept="image/*"
+                                                        onChange={(e) =>
+                                                            handleImageUpload(e.target.files[0])
+                                                        }
+                                                        className="hidden"
+                                                    />
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.02 }}
+                                                        whileTap={{ scale: 0.98 }}
+                                                        onClick={() => fileInputRef.current?.click()}
+                                                        disabled={uploadingImage}
+                                                        className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-xs font-medium"
+                                                    >
+                                                        <Upload size={14} />
+                                                        {uploadingImage
+                                                            ? "Uploading..."
+                                                            : "Upload Image"}
+                                                    </motion.button>
+                                                </div>
+                                            </div>
+                                        </motion.div>
+                                    )}
+
                                     {/* Timestamps */}
                                     <motion.div
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
-                                        transition={{ delay: 0.4 }}
+                                        transition={{ delay: 0.35 }}
                                         className="grid grid-cols-2 gap-4 pt-2"
                                     >
                                         <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
@@ -1634,7 +1742,7 @@ const TestCaseSplitView = () => {
                                         </div>
                                         {selectedTestCase.updatedAt && (
                                             <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
-                                                <label className="text-xs font-bold text-gray-600 mb-1.5 tracking-wide flex items-center gap-1.5">
+                                                <label className="text-xs font-bold text-gray-600 mb-1.5 block tracking-wide  items-center gap-1.5">
                                                     <Clock size={12} />
                                                     UPDATED AT
                                                 </label>
@@ -1646,99 +1754,101 @@ const TestCaseSplitView = () => {
                                     </motion.div>
                                 </div>
 
-                                {/* Right Column - Comments */}
+                                {/* Right Column - Additional Info */}
                                 <motion.div
                                     initial={{ opacity: 0, x: 20 }}
                                     animate={{ opacity: 1, x: 0 }}
                                     transition={{ delay: 0.2 }}
                                     className="lg:col-span-1"
                                 >
-                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 sticky top-1">
+                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 top-1">
                                         <h3 className="user-select-none text-sm font-bold text-gray-800 mb-4 flex items-center gap-2 tracking-wide">
-                                            <MessageSquare size={16} className="text-blue-600" />
-                                            COMMENTS
+                                            <Play size={16} className="text-green-600" />
+                                            EXECUTION INFO
                                         </h3>
 
-                                        {/* Add Comment */}
+                                        {/* Test Case Type */}
                                         <div className="mb-4">
-                                            <textarea
-                                                value={newComment}
-                                                onChange={(e) => setNewComment(e.target.value)}
-                                                placeholder="Add a comment..."
-                                                rows={3}
-                                                className="w-full px-3 py-2.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2 transition-all resize-none"
-                                            />
-                                            <motion.button
-                                                whileHover={{ scale: 1.02 }}
-                                                whileTap={{ scale: 0.98 }}
-                                                onClick={() => submitComment(selectedTestCase._id)}
-                                                disabled={!newComment.trim() || submittingComment}
-                                                className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-2 font-medium shadow-sm transition-colors"
-                                            >
-                                                {submittingComment ? (
-                                                    <>
-                                                        <Loader2 size={13} className="animate-spin" />
-                                                        Posting...
-                                                    </>
-                                                ) : (
-                                                    <>
-                                                        <Send size={13} />
-                                                        Post Comment
-                                                    </>
-                                                )}
-                                            </motion.button>
+                                            <label className="text-xs font-bold text-gray-600 mb-2 block">
+                                                TEST CASE TYPE
+                                            </label>
+                                            {isEditing ? (
+                                                <select
+                                                    value={editFormData.testCaseType}
+                                                    onChange={(e) =>
+                                                        setEditFormData((prev) => ({
+                                                            ...prev,
+                                                            testCaseType: e.target.value,
+                                                        }))
+                                                    }
+                                                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="Functional">Functional</option>
+                                                    <option value="User-Interface">User-Interface</option>
+                                                    <option value="Performance">Performance</option>
+                                                    <option value="API">API</option>
+                                                    <option value="Database">Database</option>
+                                                    <option value="Security">Security</option>
+                                                    <option value="Others">Others</option>
+                                                </select>
+                                            ) : (
+                                                <p className={`px-3 py-2 text-xs font-semibold rounded-lg border ${getTestCaseTypeColor(selectedTestCase.testCaseType)}`}>
+                                                    {selectedTestCase.testCaseType}
+                                                </p>
+                                            )}
                                         </div>
 
-                                        {/* Comments List */}
-                                        <div className="space-y-3 max-h-96 overflow-y-auto pr-2">
-                                            {loadingComments ? (
-                                                <div className="flex items-center justify-center py-8">
-                                                    <Loader2
-                                                        size={24}
-                                                        className="animate-spin text-blue-600"
-                                                    />
-                                                </div>
-                                            ) : comments.length === 0 ? (
-                                                <div className="text-center py-8 text-gray-500 text-xs">
-                                                    <MessageSquare
-                                                        size={32}
-                                                        className="mx-auto mb-2 text-gray-300"
-                                                    />
-                                                    <p className="font-medium">No comments yet</p>
-                                                    <p className="text-gray-400 mt-1">Be the first to comment</p>
-                                                </div>
+                                        {/* Priority */}
+                                        <div className="mb-4">
+                                            <label className="text-xs font-bold text-gray-600 mb-2 block">
+                                                PRIORITY
+                                            </label>
+                                            {isEditing ? (
+                                                <select
+                                                    value={editFormData.priority}
+                                                    onChange={(e) =>
+                                                        setEditFormData((prev) => ({
+                                                            ...prev,
+                                                            priority: e.target.value,
+                                                        }))
+                                                    }
+                                                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="Critical">Critical</option>
+                                                    <option value="High">High</option>
+                                                    <option value="Medium">Medium</option>
+                                                    <option value="Low">Low</option>
+                                                </select>
                                             ) : (
-                                                comments.map((comment, index) => (
-                                                    <motion.div
-                                                        key={index}
-                                                        initial={{ opacity: 0, y: 10 }}
-                                                        animate={{ opacity: 1, y: 0 }}
-                                                        transition={{ delay: index * 0.05 }}
-                                                        className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200"
-                                                    >
-                                                        <div className="flex items-center gap-2 mb-2">
-                                                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
-                                                                <span className="text-xs font-bold text-white">
-                                                                    {comment.commentBy?.charAt(0).toUpperCase() ||
-                                                                        "U"}
-                                                                </span>
-                                                            </div>
-                                                            <div className="flex-1 min-w-0">
-                                                                <span className="text-xs font-bold text-gray-800 block truncate">
-                                                                    {comment.commentBy || "Unknown"}
-                                                                </span>
-                                                                <span className="text-xs text-gray-500">
-                                                                    {new Date(
-                                                                        comment.createdAt
-                                                                    ).toLocaleDateString()}
-                                                                </span>
-                                                            </div>
-                                                        </div>
-                                                        <p className="text-xs text-gray-700 leading-relaxed">
-                                                            {comment.comment}
-                                                        </p>
-                                                    </motion.div>
-                                                ))
+                                                <p className={`px-3 py-2 text-xs font-semibold rounded-lg border ${getPriorityColor(selectedTestCase.priority)}`}>
+                                                    {selectedTestCase.priority}
+                                                </p>
+                                            )}
+                                        </div>
+
+                                        {/* Status */}
+                                        <div className="mb-4">
+                                            <label className="text-xs font-bold text-gray-600 mb-2 block">
+                                                STATUS
+                                            </label>
+                                            {isEditing ? (
+                                                <select
+                                                    value={editFormData.status}
+                                                    onChange={(e) =>
+                                                        setEditFormData((prev) => ({
+                                                            ...prev,
+                                                            status: e.target.value,
+                                                        }))
+                                                    }
+                                                    className="w-full px-3 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                >
+                                                    <option value="Pass">Pass</option>
+                                                    <option value="Fail">Fail</option>
+                                                </select>
+                                            ) : (
+                                                <p className={`px-3 py-2 text-xs font-semibold rounded-lg border ${getStatusColor(selectedTestCase.status)}`}>
+                                                    {selectedTestCase.status}
+                                                </p>
                                             )}
                                         </div>
                                     </div>
