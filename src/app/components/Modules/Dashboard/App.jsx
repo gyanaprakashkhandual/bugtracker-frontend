@@ -699,14 +699,14 @@ const Dashboard = ({ selectedProjectId, projects }) => {
       </div>
 
       {/* ==================== MAIN CONTENT AREA - CHARTS ==================== */}
-      <div className="max-w-full mx-auto px-6 lg:px-8 py-8" ref={chartRef}>
+      <div className="max-w-full mx-auto px-1 lg:px-8 py-1" ref={chartRef}>
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
           {/* Bug Status Distribution Chart */}
           <motion.div
             initial={{ opacity: 0, x: -20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.3 }}
-            className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 hover:shadow-xl transition-shadow"
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 hover:shadow-xl transition-shadow"
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-gray-900 flex items-center">
@@ -751,7 +751,7 @@ const Dashboard = ({ selectedProjectId, projects }) => {
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ delay: 0.4 }}
-            className="bg-white rounded-2xl shadow-lg border border-gray-200 p-8 hover:shadow-xl transition-shadow"
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 hover:shadow-xl transition-shadow"
           >
             <div className="flex items-center justify-between mb-6">
               <h3 className="text-xl font-bold text-gray-900 flex items-center">
@@ -874,7 +874,7 @@ export default function DashboardSidebar() {
   return (
     <div className="sidebar-scrollbar">
       <div className="max-w-full mx-auto">
-        <div className="flex gap-6">
+        <div className="flex  sticky top-0">
           <div className="flex flex-col border-r border-gray-200">
             <motion.div
               initial={{ opacity: 0, y: 20 }}
