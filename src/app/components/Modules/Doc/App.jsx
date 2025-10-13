@@ -1,613 +1,988 @@
+import React from 'react'
 'use client';
 
-import { useState, useEffect } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import {
-  FileText, Plus, Search, Filter, Star, Pin, Archive,
-  Edit, Trash2, Download, Share2, Users, MessageSquare,
-  Code, Table, Image, Paperclip, Clock,
-  ChevronDown, ChevronRight, X, Check, Eye, Copy,
-  MoreVertical, Settings, Save, Send, History, Upload,
-  Bold, Italic, Underline, AlignLeft, AlignCenter, AlignRight,
-  List, Link, Quote, Sparkles, Loader, Menu, LogOut
-} from 'lucide-react';
+function Document() {
 
-const API_BASE_URL = 'http://localhost:5000/api/v1';
 
-// Utility function to get token
-const getToken = () => {
-  if (typeof window !== 'undefined') {
-    return localStorage.getItem('token');
-  }
-  return null;
-};
+  const BASE_URL = 'http://localhost:5000/api/v1/doc';
+  const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
+  const CLOUDINARY_UPLOAD_PRESET = 'your_upload_preset'; // Replace with your actual preset
 
-// API helper
-const apiCall = async (endpoint, options = {}) => {
-  const token = getToken();
-  const response = await fetch(`${API_BASE_URL}${endpoint}`, {
-    ...options,
-    headers: {
+  // Helper function to get auth headers
+  const getAuthHeaders = () => {
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    return {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${token}`,
-      ...options.headers,
-    },
-  });
+      'Authorization': `Bearer ${token}`
+    };
+  };
 
-  if (!response.ok) {
-    const error = await response.json();
-    throw new Error(error.message || 'API call failed');
-  }
+  // Helper function to get project and test type IDs
+  const getContextIds = () => {
+    const projectId = typeof window !== 'undefined' ? localStorage.getItem('currentProjectId') : null;
+    const testTypeId = typeof window !== 'undefined' ? localStorage.getItem('selectedTestTypeId') : null;
+    return { projectId, testTypeId };
+  };
 
-  return response.json();
-};
+  // Helper function to build URL with context
+  const buildUrl = (endpoint) => {
+    const { projectId, testTypeId } = getContextIds();
+    return `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}${endpoint}`;
+  };
 
-// Main App Component
-export default function DocManagementSystem() {
-  const [user, setUser] = useState(null);
-  const [projects, setProjects] = useState([]);
-  const [testTypes, setTestTypes] = useState([]);
-  const [documents, setDocuments] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
-  const [selectedTestType, setSelectedTestType] = useState(null);
-  const [selectedDoc, setSelectedDoc] = useState(null);
-  const [view, setView] = useState('list');
-  const [searchQuery, setSearchQuery] = useState('');
-  const [loading, setLoading] = useState(false);
-  const [showSidebar, setShowSidebar] = useState(true);
-  const [showDocEditor, setShowDocEditor] = useState(false);
-  const [filter, setFilter] = useState({ status: 'all', category: 'all', priority: 'all' });
+  // ==========================
+  // CLOUDINARY UPLOAD FUNCTIONS
+  // ==========================
 
-  useEffect(() => {
-    fetchProjects();
-  }, []);
-
-  useEffect(() => {
-    if (selectedProject) {
-      fetchTestTypes(selectedProject._id);
-    }
-  }, [selectedProject]);
-
-  useEffect(() => {
-    if (selectedProject && selectedTestType) {
-      fetchDocuments(selectedProject._id, selectedTestType._id);
-    }
-  }, [selectedProject, selectedTestType]);
-
-  const fetchProjects = async () => {
+  const uploadImageToCloudinary = async (file) => {
     try {
-      setLoading(true);
-      const data = await apiCall('/project/');
-      setProjects(data.projects || []);
-      if (data.projects?.length > 0) {
-        setSelectedProject(data.projects[0]);
-      }
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      formData.append('folder', 'documents/images');
+
+      const response = await fetch(CLOUDINARY_URL, {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) throw new Error('Image upload failed');
+
+      const data = await response.json();
+      return {
+        url: data.secure_url,
+        publicId: data.public_id,
+        width: data.width,
+        height: data.height,
+        format: data.format,
+        size: data.bytes
+      };
     } catch (error) {
-      console.error('Error fetching projects:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error uploading image:', error);
+      throw error;
     }
   };
 
-  const fetchTestTypes = async (projectId) => {
+  const uploadFileToCloudinary = async (file) => {
     try {
-      setLoading(true);
-      const data = await apiCall(`/test-type/accessible-test-types`);
-      setTestTypes(data.testTypes || []);
-      if (data.testTypes?.length > 0) {
-        setSelectedTestType(data.testTypes[0]);
-      }
+      const formData = new FormData();
+      formData.append('file', file);
+      formData.append('upload_preset', CLOUDINARY_UPLOAD_PRESET);
+      formData.append('folder', 'documents/attachments');
+      formData.append('resource_type', 'raw');
+
+      const response = await fetch(CLOUDINARY_URL.replace('/image/', '/raw/'), {
+        method: 'POST',
+        body: formData
+      });
+
+      if (!response.ok) throw new Error('File upload failed');
+
+      const data = await response.json();
+      return {
+        url: data.secure_url,
+        publicId: data.public_id,
+        fileType: data.format,
+        size: data.bytes
+      };
     } catch (error) {
-      console.error('Error fetching test types:', error);
-    } finally {
-      setLoading(false);
+      console.error('Error uploading file:', error);
+      throw error;
     }
   };
 
-  const fetchDocuments = async (projectId, testTypeId) => {
-    try {
-      setLoading(true);
-      const data = await apiCall(`/doc/projects/${projectId}/test-types/${testTypeId}/docs`);
-      setDocuments(data.docs || []);
-    } catch (error) {
-      console.error('Error fetching documents:', error);
-    } finally {
-      setLoading(false);
-    }
-  };
+  // ==========================
+  // CREATE OPERATIONS
+  // ==========================
 
   const createDocument = async (docData) => {
     try {
-      const data = await apiCall(
-        `/doc/projects/${selectedProject._id}/test-types/${selectedTestType._id}/docs`,
-        {
-          method: 'POST',
-          body: JSON.stringify(docData),
-        }
-      );
-      fetchDocuments(selectedProject._id, selectedTestType._id);
-      return data.doc;
+      const response = await fetch(buildUrl('/docs'), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(docData)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to create document');
+      }
+
+      return await response.json();
     } catch (error) {
       console.error('Error creating document:', error);
       throw error;
     }
   };
 
-  const filteredDocs = documents.filter(doc => {
-    const matchesSearch = doc.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      doc.description?.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesStatus = filter.status === 'all' || doc.status === filter.status;
-    const matchesCategory = filter.category === 'all' || doc.category === filter.category;
-    const matchesPriority = filter.priority === 'all' || doc.priority === filter.priority;
+  // ==========================
+  // READ OPERATIONS
+  // ==========================
 
-    return matchesSearch && matchesStatus && matchesCategory && matchesPriority;
-  });
-
-  return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Header */}
-      <header className="bg-white/80 backdrop-blur-lg border-b border-slate-200 sticky top-0 z-50">
-        <div className="px-4 py-3 flex items-center justify-between">
-          <div className="flex items-center gap-3">
-            <button
-              onClick={() => setShowSidebar(!showSidebar)}
-              className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-            >
-              <Menu className="w-5 h-5 text-slate-600" />
-            </button>
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center">
-                <FileText className="w-5 h-5 text-white" />
-              </div>
-              <div>
-                <h1 className="text-sm font-semibold text-slate-800">DocuFlow</h1>
-                <p className="text-xs text-slate-500">Documentation System</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="w-4 h-4 absolute left-3 top-1/2 -translate-y-1/2 text-slate-400" />
-              <input
-                type="text"
-                placeholder="Search documents..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                className="pl-9 pr-4 py-2 text-sm bg-slate-100 border-0 rounded-lg w-64 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-            </div>
-
-            <button
-              onClick={() => {
-                setSelectedDoc(null);
-                setShowDocEditor(true);
-              }}
-              className="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-blue-500 to-indigo-600 text-white rounded-lg hover:shadow-lg transition-all text-sm font-medium"
-            >
-              <Plus className="w-4 h-4" />
-              New Doc
-            </button>
-          </div>
-        </div>
-      </header>
-
-      <div className="flex h-[calc(100vh-64px)]">
-        {/* Sidebar */}
-        <AnimatePresence>
-          {showSidebar && (
-            <motion.aside
-              initial={{ x: -300, opacity: 0 }}
-              animate={{ x: 0, opacity: 1 }}
-              exit={{ x: -300, opacity: 0 }}
-              className="w-72 bg-white border-r border-slate-200 flex flex-col"
-            >
-              {/* Projects */}
-              <div className="p-4 border-b border-slate-200">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Project</label>
-                <select
-                  value={selectedProject?._id || ''}
-                  onChange={(e) => {
-                    const project = projects.find(p => p._id === e.target.value);
-                    setSelectedProject(project);
-                    setSelectedTestType(null);
-                    setDocuments([]);
-                  }}
-                  className="mt-2 w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                >
-                  {projects.map(project => (
-                    <option key={project._id} value={project._id}>
-                      {project.projectName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Test Types */}
-              <div className="p-4 border-b border-slate-200">
-                <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Test Type</label>
-                <select
-                  value={selectedTestType?._id || ''}
-                  onChange={(e) => {
-                    const testType = testTypes.find(t => t._id === e.target.value);
-                    setSelectedTestType(testType);
-                  }}
-                  className="mt-2 w-full px-3 py-2 text-sm bg-slate-50 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  disabled={!selectedProject}
-                >
-                  {testTypes.map(testType => (
-                    <option key={testType._id} value={testType._id}>
-                      {testType.testTypeName}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              {/* Filters */}
-              <div className="p-4 flex-1 overflow-y-auto">
-                <div className="space-y-4">
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Status</label>
-                    <select
-                      value={filter.status}
-                      onChange={(e) => setFilter({ ...filter, status: e.target.value })}
-                      className="mt-2 w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                    >
-                      <option value="all">All Status</option>
-                      <option value="draft">Draft</option>
-                      <option value="in-progress">In Progress</option>
-                      <option value="completed">Completed</option>
-                      <option value="archived">Archived</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Category</label>
-                    <select
-                      value={filter.category}
-                      onChange={(e) => setFilter({ ...filter, category: e.target.value })}
-                      className="mt-2 w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                    >
-                      <option value="all">All Categories</option>
-                      <option value="test-plan">Test Plan</option>
-                      <option value="test-case">Test Case</option>
-                      <option value="bug-report">Bug Report</option>
-                      <option value="test-report">Test Report</option>
-                      <option value="documentation">Documentation</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-semibold text-slate-500 uppercase tracking-wider">Priority</label>
-                    <select
-                      value={filter.priority}
-                      onChange={(e) => setFilter({ ...filter, priority: e.target.value })}
-                      className="mt-2 w-full px-3 py-1.5 text-xs bg-slate-50 border border-slate-200 rounded-lg"
-                    >
-                      <option value="all">All Priorities</option>
-                      <option value="low">Low</option>
-                      <option value="medium">Medium</option>
-                      <option value="high">High</option>
-                      <option value="critical">Critical</option>
-                    </select>
-                  </div>
-                </div>
-              </div>
-            </motion.aside>
-          )}
-        </AnimatePresence>
-
-        {/* Main Content */}
-        <main className="flex-1 overflow-y-auto">
-          {loading ? (
-            <div className="flex items-center justify-center h-full">
-              <Loader className="w-8 h-8 text-blue-500 animate-spin" />
-            </div>
-          ) : showDocEditor ? (
-            <DocumentEditor
-              doc={selectedDoc}
-              projectId={selectedProject?._id}
-              testTypeId={selectedTestType?._id}
-              onClose={() => {
-                setShowDocEditor(false);
-                setSelectedDoc(null);
-              }}
-              onSave={async (docData) => {
-                if (selectedDoc) {
-                  // Update existing
-                } else {
-                  await createDocument(docData);
-                }
-                setShowDocEditor(false);
-                setSelectedDoc(null);
-              }}
-            />
-          ) : (
-            <DocumentList
-              documents={filteredDocs}
-              onSelect={(doc) => {
-                setSelectedDoc(doc);
-                setShowDocEditor(true);
-              }}
-              projectId={selectedProject?._id}
-              testTypeId={selectedTestType?._id}
-            />
-          )}
-        </main>
-      </div>
-    </div>
-  );
-}
-
-// Document List Component
-function DocumentList({ documents, onSelect, projectId, testTypeId }) {
-  const getPriorityColor = (priority) => {
-    const colors = {
-      low: 'bg-green-100 text-green-700',
-      medium: 'bg-yellow-100 text-yellow-700',
-      high: 'bg-orange-100 text-orange-700',
-      critical: 'bg-red-100 text-red-700'
-    };
-    return colors[priority] || colors.medium;
-  };
-
-  const getStatusColor = (status) => {
-    const colors = {
-      draft: 'bg-gray-100 text-gray-700',
-      'in-progress': 'bg-blue-100 text-blue-700',
-      completed: 'bg-green-100 text-green-700',
-      archived: 'bg-slate-100 text-slate-700'
-    };
-    return colors[status] || colors.draft;
-  };
-
-  if (!documents || documents.length === 0) {
-    return (
-      <div className="flex flex-col items-center justify-center h-full text-center p-8">
-        <FileText className="w-16 h-16 text-slate-300 mb-4" />
-        <h3 className="text-lg font-semibold text-slate-700 mb-2">No documents yet</h3>
-        <p className="text-sm text-slate-500">Create your first document to get started</p>
-      </div>
-    );
-  }
-
-  return (
-    <div className="p-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-        {documents.map((doc) => (
-          <motion.div
-            key={doc._id}
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            whileHover={{ y: -4 }}
-            className="bg-white rounded-xl border border-slate-200 p-4 cursor-pointer hover:shadow-lg transition-all"
-            onClick={() => onSelect(doc)}
-          >
-            <div className="flex items-start justify-between mb-3">
-              <div className="flex items-center gap-2">
-                <FileText className="w-4 h-4 text-blue-500" />
-                {doc.pinned && <Pin className="w-3 h-3 text-amber-500" />}
-                {doc.starred && <Star className="w-3 h-3 text-amber-500 fill-amber-500" />}
-              </div>
-              <button className="p-1 hover:bg-slate-100 rounded">
-                <MoreVertical className="w-4 h-4 text-slate-400" />
-              </button>
-            </div>
-
-            <h3 className="font-semibold text-slate-800 text-sm mb-2 line-clamp-2">
-              {doc.title}
-            </h3>
-
-            {doc.description && (
-              <p className="text-xs text-slate-500 mb-3 line-clamp-2">
-                {doc.description}
-              </p>
-            )}
-
-            <div className="flex flex-wrap gap-1.5 mb-3">
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getPriorityColor(doc.priority)}`}>
-                {doc.priority}
-              </span>
-              <span className={`px-2 py-0.5 rounded-full text-xs font-medium ${getStatusColor(doc.status)}`}>
-                {doc.status}
-              </span>
-            </div>
-
-            <div className="flex items-center justify-between text-xs text-slate-500 pt-3 border-t border-slate-100">
-              <div className="flex items-center gap-3">
-                <div className="flex items-center gap-1">
-                  <MessageSquare className="w-3 h-3" />
-                  {doc.comments?.length || 0}
-                </div>
-                <div className="flex items-center gap-1">
-                  <Eye className="w-3 h-3" />
-                  {doc.viewCount || 0}
-                </div>
-              </div>
-              <span>{new Date(doc.createdAt).toLocaleDateString()}</span>
-            </div>
-          </motion.div>
-        ))}
-      </div>
-    </div>
-  );
-}
-
-// Document Editor Component
-function DocumentEditor({ doc, projectId, testTypeId, onClose, onSave }) {
-  const [title, setTitle] = useState(doc?.title || '');
-  const [description, setDescription] = useState(doc?.description || '');
-  const [content, setContent] = useState(doc?.content || '');
-  const [category, setCategory] = useState(doc?.category || 'documentation');
-  const [priority, setPriority] = useState(doc?.priority || 'medium');
-  const [status, setStatus] = useState(doc?.status || 'draft');
-  const [tags, setTags] = useState(doc?.tags || []);
-  const [saving, setSaving] = useState(false);
-  const [activeTab, setActiveTab] = useState('edit');
-
-  const handleSave = async () => {
-    setSaving(true);
+  const getAllDocuments = async () => {
     try {
-      await onSave({
-        title,
-        description,
-        content,
-        category,
-        priority,
-        status,
-        tags
+      const response = await fetch(buildUrl('/docs'), {
+        method: 'GET',
+        headers: getAuthHeaders()
       });
+
+      if (!response.ok) throw new Error('Failed to fetch documents');
+      return await response.json();
     } catch (error) {
-      console.error('Error saving document:', error);
-    } finally {
-      setSaving(false);
+      console.error('Error fetching documents:', error);
+      throw error;
     }
   };
 
+  const getDocumentById = async (docId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}`), {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch document');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching document:', error);
+      throw error;
+    }
+  };
+
+  const searchDocuments = async (query, filters = {}) => {
+    try {
+      const params = new URLSearchParams({ q: query, ...filters });
+      const response = await fetch(buildUrl(`/docs/search?${params}`), {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Search failed');
+      return await response.json();
+    } catch (error) {
+      console.error('Error searching documents:', error);
+      throw error;
+    }
+  };
+
+  const getDocumentsByCategory = async (category) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/category/${category}`), {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch documents by category');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching documents by category:', error);
+      throw error;
+    }
+  };
+
+  const getRecentDocuments = async (limit = 10) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/recent?limit=${limit}`), {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch recent documents');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching recent documents:', error);
+      throw error;
+    }
+  };
+
+  const getDocumentsByTestType = async (testTypeId) => {
+    try {
+      const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+      const response = await fetch(`${BASE_URL}/docs/org/${testTypeId}`, {
+        method: 'GET',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch documents by test type');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching documents by test type:', error);
+      throw error;
+    }
+  };
+
+  // ==========================
+  // UPDATE OPERATIONS
+  // ==========================
+
+  const updateDocument = async (docId, updateData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}`), {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(updateData)
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Failed to update document');
+      }
+
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating document:', error);
+      throw error;
+    }
+  };
+
+  const updateDocumentStatus = async (docId, statusData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/status`), {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(statusData)
+      });
+
+      if (!response.ok) throw new Error('Failed to update document status');
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating document status:', error);
+      throw error;
+    }
+  };
+
+  // ==========================
+  // COMMENT OPERATIONS
+  // ==========================
+
+  const addComment = async (docId, commentData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/comments`), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(commentData)
+      });
+
+      if (!response.ok) throw new Error('Failed to add comment');
+      return await response.json();
+    } catch (error) {
+      console.error('Error adding comment:', error);
+      throw error;
+    }
+  };
+
+  const replyToComment = async (docId, commentId, replyData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/comments/${commentId}/reply`), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(replyData)
+      });
+
+      if (!response.ok) throw new Error('Failed to reply to comment');
+      return await response.json();
+    } catch (error) {
+      console.error('Error replying to comment:', error);
+      throw error;
+    }
+  };
+
+  const resolveComment = async (docId, commentId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/comments/${commentId}/resolve`), {
+        method: 'PUT',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to resolve comment');
+      return await response.json();
+    } catch (error) {
+      console.error('Error resolving comment:', error);
+      throw error;
+    }
+  };
+
+  const deleteComment = async (docId, commentId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/comments/${commentId}`), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to delete comment');
+      return await response.json();
+    } catch (error) {
+      console.error('Error deleting comment:', error);
+      throw error;
+    }
+  };
+
+  // ==========================
+  // SUGGESTION OPERATIONS
+  // ==========================
+
+  const addSuggestion = async (docId, suggestionData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/suggestions`), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(suggestionData)
+      });
+
+      if (!response.ok) throw new Error('Failed to add suggestion');
+      return await response.json();
+    } catch (error) {
+      console.error('Error adding suggestion:', error);
+      throw error;
+    }
+  };
+
+  const acceptSuggestion = async (docId, suggestionId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/suggestions/${suggestionId}/accept`), {
+        method: 'PUT',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to accept suggestion');
+      return await response.json();
+    } catch (error) {
+      console.error('Error accepting suggestion:', error);
+      throw error;
+    }
+  };
+
+  const rejectSuggestion = async (docId, suggestionId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/suggestions/${suggestionId}/reject`), {
+        method: 'PUT',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to reject suggestion');
+      return await response.json();
+    } catch (error) {
+      console.error('Error rejecting suggestion:', error);
+      throw error;
+    }
+  };
+
+  // ==========================
+  // VERSION CONTROL OPERATIONS
+  // ==========================
+
+  const createVersionSnapshot = async (docId, versionData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/versions`), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(versionData)
+      });
+
+      if (!response.ok) throw new Error('Failed to create version snapshot');
+      return await response.json();
+    } catch (error) {
+      console.error('Error creating version snapshot:', error);
+      throw error;
+    }
+  };
+
+  const getVersions = async (docId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/versions`), {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch versions');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching versions:', error);
+      throw error;
+    }
+  };
+
+  const restoreVersion = async (docId, versionNumber) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/versions/${versionNumber}/restore`), {
+        method: 'PUT',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to restore version');
+      return await response.json();
+    } catch (error) {
+      console.error('Error restoring version:', error);
+      throw error;
+    }
+  };
+
+  // ==========================
+  // COLLABORATION OPERATIONS
+  // ==========================
+
+  const addCollaborator = async (docId, collaboratorData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/collaborators`), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(collaboratorData)
+      });
+
+      if (!response.ok) throw new Error('Failed to add collaborator');
+      return await response.json();
+    } catch (error) {
+      console.error('Error adding collaborator:', error);
+      throw error;
+    }
+  };
+
+  const updateCollaboratorPermission = async (docId, collaboratorId, permissionData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/collaborators/${collaboratorId}`), {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(permissionData)
+      });
+
+      if (!response.ok) throw new Error('Failed to update collaborator permission');
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating collaborator permission:', error);
+      throw error;
+    }
+  };
+
+  const removeCollaborator = async (docId, collaboratorId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/collaborators/${collaboratorId}`), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to remove collaborator');
+      return await response.json();
+    } catch (error) {
+      console.error('Error removing collaborator:', error);
+      throw error;
+    }
+  };
+
+  const getCollaborators = async (docId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/collaborators`), {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch collaborators');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching collaborators:', error);
+      throw error;
+    }
+  };
+
+  // ==========================
+  // REAL-TIME COLLABORATION
+  // ==========================
+
+  const updateCursorPosition = async (docId, cursorData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/cursor`), {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(cursorData)
+      });
+
+      if (!response.ok) throw new Error('Failed to update cursor position');
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating cursor position:', error);
+      throw error;
+    }
+  };
+
+  const removeCursor = async (docId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/cursor`), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to remove cursor');
+      return await response.json();
+    } catch (error) {
+      console.error('Error removing cursor:', error);
+      throw error;
+    }
+  };
+
+  const removeTextFormat = async (docId, formatId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/formatting/${formatId}`), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to remove text format');
+      return await response.json();
+    } catch (error) {
+      console.error('Error removing text format:', error);
+      throw error;
+    }
+  };
+
+  const clearFormatting = async (docId, rangeData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/formatting`), {
+        method: 'DELETE',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(rangeData)
+      });
+
+      if (!response.ok) throw new Error('Failed to clear formatting');
+      return await response.json();
+    } catch (error) {
+      console.error('Error clearing formatting:', error);
+      throw error;
+    }
+  };
+
+  const applyTextFormat = async (docId, formatData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/formatting`), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(formatData)
+      });
+
+      if (!response.ok) throw new Error('Failed to apply text format');
+      return await response.json();
+    } catch (error) {
+      console.error('Error applying text format:', error);
+      throw error;
+    }
+  };
+
+  // ==========================
+  // MEDIA OPERATIONS
+  // ==========================
+
+  const addImage = async (docId, file, caption = '', altText = '') => {
+    try {
+      // First upload to Cloudinary
+      const uploadResult = await uploadImageToCloudinary(file);
+
+      // Then add to document
+      const response = await fetch(buildUrl(`/docs/${docId}/images`), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          url: uploadResult.url,
+          publicId: uploadResult.publicId,
+          caption,
+          altText
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to add image');
+      return await response.json();
+    } catch (error) {
+      console.error('Error adding image:', error);
+      throw error;
+    }
+  };
+
+  const updateImage = async (docId, imageId, updateData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/images/${imageId}`), {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(updateData)
+      });
+
+      if (!response.ok) throw new Error('Failed to update image');
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating image:', error);
+      throw error;
+    }
+  };
+
+  const deleteImage = async (docId, imageId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/images/${imageId}`), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to delete image');
+      return await response.json();
+    } catch (error) {
+      console.error('Error deleting image:', error);
+      throw error;
+    }
+  };
+
+  // ==========================
+  // ATTACHMENT OPERATIONS
+  // ==========================
+
+  const addAttachment = async (docId, file, description = '') => {
+    try {
+      // First upload to Cloudinary
+      const uploadResult = await uploadFileToCloudinary(file);
+
+      // Then add to document
+      const response = await fetch(buildUrl(`/docs/${docId}/attachments`), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({
+          name: file.name,
+          url: uploadResult.url,
+          publicId: uploadResult.publicId,
+          fileType: uploadResult.fileType,
+          size: uploadResult.size,
+          description
+        })
+      });
+
+      if (!response.ok) throw new Error('Failed to add attachment');
+      return await response.json();
+    } catch (error) {
+      console.error('Error adding attachment:', error);
+      throw error;
+    }
+  };
+
+  const deleteAttachment = async (docId, attachmentId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/attachments/${attachmentId}`), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to delete attachment');
+      return await response.json();
+    } catch (error) {
+      console.error('Error deleting attachment:', error);
+      throw error;
+    }
+  };
+
+  const downloadAttachment = async (docId, attachmentId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/attachments/${attachmentId}/download`), {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to download attachment');
+      return await response.json();
+    } catch (error) {
+      console.error('Error downloading attachment:', error);
+      throw error;
+    }
+  };
+
+  // ==========================
+  // CODE BLOCK OPERATIONS
+  // ==========================
+
+  const addCodeBlock = async (docId, codeData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/code-blocks`), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(codeData)
+      });
+
+      if (!response.ok) throw new Error('Failed to add code block');
+      return await response.json();
+    } catch (error) {
+      console.error('Error adding code block:', error);
+      throw error;
+    }
+  };
+
+  const updateCodeBlock = async (docId, codeBlockId, updateData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/code-blocks/${codeBlockId}`), {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(updateData)
+      });
+
+      if (!response.ok) throw new Error('Failed to update code block');
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating code block:', error);
+      throw error;
+    }
+  };
+
+  const deleteCodeBlock = async (docId, codeBlockId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/code-blocks/${codeBlockId}`), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to delete code block');
+      return await response.json();
+    } catch (error) {
+      console.error('Error deleting code block:', error);
+      throw error;
+    }
+  };
+
+  const copyCodeBlock = async (docId, codeBlockId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/code-blocks/${codeBlockId}/copy`), {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to copy code block');
+      return await response.json();
+    } catch (error) {
+      console.error('Error copying code block:', error);
+      throw error;
+    }
+  };
+
+  // ==========================
+  // TABLE OPERATIONS
+  // ==========================
+
+  const addTable = async (docId, tableData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/tables`), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(tableData)
+      });
+
+      if (!response.ok) throw new Error('Failed to add table');
+      return await response.json();
+    } catch (error) {
+      console.error('Error adding table:', error);
+      throw error;
+    }
+  };
+
+  const updateTable = async (docId, tableId, updateData) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/tables/${tableId}`), {
+        method: 'PUT',
+        headers: getAuthHeaders(),
+        body: JSON.stringify(updateData)
+      });
+
+      if (!response.ok) throw new Error('Failed to update table');
+      return await response.json();
+    } catch (error) {
+      console.error('Error updating table:', error);
+      throw error;
+    }
+  };
+
+  const deleteTable = async (docId, tableId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/tables/${tableId}`), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to delete table');
+      return await response.json();
+    } catch (error) {
+      console.error('Error deleting table:', error);
+      throw error;
+    }
+  };
+
+  // ==========================
+  // ACCESS LOG OPERATIONS
+  // ==========================
+
+  const getAccessLogs = async (docId, limit = 50, skip = 0) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/access-logs?limit=${limit}&skip=${skip}`), {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch access logs');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching access logs:', error);
+      throw error;
+    }
+  };
+
+  // ==========================
+  // DOCUMENT MANAGEMENT
+  // ==========================
+
+  const togglePin = async (docId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/pin`), {
+        method: 'PUT',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to toggle pin');
+      return await response.json();
+    } catch (error) {
+      console.error('Error toggling pin:', error);
+      throw error;
+    }
+  };
+
+  const toggleStar = async (docId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/star`), {
+        method: 'PUT',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to toggle star');
+      return await response.json();
+    } catch (error) {
+      console.error('Error toggling star:', error);
+      throw error;
+    }
+  };
+
+  const archiveDocument = async (docId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/archive`), {
+        method: 'PUT',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to archive document');
+      return await response.json();
+    } catch (error) {
+      console.error('Error archiving document:', error);
+      throw error;
+    }
+  };
+
+  const unarchiveDocument = async (docId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/unarchive`), {
+        method: 'PUT',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to unarchive document');
+      return await response.json();
+    } catch (error) {
+      console.error('Error unarchiving document:', error);
+      throw error;
+    }
+  };
+
+  const deleteDocument = async (docId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}`), {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to delete document');
+      return await response.json();
+    } catch (error) {
+      console.error('Error deleting document:', error);
+      throw error;
+    }
+  };
+
+  const getDocumentStats = async (docId) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/stats`), {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to fetch document stats');
+      return await response.json();
+    } catch (error) {
+      console.error('Error fetching document stats:', error);
+      throw error;
+    }
+  };
+
+  const duplicateDocument = async (docId, title) => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/duplicate`), {
+        method: 'POST',
+        headers: getAuthHeaders(),
+        body: JSON.stringify({ title })
+      });
+
+      if (!response.ok) throw new Error('Failed to duplicate document');
+      return await response.json();
+    } catch (error) {
+      console.error('Error duplicating document:', error);
+      throw error;
+    }
+  };
+
+  const exportDocument = async (docId, format = 'txt') => {
+    try {
+      const response = await fetch(buildUrl(`/docs/${docId}/ ?format=${format}`), {
+        method: 'GET',
+        headers: getAuthHeaders()
+      });
+
+      if (!response.ok) throw new Error('Failed to   document');
+
+      // Get the content type from response
+      const contentType = response.headers.get('content-type');
+
+      if (contentType.includes('application/json')) {
+        return await response.json();
+      } else {
+        return await response.text();
+      }
+    } catch (error) {
+      console.error('Error exporting document:', error);
+      throw error;
+    }
+  };
+
+  // ==========================
+  // UTILITY FUNCTIONS
+  // ==========================
+
+  const handleApiError = (error) => {
+    if (error.message.includes('token') || error.message.includes('auth')) {
+      // Redirect to login or refresh token
+      if (typeof window !== 'undefined') {
+        localStorage.removeItem('token');
+        window.location.href = '/login';
+      }
+    }
+    return error.message;
+  };
+
+  const validateContextIds = () => {
+    const { projectId, testTypeId } = getContextIds();
+    if (!projectId || !testTypeId) {
+      throw new Error('Project ID and Test Type ID are required. Please select a project and test type.');
+    }
+    return true;
+  };
   return (
-    <div className="h-full flex flex-col bg-white">
-      {/* Editor Header */}
-      <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-        <div className="flex items-center gap-3">
-          <button
-            onClick={onClose}
-            className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
-          >
-            <X className="w-5 h-5 text-slate-600" />
-          </button>
-          <div>
-            <h2 className="text-sm font-semibold text-slate-800">
-              {doc ? 'Edit Document' : 'New Document'}
-            </h2>
-            <p className="text-xs text-slate-500">
-              {doc ? `Last edited ${new Date(doc.updatedAt).toLocaleDateString()}` : 'Unsaved changes'}
-            </p>
-          </div>
-        </div>
-
-        <div className="flex items-center gap-2">
-          <button className="px-4 py-2 text-sm text-slate-600 hover:bg-slate-100 rounded-lg transition-colors">
-            Preview
-          </button>
-          <button
-            onClick={handleSave}
-            disabled={saving}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-500 text-white text-sm rounded-lg hover:bg-blue-600 transition-colors disabled:opacity-50"
-          >
-            {saving ? (
-              <Loader className="w-4 h-4 animate-spin" />
-            ) : (
-              <Save className="w-4 h-4" />
-            )}
-            {saving ? 'Saving...' : 'Save'}
-          </button>
-        </div>
-      </div>
-
-      {/* Editor Toolbar */}
-      <div className="flex items-center gap-1 px-6 py-3 border-b border-slate-200 bg-slate-50">
-        <button className="p-2 hover:bg-slate-200 rounded transition-colors">
-          <Bold className="w-4 h-4 text-slate-600" />
-        </button>
-        <button className="p-2 hover:bg-slate-200 rounded transition-colors">
-          <Italic className="w-4 h-4 text-slate-600" />
-        </button>
-        <button className="p-2 hover:bg-slate-200 rounded transition-colors">
-          <Underline className="w-4 h-4 text-slate-600" />
-        </button>
-        <div className="w-px h-6 bg-slate-300 mx-2" />
-        <button className="p-2 hover:bg-slate-200 rounded transition-colors">
-          <AlignLeft className="w-4 h-4 text-slate-600" />
-        </button>
-        <button className="p-2 hover:bg-slate-200 rounded transition-colors">
-          <AlignCenter className="w-4 h-4 text-slate-600" />
-        </button>
-        <button className="p-2 hover:bg-slate-200 rounded transition-colors">
-          <AlignRight className="w-4 h-4 text-slate-600" />
-        </button>
-        <div className="w-px h-6 bg-slate-300 mx-2" />
-        <button className="p-2 hover:bg-slate-200 rounded transition-colors">
-          <List className="w-4 h-4 text-slate-600" />
-        </button>
-        <button className="p-2 hover:bg-slate-200 rounded transition-colors">
-          <Link className="w-4 h-4 text-slate-600" />
-        </button>
-        <button className="p-2 hover:bg-slate-200 rounded transition-colors">
-          <Code className="w-4 h-4 text-slate-600" />
-        </button>
-        <button className="p-2 hover:bg-slate-200 rounded transition-colors">
-          <Image className="w-4 h-4 text-slate-600" />
-        </button>
-      </div>
-
-      {/* Editor Content */}
-      <div className="flex-1 overflow-y-auto p-6">
-        <div className="max-w-4xl mx-auto space-y-6">
-          <div>
-            <input
-              type="text"
-              placeholder="Document title..."
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="w-full text-3xl font-bold text-slate-800 placeholder-slate-300 focus:outline-none"
-            />
-          </div>
-
-          <div className="flex gap-3">
-            <select
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-              className="px-3 py-1.5 text-xs bg-slate-100 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="documentation">Documentation</option>
-              <option value="test-plan">Test Plan</option>
-              <option value="test-case">Test Case</option>
-              <option value="bug-report">Bug Report</option>
-              <option value="test-report">Test Report</option>
-            </select>
-
-            <select
-              value={priority}
-              onChange={(e) => setPriority(e.target.value)}
-              className="px-3 py-1.5 text-xs bg-slate-100 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="low">Low Priority</option>
-              <option value="medium">Medium Priority</option>
-              <option value="high">High Priority</option>
-              <option value="critical">Critical</option>
-            </select>
-
-            <select
-              value={status}
-              onChange={(e) => setStatus(e.target.value)}
-              className="px-3 py-1.5 text-xs bg-slate-100 border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="draft">Draft</option>
-              <option value="in-progress">In Progress</option>
-              <option value="completed">Completed</option>
-            </select>
-          </div>
-
-          <div>
-            <textarea
-              placeholder="Add a description..."
-              value={description}
-              onChange={(e) => setDescription(e.target.value)}
-              className="w-full text-sm text-slate-600 placeholder-slate-400 focus:outline-none resize-none"
-              rows={2}
-            />
-          </div>
-
-          <div className="border-t border-slate-200 pt-6">
-            <textarea
-              placeholder="Start writing..."
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              className="w-full text-sm text-slate-700 placeholder-slate-400 focus:outline-none resize-none min-h-[400px]"
-            />
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+    <div>App</div>
+  )
 }
+
+export default Document
