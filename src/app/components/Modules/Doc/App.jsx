@@ -1,5 +1,4 @@
 'use client';
-
 import { useState, useCallback, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -14,19 +13,17 @@ import {
   FileCode, Monitor, Smartphone, AlertCircle, CheckCircle,
   Sparkles, Link, List, CornerDownRight
 } from 'lucide-react';
-
 const BASE_URL = 'http://localhost:5000/api/v1/doc';
 const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
-const CLOUDINARY_PRESET = 'ml_default';
-
+const CLOUDINARY_PRESET = 'test_case_preset';
 const DocEditor = ({ docId = null, onSave = null }) => {
   // ========================
   // STATE MANAGEMENT
   // ========================
-
   // Document State
   const [document, setDocument] = useState(null);
-  const [content, setContent] = useState('');
+  const [htmlContent, setHtmlContent] = useState('');
+  const [textContent, setTextContent] = useState('');
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [category, setCategory] = useState('documentation');
@@ -34,14 +31,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
   const [status, setStatus] = useState('draft');
   const [tags, setTags] = useState([]);
   const [isPublic, setIsPublic] = useState(false);
-
   // UI State
   const [activeTab, setActiveTab] = useState('edit');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState(null);
   const [success, setSuccess] = useState(null);
   const [isSaving, setIsSaving] = useState(false);
-
   // Formatting State
   const [selectedText, setSelectedText] = useState('');
   const [selectionStart, setSelectionStart] = useState(0);
@@ -55,63 +50,56 @@ const DocEditor = ({ docId = null, onSave = null }) => {
     lineHeight: 1.5,
     textAlign: 'left',
   });
-
   // Comment State
   const [comments, setComments] = useState([]);
   const [showCommentBox, setShowCommentBox] = useState(false);
   const [commentText, setCommentText] = useState('');
   const [replyingTo, setReplyingTo] = useState(null);
   const [replyText, setReplyText] = useState('');
-
   // Suggestion State
   const [suggestions, setSuggestions] = useState([]);
   const [showSuggestionBox, setShowSuggestionBox] = useState(false);
   const [suggestionText, setSuggestionText] = useState('');
   const [suggestionDescription, setSuggestionDescription] = useState('');
-
   // Version State
   const [versions, setVersions] = useState([]);
   const [showVersionModal, setShowVersionModal] = useState(false);
   const [versionName, setVersionName] = useState('');
   const [versionDescription, setVersionDescription] = useState('');
-
   // Collaboration State
   const [collaborators, setCollaborators] = useState([]);
   const [currentEditors, setCurrentEditors] = useState([]);
   const [showCollaboratorBox, setShowCollaboratorBox] = useState(false);
   const [collaboratorEmail, setCollaboratorEmail] = useState('');
   const [collaboratorPermission, setCollaboratorPermission] = useState('view');
-
   // User interface state
   const [showColorPicker, setShowColorPicker] = useState(false);
   const [showBgColorPicker, setShowBgColorPicker] = useState(false);
   const [showSidebar, setShowSidebar] = useState(true);
-
   // Media State
   const [images, setImages] = useState([]);
   const [attachments, setAttachments] = useState([]);
   const [tables, setTables] = useState([]);
   const [codeBlocks, setCodeBlocks] = useState([]);
-
   // Access Logs State
   const [accessLogs, setAccessLogs] = useState([]);
   const [viewCount, setViewCount] = useState(0);
-
   // Cursor & Realtime State
   const [cursorPosition, setCursorPosition] = useState({ line: 0, column: 0 });
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   const [wordCount, setWordCount] = useState(0);
   const [characterCount, setCharacterCount] = useState(0);
-
+  // Document List State
+  const [showDocList, setShowDocList] = useState(false);
+  const [allDocs, setAllDocs] = useState([]);
+  const [selectedDocId, setSelectedDocId] = useState(docId);
   // Refs
   const editorRef = useRef(null);
   const autoSaveTimerRef = useRef(null);
   const cursorUpdateTimerRef = useRef(null);
-
   // ========================
   // UTILITY FUNCTIONS
   // ========================
-
   const getHeaders = useCallback(() => {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : '';
     return {
@@ -119,37 +107,30 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       'Authorization': `Bearer ${token}`,
     };
   }, []);
-
   const getProjectAndTestType = useCallback(() => {
     const projectId = typeof window !== 'undefined' ? localStorage.getItem('currentProjectId') : '';
     const testTypeId = typeof window !== 'undefined' ? localStorage.getItem('selectedTestTypeId') : '';
     return { projectId, testTypeId };
   }, []);
-
   const calculateTextStats = useCallback((text) => {
     const words = text.trim().split(/\s+/).filter(w => w.length > 0).length;
     const characters = text.length;
     setWordCount(words);
     setCharacterCount(characters);
   }, []);
-
   const getSelectedRange = useCallback(() => {
     const selection = window.getSelection();
     if (selection.rangeCount === 0) return { start: 0, end: 0 };
-
     const range = selection.getRangeAt(0);
     const preCaretRange = range.cloneRange();
     if (editorRef.current) {
       preCaretRange.selectNodeContents(editorRef.current);
       preCaretRange.setEnd(range.endContainer, range.endOffset);
     }
-
     const start = preCaretRange.toString().length - range.toString().length;
     const end = start + range.toString().length;
-
     return { start, end };
   }, []);
-
   const updateCursorStats = useCallback(() => {
     const selection = window.getSelection();
     if (editorRef.current && selection.rangeCount > 0) {
@@ -158,16 +139,13 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       const preCaretRange = range.cloneRange();
       preCaretRange.selectNodeContents(editorRef.current);
       preCaretRange.setEnd(range.endContainer, range.endOffset);
-
       const position = preCaretRange.toString().length;
       const lines = text.substring(0, position).split('\n');
       const line = lines.length - 1;
       const column = lines[line].length;
-
       setCursorPosition({ line, column });
     }
   }, []);
-
   const showNotification = useCallback((message, type = 'success') => {
     if (type === 'success') {
       setSuccess(message);
@@ -181,7 +159,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       setError(null);
     }, 3000);
   }, []);
-
   const copyToClipboard = useCallback((text) => {
     navigator.clipboard.writeText(text).then(() => {
       showNotification('Copied to clipboard');
@@ -189,7 +166,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification('Failed to copy', 'error');
     });
   }, [showNotification]);
-
   const downloadFile = useCallback((content, filename, type = 'text/plain') => {
     const element = document.createElement('a');
     element.setAttribute('href', `data:${type};charset=utf-8,${encodeURIComponent(content)}`);
@@ -200,18 +176,14 @@ const DocEditor = ({ docId = null, onSave = null }) => {
     document.body.removeChild(element);
     showNotification('File downloaded');
   }, [showNotification]);
-
   const applyTextFormatting = useCallback((formatType) => {
     const selection = window.getSelection();
     if (selection.rangeCount === 0 || !editorRef.current) return;
-
     const range = selection.getRangeAt(0);
     setSelectedText(range.toString());
-
     const { start, end } = getSelectedRange();
     setSelectionStart(start);
     setSelectionEnd(end);
-
     const span = document.createElement('span');
     switch (formatType) {
       case 'bold':
@@ -237,7 +209,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
     }
     span.appendChild(range.extractContents());
     range.insertNode(span);
-
     const newFormat = {
       startIndex: start,
       endIndex: end,
@@ -246,7 +217,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
     };
     setTextFormats(prev => [...prev, newFormat]);
   }, [getSelectedRange, currentFormat]);
-
   const applyAlignment = useCallback((alignment) => {
     if (editorRef.current) {
       editorRef.current.style.textAlign = alignment;
@@ -256,55 +226,45 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       }));
     }
   }, []);
-
   const applyTextColor = useCallback((color) => {
     const selection = window.getSelection();
     if (selection.rangeCount === 0) return;
-
     const range = selection.getRangeAt(0);
     const span = document.createElement('span');
     span.style.color = color;
     span.appendChild(range.extractContents());
     range.insertNode(span);
-
     setCurrentFormat(prev => ({
       ...prev,
       textColor: color,
     }));
   }, []);
-
   const applyBackgroundColor = useCallback((color) => {
     const selection = window.getSelection();
     if (selection.rangeCount === 0) return;
-
     const range = selection.getRangeAt(0);
     const span = document.createElement('span');
     span.style.backgroundColor = color;
     span.appendChild(range.extractContents());
     range.insertNode(span);
-
     setCurrentFormat(prev => ({
       ...prev,
       backgroundColor: color,
     }));
   }, []);
-
   const applyFontSize = useCallback((size) => {
     const selection = window.getSelection();
     if (selection.rangeCount === 0) return;
-
     const range = selection.getRangeAt(0);
     const span = document.createElement('span');
     span.style.fontSize = `${size}px`;
     span.appendChild(range.extractContents());
     range.insertNode(span);
-
     setCurrentFormat(prev => ({
       ...prev,
       fontSize: size,
     }));
   }, []);
-
   const removeAllFormatting = useCallback(() => {
     if (editorRef.current) {
       const text = editorRef.current.textContent;
@@ -313,7 +273,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification('All formatting removed');
     }
   }, [showNotification]);
-
   const clearFormatInRange = useCallback(async (id, startIdx, endIdx) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     try {
@@ -333,41 +292,25 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   // ========================
   // API FUNCTIONS - FIXED INTEGRATION
   // ========================
-
-  // Initialize document
-  useEffect(() => {
-    if (docId) {
-      fetchDocById(docId);
-    } else {
-      // Create new document if no ID provided
-      const initializeNewDoc = async () => {
-        const { projectId, testTypeId } = getProjectAndTestType();
-        if (projectId && testTypeId) {
-          try {
-            const docData = {
-              title: 'Untitled Document',
-              content: '',
-              description: '',
-              category: 'documentation',
-              priority: 'medium',
-              status: 'draft',
-              tags: [],
-              isPublic: false
-            };
-            const newDoc = await createNewDoc(docData);
-            setDocument(newDoc);
-          } catch (err) {
-            console.error('Failed to create new document:', err);
-          }
-        }
-      };
-      initializeNewDoc();
+  // Fetch all documents
+  const fetchAllDocs = useCallback(async () => {
+    const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) return;
+    setIsLoading(true);
+    try {
+      const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs`, { headers: getHeaders() });
+      if (!response.ok) throw new Error('Failed to fetch documents');
+      const data = await response.json();
+      setAllDocs(data.docs || []);
+    } catch (err) {
+      showNotification(err.message, 'error');
+    } finally {
+      setIsLoading(false);
     }
-  }, [docId]);
+  }, [getProjectAndTestType, getHeaders, showNotification]);
 
   const createNewDoc = useCallback(async (docData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
@@ -375,7 +318,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     setIsLoading(true);
     try {
       const response = await fetch(
@@ -398,14 +340,71 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       setIsLoading(false);
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
+    // Initialize document
+  useEffect(() => {
+    if (selectedDocId) {
+      fetchDocById(selectedDocId);
+    } else {
+      const initializeNewDoc = async () => {
+        const { projectId, testTypeId } = getProjectAndTestType();
+        if (projectId && testTypeId) {
+          try {
+            const docData = {
+              title: 'Untitled Document',
+              content: '',
+              description: '',
+              category: 'documentation',
+              priority: 'medium',
+              status: 'draft',
+              tags: [],
+              isPublic: false
+            };
+            const newDoc = await createNewDoc(docData);
+            setDocument(newDoc);
+            setSelectedDocId(newDoc._id);
+          } catch (err) {
+            console.error('Failed to create new document:', err);
+          }
+        }
+      };
+      initializeNewDoc();
+    }
+  }, [selectedDocId, getProjectAndTestType, createNewDoc]);  // Initialize document
+  useEffect(() => {
+    if (selectedDocId) {
+      fetchDocById(selectedDocId);
+    } else {
+      const initializeNewDoc = async () => {
+        const { projectId, testTypeId } = getProjectAndTestType();
+        if (projectId && testTypeId) {
+          try {
+            const docData = {
+              title: 'Untitled Document',
+              content: '',
+              description: '',
+              category: 'documentation',
+              priority: 'medium',
+              status: 'draft',
+              tags: [],
+              isPublic: false
+            };
+            const newDoc = await createNewDoc(docData);
+            setDocument(newDoc);
+            setSelectedDocId(newDoc._id);
+          } catch (err) {
+            console.error('Failed to create new document:', err);
+          }
+        }
+      };
+      initializeNewDoc();
+    }
+  }, [selectedDocId, getProjectAndTestType, createNewDoc]);
   const fetchDocById = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     setIsLoading(true);
     try {
       const response = await fetch(
@@ -415,11 +414,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       if (!response.ok) throw new Error('Failed to fetch document');
       const data = await response.json();
       const doc = data.doc;
-
       setDocument(doc);
       setTitle(doc.title || '');
       setDescription(doc.description || '');
-      setContent(doc.content || '');
+      setHtmlContent(doc.richContent || doc.content || '');
+      setTextContent(doc.content || '');
       setCategory(doc.category || 'documentation');
       setPriority(doc.priority || 'medium');
       setStatus(doc.status || 'draft');
@@ -435,7 +434,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       setCollaborators(doc.collaborators || []);
       setCurrentEditors(doc.currentEditors || []);
       setViewCount(doc.viewCount || 0);
-
       calculateTextStats(doc.content || '');
       showNotification('Document loaded');
       return doc;
@@ -446,14 +444,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       setIsLoading(false);
     }
   }, [getProjectAndTestType, getHeaders, calculateTextStats, showNotification]);
-
   const updateDocInfo = useCallback(async (id, docData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     setIsSaving(true);
     try {
       const response = await fetch(
@@ -477,14 +473,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       setIsSaving(false);
     }
   }, [getProjectAndTestType, getHeaders, onSave, showNotification]);
-
   const searchDocuments = useCallback(async (query, filters = {}) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     const params = new URLSearchParams({ q: query, ...filters });
     setIsLoading(true);
     try {
@@ -501,14 +495,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       setIsLoading(false);
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const getDocsByCategory = useCallback(async (cat) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     setIsLoading(true);
     try {
       const response = await fetch(
@@ -524,14 +516,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       setIsLoading(false);
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const getRecentDocuments = useCallback(async (limit = 10) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     setIsLoading(true);
     try {
       const response = await fetch(
@@ -547,14 +537,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       setIsLoading(false);
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const exportDocument = useCallback(async (id, format = 'txt') => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/export?format=${format}`,
@@ -568,14 +556,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, title, downloadFile, showNotification]);
-
   const updateDocStatus = useCallback(async (id, statusData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/status`,
@@ -594,14 +580,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const duplicateDocument = useCallback(async (id, newTitle) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/duplicate`,
@@ -620,14 +604,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       throw err;
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const getDocStats = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/stats`,
@@ -639,14 +621,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const togglePin = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/pin`,
@@ -663,14 +643,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const toggleStar = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/star`,
@@ -687,14 +665,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const archiveDocument = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/archive`,
@@ -711,14 +687,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const unarchiveDocument = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/unarchive`,
@@ -735,14 +709,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const deleteDocument = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}`,
@@ -759,7 +731,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       throw err;
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   // Comment Functions
   const addComment = useCallback(async (id, commentData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
@@ -767,7 +738,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/comments`,
@@ -787,14 +757,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const replyToComment = useCallback(async (id, commentId, replyData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/comments/${commentId}/reply`,
@@ -814,14 +782,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const resolveComment = useCallback(async (id, commentId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/comments/${commentId}/resolve`,
@@ -838,14 +804,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const deleteComment = useCallback(async (id, commentId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/comments/${commentId}`,
@@ -861,7 +825,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   // Suggestion Functions
   const addSuggestion = useCallback(async (id, suggestionData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
@@ -869,7 +832,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/suggestions`,
@@ -890,14 +852,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const acceptSuggestion = useCallback(async (id, suggestionId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/suggestions/${suggestionId}/accept`,
@@ -914,14 +874,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const rejectSuggestion = useCallback(async (id, suggestionId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/suggestions/${suggestionId}/reject`,
@@ -938,7 +896,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   // Version Functions
   const createVersionSnapshot = useCallback(async (id, versionData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
@@ -946,7 +903,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/versions`,
@@ -967,14 +923,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const fetchVersions = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/versions`,
@@ -988,14 +942,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const restoreVersion = useCallback(async (id, versionNumber) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/versions/${versionNumber}/restore`,
@@ -1007,13 +959,13 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       if (!response.ok) throw new Error('Failed to restore version');
       const data = await response.json();
       setDocument(data.doc);
-      setContent(data.doc.content);
+      setHtmlContent(data.doc.richContent || data.doc.content);
+      setTextContent(data.doc.content);
       showNotification(`Restored to version ${versionNumber}`);
     } catch (err) {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   // Collaboration Functions
   const addCollaborator = useCallback(async (id, collaboratorData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
@@ -1021,7 +973,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/collaborators`,
@@ -1042,14 +993,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const updateCollaboratorPermission = useCallback(async (id, collaboratorId, permissionData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/collaborators/${collaboratorId}`,
@@ -1067,14 +1016,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const removeCollaborator = useCallback(async (id, collaboratorId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/collaborators/${collaboratorId}`,
@@ -1091,14 +1038,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const fetchCollaborators = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/collaborators`,
@@ -1113,12 +1058,10 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   // Real-time Collaboration Functions
   const updateCursorPosition = useCallback(async (id, cursorData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) return;
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/cursor`,
@@ -1135,11 +1078,9 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       console.error(err);
     }
   }, [getProjectAndTestType, getHeaders]);
-
   const removeCursor = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) return;
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/cursor`,
@@ -1155,7 +1096,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       console.error(err);
     }
   }, [getProjectAndTestType, getHeaders]);
-
   // Media Operations
   const addImage = useCallback(async (id, imageData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
@@ -1163,7 +1103,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/images`,
@@ -1181,14 +1120,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const updateImage = useCallback(async (id, imageId, imageData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/images/${imageId}`,
@@ -1206,14 +1143,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const deleteImage = useCallback(async (id, imageId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/images/${imageId}`,
@@ -1229,14 +1164,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const addAttachment = useCallback(async (id, attachmentData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/attachments`,
@@ -1254,14 +1187,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const deleteAttachment = useCallback(async (id, attachmentId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/attachments/${attachmentId}`,
@@ -1277,14 +1208,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const downloadAttachment = useCallback(async (id, attachmentId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/attachments/${attachmentId}/download`,
@@ -1298,7 +1227,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   // Code Block Operations
   const addCodeBlock = useCallback(async (id, codeBlockData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
@@ -1306,7 +1234,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/code-blocks`,
@@ -1324,14 +1251,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const updateCodeBlock = useCallback(async (id, codeBlockId, codeBlockData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/code-blocks/${codeBlockId}`,
@@ -1349,14 +1274,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const deleteCodeBlock = useCallback(async (id, codeBlockId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/code-blocks/${codeBlockId}`,
@@ -1372,14 +1295,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const copyCodeBlock = useCallback(async (id, codeBlockId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/code-blocks/${codeBlockId}/copy`,
@@ -1396,7 +1317,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, copyToClipboard, showNotification]);
-
   // Table Operations
   const addTable = useCallback(async (id, tableData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
@@ -1404,7 +1324,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/tables`,
@@ -1422,14 +1341,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const updateTable = useCallback(async (id, tableId, tableData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/tables/${tableId}`,
@@ -1447,14 +1364,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const deleteTable = useCallback(async (id, tableId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/tables/${tableId}`,
@@ -1470,7 +1385,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   // Access Logs Operations
   const fetchAccessLogs = useCallback(async (id, limit = 50, skip = 0) => {
     const { projectId, testTypeId } = getProjectAndTestType();
@@ -1478,7 +1392,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification('Project ID or Test Type ID missing', 'error');
       return;
     }
-
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/access-logs?limit=${limit}&skip=${skip}`,
@@ -1492,37 +1405,34 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   // Auto-save functionality
   useEffect(() => {
     if (!autoSaveEnabled || !document || !document._id) return;
-
     autoSaveTimerRef.current = setInterval(() => {
       updateDocInfo(document._id, {
         title,
         description,
-        content,
+        content: textContent,
+        richContent: htmlContent,
         category,
         priority,
         status,
         tags,
         isPublic,
+        textFormats
       }).catch(() => {
         // Silent fail for auto-save
       });
     }, 30000); // Auto-save every 30 seconds
-
     return () => {
       if (autoSaveTimerRef.current) {
         clearInterval(autoSaveTimerRef.current);
       }
     };
-  }, [autoSaveEnabled, document, title, description, content, category, priority, status, tags, isPublic, updateDocInfo]);
-
+  }, [autoSaveEnabled, document, title, description, textContent, htmlContent, category, priority, status, tags, isPublic, textFormats, updateDocInfo]);
   // Cursor position update
   useEffect(() => {
     if (!document || !document._id) return;
-
     cursorUpdateTimerRef.current = setInterval(() => {
       updateCursorPosition(document._id, {
         position: selectionStart,
@@ -1532,14 +1442,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
         // Silent fail for cursor updates
       });
     }, 1000);
-
     return () => {
       if (cursorUpdateTimerRef.current) {
         clearInterval(cursorUpdateTimerRef.current);
       }
     };
   }, [document, selectionStart, cursorPosition, updateCursorPosition]);
-
   // Cloudinary Upload Functions
   const uploadToCloudinary = useCallback(async (file, resourceType = 'image') => {
     try {
@@ -1547,15 +1455,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       formData.append('file', file);
       formData.append('upload_preset', CLOUDINARY_PRESET);
       formData.append('resource_type', resourceType);
-
       const response = await fetch(CLOUDINARY_URL, {
         method: 'POST',
         body: formData,
       });
-
       if (!response.ok) throw new Error('Failed to upload to Cloudinary');
       const data = await response.json();
-
       return {
         url: data.secure_url,
         publicId: data.public_id,
@@ -1569,17 +1474,14 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       throw err;
     }
   }, [showNotification]);
-
   const handleImageUpload = useCallback(async (file, caption = '', altText = '') => {
     if (!document || !document._id) {
       showNotification('Please save the document first', 'error');
       return;
     }
-
     try {
       showNotification('Uploading image...');
       const cloudinaryData = await uploadToCloudinary(file, 'image');
-
       await addImage(document._id, {
         url: cloudinaryData.url,
         publicId: cloudinaryData.publicId,
@@ -1590,24 +1492,20 @@ const DocEditor = ({ docId = null, onSave = null }) => {
         format: cloudinaryData.format,
         size: cloudinaryData.size,
       });
-
       return cloudinaryData;
     } catch (err) {
       showNotification(err.message, 'error');
     }
   }, [document, uploadToCloudinary, addImage, showNotification]);
-
   const handleMultipleImageUpload = useCallback(async (files, captions = []) => {
     if (!document || !document._id) {
       showNotification('Please save the document first', 'error');
       return;
     }
-
     try {
       const uploadPromises = Array.from(files).map((file, index) =>
         handleImageUpload(file, captions[index] || '', '')
       );
-
       const results = await Promise.all(uploadPromises);
       showNotification(`${results.length} images uploaded successfully`);
       return results;
@@ -1615,20 +1513,16 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [document, handleImageUpload, showNotification]);
-
   const handleFileUpload = useCallback(async (file, description = '') => {
     if (!document || !document._id) {
       showNotification('Please save the document first', 'error');
       return;
     }
-
     try {
       showNotification('Uploading file...');
       const cloudinaryData = await uploadToCloudinary(file, 'auto');
-
       const mimeType = file.type || 'application/octet-stream';
       const fileType = file.name.split('.').pop() || 'unknown';
-
       await addAttachment(document._id, {
         name: file.name,
         url: cloudinaryData.url,
@@ -1638,25 +1532,21 @@ const DocEditor = ({ docId = null, onSave = null }) => {
         size: cloudinaryData.size,
         description,
       });
-
       showNotification('File uploaded successfully');
       return cloudinaryData;
     } catch (err) {
       showNotification(err.message, 'error');
     }
   }, [document, uploadToCloudinary, addAttachment, showNotification]);
-
   const handleMultipleFileUpload = useCallback(async (files, descriptions = []) => {
     if (!document || !document._id) {
       showNotification('Please save the document first', 'error');
       return;
     }
-
     try {
       const uploadPromises = Array.from(files).map((file, index) =>
         handleFileUpload(file, descriptions[index] || '')
       );
-
       const results = await Promise.all(uploadPromises);
       showNotification(`${results.length} files uploaded successfully`);
       return results;
@@ -1664,17 +1554,14 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [document, handleFileUpload, showNotification]);
-
   const handleVideoUpload = useCallback(async (file, caption = '') => {
     if (!document || !document._id) {
       showNotification('Please save the document first', 'error');
       return;
     }
-
     try {
       showNotification('Uploading video...');
       const cloudinaryData = await uploadToCloudinary(file, 'video');
-
       await addImage(document._id, {
         url: cloudinaryData.url,
         publicId: cloudinaryData.publicId,
@@ -1685,32 +1572,26 @@ const DocEditor = ({ docId = null, onSave = null }) => {
         format: cloudinaryData.format,
         size: cloudinaryData.size,
       });
-
       showNotification('Video uploaded successfully');
       return cloudinaryData;
     } catch (err) {
       showNotification(err.message, 'error');
     }
   }, [document, uploadToCloudinary, addImage, showNotification]);
-
   const validateFile = useCallback((file, allowedTypes = [], maxSize = 10485760) => {
     if (file.size > maxSize) {
       showNotification(`File size exceeds ${maxSize / 1024 / 1024}MB limit`, 'error');
       return false;
     }
-
     if (allowedTypes.length > 0 && !allowedTypes.includes(file.type)) {
       showNotification(`File type not allowed. Allowed types: ${allowedTypes.join(', ')}`, 'error');
       return false;
     }
-
     return true;
   }, [showNotification]);
-
   const handleImageFromClipboard = useCallback(async (e) => {
     const items = e.clipboardData?.items;
     if (!items) return;
-
     for (let item of items) {
       if (item.type.indexOf('image') !== -1) {
         const blob = item.getAsFile();
@@ -1720,7 +1601,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       }
     }
   }, [validateFile, handleImageUpload]);
-
   const deleteImageFromCloudinary = useCallback(async (publicId) => {
     try {
       // Note: This requires backend support to delete from Cloudinary
@@ -1730,7 +1610,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [showNotification]);
-
   const deleteFileFromCloudinary = useCallback(async (publicId) => {
     try {
       // Note: This requires backend support to delete from Cloudinary
@@ -1740,19 +1619,15 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       showNotification(err.message, 'error');
     }
   }, [showNotification]);
-
   const getCloudinaryImageUrl = useCallback((publicId, width = 400, height = 300, crop = 'fill') => {
     return `https://res.cloudinary.com/dvytvjplt/image/fetch/w_${width},h_${height},c_${crop}/https://${publicId}`;
   }, []);
-
   const getCloudinaryThumbnail = useCallback((publicId, size = 200) => {
     return `https://res.cloudinary.com/dvytvjplt/image/fetch/w_${size},h_${size},c_thumb,q_auto/https://${publicId}`;
   }, []);
-
   // ========================
   // HELPER FUNCTIONS FOR UI - FIXED INTEGRATION
   // ========================
-
   const handleSaveDocument = useCallback(() => {
     if (!document || !document._id) {
       // Create new document if no ID exists
@@ -1760,7 +1635,8 @@ const DocEditor = ({ docId = null, onSave = null }) => {
         const docData = {
           title: title || 'Untitled Document',
           description,
-          content,
+          content: textContent,
+          richContent: htmlContent,
           category,
           priority,
           status,
@@ -1770,6 +1646,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
         try {
           const newDoc = await createNewDoc(docData);
           setDocument(newDoc);
+          setSelectedDocId(newDoc._id);
         } catch (err) {
           console.error('Failed to create document:', err);
         }
@@ -1779,26 +1656,25 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       updateDocInfo(document._id, {
         title,
         description,
-        content,
+        content: textContent,
+        richContent: htmlContent,
         category,
         priority,
         status,
         tags,
         isPublic,
+        textFormats
       });
     }
-  }, [document, title, description, content, category, priority, status, tags, isPublic, updateDocInfo, createNewDoc]);
-
+  }, [document, title, description, textContent, htmlContent, category, priority, status, tags, isPublic, textFormats, updateDocInfo, createNewDoc]);
   const handleAddTag = useCallback((tag) => {
     if (tag && !tags.includes(tag)) {
       setTags([...tags, tag]);
     }
   }, [tags]);
-
   const handleRemoveTag = useCallback((tag) => {
     setTags(tags.filter(t => t !== tag));
   }, [tags]);
-
   const handleCommentCreate = useCallback(() => {
     if (!document || !document._id || !commentText) return;
     const { start, end } = getSelectedRange();
@@ -1808,14 +1684,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       endIndex: end,
     });
   }, [document, commentText, getSelectedRange, addComment]);
-
   const handleCommentReply = useCallback((commentId) => {
     if (!document || !document._id || !replyText) return;
     replyToComment(document._id, commentId, {
       text: replyText,
     });
   }, [document, replyText, replyToComment]);
-
   const handleSuggestionCreate = useCallback(() => {
     if (!document || !document._id || !suggestionText) return;
     const { start, end } = getSelectedRange();
@@ -1827,15 +1701,13 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       description: suggestionDescription,
     });
   }, [document, suggestionText, suggestionDescription, selectedText, getSelectedRange, addSuggestion]);
-
   const handleCollaboratorAdd = useCallback(() => {
     if (!document || !document._id || !collaboratorEmail) return;
     addCollaborator(document._id, {
-      userId: collaboratorEmail,
+      userId: collaboratorEmail, // Assuming email is used to find userId on backend
       permission: collaboratorPermission,
     });
   }, [document, collaboratorEmail, collaboratorPermission, addCollaborator]);
-
   const handleVersionCreate = useCallback(() => {
     if (!document || !document._id) return;
     createVersionSnapshot(document._id, {
@@ -1843,11 +1715,9 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       description: versionDescription,
     });
   }, [document, versionName, versionDescription, createVersionSnapshot]);
-
   // Handle tab changes to load appropriate data
   useEffect(() => {
     if (!document?._id) return;
-
     switch (activeTab) {
       case 'versions':
         fetchVersions(document._id);
@@ -1863,15 +1733,15 @@ const DocEditor = ({ docId = null, onSave = null }) => {
         break;
     }
   }, [activeTab, document?._id, fetchVersions, fetchCollaborators, getDocStats, fetchAccessLogs]);
-
-  // Initialize document content in editor when content changes
+  // Initialize document content in editor when htmlContent changes
   useEffect(() => {
-    if (editorRef.current && content !== editorRef.current.textContent) {
-      editorRef.current.textContent = content;
+    if (editorRef.current && htmlContent !== editorRef.current.innerHTML) {
+      editorRef.current.innerHTML = htmlContent;
     }
-  }, [content]);
-
-  // This return statement goes inside the DocEditor component after all the hooks and functions
+  }, [htmlContent]);
+  // ========================
+  // RETURN COMPONENT
+  // ========================
   return (
     <div className="w-full h-screen bg-gray-50 flex flex-col overflow-hidden">
       {/* Notification messages */}
@@ -1899,7 +1769,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* Top Navigation Bar */}
       <div className="bg-white border-b border-gray-200 px-4 py-2 flex items-center justify-between shadow-sm">
         <div className="flex items-center gap-3">
@@ -1907,6 +1776,16 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             <Menu size={18} className="text-gray-600" />
           </button>
           <FileText size={20} className="text-blue-600" />
+          <button
+            onClick={async () => {
+              await fetchAllDocs();
+              setShowDocList(true);
+            }}
+            className="p-1.5 hover:bg-gray-100 rounded transition-colors"
+            title="View Documents"
+          >
+            <List size={16} className="text-gray-600" />
+          </button>
           <div className="flex flex-col">
             <input
               type="text"
@@ -1927,7 +1806,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             </div>
           </div>
         </div>
-
         <div className="flex items-center gap-2">
           {/* Status Badge */}
           <select
@@ -1947,7 +1825,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             <option value="published">Published</option>
             <option value="archived">Archived</option>
           </select>
-
           {/* Priority */}
           <select
             value={priority}
@@ -1961,13 +1838,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             <option value="medium">Medium</option>
             <option value="high">High</option>
           </select>
-
           {/* View Count */}
           <div className="flex items-center gap-1 text-xs text-gray-500 px-2 py-1 bg-gray-50 rounded-lg">
             <Eye size={12} />
             <span>{viewCount}</span>
           </div>
-
           {/* Collaborators */}
           <button
             onClick={() => {
@@ -1978,7 +1853,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             <Users size={12} />
             <span>{collaborators.length}</span>
           </button>
-
           {/* Auto-save Toggle */}
           <button
             onClick={() => setAutoSaveEnabled(!autoSaveEnabled)}
@@ -1988,7 +1862,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             <RefreshCw size={12} className={autoSaveEnabled ? 'animate-spin' : ''} />
             <span>{autoSaveEnabled ? 'Auto-save ON' : 'Auto-save OFF'}</span>
           </button>
-
           {/* Save Button */}
           <button
             onClick={handleSaveDocument}
@@ -1998,7 +1871,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             <Save size={14} />
             <span>{isSaving ? 'Saving...' : 'Save'}</span>
           </button>
-
           {/* More Options */}
           <div className="relative">
             <button className="p-1.5 hover:bg-gray-100 rounded-lg transition-colors">
@@ -2007,7 +1879,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
           </div>
         </div>
       </div>
-
       {/* Secondary Toolbar */}
       <div className="bg-white border-b border-gray-200 px-4 py-1.5 flex items-center justify-between">
         <div className="flex items-center gap-1">
@@ -2040,9 +1911,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
           >
             <Strikethrough size={16} className="text-gray-700" />
           </button>
-
           <div className="w-px h-5 bg-gray-300 mx-1"></div>
-
           {/* Alignment */}
           <button
             onClick={() => applyAlignment('left')}
@@ -2072,9 +1941,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
           >
             <AlignJustify size={16} className="text-gray-700" />
           </button>
-
           <div className="w-px h-5 bg-gray-300 mx-1"></div>
-
           {/* Font Size */}
           <select
             value={currentFormat.fontSize}
@@ -2085,7 +1952,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               <option key={size} value={size}>{size}px</option>
             ))}
           </select>
-
           {/* Text Color */}
           <div className="relative">
             <button
@@ -2110,7 +1976,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               </div>
             )}
           </div>
-
           {/* Background Color */}
           <div className="relative">
             <button
@@ -2135,9 +2000,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               </div>
             )}
           </div>
-
           <div className="w-px h-5 bg-gray-300 mx-1"></div>
-
           {/* Insert Options */}
           <button
             onClick={() => document.getElementById('image-upload').click()}
@@ -2156,7 +2019,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               if (e.target.files) handleMultipleImageUpload(e.target.files);
             }}
           />
-
           <button
             onClick={() => document.getElementById('file-upload').click()}
             className="p-1.5 hover:bg-gray-100 rounded transition-colors"
@@ -2173,7 +2035,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               if (e.target.files) handleMultipleFileUpload(e.target.files);
             }}
           />
-
           <button
             onClick={() => setShowCommentBox(!showCommentBox)}
             className="p-1.5 hover:bg-gray-100 rounded transition-colors"
@@ -2181,7 +2042,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
           >
             <MessageSquare size={16} className="text-gray-700" />
           </button>
-
           <button
             onClick={removeAllFormatting}
             className="p-1.5 hover:bg-gray-100 rounded transition-colors text-xs px-2"
@@ -2190,7 +2050,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             Clear
           </button>
         </div>
-
         <div className="flex items-center gap-2">
           {/* Document Actions */}
           {document && (
@@ -2213,7 +2072,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               </button>
             </>
           )}
-
           {/* Export */}
           <div className="relative group">
             <button className="p-1.5 hover:bg-gray-100 rounded transition-colors">
@@ -2242,7 +2100,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
           </div>
         </div>
       </div>
-
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar - Navigation */}
@@ -2267,7 +2124,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 />
               </div>
             </div>
-
             <div className="flex-1 overflow-y-auto p-2">
               <div className="space-y-1">
                 <button
@@ -2358,7 +2214,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                   <span>Settings</span>
                 </button>
               </div>
-
               <div className="mt-4 pt-4 border-t border-gray-200">
                 <p className="text-[10px] font-semibold text-gray-500 uppercase tracking-wider px-3 mb-2">Quick Actions</p>
                 <div className="space-y-1">
@@ -2401,7 +2256,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             </div>
           </div>
         </motion.div>
-
         {/* Main Editor Area */}
         <div className="flex-1 flex flex-col overflow-hidden bg-gray-50">
           {activeTab === 'edit' && (
@@ -2422,7 +2276,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     placeholder="Add a description..."
                     className="w-full text-sm text-gray-600 border-none outline-none mb-6 placeholder-gray-300"
                   />
-
                   {/* Tags */}
                   <div className="flex flex-wrap gap-2 mb-6">
                     {tags.map((tag, idx) => (
@@ -2451,13 +2304,14 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       Add Tag
                     </button>
                   </div>
-
                   <div
                     ref={editorRef}
                     contentEditable
                     onInput={(e) => {
-                      const text = e.currentTarget.textContent || '';
-                      setContent(text);
+                      const target = e.currentTarget;
+                      setHtmlContent(target.innerHTML);
+                      const text = target.textContent || '';
+                      setTextContent(text);
                       calculateTextStats(text);
                     }}
                     onSelect={updateCursorStats}
@@ -2470,10 +2324,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       textAlign: currentFormat.textAlign,
                     }}
                     suppressContentEditableWarning
-                  >
-                    {content}
-                  </div>
-
+                  />
                   {/* Display Images */}
                   {images.length > 0 && (
                     <div className="mt-6 space-y-4">
@@ -2497,7 +2348,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       ))}
                     </div>
                   )}
-
                   {/* Display Code Blocks */}
                   {codeBlocks.length > 0 && (
                     <div className="mt-6 space-y-4">
@@ -2508,7 +2358,8 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                               <span className="text-xs text-gray-300">{cb.language}</span>
                               <button
                                 onClick={() => document?._id && copyCodeBlock(document._id, cb._id)}
-                                className="flex items-center gap-1 px-2 py-1 text-xs text-gray-300 hover:text-white transition-colors">
+                                className="flex items-center gap-1 px-2 py-1 text-xs text-gray-300 hover:text-white transition-colors"
+                              >
                                 <Copy size={12} />
                                 Copy
                               </button>
@@ -2527,7 +2378,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       ))}
                     </div>
                   )}
-
                   {/* Display Tables */}
                   {tables.length > 0 && (
                     <div className="mt-6 space-y-4">
@@ -2537,7 +2387,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                             <thead>
                               <tr className="bg-gray-50">
                                 {table.headers?.map((header, idx) => (
-                                  <th key={`header-${idx}`} className="border border-gray-300 px-3 py-2 text-left font-semibold">
+                                  <th key={`header-${idx}`} className="border border-gray-300 px-3 py-2 text-left">
                                     {header}
                                   </th>
                                 ))}
@@ -2567,7 +2417,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                   )}
                 </div>
               </div>
-
               {/* Floating Comment Box */}
               <AnimatePresence>
                 {showCommentBox && (
@@ -2575,7 +2424,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.9 }}
-                    className="fixed bottom-6 right-6 w-80 bg-white rounded-lg shadow-2xl border border-gray-200 p-4 z-50"
+                    className="fixed bottom-6 right-4 w-80 bg-white rounded-lg shadow-2xl border border-gray-200 p-4 z-50"
                   >
                     <div className="flex items-center justify-between mb-3">
                       <h3 className="text-sm font-semibold text-gray-900">Add Comment</h3>
@@ -2599,13 +2448,13 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                           setShowCommentBox(false);
                           setCommentText('');
                         }}
-                        className="px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="px-3 py-1.5 text-xs text-gray-700 hover:bg-gray-100 rounded transition-colors"
                       >
                         Cancel
                       </button>
                       <button
                         onClick={handleCommentCreate}
-                        className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+                        className="px-3 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
                       >
                         Add Comment
                       </button>
@@ -2615,7 +2464,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               </AnimatePresence>
             </div>
           )}
-
           {activeTab === 'preview' && (
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-4xl mx-auto bg-white rounded-lg shadow-sm border border-gray-200 min-h-[800px] p-12">
@@ -2623,7 +2471,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 {description && (
                   <p className="text-sm text-gray-600 mb-6">{description}</p>
                 )}
-
                 <div className="flex flex-wrap gap-2 mb-6">
                   {tags.map((tag, idx) => (
                     <span key={`preview-tag-${idx}`} className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">
@@ -2631,11 +2478,9 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     </span>
                   ))}
                 </div>
-
                 <div className="prose prose-sm max-w-none">
-                  <div dangerouslySetInnerHTML={{ __html: content.replace(/\n/g, '<br/>') }} />
+                  <div dangerouslySetInnerHTML={{ __html: htmlContent }} />
                 </div>
-
                 {images.length > 0 && (
                   <div className="mt-6 space-y-4">
                     {images.map((img) => (
@@ -2649,7 +2494,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               </div>
             </div>
           )}
-
           {activeTab === 'comments' && (
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-4xl mx-auto">
@@ -2663,7 +2507,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     New Comment
                   </button>
                 </div>
-
                 <div className="space-y-4">
                   {comments.map((comment) => (
                     <motion.div
@@ -2702,7 +2545,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                         </div>
                       </div>
                       <p className="text-sm text-gray-700 mb-3">{comment.text}</p>
-
                       {/* Replies */}
                       {comment.replies && comment.replies.length > 0 && (
                         <div className="ml-8 space-y-2 mt-3 pt-3 border-t border-gray-100">
@@ -2720,7 +2562,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                           ))}
                         </div>
                       )}
-
                       {/* Reply Form */}
                       {replyingTo === comment._id ? (
                         <div className="ml-8 mt-3">
@@ -2760,7 +2601,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       )}
                     </motion.div>
                   ))}
-
                   {comments.length === 0 && (
                     <div className="text-center py-12">
                       <MessageSquare size={48} className="mx-auto text-gray-300 mb-4" />
@@ -2772,7 +2612,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               </div>
             </div>
           )}
-
           {activeTab === 'suggestions' && (
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-4xl mx-auto">
@@ -2786,7 +2625,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     New Suggestion
                   </button>
                 </div>
-
                 <div className="space-y-4">
                   {suggestions.map((suggestion) => (
                     <motion.div
@@ -2810,7 +2648,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                           {suggestion.status}
                         </span>
                       </div>
-
                       <div className="space-y-2 mb-3">
                         <div className="bg-red-50 border border-red-200 rounded p-2">
                           <p className="text-xs text-gray-500 mb-1">Original:</p>
@@ -2821,11 +2658,9 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                           <p className="text-sm text-gray-900">{suggestion.suggestedText}</p>
                         </div>
                       </div>
-
                       {suggestion.description && (
                         <p className="text-xs text-gray-600 mb-3">{suggestion.description}</p>
                       )}
-
                       {suggestion.status === 'pending' && (
                         <div className="flex gap-2">
                           <button
@@ -2846,7 +2681,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       )}
                     </motion.div>
                   ))}
-
                   {suggestions.length === 0 && (
                     <div className="text-center py-12">
                       <Sparkles size={48} className="mx-auto text-gray-300 mb-4" />
@@ -2854,7 +2688,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     </div>
                   )}
                 </div>
-
                 {/* Suggestion Modal */}
                 <AnimatePresence>
                   {showSuggestionBox && (
@@ -2920,7 +2753,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               </div>
             </div>
           )}
-
           {activeTab === 'versions' && (
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-4xl mx-auto">
@@ -2934,7 +2766,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     Create Version
                   </button>
                 </div>
-
                 <div className="space-y-3">
                   {versions.map((version, idx) => (
                     <motion.div
@@ -2977,7 +2808,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       </div>
                     </motion.div>
                   ))}
-
                   {versions.length === 0 && (
                     <div className="text-center py-12">
                       <History size={48} className="mx-auto text-gray-300 mb-4" />
@@ -2985,7 +2815,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     </div>
                   )}
                 </div>
-
                 {/* Version Modal */}
                 <AnimatePresence>
                   {showVersionModal && (
@@ -3051,7 +2880,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               </div>
             </div>
           )}
-
           {activeTab === 'collaborators' && (
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-4xl mx-auto">
@@ -3065,7 +2893,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     Add Collaborator
                   </button>
                 </div>
-
                 {/* Current Editors */}
                 {currentEditors.length > 0 && (
                   <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
@@ -3081,7 +2908,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     </div>
                   </div>
                 )}
-
                 {/* Collaborators List */}
                 <div className="space-y-3">
                   {collaborators.map((collab) => (
@@ -3130,7 +2956,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       </div>
                     </motion.div>
                   ))}
-
                   {collaborators.length === 0 && (
                     <div className="text-center py-12">
                       <Users size={48} className="mx-auto text-gray-300 mb-4" />
@@ -3138,7 +2963,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     </div>
                   )}
                 </div>
-
                 {/* Add Collaborator Modal */}
                 <AnimatePresence>
                   {showCollaboratorBox && (
@@ -3207,12 +3031,10 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               </div>
             </div>
           )}
-
           {activeTab === 'media' && (
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-6xl mx-auto">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Media & Files</h2>
-
                 {/* Upload Buttons */}
                 <div className="flex gap-3 mb-6">
                   <button
@@ -3265,7 +3087,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     }}
                   />
                 </div>
-
                 {/* Images Section */}
                 {images.length > 0 && (
                   <div className="mb-8">
@@ -3306,7 +3127,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     </div>
                   </div>
                 )}
-
                 {/* Attachments Section */}
                 {attachments.length > 0 && (
                   <div className="mb-8">
@@ -3347,7 +3167,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     </div>
                   </div>
                 )}
-
                 {/* Code Blocks Section */}
                 {codeBlocks.length > 0 && (
                   <div className="mb-8">
@@ -3387,7 +3206,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     </div>
                   </div>
                 )}
-
                 {/* Tables Section */}
                 {tables.length > 0 && (
                   <div>
@@ -3445,7 +3263,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     </div>
                   </div>
                 )}
-
                 {images.length === 0 && attachments.length === 0 && codeBlocks.length === 0 && tables.length === 0 && (
                   <div className="text-center py-16">
                     <Image size={64} className="mx-auto text-gray-300 mb-4" />
@@ -3456,12 +3273,10 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               </div>
             </div>
           )}
-
           {activeTab === 'analytics' && (
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-6xl mx-auto">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Analytics & Activity</h2>
-
                 {/* Stats Cards */}
                 <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
                   <div className="bg-white rounded-lg border border-gray-200 p-4">
@@ -3472,7 +3287,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     <p className="text-2xl font-bold text-gray-900">{viewCount}</p>
                     <p className="text-xs text-gray-500 mt-1">All time</p>
                   </div>
-
                   <div className="bg-white rounded-lg border border-gray-200 p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-gray-600">Comments</span>
@@ -3483,7 +3297,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       {comments.filter(c => !c.resolved).length} unresolved
                     </p>
                   </div>
-
                   <div className="bg-white rounded-lg border border-gray-200 p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-gray-600">Collaborators</span>
@@ -3494,7 +3307,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       {currentEditors.length} active now
                     </p>
                   </div>
-
                   <div className="bg-white rounded-lg border border-gray-200 p-4">
                     <div className="flex items-center justify-between mb-2">
                       <span className="text-xs text-gray-600">Versions</span>
@@ -3504,7 +3316,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     <p className="text-xs text-gray-500 mt-1">Snapshots saved</p>
                   </div>
                 </div>
-
                 {/* Access Logs */}
                 <div className="bg-white rounded-lg border border-gray-200 p-6">
                   <div className="flex items-center justify-between mb-4">
@@ -3517,7 +3328,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       Refresh
                     </button>
                   </div>
-
                   <div className="space-y-2">
                     {accessLogs.map((log, idx) => (
                       <motion.div
@@ -3552,7 +3362,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                         </span>
                       </motion.div>
                     ))}
-
                     {accessLogs.length === 0 && (
                       <div className="text-center py-8">
                         <Activity size={40} className="mx-auto text-gray-300 mb-2" />
@@ -3564,12 +3373,10 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               </div>
             </div>
           )}
-
           {activeTab === 'settings' && (
             <div className="flex-1 overflow-y-auto p-6">
               <div className="max-w-3xl mx-auto">
                 <h2 className="text-xl font-bold text-gray-900 mb-6">Document Settings</h2>
-
                 <div className="space-y-6">
                   {/* General Settings */}
                   <div className="bg-white rounded-lg border border-gray-200 p-6">
@@ -3590,7 +3397,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                           <option value="specification">Specification</option>
                         </select>
                       </div>
-
                       <div>
                         <label className="flex items-center gap-2">
                           <input
@@ -3605,7 +3411,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                           </div>
                         </label>
                       </div>
-
                       <div>
                         <label className="flex items-center gap-2">
                           <input
@@ -3622,7 +3427,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       </div>
                     </div>
                   </div>
-
                   {/* Editor Settings */}
                   <div className="bg-white rounded-lg border border-gray-200 p-6">
                     <h3 className="text-sm font-semibold text-gray-900 mb-4">Editor Preferences</h3>
@@ -3639,7 +3443,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                         />
                         <span className="text-xs text-gray-600">{currentFormat.fontSize}px</span>
                       </div>
-
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-2">Line Height</label>
                         <input
@@ -3653,7 +3456,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                         />
                         <span className="text-xs text-gray-600">{currentFormat.lineHeight}</span>
                       </div>
-
                       <div>
                         <label className="block text-xs font-medium text-gray-700 mb-2">Font Family</label>
                         <select
@@ -3671,7 +3473,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       </div>
                     </div>
                   </div>
-
                   {/* Danger Zone */}
                   <div className="bg-white rounded-lg border border-red-200 p-6">
                     <h3 className="text-sm font-semibold text-red-900 mb-4">Danger Zone</h3>
@@ -3692,7 +3493,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                           Archive
                         </button>
                       </div>
-
                       <div className="flex items-center justify-between py-3">
                         <div>
                           <p className="text-sm font-medium text-gray-900">Delete Document</p>
@@ -3711,7 +3511,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       </div>
                     </div>
                   </div>
-
                   {/* Save Settings */}
                   <div className="flex justify-end">
                     <button
@@ -3726,7 +3525,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             </div>
           )}
         </div>
-
         {/* Right Sidebar - Cursor Position & Stats */}
         <div className="w-48 bg-white border-l border-gray-200 p-4 overflow-y-auto hidden lg:block">
           <div className="space-y-4">
@@ -3737,7 +3535,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 <p>Column: {cursorPosition.column + 1}</p>
               </div>
             </div>
-
             <div className="pt-4 border-t border-gray-200">
               <h3 className="text-xs font-semibold text-gray-700 mb-2">Document Stats</h3>
               <div className="text-xs text-gray-600 space-y-1">
@@ -3748,7 +3545,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 <p>Comments: {comments.length}</p>
               </div>
             </div>
-
             {textFormats.length > 0 && (
               <div className="pt-4 border-t border-gray-200">
                 <h3 className="text-xs font-semibold text-gray-700 mb-2">Active Formats</h3>
@@ -3764,7 +3560,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 </div>
               </div>
             )}
-
             {currentEditors.length > 0 && (
               <div className="pt-4 border-t border-gray-200">
                 <h3 className="text-xs font-semibold text-gray-700 mb-2">Active Users</h3>
@@ -3780,7 +3575,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 </div>
               </div>
             )}
-
             <div className="pt-4 border-t border-gray-200">
               <h3 className="text-xs font-semibold text-gray-700 mb-2">Quick Actions</h3>
               <div className="space-y-1">
@@ -3792,7 +3586,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                   Print
                 </button>
                 <button
-                  onClick={() => copyToClipboard(content)}
+                  onClick={() => copyToClipboard(textContent)}
                   className="w-full flex items-center gap-2 px-2 py-1.5 text-xs text-gray-700 hover:bg-gray-50 rounded transition-colors"
                 >
                   <Copy size={12} />
@@ -3812,7 +3606,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 </button>
               </div>
             </div>
-
             {document?.createdAt && (
               <div className="pt-4 border-t border-gray-200">
                 <h3 className="text-xs font-semibold text-gray-700 mb-2">Document Info</h3>
@@ -3837,7 +3630,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
           </div>
         </div>
       </div>
-
       {/* Bottom Status Bar */}
       <div className="bg-white border-t border-gray-200 px-4 py-1.5 flex items-center justify-between text-xs text-gray-600">
         <div className="flex items-center gap-4">
@@ -3849,7 +3641,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             <span className="text-gray-400">ID: {document._id.slice(-8)}</span>
           )}
         </div>
-
         <div className="flex items-center gap-4">
           <span>Line {cursorPosition.line + 1}, Col {cursorPosition.column + 1}</span>
           <span>•</span>
@@ -3866,7 +3657,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             </>
           )}
         </div>
-
         <div className="flex items-center gap-2">
           <button
             onClick={() => {
@@ -3895,7 +3685,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
           </button>
         </div>
       </div>
-
       {/* Floating Action Buttons */}
       <div className="fixed bottom-6 left-6 flex flex-col gap-2 z-40">
         <motion.button
@@ -3907,7 +3696,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
         >
           {showSidebar ? <X size={20} /> : <Menu size={20} />}
         </motion.button>
-
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
@@ -3922,7 +3710,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             </span>
           )}
         </motion.button>
-
         <motion.button
           whileHover={{ scale: 1.1 }}
           whileTap={{ scale: 0.9 }}
@@ -3938,7 +3725,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
           )}
         </motion.button>
       </div>
-
       {/* Loading Overlay */}
       <AnimatePresence>
         {isLoading && (
@@ -3955,7 +3741,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
           </motion.div>
         )}
       </AnimatePresence>
-
       {/* Context Menu for Editor (Right Click) */}
       <div
         id="context-menu"
@@ -4014,7 +3799,83 @@ const DocEditor = ({ docId = null, onSave = null }) => {
           Suggest Edit
         </button>
       </div>
-
+      {/* Document List Modal */}
+      <AnimatePresence>
+        {showDocList && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            onClick={() => setShowDocList(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.9 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-white rounded-lg shadow-2xl p-6 w-full max-w-4xl max-h-[80vh] overflow-y-auto"
+            >
+              <h3 className="text-lg font-semibold mb-4">Documents</h3>
+              <button
+                onClick={async () => {
+                  setShowDocList(false);
+                  setSelectedDocId(null);
+                  const docData = {
+                    title: 'Untitled Document',
+                    content: '',
+                    description: '',
+                    category: 'documentation',
+                    priority: 'medium',
+                    status: 'draft',
+                    tags: [],
+                    isPublic: false
+                  };
+                  const newDoc = await createNewDoc(docData);
+                  setSelectedDocId(newDoc._id);
+                }}
+                className="mb-4 flex items-center gap-2 px-3 py-2 bg-green-600 text-white rounded-lg"
+              >
+                <Plus size={16} /> Create New Document
+              </button>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="bg-gray-50">
+                      <th className="px-4 py-2 text-left">Title</th>
+                      <th className="px-4 py-2 text-left">Status</th>
+                      <th className="px-4 py-2 text-left">Updated</th>
+                      <th className="px-4 py-2 text-right">Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {allDocs.map(doc => (
+                      <tr key={doc._id} className="border-t">
+                        <td className="px-4 py-2">{doc.title}</td>
+                        <td className="px-4 py-2">{doc.status}</td>
+                        <td className="px-4 py-2">{new Date(doc.updatedAt).toLocaleDateString()}</td>
+                        <td className="px-4 py-2 text-right">
+                          <button
+                            onClick={async () => {
+                              setSelectedDocId(doc._id);
+                              setShowDocList(false);
+                              await fetchDocById(doc._id);
+                            }}
+                            className="text-blue-600 hover:underline"
+                          >
+                            Open
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+                {allDocs.length === 0 && <p className="text-center py-4">No documents found</p>}
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
       {/* Initialize context menu listener */}
       <script dangerouslySetInnerHTML={{
         __html: `
@@ -4036,5 +3897,4 @@ const DocEditor = ({ docId = null, onSave = null }) => {
     </div>
   );
 }
-
 export default DocEditor;

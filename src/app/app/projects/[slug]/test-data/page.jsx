@@ -1,11 +1,12 @@
 
-import DocEditor from '@/app/components/Modules/Doc/components/DocEditor'
+import DocEditor from '@/app/components/Modules/Doc/App'
+
 import React from 'react'
 
 function page() {
   return (
     <div>
-        <DocEditor/>
+       <DocEditor/>
     </div>
   )
 }
