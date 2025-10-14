@@ -82,6 +82,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
   const [collaboratorEmail, setCollaboratorEmail] = useState('');
   const [collaboratorPermission, setCollaboratorPermission] = useState('view');
 
+  // User interface state
+  const [showColorPicker, setShowColorPicker] = useState(false);
+  const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+  const [showSidebar, setShowSidebar] = useState(true);
+
   // Media State
   const [images, setImages] = useState([]);
   const [attachments, setAttachments] = useState([]);
@@ -330,11 +335,47 @@ const DocEditor = ({ docId = null, onSave = null }) => {
   }, [getProjectAndTestType, getHeaders, showNotification]);
 
   // ========================
-  // API FUNCTIONS
+  // API FUNCTIONS - FIXED INTEGRATION
   // ========================
+
+  // Initialize document
+  useEffect(() => {
+    if (docId) {
+      fetchDocById(docId);
+    } else {
+      // Create new document if no ID provided
+      const initializeNewDoc = async () => {
+        const { projectId, testTypeId } = getProjectAndTestType();
+        if (projectId && testTypeId) {
+          try {
+            const docData = {
+              title: 'Untitled Document',
+              content: '',
+              description: '',
+              category: 'documentation',
+              priority: 'medium',
+              status: 'draft',
+              tags: [],
+              isPublic: false
+            };
+            const newDoc = await createNewDoc(docData);
+            setDocument(newDoc);
+          } catch (err) {
+            console.error('Failed to create new document:', err);
+          }
+        }
+      };
+      initializeNewDoc();
+    }
+  }, [docId]);
 
   const createNewDoc = useCallback(async (docData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch(
@@ -360,6 +401,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const fetchDocById = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch(
@@ -371,14 +417,14 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       const doc = data.doc;
 
       setDocument(doc);
-      setTitle(doc.title);
-      setDescription(doc.description);
-      setContent(doc.content);
-      setCategory(doc.category);
-      setPriority(doc.priority);
-      setStatus(doc.status);
-      setTags(doc.tags);
-      setIsPublic(doc.isPublic);
+      setTitle(doc.title || '');
+      setDescription(doc.description || '');
+      setContent(doc.content || '');
+      setCategory(doc.category || 'documentation');
+      setPriority(doc.priority || 'medium');
+      setStatus(doc.status || 'draft');
+      setTags(doc.tags || []);
+      setIsPublic(doc.isPublic || false);
       setComments(doc.comments || []);
       setSuggestions(doc.suggestions || []);
       setTextFormats(doc.textFormats || []);
@@ -403,6 +449,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const updateDocInfo = useCallback(async (id, docData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     setIsSaving(true);
     try {
       const response = await fetch(
@@ -429,6 +480,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const searchDocuments = useCallback(async (query, filters = {}) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     const params = new URLSearchParams({ q: query, ...filters });
     setIsLoading(true);
     try {
@@ -448,6 +504,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const getDocsByCategory = useCallback(async (cat) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch(
@@ -466,6 +527,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const getRecentDocuments = useCallback(async (limit = 10) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     setIsLoading(true);
     try {
       const response = await fetch(
@@ -484,6 +550,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const exportDocument = useCallback(async (id, format = 'txt') => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/export?format=${format}`,
@@ -500,6 +571,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const updateDocStatus = useCallback(async (id, statusData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/status`,
@@ -521,6 +597,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const duplicateDocument = useCallback(async (id, newTitle) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/duplicate`,
@@ -542,6 +623,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const getDocStats = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/stats`,
@@ -556,6 +642,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const togglePin = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/pin`,
@@ -575,6 +666,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const toggleStar = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/star`,
@@ -594,6 +690,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const archiveDocument = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/archive`,
@@ -613,6 +714,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const unarchiveDocument = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/unarchive`,
@@ -632,6 +738,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const deleteDocument = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}`,
@@ -652,6 +763,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
   // Comment Functions
   const addComment = useCallback(async (id, commentData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/comments`,
@@ -674,6 +790,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const replyToComment = useCallback(async (id, commentId, replyData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/comments/${commentId}/reply`,
@@ -696,6 +817,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const resolveComment = useCallback(async (id, commentId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/comments/${commentId}/resolve`,
@@ -715,6 +841,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const deleteComment = useCallback(async (id, commentId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/comments/${commentId}`,
@@ -734,6 +865,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
   // Suggestion Functions
   const addSuggestion = useCallback(async (id, suggestionData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/suggestions`,
@@ -757,6 +893,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const acceptSuggestion = useCallback(async (id, suggestionId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/suggestions/${suggestionId}/accept`,
@@ -776,6 +917,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const rejectSuggestion = useCallback(async (id, suggestionId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/suggestions/${suggestionId}/reject`,
@@ -796,6 +942,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
   // Version Functions
   const createVersionSnapshot = useCallback(async (id, versionData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/versions`,
@@ -819,6 +970,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const fetchVersions = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/versions`,
@@ -835,6 +991,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const restoreVersion = useCallback(async (id, versionNumber) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/versions/${versionNumber}/restore`,
@@ -856,6 +1017,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
   // Collaboration Functions
   const addCollaborator = useCallback(async (id, collaboratorData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/collaborators`,
@@ -879,6 +1045,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const updateCollaboratorPermission = useCallback(async (id, collaboratorId, permissionData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/collaborators/${collaboratorId}`,
@@ -899,6 +1070,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const removeCollaborator = useCallback(async (id, collaboratorId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/collaborators/${collaboratorId}`,
@@ -918,6 +1094,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const fetchCollaborators = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/collaborators`,
@@ -936,6 +1117,8 @@ const DocEditor = ({ docId = null, onSave = null }) => {
   // Real-time Collaboration Functions
   const updateCursorPosition = useCallback(async (id, cursorData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) return;
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/cursor`,
@@ -955,6 +1138,8 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const removeCursor = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) return;
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/cursor`,
@@ -974,6 +1159,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
   // Media Operations
   const addImage = useCallback(async (id, imageData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/images`,
@@ -994,6 +1184,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const updateImage = useCallback(async (id, imageId, imageData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/images/${imageId}`,
@@ -1014,6 +1209,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const deleteImage = useCallback(async (id, imageId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/images/${imageId}`,
@@ -1032,6 +1232,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const addAttachment = useCallback(async (id, attachmentData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/attachments`,
@@ -1052,6 +1257,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const deleteAttachment = useCallback(async (id, attachmentId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/attachments/${attachmentId}`,
@@ -1070,6 +1280,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const downloadAttachment = useCallback(async (id, attachmentId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/attachments/${attachmentId}/download`,
@@ -1087,6 +1302,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
   // Code Block Operations
   const addCodeBlock = useCallback(async (id, codeBlockData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/code-blocks`,
@@ -1107,6 +1327,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const updateCodeBlock = useCallback(async (id, codeBlockId, codeBlockData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/code-blocks/${codeBlockId}`,
@@ -1127,6 +1352,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const deleteCodeBlock = useCallback(async (id, codeBlockId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/code-blocks/${codeBlockId}`,
@@ -1145,6 +1375,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const copyCodeBlock = useCallback(async (id, codeBlockId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/code-blocks/${codeBlockId}/copy`,
@@ -1165,6 +1400,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
   // Table Operations
   const addTable = useCallback(async (id, tableData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/tables`,
@@ -1185,6 +1425,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const updateTable = useCallback(async (id, tableId, tableData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/tables/${tableId}`,
@@ -1205,6 +1450,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
   const deleteTable = useCallback(async (id, tableId) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/tables/${tableId}`,
@@ -1224,6 +1474,11 @@ const DocEditor = ({ docId = null, onSave = null }) => {
   // Access Logs Operations
   const fetchAccessLogs = useCallback(async (id, limit = 50, skip = 0) => {
     const { projectId, testTypeId } = getProjectAndTestType();
+    if (!projectId || !testTypeId) {
+      showNotification('Project ID or Test Type ID missing', 'error');
+      return;
+    }
+
     try {
       const response = await fetch(
         `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${id}/access-logs?limit=${limit}&skip=${skip}`,
@@ -1495,22 +1750,44 @@ const DocEditor = ({ docId = null, onSave = null }) => {
   }, []);
 
   // ========================
-  // HELPER FUNCTIONS FOR UI
+  // HELPER FUNCTIONS FOR UI - FIXED INTEGRATION
   // ========================
 
   const handleSaveDocument = useCallback(() => {
-    if (!document || !document._id) return;
-    updateDocInfo(document._id, {
-      title,
-      description,
-      content,
-      category,
-      priority,
-      status,
-      tags,
-      isPublic,
-    });
-  }, [document, title, description, content, category, priority, status, tags, isPublic, updateDocInfo]);
+    if (!document || !document._id) {
+      // Create new document if no ID exists
+      const createAndSave = async () => {
+        const docData = {
+          title: title || 'Untitled Document',
+          description,
+          content,
+          category,
+          priority,
+          status,
+          tags,
+          isPublic,
+        };
+        try {
+          const newDoc = await createNewDoc(docData);
+          setDocument(newDoc);
+        } catch (err) {
+          console.error('Failed to create document:', err);
+        }
+      };
+      createAndSave();
+    } else {
+      updateDocInfo(document._id, {
+        title,
+        description,
+        content,
+        category,
+        priority,
+        status,
+        tags,
+        isPublic,
+      });
+    }
+  }, [document, title, description, content, category, priority, status, tags, isPublic, updateDocInfo, createNewDoc]);
 
   const handleAddTag = useCallback((tag) => {
     if (tag && !tags.includes(tag)) {
@@ -1567,7 +1844,32 @@ const DocEditor = ({ docId = null, onSave = null }) => {
     });
   }, [document, versionName, versionDescription, createVersionSnapshot]);
 
+  // Handle tab changes to load appropriate data
+  useEffect(() => {
+    if (!document?._id) return;
 
+    switch (activeTab) {
+      case 'versions':
+        fetchVersions(document._id);
+        break;
+      case 'collaborators':
+        fetchCollaborators(document._id);
+        break;
+      case 'analytics':
+        getDocStats(document._id);
+        fetchAccessLogs(document._id);
+        break;
+      default:
+        break;
+    }
+  }, [activeTab, document?._id, fetchVersions, fetchCollaborators, getDocStats, fetchAccessLogs]);
+
+  // Initialize document content in editor when content changes
+  useEffect(() => {
+    if (editorRef.current && content !== editorRef.current.textContent) {
+      editorRef.current.textContent = content;
+    }
+  }, [content]);
 
   // This return statement goes inside the DocEditor component after all the hooks and functions
   return (
@@ -1635,9 +1937,9 @@ const DocEditor = ({ docId = null, onSave = null }) => {
               if (document?._id) updateDocStatus(document._id, { status: e.target.value });
             }}
             className={`text-xs px-2.5 py-1 rounded-full font-medium border ${status === 'published' ? 'bg-green-50 text-green-700 border-green-200' :
-                status === 'draft' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
-                  status === 'archived' ? 'bg-gray-50 text-gray-700 border-gray-200' :
-                    'bg-blue-50 text-blue-700 border-blue-200'
+              status === 'draft' ? 'bg-yellow-50 text-yellow-700 border-yellow-200' :
+                status === 'archived' ? 'bg-gray-50 text-gray-700 border-gray-200' :
+                  'bg-blue-50 text-blue-700 border-blue-200'
               }`}
           >
             <option value="draft">Draft</option>
@@ -1651,8 +1953,8 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             value={priority}
             onChange={(e) => setPriority(e.target.value)}
             className={`text-xs px-2.5 py-1 rounded-full font-medium border ${priority === 'high' ? 'bg-red-50 text-red-700 border-red-200' :
-                priority === 'medium' ? 'bg-orange-50 text-orange-700 border-orange-200' :
-                  'bg-gray-50 text-gray-700 border-gray-200'
+              priority === 'medium' ? 'bg-orange-50 text-orange-700 border-orange-200' :
+                'bg-gray-50 text-gray-700 border-gray-200'
               }`}
           >
             <option value="low">Low</option>
@@ -2125,7 +2427,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                   <div className="flex flex-wrap gap-2 mb-6">
                     {tags.map((tag, idx) => (
                       <span
-                        key={idx}
+                        key={`tag-${idx}-${tag}`}
                         className="inline-flex items-center gap-1 px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs"
                       >
                         <Tag size={10} />
@@ -2176,7 +2478,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                   {images.length > 0 && (
                     <div className="mt-6 space-y-4">
                       {images.map((img) => (
-                        <div key={img._id} className="relative group">
+                        <div key={`image-${img._id}`} className="relative group">
                           <img
                             src={img.url}
                             alt={img.altText || 'Document image'}
@@ -2200,7 +2502,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                   {codeBlocks.length > 0 && (
                     <div className="mt-6 space-y-4">
                       {codeBlocks.map((cb) => (
-                        <div key={cb._id} className="relative group">
+                        <div key={`codeblock-${cb._id}`} className="relative group">
                           <div className="bg-gray-900 rounded-lg overflow-hidden">
                             <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
                               <span className="text-xs text-gray-300">{cb.language}</span>
@@ -2230,12 +2532,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                   {tables.length > 0 && (
                     <div className="mt-6 space-y-4">
                       {tables.map((table) => (
-                        <div key={table._id} className="relative group overflow-x-auto">
+                        <div key={`table-${table._id}`} className="relative group overflow-x-auto">
                           <table className="w-full border-collapse border border-gray-300 text-xs">
                             <thead>
                               <tr className="bg-gray-50">
                                 {table.headers?.map((header, idx) => (
-                                  <th key={idx} className="border border-gray-300 px-3 py-2 text-left font-semibold">
+                                  <th key={`header-${idx}`} className="border border-gray-300 px-3 py-2 text-left font-semibold">
                                     {header}
                                   </th>
                                 ))}
@@ -2243,9 +2545,9 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                             </thead>
                             <tbody>
                               {table.rows?.map((row, rowIdx) => (
-                                <tr key={rowIdx}>
+                                <tr key={`row-${rowIdx}`}>
                                   {row.map((cell, cellIdx) => (
-                                    <td key={cellIdx} className="border border-gray-300 px-3 py-2">
+                                    <td key={`cell-${rowIdx}-${cellIdx}`} className="border border-gray-300 px-3 py-2">
                                       {cell}
                                     </td>
                                   ))}
@@ -2324,7 +2626,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
 
                 <div className="flex flex-wrap gap-2 mb-6">
                   {tags.map((tag, idx) => (
-                    <span key={idx} className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">
+                    <span key={`preview-tag-${idx}`} className="px-2 py-1 bg-blue-50 text-blue-700 rounded-full text-xs">
                       {tag}
                     </span>
                   ))}
@@ -2337,7 +2639,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 {images.length > 0 && (
                   <div className="mt-6 space-y-4">
                     {images.map((img) => (
-                      <div key={img._id}>
+                      <div key={`preview-image-${img._id}`}>
                         <img src={img.url} alt={img.altText} className="max-w-full rounded-lg" />
                         {img.caption && <p className="text-xs text-gray-600 italic mt-1">{img.caption}</p>}
                       </div>
@@ -2365,7 +2667,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 <div className="space-y-4">
                   {comments.map((comment) => (
                     <motion.div
-                      key={comment._id}
+                      key={`comment-${comment._id}`}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-white rounded-lg border border-gray-200 p-4"
@@ -2405,7 +2707,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                       {comment.replies && comment.replies.length > 0 && (
                         <div className="ml-8 space-y-2 mt-3 pt-3 border-t border-gray-100">
                           {comment.replies.map((reply, idx) => (
-                            <div key={idx} className="flex items-start gap-2">
+                            <div key={`reply-${comment._id}-${idx}`} className="flex items-start gap-2">
                               <CornerDownRight size={14} className="text-gray-400 mt-1" />
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 mb-1">
@@ -2488,7 +2790,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 <div className="space-y-4">
                   {suggestions.map((suggestion) => (
                     <motion.div
-                      key={suggestion._id}
+                      key={`suggestion-${suggestion._id}`}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-white rounded-lg border border-gray-200 p-4"
@@ -2502,8 +2804,8 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                           </div>
                         </div>
                         <span className={`px-2 py-1 text-xs rounded-full ${suggestion.status === 'accepted' ? 'bg-green-50 text-green-700' :
-                            suggestion.status === 'rejected' ? 'bg-red-50 text-red-700' :
-                              'bg-yellow-50 text-yellow-700'
+                          suggestion.status === 'rejected' ? 'bg-red-50 text-red-700' :
+                            'bg-yellow-50 text-yellow-700'
                           }`}>
                           {suggestion.status}
                         </span>
@@ -2636,7 +2938,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 <div className="space-y-3">
                   {versions.map((version, idx) => (
                     <motion.div
-                      key={version._id}
+                      key={`version-${version._id || idx}`}
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: idx * 0.05 }}
@@ -2769,8 +3071,8 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                   <div className="mb-6 bg-green-50 border border-green-200 rounded-lg p-4">
                     <h3 className="text-sm font-semibold text-green-900 mb-3">Currently Editing</h3>
                     <div className="space-y-2">
-                      {currentEditors.map((editor) => (
-                        <div key={editor.userId} className="flex items-center gap-2">
+                      {currentEditors.map((editor, idx) => (
+                        <div key={`editor-${editor.userId || idx}`} className="flex items-center gap-2">
                           <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                           <span className="text-xs text-green-800">{editor.userId?.name || 'Anonymous'}</span>
                           <span className="text-xs text-green-600">• Line {editor.lineNumber}, Col {editor.columnNumber}</span>
@@ -2784,7 +3086,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 <div className="space-y-3">
                   {collaborators.map((collab) => (
                     <motion.div
-                      key={collab._id}
+                      key={`collaborator-${collab._id}`}
                       initial={{ opacity: 0, y: 20 }}
                       animate={{ opacity: 1, y: 0 }}
                       className="bg-white rounded-lg border border-gray-200 p-4"
@@ -2971,7 +3273,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
                       {images.map((img) => (
                         <motion.div
-                          key={img._id}
+                          key={`media-image-${img._id}`}
                           initial={{ opacity: 0, scale: 0.9 }}
                           animate={{ opacity: 1, scale: 1 }}
                           className="relative group bg-white rounded-lg border border-gray-200 overflow-hidden"
@@ -3012,7 +3314,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     <div className="space-y-2">
                       {attachments.map((att) => (
                         <motion.div
-                          key={att._id}
+                          key={`attachment-${att._id}`}
                           initial={{ opacity: 0, x: -20 }}
                           animate={{ opacity: 1, x: 0 }}
                           className="bg-white rounded-lg border border-gray-200 p-3 flex items-center justify-between hover:shadow-md transition-shadow"
@@ -3053,7 +3355,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     <div className="space-y-3">
                       {codeBlocks.map((cb) => (
                         <motion.div
-                          key={cb._id}
+                          key={`codeblock-media-${cb._id}`}
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="bg-gray-900 rounded-lg overflow-hidden"
@@ -3093,7 +3395,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     <div className="space-y-4">
                       {tables.map((table) => (
                         <motion.div
-                          key={table._id}
+                          key={`table-media-${table._id}`}
                           initial={{ opacity: 0, y: 20 }}
                           animate={{ opacity: 1, y: 0 }}
                           className="bg-white rounded-lg border border-gray-200 overflow-hidden"
@@ -3114,7 +3416,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                               <thead>
                                 <tr className="bg-gray-50">
                                   {table.headers?.map((header, idx) => (
-                                    <th key={idx} className="px-3 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">
+                                    <th key={`table-header-${idx}`} className="px-3 py-2 text-left font-semibold text-gray-700 border-b border-gray-200">
                                       {header}
                                     </th>
                                   ))}
@@ -3122,9 +3424,9 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                               </thead>
                               <tbody>
                                 {table.rows?.slice(0, 5).map((row, rowIdx) => (
-                                  <tr key={rowIdx} className="border-b border-gray-100">
+                                  <tr key={`table-row-${rowIdx}`} className="border-b border-gray-100">
                                     {row.map((cell, cellIdx) => (
-                                      <td key={cellIdx} className="px-3 py-2 text-gray-600">
+                                      <td key={`table-cell-${rowIdx}-${cellIdx}`} className="px-3 py-2 text-gray-600">
                                         {cell}
                                       </td>
                                     ))}
@@ -3219,16 +3521,16 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                   <div className="space-y-2">
                     {accessLogs.map((log, idx) => (
                       <motion.div
-                        key={log._id || idx}
+                        key={`access-log-${log._id || idx}`}
                         initial={{ opacity: 0, x: -20 }}
                         animate={{ opacity: 1, x: 0 }}
                         transition={{ delay: idx * 0.03 }}
                         className="flex items-center gap-3 py-2 px-3 hover:bg-gray-50 rounded-lg"
                       >
                         <div className={`w-8 h-8 rounded-full flex items-center justify-center ${log.action === 'view' ? 'bg-blue-100' :
-                            log.action === 'edit' ? 'bg-green-100' :
-                              log.action === 'comment' ? 'bg-purple-100' :
-                                'bg-gray-100'
+                          log.action === 'edit' ? 'bg-green-100' :
+                            log.action === 'comment' ? 'bg-purple-100' :
+                              'bg-gray-100'
                           }`}>
                           {log.action === 'view' && <Eye size={14} className="text-blue-600" />}
                           {log.action === 'edit' && <Edit3 size={14} className="text-green-600" />}
@@ -3242,9 +3544,9 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                           <p className="text-xs text-gray-500">{new Date(log.timestamp).toLocaleString()}</p>
                         </div>
                         <span className={`px-2 py-1 text-xs rounded-full ${log.action === 'view' ? 'bg-blue-50 text-blue-700' :
-                            log.action === 'edit' ? 'bg-green-50 text-green-700' :
-                              log.action === 'comment' ? 'bg-purple-50 text-purple-700' :
-                                'bg-gray-50 text-gray-700'
+                          log.action === 'edit' ? 'bg-green-50 text-green-700' :
+                            log.action === 'comment' ? 'bg-purple-50 text-purple-700' :
+                              'bg-gray-50 text-gray-700'
                           }`}>
                           {log.action}
                         </span>
@@ -3453,7 +3755,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 <div className="flex flex-wrap gap-1">
                   {[...new Set(textFormats.map(f => f.format))].map((format, idx) => (
                     <span
-                      key={idx}
+                      key={`format-${idx}`}
                       className="px-2 py-0.5 bg-blue-50 text-blue-700 rounded text-[10px]"
                     >
                       {format}
@@ -3468,7 +3770,7 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 <h3 className="text-xs font-semibold text-gray-700 mb-2">Active Users</h3>
                 <div className="space-y-2">
                   {currentEditors.map((editor, idx) => (
-                    <div key={idx} className="flex items-center gap-2">
+                    <div key={`active-editor-${editor.userId || idx}`} className="flex items-center gap-2">
                       <div className="w-2 h-2 bg-green-500 rounded-full animate-pulse"></div>
                       <span className="text-xs text-gray-600 truncate">
                         {editor.userId?.name || 'User'}
@@ -3734,3 +4036,5 @@ const DocEditor = ({ docId = null, onSave = null }) => {
     </div>
   );
 }
+
+export default DocEditor;
