@@ -45,34 +45,40 @@ const DocumentEditor = () => {
     };
 
     return (
-        <div className="h-screen flex flex-col bg-slate-50">
+        <div className="h-screen flex flex-col bg-slate-50 sidebar-scrollbar">
             {/* Navbar */}
-            <Navbar
-                leftSidebarOpen={leftSidebarOpen}
-                setLeftSidebarOpen={setLeftSidebarOpen}
-                toolbarCollapsed={toolbarCollapsed}
-                setToolbarCollapsed={setToolbarCollapsed}
-            />
+            <div className="sticky top-0 z-50">
+                <Navbar
+                    leftSidebarOpen={leftSidebarOpen}
+                    setLeftSidebarOpen={setLeftSidebarOpen}
+                    toolbarCollapsed={toolbarCollapsed}
+                    setToolbarCollapsed={setToolbarCollapsed}
+                />
+            </div>
 
             {/* Main Content */}
             <div className="flex-1 flex overflow-hidden">
                 {/* Left Sidebar */}
-                <LeftSidebar
-                    leftSidebarOpen={leftSidebarOpen}
-                    activeTab={activeTab}
-                    setActiveTab={setActiveTab}
-                />
+                <div className="sticky top-0 self-start">
+                    <LeftSidebar
+                        leftSidebarOpen={leftSidebarOpen}
+                        activeTab={activeTab}
+                        setActiveTab={setActiveTab}
+                    />
+                </div>
 
                 {/* Main Editor Area */}
-                <main className="flex-1 overflow-hidden">
+                <main className="flex-1 overflow-auto">
                     {renderContent()}
                 </main>
 
                 {/* Right Sidebar */}
-                <RightSidebar
-                    rightSidebarOpen={rightSidebarOpen}
-                    setRightSidebarOpen={setRightSidebarOpen}
-                />
+                <div className="sticky top-0 self-start">
+                    <RightSidebar
+                        rightSidebarOpen={rightSidebarOpen}
+                        setRightSidebarOpen={setRightSidebarOpen}
+                    />
+                </div>
             </div>
 
             {/* Status Bar */}
