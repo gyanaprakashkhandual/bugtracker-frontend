@@ -97,6 +97,12 @@ const DocEditor = ({ docId = null, onSave = null }) => {
   const editorRef = useRef(null);
   const autoSaveTimerRef = useRef(null);
   const cursorUpdateTimerRef = useRef(null);
+  const imageUploadRef = useRef(null);
+  const fileUploadRef = useRef(null);
+  const videoUploadRef = useRef(null);
+  const mediaImageUploadRef = useRef(null);
+  const mediaFileUploadRef = useRef(null);
+  const mediaVideoUploadRef = useRef(null);
   // ========================
   // UTILITY FUNCTIONS
   // ========================
@@ -311,7 +317,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       setIsLoading(false);
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-
   const createNewDoc = useCallback(async (docData) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
@@ -340,65 +345,6 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       setIsLoading(false);
     }
   }, [getProjectAndTestType, getHeaders, showNotification]);
-    // Initialize document
-  useEffect(() => {
-    if (selectedDocId) {
-      fetchDocById(selectedDocId);
-    } else {
-      const initializeNewDoc = async () => {
-        const { projectId, testTypeId } = getProjectAndTestType();
-        if (projectId && testTypeId) {
-          try {
-            const docData = {
-              title: 'Untitled Document',
-              content: '',
-              description: '',
-              category: 'documentation',
-              priority: 'medium',
-              status: 'draft',
-              tags: [],
-              isPublic: false
-            };
-            const newDoc = await createNewDoc(docData);
-            setDocument(newDoc);
-            setSelectedDocId(newDoc._id);
-          } catch (err) {
-            console.error('Failed to create new document:', err);
-          }
-        }
-      };
-      initializeNewDoc();
-    }
-  }, [selectedDocId, getProjectAndTestType, createNewDoc]);  // Initialize document
-  useEffect(() => {
-    if (selectedDocId) {
-      fetchDocById(selectedDocId);
-    } else {
-      const initializeNewDoc = async () => {
-        const { projectId, testTypeId } = getProjectAndTestType();
-        if (projectId && testTypeId) {
-          try {
-            const docData = {
-              title: 'Untitled Document',
-              content: '',
-              description: '',
-              category: 'documentation',
-              priority: 'medium',
-              status: 'draft',
-              tags: [],
-              isPublic: false
-            };
-            const newDoc = await createNewDoc(docData);
-            setDocument(newDoc);
-            setSelectedDocId(newDoc._id);
-          } catch (err) {
-            console.error('Failed to create new document:', err);
-          }
-        }
-      };
-      initializeNewDoc();
-    }
-  }, [selectedDocId, getProjectAndTestType, createNewDoc]);
   const fetchDocById = useCallback(async (id) => {
     const { projectId, testTypeId } = getProjectAndTestType();
     if (!projectId || !testTypeId) {
@@ -1739,6 +1685,51 @@ const DocEditor = ({ docId = null, onSave = null }) => {
       editorRef.current.innerHTML = htmlContent;
     }
   }, [htmlContent]);
+  // Persist last docId for refresh
+  useEffect(() => {
+    if (selectedDocId) {
+      localStorage.setItem('lastDocId', selectedDocId);
+    }
+  }, [selectedDocId]);
+
+  // Initialize document
+  useEffect(() => {
+    const init = async () => {
+      let idToLoad = selectedDocId || docId;
+      if (!idToLoad) {
+        const lastId = localStorage.getItem('lastDocId');
+        if (lastId) {
+          idToLoad = lastId;
+          setSelectedDocId(lastId);
+        }
+      }
+      if (idToLoad) {
+        await fetchDocById(idToLoad);
+      } else {
+        const { projectId, testTypeId } = getProjectAndTestType();
+        if (projectId && testTypeId) {
+          try {
+            const docData = {
+              title: 'Untitled Document',
+              content: '',
+              description: '',
+              category: 'documentation',
+              priority: 'medium',
+              status: 'draft',
+              tags: [],
+              isPublic: false
+            };
+            const newDoc = await createNewDoc(docData);
+            setDocument(newDoc);
+            setSelectedDocId(newDoc._id);
+          } catch (err) {
+            console.error('Failed to create new document:', err);
+          }
+        }
+      }
+    };
+    init();
+  }, [docId, selectedDocId, getProjectAndTestType, createNewDoc, fetchDocById]);
   // ========================
   // RETURN COMPONENT
   // ========================
@@ -2003,14 +1994,14 @@ const DocEditor = ({ docId = null, onSave = null }) => {
           <div className="w-px h-5 bg-gray-300 mx-1"></div>
           {/* Insert Options */}
           <button
-            onClick={() => document.getElementById('image-upload').click()}
+            onClick={() => imageUploadRef.current?.click()}
             className="p-1.5 hover:bg-gray-100 rounded transition-colors"
             title="Insert Image"
           >
             <Image size={16} className="text-gray-700" />
           </button>
           <input
-            id="image-upload"
+            ref={imageUploadRef}
             type="file"
             accept="image/*"
             multiple
@@ -2020,14 +2011,14 @@ const DocEditor = ({ docId = null, onSave = null }) => {
             }}
           />
           <button
-            onClick={() => document.getElementById('file-upload').click()}
+            onClick={() => fileUploadRef.current?.click()}
             className="p-1.5 hover:bg-gray-100 rounded transition-colors"
             title="Attach File"
           >
             <Paperclip size={16} className="text-gray-700" />
           </button>
           <input
-            id="file-upload"
+            ref={fileUploadRef}
             type="file"
             multiple
             className="hidden"
@@ -3038,14 +3029,14 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                 {/* Upload Buttons */}
                 <div className="flex gap-3 mb-6">
                   <button
-                    onClick={() => document.getElementById('media-image-upload').click()}
+                    onClick={() => mediaImageUploadRef.current?.click()}
                     className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm"
                   >
                     <Image size={16} />
                     Upload Images
                   </button>
                   <input
-                    id="media-image-upload"
+                    ref={mediaImageUploadRef}
                     type="file"
                     accept="image/*"
                     multiple
@@ -3055,14 +3046,14 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     }}
                   />
                   <button
-                    onClick={() => document.getElementById('media-file-upload').click()}
+                    onClick={() => mediaFileUploadRef.current?.click()}
                     className="flex items-center gap-2 px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 text-sm"
                   >
                     <Paperclip size={16} />
                     Upload Files
                   </button>
                   <input
-                    id="media-file-upload"
+                    ref={mediaFileUploadRef}
                     type="file"
                     multiple
                     className="hidden"
@@ -3071,14 +3062,14 @@ const DocEditor = ({ docId = null, onSave = null }) => {
                     }}
                   />
                   <button
-                    onClick={() => document.getElementById('media-video-upload').click()}
+                    onClick={() => mediaVideoUploadRef.current?.click()}
                     className="flex items-center gap-2 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 text-sm"
                   >
                     <Monitor size={16} />
                     Upload Video
                   </button>
                   <input
-                    id="media-video-upload"
+                    ref={mediaVideoUploadRef}
                     type="file"
                     accept="video/*"
                     className="hidden"
