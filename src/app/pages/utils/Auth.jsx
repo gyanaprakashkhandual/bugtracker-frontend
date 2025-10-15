@@ -213,55 +213,76 @@ const AuthPage = () => {
     }
   };
 
-  const handleLogin = async (e) => {
-    e.preventDefault();
-    if (!formData.email || !formData.password) {
-      showAlert('Please enter email and password', 'error');
-      return;
-    }
+const handleLogin = async (e) => {
+  e.preventDefault();
+  if (!formData.email || !formData.password) {
+    showAlert('Please enter email and password', 'error');
+    return;
+  }
 
-    setIsLoading(true);
-    try {
-      const response = await fetch('http://localhost:5000/api/v1/auth/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          email: formData.email,
-          password: formData.password,
-          persistent: isPersistent
-        }),
+  setIsLoading(true);
+  try {
+    const response = await fetch('http://localhost:5000/api/v1/auth/login', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        email: formData.email,
+        password: formData.password,
+        persistent: isPersistent
+      }),
+    });
+
+    const data = await response.json();
+
+    if (response.ok) {
+      // Store token based on persistence preference
+      if (isPersistent) {
+        document.cookie = `token=${data.token}; path=/; max-age=86400`;
+        localStorage.setItem('token', data.token);
+      } else {
+        sessionStorage.setItem('token', data.token);
+      }
+
+      // Store ALL required user data for messaging app - MATCHING YOUR BACKEND RESPONSE
+      localStorage.setItem('userId', data.user._id); // Using _id from backend
+      localStorage.setItem('userName', data.user.name);
+      localStorage.setItem('userEmail', data.user.email);
+      localStorage.setItem('userRole', data.user.role);
+      localStorage.setItem('isVerified', data.user.isVerified);
+      localStorage.setItem('isActive', data.user.isActive);
+      localStorage.setItem('isOrganizationOwner', data.user.isOrganizationOwner);
+      
+      // Organization data
+      localStorage.setItem('organizationId', data.user.organizationId);
+      localStorage.setItem('organizationName', data.user.organizationName);
+
+      // Also store the complete user object as backup
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      console.log('✅ Login successful - Stored user data:', {
+        userId: data.user._id,
+        userName: data.user.name,
+        organizationId: data.user.organizationId,
+        organizationName: data.user.organizationName
       });
 
-      const data = await response.json();
+      showAlert('Login successful! Redirecting...', 'success');
 
-      if (response.ok) {
-        // Store token based on persistence preference
-        if (isPersistent) {
-          document.cookie = `token=${data.token}; path=/; max-age=86400`;
-          localStorage.setItem('token', data.token);
-        } else {
-          sessionStorage.setItem('token', data.token);
-        }
-
-        localStorage.setItem('user', JSON.stringify(data.user));
-
-        showAlert('Login successful! Redirecting...', 'success');
-
-        // Redirect to app after successful login
-        setTimeout(() => {
-          router.push('/app');
-        }, 2000);
-      } else {
-        showAlert(data.message || 'Login failed', 'error');
-      }
-    } catch (error) {
-      showAlert('Network error. Please try again.', 'error');
-    } finally {
-      setIsLoading(false);
+      // Redirect to app after successful login
+      setTimeout(() => {
+        router.push('/app');
+      }, 2000);
+    } else {
+      showAlert(data.message || 'Login failed', 'error');
     }
-  };
+  } catch (error) {
+    showAlert('Network error. Please try again.', 'error');
+  } finally {
+    setIsLoading(false);
+  }
+};
 
   const handleForgotPassword = () => {
     router.push('/forgot-password');

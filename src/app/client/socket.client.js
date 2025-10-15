@@ -5,33 +5,78 @@ class SocketClient {
   constructor() {
     this.socket = null;
     this.listeners = new Map();
+    this.isConnecting = false;
   }
 
   // Initialize socket connection
-  connect(url = 'http://localhost:5000') {
-    const token = this.getToken();
+// In socketClient.js - update the connect method
+connect(url = 'http://localhost:5000') {
+  // Prevent multiple connection attempts
+  if (this.isConnecting) {
+    console.log('Socket connection already in progress...');
+    return this.socket;
+  }
 
-    if (!token) {
-      console.error('No authentication token found');
-      return;
-    }
+  const token = this.getToken();
+  const userId = this.getUserId();
+  const userName = this.getUserName();
+  const organizationId = this.getOrganizationId();
 
-    if (this.socket?.connected) {
-      console.log('Socket already connected');
-      return this.socket;
-    }
+  console.log('🔗 === FRONTEND SOCKET CONNECTION ATTEMPT ===');
+  console.log('📦 Data being sent to server:');
+  console.log('   - Token exists:', !!token);
+  console.log('   - Token preview:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
+  console.log('   - User ID:', userId);
+  console.log('   - User Name:', userName);
+  console.log('   - Organization ID:', organizationId);
+  console.log('   - All localStorage:', {
+    token: localStorage.getItem('token'),
+    userId: localStorage.getItem('userId'),
+    userName: localStorage.getItem('userName'),
+    organizationId: localStorage.getItem('organizationId')
+  });
 
+  if (!token) {
+    console.error('❌ NO TOKEN FOUND in localStorage');
+    return null;
+  }
+
+  if (!userId) {
+    console.error('❌ NO USER ID FOUND in localStorage');
+    return null;
+  }
+
+  if (this.socket?.connected) {
+    console.log('Socket already connected');
+    return this.socket;
+  }
+
+  this.isConnecting = true;
+
+  try {
     this.socket = io(url, {
-      auth: { token },
+      auth: { 
+        token: token,
+        userId: userId,
+        userName: userName,
+        organizationId: organizationId
+      },
+      transports: ['websocket', 'polling'],
       reconnection: true,
       reconnectionDelay: 1000,
       reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
+      reconnectionAttempts: 10,
+      timeout: 20000,
     });
 
     this.setupDefaultListeners();
     return this.socket;
+  } catch (error) {
+    console.error('Socket connection error:', error);
+    this.isConnecting = false;
+    return null;
   }
+}
 
   // Setup default socket event listeners
   setupDefaultListeners() {
@@ -39,14 +84,17 @@ class SocketClient {
 
     this.socket.on('connect', () => {
       console.log('✅ Socket connected:', this.socket.id);
+      this.isConnecting = false;
     });
 
     this.socket.on('disconnect', (reason) => {
       console.log('❌ Socket disconnected:', reason);
+      this.isConnecting = false;
     });
 
     this.socket.on('connect_error', (error) => {
       console.error('Connection error:', error.message);
+      this.isConnecting = false;
     });
 
     this.socket.on('reconnect', (attemptNumber) => {
@@ -63,10 +111,16 @@ class SocketClient {
 
     this.socket.on('reconnect_failed', () => {
       console.error('Failed to reconnect');
+      this.isConnecting = false;
+    });
+
+    // Add error handler for general socket errors
+    this.socket.on('error', (error) => {
+      console.error('Socket error:', error);
     });
   }
 
-  // Get token from localStorage
+  // Get user data from localStorage
   getToken() {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('token');
@@ -74,18 +128,41 @@ class SocketClient {
     return null;
   }
 
+  getUserId() {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('userId');
+    }
+    return null;
+  }
+
+  getUserName() {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('userName');
+    }
+    return null;
+  }
+
+  getOrganizationId() {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('organizationId');
+    }
+    return null;
+  }
+
   // Join organization room
   joinOrganization(organizationId) {
     if (this.socket?.connected) {
-      this.socket.emit('join_organization', organizationId);
+      this.socket.emit('join_organization', { organizationId });
       console.log('📥 Joined organization:', organizationId);
+    } else {
+      console.warn('Socket not connected, cannot join organization');
     }
   }
 
   // Leave organization room
   leaveOrganization(organizationId) {
     if (this.socket?.connected) {
-      this.socket.emit('leave_organization', organizationId);
+      this.socket.emit('leave_organization', { organizationId });
       console.log('📤 Left organization:', organizationId);
     }
   }
@@ -146,10 +223,56 @@ class SocketClient {
     }
   }
 
-  // Emit typing event
-  emitTyping(isTyping) {
+  // Listen to user stopped typing
+  onUserStoppedTyping(callback) {
+    if (this.socket) {
+      this.socket.on('user_stopped_typing', callback);
+      this.listeners.set('user_stopped_typing', callback);
+    }
+  }
+
+  // Emit typing start event
+  emitTypingStart(organizationId) {
     if (this.socket?.connected) {
-      this.socket.emit('typing', isTyping);
+      this.socket.emit('typing_start', {
+        organizationId,
+        userId: this.getUserId(),
+        userName: this.getUserName()
+      });
+    }
+  }
+
+  // Emit typing stop event
+  emitTypingStop(organizationId) {
+    if (this.socket?.connected) {
+      this.socket.emit('typing_stop', {
+        organizationId,
+        userId: this.getUserId(),
+        userName: this.getUserName()
+      });
+    }
+  }
+
+  // Send message read receipt
+  emitMessageRead(messageId) {
+    if (this.socket?.connected) {
+      this.socket.emit('message_read', {
+        messageId,
+        userId: this.getUserId(),
+        userName: this.getUserName()
+      });
+    }
+  }
+
+  // Send message reaction
+  emitMessageReaction(messageId, emoji) {
+    if (this.socket?.connected) {
+      this.socket.emit('message_reaction', {
+        messageId,
+        emoji,
+        userId: this.getUserId(),
+        userName: this.getUserName()
+      });
     }
   }
 
@@ -178,6 +301,7 @@ class SocketClient {
       this.removeAllListeners();
       this.socket.disconnect();
       this.socket = null;
+      this.isConnecting = false;
       console.log('🔌 Socket disconnected');
     }
   }
@@ -187,9 +311,19 @@ class SocketClient {
     return this.socket?.connected || false;
   }
 
+  // Check if socket is connecting
+  isConnecting() {
+    return this.isConnecting;
+  }
+
   // Get socket instance
   getSocket() {
     return this.socket;
+  }
+
+  // Get socket ID
+  getSocketId() {
+    return this.socket?.id || null;
   }
 }
 

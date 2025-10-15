@@ -16,8 +16,6 @@ import {
   TrendingUp,
   Users,
   MessageSquare,
-  ChevronDown,
-  ChevronUp,
   Check,
   CheckCheck,
   AlertCircle,
@@ -26,159 +24,7 @@ import {
   Image as ImageIcon,
   Download,
 } from "lucide-react";
-import { io } from 'socket.io-client';
-
-class SocketClient {
-  constructor() {
-    this.socket = null;
-    this.listeners = new Map();
-  }
-
-  connect(url = 'http://localhost:5000') {
-    const token = this.getToken();
-    
-    if (!token) {
-      console.error('No authentication token found');
-      return;
-    }
-
-    if (this.socket?.connected) {
-      console.log('Socket already connected');
-      return this.socket;
-    }
-
-    this.socket = io(url, {
-      auth: { token },
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 5,
-    });
-
-    this.setupDefaultListeners();
-    return this.socket;
-  }
-
-  setupDefaultListeners() {
-    if (!this.socket) return;
-
-    this.socket.on('connect', () => {
-      console.log('✅ Socket connected:', this.socket.id);
-    });
-
-    this.socket.on('disconnect', (reason) => {
-      console.log('❌ Socket disconnected:', reason);
-    });
-
-    this.socket.on('connect_error', (error) => {
-      console.error('Connection error:', error.message);
-    });
-  }
-
-  getToken() {
-    if (typeof window !== 'undefined') {
-      return localStorage.getItem('token');
-    }
-    return null;
-  }
-
-  joinOrganization(organizationId) {
-    if (this.socket?.connected) {
-      this.socket.emit('join_organization', organizationId);
-      console.log('📥 Joined organization:', organizationId);
-    }
-  }
-
-  leaveOrganization(organizationId) {
-    if (this.socket?.connected) {
-      this.socket.emit('leave_organization', organizationId);
-      console.log('📤 Left organization:', organizationId);
-    }
-  }
-
-  onNewMessage(callback) {
-    if (this.socket) {
-      this.socket.on('new_message', callback);
-      this.listeners.set('new_message', callback);
-    }
-  }
-
-  onMessageEdited(callback) {
-    if (this.socket) {
-      this.socket.on('message_edited', callback);
-      this.listeners.set('message_edited', callback);
-    }
-  }
-
-  onMessageDeleted(callback) {
-    if (this.socket) {
-      this.socket.on('message_deleted', callback);
-      this.listeners.set('message_deleted', callback);
-    }
-  }
-
-  onMessageReaction(callback) {
-    if (this.socket) {
-      this.socket.on('message_reaction', callback);
-      this.listeners.set('message_reaction', callback);
-    }
-  }
-
-  onMessagePinned(callback) {
-    if (this.socket) {
-      this.socket.on('message_pinned', callback);
-      this.listeners.set('message_pinned', callback);
-    }
-  }
-
-  onMessageRead(callback) {
-    if (this.socket) {
-      this.socket.on('message_read', callback);
-      this.listeners.set('message_read', callback);
-    }
-  }
-
-  onUserTyping(callback) {
-    if (this.socket) {
-      this.socket.on('user_typing', callback);
-      this.listeners.set('user_typing', callback);
-    }
-  }
-
-  emitTyping(isTyping) {
-    if (this.socket?.connected) {
-      this.socket.emit('typing', isTyping);
-    }
-  }
-
-  removeAllListeners() {
-    if (this.socket) {
-      this.listeners.forEach((callback, eventName) => {
-        this.socket.off(eventName, callback);
-      });
-      this.listeners.clear();
-    }
-  }
-
-  disconnect() {
-    if (this.socket) {
-      this.removeAllListeners();
-      this.socket.disconnect();
-      this.socket = null;
-      console.log('🔌 Socket disconnected');
-    }
-  }
-
-  isConnected() {
-    return this.socket?.connected || false;
-  }
-
-  getSocket() {
-    return this.socket;
-  }
-}
-
-const socketClient = new SocketClient();
+import socketClient from "@/app/client/socket.client";
 
 const API_BASE_URL = "http://localhost:5000/api/v1/message";
 const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/upload";
@@ -186,14 +32,42 @@ const CLOUDINARY_UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
 
 const getCurrentUser = () => {
   if (typeof window !== "undefined") {
-    return {
+    const userData = {
       id: localStorage.getItem("userId"),
+      _id: localStorage.getItem("userId"), // Also include _id for consistency
       name: localStorage.getItem("userName"),
+      email: localStorage.getItem("userEmail"),
+      role: localStorage.getItem("userRole"),
       token: localStorage.getItem("token"),
       organizationId: localStorage.getItem("organizationId"),
+      organizationName: localStorage.getItem("organizationName"),
+      isVerified: localStorage.getItem("isVerified") === 'true',
+      isActive: localStorage.getItem("isActive") === 'true',
+      isOrganizationOwner: localStorage.getItem("isOrganizationOwner") === 'true',
+    };
+
+    // Fallback to parsed user object if individual fields are missing
+    const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+
+    return {
+      ...storedUser, // This will include all backend fields
+      ...userData    // Override with individual fields
     };
   }
-  return { id: null, name: null, token: null, organizationId: null };
+
+  return {
+    id: null,
+    _id: null,
+    name: null,
+    email: null,
+    token: null,
+    organizationId: null,
+    organizationName: null,
+    role: null,
+    isVerified: false,
+    isActive: true,
+    isOrganizationOwner: false
+  };
 };
 
 const getHeaders = () => ({
@@ -219,8 +93,8 @@ const Messaging = () => {
   const [success, setSuccess] = useState(null);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
-  const [uploadingImage, setUploadingImage] = useState(false);
-  const [selectedImage, setSelectedImage] = useState(null);
+  const [uploadingFile, setUploadingFile] = useState(false);
+  const [selectedFile, setSelectedFile] = useState(null);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -229,9 +103,14 @@ const Messaging = () => {
 
   const emojis = ["👍", "❤️", "😊", "🎉", "🔥", "👏", "😮", "😢", "✨", "💯"];
 
+  // Sort messages by timestamp (newest at the bottom)
+  const sortedMessages = [...messages].sort((a, b) =>
+    new Date(a.createdAt) - new Date(b.createdAt)
+  );
+
   useEffect(() => {
     const organizationId = currentUser.organizationId;
-    
+
     if (!organizationId) {
       setError("Organization ID not found. Please log in again.");
       return;
@@ -253,10 +132,12 @@ const Messaging = () => {
     socketClient.onNewMessage((message) => {
       console.log("📨 New message received:", message);
       setMessages((prev) => {
+        // Avoid duplicates
         if (prev.some((m) => m._id === message._id)) {
           return prev;
         }
-        return [...prev, message];
+        const newMessages = [...prev, message];
+        return newMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       });
       setTimeout(() => scrollToBottom(), 100);
       showNotification("New message received", "success");
@@ -304,23 +185,22 @@ const Messaging = () => {
       console.log("✅ Message read:", data);
       setMessages((prev) =>
         prev.map((m) =>
-          m._id === data.messageId ? { ...m, readBy: data.readBy } : m
+          m._id === data.messageId ? { ...m, readBy: [...(m.readBy || []), data] } : m
         )
       );
     });
 
     socketClient.onUserTyping((data) => {
       console.log("⌨️ User typing:", data);
-      if (data.isTyping) {
-        setTypingUsers((prev) => {
-          if (!prev.includes(data.userName)) {
-            return [...prev, data.userName];
-          }
-          return prev;
-        });
-      } else {
-        setTypingUsers((prev) => prev.filter((name) => name !== data.userName));
-      }
+      setTypingUsers((prev) => {
+        const filtered = prev.filter((u) => u.userId !== data.userId);
+        return [...filtered, data];
+      });
+    });
+
+    socketClient.onUserStoppedTyping((data) => {
+      console.log("🛑 User stopped typing:", data);
+      setTypingUsers((prev) => prev.filter((u) => u.userId !== data.userId));
     });
 
     const socket = socketClient.getSocket();
@@ -346,16 +226,18 @@ const Messaging = () => {
   };
 
   const handleTyping = (isTyping) => {
-    socketClient.emitTyping(isTyping);
-    
     if (typingTimeoutRef.current) {
       clearTimeout(typingTimeoutRef.current);
     }
-    
+
     if (isTyping) {
+      // ✅ Use the correct method name
+      socketClient.emitTypingStart(currentUser.organizationId);
       typingTimeoutRef.current = setTimeout(() => {
-        socketClient.emitTyping(false);
+        socketClient.emitTypingStop(currentUser.organizationId);
       }, 3000);
+    } else {
+      socketClient.emitTypingStop(currentUser.organizationId);
     }
   };
 
@@ -364,7 +246,7 @@ const Messaging = () => {
       setLoading(true);
       setError(null);
       const url = search
-        ? `${API_BASE_URL}?page=${page}&limit=50&search=${search}`
+        ? `${API_BASE_URL}/search?query=${search}&page=${page}&limit=50`
         : `${API_BASE_URL}?page=${page}&limit=50`;
 
       const response = await fetch(url, {
@@ -373,9 +255,14 @@ const Messaging = () => {
       const data = await response.json();
 
       if (response.ok) {
-        setMessages(data.messages);
-        setCurrentPage(data.pagination.currentPage);
-        setTotalPages(data.pagination.totalPages);
+        const fetchedMessages = data.messages || data.results || [];
+        // Sort messages by timestamp (oldest first)
+        const sortedMessages = fetchedMessages.sort((a, b) =>
+          new Date(a.createdAt) - new Date(b.createdAt)
+        );
+        setMessages(sortedMessages);
+        setCurrentPage(data.pagination?.currentPage || 1);
+        setTotalPages(data.pagination?.totalPages || 1);
         setTimeout(() => scrollToBottom(), 100);
       } else {
         setError(data.message || "Failed to fetch messages");
@@ -417,7 +304,7 @@ const Messaging = () => {
     }
   };
 
-  const uploadImageToCloudinary = async (file) => {
+  const uploadToCloudinary = async (file) => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("upload_preset", CLOUDINARY_UPLOAD_PRESET);
@@ -428,36 +315,36 @@ const Messaging = () => {
         body: formData,
       });
       const data = await response.json();
-      return data.secure_url;
+      return {
+        url: data.secure_url,
+        name: file.name,
+        size: file.size,
+        type: file.type.startsWith('image/') ? 'image' : 'file'
+      };
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.error("Error uploading file:", error);
       throw error;
     }
   };
 
-  const handleImageSelect = async (e) => {
+  const handleFileSelect = async (e) => {
     const file = e.target.files[0];
     if (!file) return;
 
-    if (!file.type.startsWith("image/")) {
-      setError("Please select an image file");
-      return;
-    }
-
-    setUploadingImage(true);
+    setUploadingFile(true);
     try {
-      const imageUrl = await uploadImageToCloudinary(file);
-      setSelectedImage(imageUrl);
-      showNotification("Image uploaded successfully", "success");
+      const uploadedFile = await uploadToCloudinary(file);
+      setSelectedFile(uploadedFile);
+      showNotification("File uploaded successfully", "success");
     } catch (error) {
-      setError("Failed to upload image");
+      setError("Failed to upload file");
     } finally {
-      setUploadingImage(false);
+      setUploadingFile(false);
     }
   };
 
   const handleSendMessage = async () => {
-    if (!newMessage.trim() && !selectedImage && !editingMessage) return;
+    if (!newMessage.trim() && !selectedFile && !editingMessage) return;
 
     try {
       if (editingMessage) {
@@ -478,18 +365,15 @@ const Messaging = () => {
       } else {
         const messageData = {
           content: newMessage,
-          messageType: selectedImage ? "image" : "text",
+          messageType: selectedFile ? selectedFile.type : "text",
           parentMessageId: replyingTo?._id || null,
+          mentions: [],
         };
 
-        if (selectedImage) {
-          messageData.attachments = [
-            {
-              url: selectedImage,
-              type: "image",
-              name: "image.jpg",
-            },
-          ];
+        if (selectedFile) {
+          messageData.fileUrl = selectedFile.url;
+          messageData.fileName = selectedFile.name;
+          messageData.fileSize = selectedFile.size;
         }
 
         const response = await fetch(API_BASE_URL, {
@@ -499,11 +383,18 @@ const Messaging = () => {
         });
 
         if (response.ok) {
+          const sentMessage = await response.json();
           setNewMessage("");
           setReplyingTo(null);
-          setSelectedImage(null);
+          setSelectedFile(null);
           handleTyping(false);
-          await fetchMessages(currentPage, searchQuery);
+
+          // Add the sent message to local state immediately
+          setMessages(prev => {
+            const newMessages = [...prev, sentMessage];
+            return newMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+          });
+
           setTimeout(() => scrollToBottom(), 100);
         } else {
           const data = await response.json();
@@ -526,7 +417,7 @@ const Messaging = () => {
       });
 
       if (response.ok) {
-        await fetchMessages(currentPage, searchQuery);
+        setMessages(prev => prev.filter(m => m._id !== messageId));
       } else {
         const data = await response.json();
         setError(data.message || "Failed to delete message");
@@ -546,12 +437,111 @@ const Messaging = () => {
       });
 
       if (response.ok) {
-        await fetchMessages(currentPage, searchQuery);
+        const updatedMessage = await response.json();
+        setMessages(prev =>
+          prev.map((m) =>
+            m._id === messageId ? { ...m, reactions: updatedMessage.reactions } : m
+          )
+        );
       }
     } catch (error) {
       console.error("Error adding reaction:", error);
     }
     setShowEmojiPicker(null);
+  };
+
+  const handleMarkAsRead = async (messageId) => {
+    try {
+      if (!messageId) return;
+
+      const response = await fetch(`${API_BASE_URL}/${messageId}/read`, {
+        method: "POST",
+        headers: getHeaders(),
+      });
+
+      if (!response.ok) {
+        console.warn(`Failed to mark message ${messageId} as read`);
+      }
+    } catch (error) {
+      console.error("Error marking as read:", error.message);
+    }
+  };
+
+  // Optimized useEffect with debouncing and batch processing
+  useEffect(() => {
+    let isMounted = true;
+
+    const markMessagesAsRead = async () => {
+      if (!isMounted || messages.length === 0 || !currentUser.id) return;
+
+      const unreadMessages = messages.filter(
+        (m) => m._id && !m.readBy?.some((r) => String(r.userId) === String(currentUser.id))
+      );
+
+      if (unreadMessages.length === 0) return;
+
+      console.log(`📖 Marking ${unreadMessages.length} messages as read`);
+
+      // Process in batches to avoid overwhelming the server
+      const batchSize = 5;
+      for (let i = 0; i < unreadMessages.length; i += batchSize) {
+        if (!isMounted) break;
+
+        const batch = unreadMessages.slice(i, i + batchSize);
+        const promises = batch.map(m => handleMarkAsRead(m._id));
+
+        try {
+          await Promise.all(promises);
+          // Small delay between batches
+          if (i + batchSize < unreadMessages.length) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+          }
+        } catch (error) {
+          console.error("Error in batch mark as read:", error.message);
+        }
+      }
+    };
+
+    // Add a small delay to avoid running on every render
+    const timer = setTimeout(() => {
+      markMessagesAsRead();
+    }, 500);
+
+    return () => {
+      isMounted = false;
+      clearTimeout(timer);
+    };
+  }, [messages, currentUser.id]);
+  // Date formatting utility
+  const formatMessageTime = (dateString) => {
+    if (!dateString) return 'Just now';
+
+    try {
+      const date = new Date(dateString);
+
+      // Check if date is valid
+      if (isNaN(date.getTime())) {
+        return 'Just now';
+      }
+
+      const now = new Date();
+      const diffInMinutes = Math.floor((now - date) / (1000 * 60));
+
+      if (diffInMinutes < 1) return 'Just now';
+      if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
+      if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
+
+      // For older messages, show date
+      return date.toLocaleDateString([], {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error('Error formatting date:', error);
+      return 'Just now'
+    }
   };
 
   const handleTogglePin = async (messageId) => {
@@ -562,7 +552,12 @@ const Messaging = () => {
       });
 
       if (response.ok) {
-        await fetchMessages(currentPage, searchQuery);
+        const updatedMessage = await response.json();
+        setMessages(prev =>
+          prev.map((m) =>
+            m._id === messageId ? { ...m, isPinned: updatedMessage.isPinned } : m
+          )
+        );
       } else {
         const data = await response.json();
         setError(data.message || "Failed to pin message");
@@ -593,6 +588,15 @@ const Messaging = () => {
     scrollToBottom();
   }, [messages]);
 
+  useEffect(() => {
+    if (messages.length > 0) {
+      const unreadMessages = messages.filter(
+        (m) => !m.readBy?.some((r) => String(r.userId) === String(currentUser.id))
+      );
+      Promise.all(unreadMessages.map((m) => handleMarkAsRead(m._id)));
+    }
+  }, [messages]);
+
   const startEdit = (message) => {
     setEditingMessage(message);
     setNewMessage(message.content);
@@ -603,8 +607,18 @@ const Messaging = () => {
     setNewMessage("");
   };
 
+  // Fix the isMyMessage function
   const isMyMessage = (message) => {
-    return String(message.senderId) === String(currentUser.id);
+    const currentUserId = currentUser.id || currentUser._id;
+    const messageSenderId = message.senderId?._id || message.senderId;
+
+    console.log('🔍 Message Ownership Check:', {
+      currentUserId,
+      messageSenderId,
+      isMyMessage: String(messageSenderId) === String(currentUserId)
+    });
+
+    return String(messageSenderId) === String(currentUserId);
   };
 
   return (
@@ -733,11 +747,10 @@ const Messaging = () => {
                     initial={{ opacity: 0, y: 10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
-                    className={`rounded-lg p-3 ${
-                      String(reply.senderId) === String(currentUser.id)
-                        ? "bg-[#dcf8c6] ml-auto"
-                        : "bg-slate-100 mr-auto"
-                    } max-w-[85%]`}
+                    className={`rounded-lg p-3 ${String(reply.senderId) === String(currentUser.id)
+                      ? "bg-[#dcf8c6] ml-auto"
+                      : "bg-slate-100 mr-auto"
+                      } max-w-[85%]`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-[9px] font-bold">
@@ -766,6 +779,36 @@ const Messaging = () => {
 
       {/* Main Chat Container */}
       <div className="flex-1 flex flex-col h-screen">
+        {/* Header with Search and Stats */}
+        <div className="flex items-center justify-between p-4 bg-white border-b shadow-sm">
+          <div className="flex items-center gap-2">
+            <button onClick={() => setShowStats(true)} className="p-2 hover:bg-slate-100 rounded-full">
+              <TrendingUp size={18} className="text-slate-600" />
+            </button>
+            <div className="relative flex-1">
+              <input
+                type="text"
+                placeholder="Search messages..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
+                className="w-64 px-3 py-2 text-sm bg-slate-50 rounded-full focus:outline-none pl-8"
+              />
+              <Search size={16} className="absolute left-2 top-2.5 text-slate-400" />
+            </div>
+            <button onClick={handleSearch} className="p-2 hover:bg-slate-100 rounded-full">
+              <Search size={18} className="text-slate-600" />
+            </button>
+          </div>
+          <div className="flex items-center gap-2">
+            {isSocketConnected ? (
+              <Wifi size={18} className="text-green-500" />
+            ) : (
+              <WifiOff size={18} className="text-red-500" />
+            )}
+          </div>
+        </div>
+
         {/* Messages Area */}
         <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 bg-white">
           {/* Notifications at top */}
@@ -812,7 +855,7 @@ const Messaging = () => {
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600"></div>
               <p className="mt-2 text-[11px] text-slate-600">Loading messages...</p>
             </div>
-          ) : messages.length === 0 ? (
+          ) : sortedMessages.length === 0 ? (
             <div className="flex flex-col justify-center items-center h-full text-slate-500">
               <MessageSquare size={40} className="mb-2 opacity-50" />
               <p className="text-xs font-medium">No messages yet</p>
@@ -820,24 +863,32 @@ const Messaging = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {messages.map((message, index) => (
-                <MessageBubble
-                  key={message._id}
-                  message={message}
-                  index={index}
-                  isMyMessage={isMyMessage(message)}
-                  onReply={() => setReplyingTo(message)}
-                  onEdit={() => startEdit(message)}
-                  onDelete={() => handleDeleteMessage(message._id)}
-                  onReaction={(emoji) => handleReaction(message._id, emoji)}
-                  onPin={() => handleTogglePin(message._id)}
-                  onToggleReplies={() => fetchReplies(message._id)}
-                  showEmojiPicker={showEmojiPicker === message._id}
-                  setShowEmojiPicker={setShowEmojiPicker}
-                  emojis={emojis}
-                />
-              ))}
-              
+              {/* Messages Area - Fixed Key Prop */}
+              <div className="space-y-2">
+                {sortedMessages.map((message, index) => {
+                  // Ensure we have a proper key
+                  const messageKey = message._id || `message-${index}-${Date.now()}`;
+
+                  return (
+                    <MessageBubble
+                      key={messageKey}
+                      message={message}
+                      index={index}
+                      isMyMessage={isMyMessage(message)}
+                      onReply={() => setReplyingTo(message)}
+                      onEdit={() => startEdit(message)}
+                      onDelete={() => handleDeleteMessage(message._id)}
+                      onReaction={(emoji) => handleReaction(message._id, emoji)}
+                      onPin={() => handleTogglePin(message._id)}
+                      onToggleReplies={() => fetchReplies(message._id)}
+                      showEmojiPicker={showEmojiPicker === message._id}
+                      setShowEmojiPicker={setShowEmojiPicker}
+                      emojis={emojis}
+                    />
+                  );
+                })}
+              </div>
+
               {typingUsers.length > 0 && (
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
@@ -862,11 +913,11 @@ const Messaging = () => {
                     />
                   </div>
                   <span>
-                    {typingUsers.join(", ")} {typingUsers.length === 1 ? "is" : "are"} typing...
+                    {typingUsers.map(u => u.name).join(", ")} {typingUsers.length === 1 ? "is" : "are"} typing...
                   </span>
                 </motion.div>
               )}
-              
+
               <div ref={messagesEndRef} />
             </div>
           )}
@@ -951,7 +1002,7 @@ const Messaging = () => {
               </motion.div>
             )}
 
-            {selectedImage && (
+            {selectedFile && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
@@ -959,15 +1010,19 @@ const Messaging = () => {
                 className="flex items-center justify-between mb-2 p-2 bg-blue-50 rounded-lg"
               >
                 <div className="flex items-center gap-2">
-                  <img
-                    src={selectedImage}
-                    alt="Selected"
-                    className="w-12 h-12 object-cover rounded"
-                  />
-                  <span className="text-[10px] text-slate-700">Image ready to send</span>
+                  {selectedFile.type === 'image' ? (
+                    <img
+                      src={selectedFile.url}
+                      alt="Selected"
+                      className="w-12 h-12 object-cover rounded"
+                    />
+                  ) : (
+                    <Paperclip size={16} className="text-blue-600" />
+                  )}
+                  <span className="text-[10px] text-slate-700">{selectedFile.name} ready to send</span>
                 </div>
                 <button
-                  onClick={() => setSelectedImage(null)}
+                  onClick={() => setSelectedFile(null)}
                   className="text-slate-500 hover:text-slate-700"
                 >
                   <X size={12} />
@@ -983,34 +1038,34 @@ const Messaging = () => {
             >
               <Smile size={18} className="text-slate-600" />
             </button>
-            
+
             <input
               type="file"
               ref={fileInputRef}
-              onChange={handleImageSelect}
-              accept="image/*"
+              onChange={handleFileSelect}
+              accept="*"
               className="hidden"
             />
-            
+
             <button
               onClick={() => fileInputRef.current?.click()}
-              disabled={uploadingImage}
+              disabled={uploadingFile}
               className="p-1 hover:bg-slate-100 rounded-full"
             >
-              {uploadingImage ? (
+              {uploadingFile ? (
                 <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-600"></div>
               ) : (
                 <Paperclip size={18} className="text-slate-600" />
               )}
             </button>
-            
+
             <input
               type="text"
               placeholder="Type a message"
               value={newMessage}
               onChange={(e) => {
                 setNewMessage(e.target.value);
-                handleTyping(e.target.value.length > 0);
+                handleTyping(e.target.value.length > 0); // ✅ Fixed function call
               }}
               onKeyPress={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -1020,10 +1075,10 @@ const Messaging = () => {
               }}
               className="flex-1 px-3 py-1.5 text-[13px] bg-transparent focus:outline-none"
             />
-            
+
             <button
               onClick={handleSendMessage}
-              disabled={!newMessage.trim() && !selectedImage}
+              disabled={!newMessage.trim() && !selectedFile}
               className="p-2 bg-green-500 hover:bg-green-600 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Send size={16} className="text-white" />
@@ -1061,6 +1116,7 @@ const Messaging = () => {
 };
 
 // WhatsApp-Style Message Bubble Component
+// WhatsApp-Style Message Bubble Component
 const MessageBubble = ({
   message,
   index,
@@ -1077,81 +1133,68 @@ const MessageBubble = ({
 }) => {
   const [showActions, setShowActions] = useState(false);
 
+  // Debug info
+  useEffect(() => {
+    if (index === 0) { // Only log for first message to avoid spam
+      console.log('💬 Message Bubble Debug:', {
+        messageId: message._id,
+        senderId: message.senderId,
+        senderName: message.senderName,
+        isMyMessage,
+        alignment: isMyMessage ? 'RIGHT (My Message)' : 'LEFT (Other\'s Message)'
+      });
+    }
+  }, [message, isMyMessage, index]);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, x: isMyMessage ? 100 : -100 }}
       transition={{ delay: index * 0.02 }}
-      className={`flex ${isMyMessage ? "justify-end" : "justify-start"} mb-1`}
+      className={`flex ${isMyMessage ? "justify-end" : "justify-start"} mb-2 px-3`}
     >
-      <div
-        className={`relative max-w-[65%] group`}
-      >
-        {message.isPinned && (
-          <div className={`flex items-center gap-1 mb-1 px-2 ${isMyMessage ? "justify-end" : "justify-start"}`}>
-            <Pin size={10} className="text-yellow-600" />
-            <span className="text-[9px] text-yellow-700 font-medium">Pinned</span>
-          </div>
-        )}
-
+      <div className={`relative max-w-[75%] group`}>
+        {/* Message Bubble with clear right/left styling */}
         <div
-          className={`rounded-lg px-3 py-2 shadow-sm ${
-            isMyMessage
-              ? "bg-[#dcf8c6] rounded-tr-none"
-              : "bg-white rounded-tl-none border border-slate-200"
-          }`}
+          className={`rounded-2xl px-4 py-3 shadow-sm ${isMyMessage
+              ? "bg-[#dcf8c6] rounded-br-none" // WhatsApp green - right side
+              : "bg-white rounded-bl-none border border-gray-200" // White - left side
+            }`}
         >
-          {/* Sender Name (for received messages) */}
+          {/* Sender Name (only show for others' messages) */}
           {!isMyMessage && (
-            <div className="flex items-center gap-1.5 mb-1">
-              <span className="text-[11px] font-semibold text-green-700">
+            <div className="flex items-center gap-2 mb-2">
+              <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
+                {message.senderName?.charAt(0).toUpperCase()}
+              </div>
+              <span className="text-[12px] font-semibold text-gray-800">
                 {message.senderName}
               </span>
-              <span className="text-[8px] px-1.5 py-0.5 bg-green-100 rounded-full text-green-700">
+              <span className="text-[9px] px-2 py-1 bg-blue-100 rounded-full text-blue-700">
                 {message.senderRole}
               </span>
             </div>
           )}
 
-          {/* Reply Reference */}
-          {message.parentMessageId && (
-            <div className="mb-1.5 p-1.5 bg-white/50 border-l-2 border-green-600 rounded">
-              <p className="text-[9px] text-slate-600 font-medium">↩ Reply to message</p>
-            </div>
-          )}
-
-          {/* Image Attachment */}
-          {message.messageType === "image" && message.attachments?.[0]?.url && (
-            <div className="mb-1.5">
-              <img
-                src={message.attachments[0].url}
-                alt="Attachment"
-                className="max-w-full rounded-lg max-h-64 object-cover"
-              />
-            </div>
-          )}
-
           {/* Message Content */}
           {message.content && (
-            <p className="text-[13px] text-slate-800 leading-relaxed break-words">
+            <p className={`text-[14px] leading-relaxed break-words ${isMyMessage ? "text-gray-800" : "text-gray-800"
+              }`}>
               {message.content}
             </p>
           )}
 
           {/* Message Footer */}
-          <div className="flex items-center justify-end gap-1 mt-1">
-            {message.isEdited && (
-              <span className="text-[9px] text-slate-500 italic">edited</span>
-            )}
-            <span className="text-[9px] text-slate-500">
+          <div className={`flex items-center gap-2 mt-2 ${isMyMessage ? "justify-end" : "justify-start"}`}>
+            <span className="text-[11px] text-gray-500">
               {new Date(message.createdAt).toLocaleTimeString([], {
                 hour: "2-digit",
                 minute: "2-digit",
               })}
             </span>
             {isMyMessage && (
-              <span className="text-blue-600">
+              <span className="text-blue-500">
                 {message.readBy?.length > 1 ? (
                   <CheckCheck size={12} />
                 ) : (
@@ -1160,143 +1203,13 @@ const MessageBubble = ({
               </span>
             )}
           </div>
-
-          {/* Reactions */}
-          {message.reactions && message.reactions.length > 0 && (
-            <div className="flex gap-1 mt-1.5 flex-wrap">
-              {Object.entries(
-                message.reactions.reduce((acc, r) => {
-                  acc[r.emoji] = (acc[r.emoji] || 0) + 1;
-                  return acc;
-                }, {})
-              ).map(([emoji, count]) => (
-                <button
-                  key={emoji}
-                  onClick={() => onReaction(emoji)}
-                  className="px-1.5 py-0.5 bg-white/80 hover:bg-white rounded-full text-[10px] shadow-sm border border-slate-200"
-                >
-                  {emoji} {count}
-                </button>
-              ))}
-            </div>
-          )}
         </div>
 
-        {/* Hover Actions */}
-        <div
-          className={`absolute top-0 ${
-            isMyMessage ? "left-0 -translate-x-full" : "right-0 translate-x-full"
-          } opacity-0 group-hover:opacity-100 transition-opacity flex items-center gap-1 px-2`}
-        >
-          <button
-            onClick={() => setShowEmojiPicker(showEmojiPicker ? null : message._id)}
-            className="p-1 hover:bg-slate-200 rounded-full bg-white shadow-md"
-          >
-            <Smile size={12} className="text-slate-600" />
-          </button>
-          
-          <button
-            onClick={onReply}
-            className="p-1 hover:bg-slate-200 rounded-full bg-white shadow-md"
-          >
-            <Reply size={12} className="text-slate-600" />
-          </button>
-
-          <div className="relative">
-            <button
-              onClick={() => setShowActions(!showActions)}
-              className="p-1 hover:bg-slate-200 rounded-full bg-white shadow-md"
-            >
-              <MoreVertical size={12} className="text-slate-600" />
-            </button>
-
-            <AnimatePresence>
-              {showActions && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                  animate={{ opacity: 1, scale: 1, y: 0 }}
-                  exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                  className={`absolute ${
-                    isMyMessage ? "right-0" : "left-0"
-                  } mt-1 w-32 bg-white rounded-lg shadow-xl py-1 z-20 border border-slate-200`}
-                >
-                  {isMyMessage && (
-                    <button
-                      onClick={() => {
-                        onEdit();
-                        setShowActions(false);
-                      }}
-                      className="w-full px-3 py-1.5 text-left hover:bg-slate-100 flex items-center gap-2 text-slate-700 text-[11px]"
-                    >
-                      <Edit2 size={12} />
-                      <span>Edit</span>
-                    </button>
-                  )}
-                  <button
-                    onClick={() => {
-                      onPin();
-                      setShowActions(false);
-                    }}
-                    className="w-full px-3 py-1.5 text-left hover:bg-slate-100 flex items-center gap-2 text-slate-700 text-[11px]"
-                  >
-                    <Pin size={12} />
-                    <span>{message.isPinned ? "Unpin" : "Pin"}</span>
-                  </button>
-                  <div className="border-t border-slate-200 my-0.5"></div>
-                  <button
-                    onClick={() => {
-                      onDelete();
-                      setShowActions(false);
-                    }}
-                    className="w-full px-3 py-1.5 text-left hover:bg-red-50 flex items-center gap-2 text-red-600 text-[11px]"
-                  >
-                    <Trash2 size={12} />
-                    <span>Delete</span>
-                  </button>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </div>
+        {/* Debug indicator */}
+        <div className={`absolute top-1 text-[8px] font-bold ${isMyMessage ? "left-0 -ml-12 text-green-600" : "right-0 -mr-12 text-blue-600"
+          }`}>
+          {isMyMessage ? "YOU" : "OTHER"}
         </div>
-
-        {/* Emoji Picker */}
-        <AnimatePresence>
-          {showEmojiPicker && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.8, y: 10 }}
-              animate={{ opacity: 1, scale: 1, y: 0 }}
-              exit={{ opacity: 0, scale: 0.8, y: 10 }}
-              className={`absolute ${
-                isMyMessage ? "right-0" : "left-0"
-              } bottom-full mb-2 p-2 bg-white rounded-lg shadow-xl flex gap-1 z-10 border border-slate-200`}
-            >
-              {emojis.map((emoji) => (
-                <button
-                  key={emoji}
-                  onClick={() => onReaction(emoji)}
-                  className="text-base hover:bg-slate-100 rounded p-1 transition-colors"
-                >
-                  {emoji}
-                </button>
-              ))}
-            </motion.div>
-          )}
-        </AnimatePresence>
-
-        {/* Replies Button */}
-        {message.replyCount > 0 && (
-          <button
-            onClick={onToggleReplies}
-            className={`flex items-center gap-1 mt-1 text-[10px] text-blue-600 hover:text-blue-800 font-medium ${
-              isMyMessage ? "justify-end" : "justify-start"
-            }`}
-          >
-            <MessageSquare size={10} />
-            <span>
-              View {message.replyCount} {message.replyCount === 1 ? "reply" : "replies"}
-            </span>
-          </button>
-        )}
       </div>
     </motion.div>
   );
