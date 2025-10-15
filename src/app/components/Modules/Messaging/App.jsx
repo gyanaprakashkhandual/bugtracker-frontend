@@ -622,94 +622,7 @@ const Messaging = () => {
   };
 
   return (
-    <div className="flex h-screen bg-white">
-      {/* Stats Sidebar */}
-      <AnimatePresence>
-        {showStats && (
-          <motion.div
-            initial={{ x: -300, opacity: 0 }}
-            animate={{ x: 0, opacity: 1 }}
-            exit={{ x: -300, opacity: 0 }}
-            className="fixed left-0 top-0 h-full w-72 bg-white shadow-2xl z-50 overflow-y-auto border-r"
-          >
-            <div className="p-4">
-              <div className="flex justify-between items-center mb-4">
-                <h2 className="text-sm font-semibold text-slate-800">Statistics</h2>
-                <button
-                  onClick={() => setShowStats(false)}
-                  className="p-1 hover:bg-slate-100 rounded-full"
-                >
-                  <X size={16} />
-                </button>
-              </div>
-
-              {stats && (
-                <div className="space-y-2">
-                  <StatCard
-                    icon={<MessageSquare size={14} />}
-                    label="Total Messages"
-                    value={stats.totalMessages}
-                    color="blue"
-                  />
-                  <StatCard
-                    icon={<Reply size={14} />}
-                    label="Total Replies"
-                    value={stats.totalReplies}
-                    color="green"
-                  />
-                  <StatCard
-                    icon={<Pin size={14} />}
-                    label="Pinned"
-                    value={stats.pinnedMessages}
-                    color="yellow"
-                  />
-                  <StatCard
-                    icon={<TrendingUp size={14} />}
-                    label="Today"
-                    value={stats.todayMessages}
-                    color="purple"
-                  />
-
-                  <div className="mt-4">
-                    <h3 className="text-xs font-semibold mb-2 flex items-center gap-1.5 text-slate-800">
-                      <Users size={14} />
-                      Top Contributors
-                    </h3>
-                    <div className="space-y-1.5">
-                      {stats.topContributors?.map((contributor, idx) => (
-                        <motion.div
-                          key={idx}
-                          initial={{ opacity: 0, x: -20 }}
-                          animate={{ opacity: 1, x: 0 }}
-                          transition={{ delay: idx * 0.1 }}
-                          className="flex items-center justify-between p-2 bg-slate-50 rounded-lg"
-                        >
-                          <div className="flex items-center gap-2">
-                            <div className="w-7 h-7 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
-                              {contributor.senderName?.charAt(0).toUpperCase()}
-                            </div>
-                            <div>
-                              <p className="text-[10px] font-medium text-slate-800">
-                                {contributor.senderName}
-                              </p>
-                              <p className="text-[9px] text-slate-500">
-                                {contributor.senderRole}
-                              </p>
-                            </div>
-                          </div>
-                          <span className="text-xs font-bold text-blue-600">
-                            {contributor.messageCount}
-                          </span>
-                        </motion.div>
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              )}
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+    <div className="flex max-h-[calc(100vh-69px)] bg-white sidebar-scrollbar">
 
       {/* Replies Modal */}
       <AnimatePresence>
@@ -778,37 +691,8 @@ const Messaging = () => {
       </AnimatePresence>
 
       {/* Main Chat Container */}
-      <div className="flex-1 flex flex-col h-screen">
-        {/* Header with Search and Stats */}
-        <div className="flex items-center justify-between p-4 bg-white border-b shadow-sm">
-          <div className="flex items-center gap-2">
-            <button onClick={() => setShowStats(true)} className="p-2 hover:bg-slate-100 rounded-full">
-              <TrendingUp size={18} className="text-slate-600" />
-            </button>
-            <div className="relative flex-1">
-              <input
-                type="text"
-                placeholder="Search messages..."
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                onKeyPress={(e) => e.key === "Enter" && handleSearch()}
-                className="w-64 px-3 py-2 text-sm bg-slate-50 rounded-full focus:outline-none pl-8"
-              />
-              <Search size={16} className="absolute left-2 top-2.5 text-slate-400" />
-            </div>
-            <button onClick={handleSearch} className="p-2 hover:bg-slate-100 rounded-full">
-              <Search size={18} className="text-slate-600" />
-            </button>
-          </div>
-          <div className="flex items-center gap-2">
-            {isSocketConnected ? (
-              <Wifi size={18} className="text-green-500" />
-            ) : (
-              <WifiOff size={18} className="text-red-500" />
-            )}
-          </div>
-        </div>
-
+      <div className="flex-1 flex flex-col max-h-[calc(100vh-69px)]
+">
         {/* Messages Area */}
         <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 bg-white">
           {/* Notifications at top */}
@@ -951,7 +835,7 @@ const Messaging = () => {
         )}
 
         {/* Input Area */}
-        <div className="bg-white border-t px-4 py-3">
+        <div className="bg-white border-t border-green-600 px-4 py-2">
           <AnimatePresence>
             {replyingTo && (
               <motion.div
@@ -1158,8 +1042,8 @@ const MessageBubble = ({
         {/* Message Bubble with clear right/left styling */}
         <div
           className={`rounded-2xl px-4 py-3 shadow-sm ${isMyMessage
-              ? "bg-[#dcf8c6] rounded-br-none" // WhatsApp green - right side
-              : "bg-white rounded-bl-none border border-gray-200" // White - left side
+            ? "bg-[#dcf8c6] rounded-br-none" // WhatsApp green - right side
+            : "bg-white rounded-bl-none border border-gray-200" // White - left side
             }`}
         >
           {/* Sender Name (only show for others' messages) */}
@@ -1215,27 +1099,5 @@ const MessageBubble = ({
   );
 };
 
-// Stat Card Component
-const StatCard = ({ icon, label, value, color }) => {
-  const colors = {
-    blue: "from-blue-500 to-blue-600",
-    green: "from-green-500 to-green-600",
-    yellow: "from-yellow-500 to-yellow-600",
-    purple: "from-purple-500 to-purple-600",
-  };
-
-  return (
-    <motion.div
-      whileHover={{ scale: 1.02 }}
-      className={`bg-gradient-to-br ${colors[color]} rounded-lg p-2.5 text-white shadow-md`}
-    >
-      <div className="flex items-center justify-between mb-1">
-        <div className="p-1 bg-white bg-opacity-20 rounded">{icon}</div>
-        <span className="text-xl font-bold">{value}</span>
-      </div>
-      <p className="text-[10px] opacity-90 font-medium">{label}</p>
-    </motion.div>
-  );
-};
 
 export default Messaging;
