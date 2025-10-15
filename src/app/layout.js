@@ -7,6 +7,7 @@ import { LoaderProvider } from "./script/Loader.context";
 import { TestTypeProvider } from "./script/TestType.context";
 import { TooltipProvider } from "./script/Tooltip.context";
 import { ContentProvider } from "./script/Content.context";
+import { DocProvider } from "./script/Doc.context";
 import Tooltip from "./components/utils/Tooltip";
 import Context from "./components/utils/Content";
 import RouteProgressBar from "./components/utils/Progress";
@@ -55,16 +56,18 @@ export default function RootLayout({ children }) {
           <ContentProvider>
             <ProjectProvider>
               <TestTypeProvider>
-                <AlertProvider>
-                  <ConfirmProvider>
-                    <LoaderProvider>
-                      {children}
-                      <RouteProgressBar />
-                      <Tooltip />
-                      <Context />
-                    </LoaderProvider>
-                  </ConfirmProvider>
-                </AlertProvider>
+                <DocProvider>
+                  <AlertProvider>
+                    <ConfirmProvider>
+                      <LoaderProvider>
+                        {children}
+                        <RouteProgressBar />
+                        <Tooltip />
+                        <Context />
+                      </LoaderProvider>
+                    </ConfirmProvider>
+                  </AlertProvider>
+                </DocProvider>
               </TestTypeProvider>
             </ProjectProvider>
           </ContentProvider>
