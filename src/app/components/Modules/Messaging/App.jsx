@@ -25,7 +25,7 @@ import {
   Download,
 } from "lucide-react";
 import socketClient from "@/app/client/socket.client";
-import { TechIconPattern } from "../../utils/Icon";
+
 
 /**
  * Messaging Component - Real-time chat interface with WhatsApp-style design
@@ -34,7 +34,7 @@ import { TechIconPattern } from "../../utils/Icon";
 
 const API_BASE_URL = "http://localhost:5000/api/v1/message";
 const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/upload";
-const CLOUDINARY_UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
+const CLOUDINARY_UPLOAD_PRESET = 'test_case_preset';
 
 const getCurrentUser = () => {
   if (typeof window !== "undefined") {
@@ -135,7 +135,6 @@ const Messaging = () => {
   const [showStats, setShowStats] = useState(false);
   const [showEmojiPicker, setShowEmojiPicker] = useState(null);
   const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -200,7 +199,6 @@ const Messaging = () => {
         return newMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
       });
       setTimeout(() => scrollToBottom(), 100);
-      showNotification("New message received", "success");
     });
 
     socketClient.onMessageEdited((updatedMessage) => {
@@ -209,12 +207,10 @@ const Messaging = () => {
           m._id === updatedMessage._id ? { ...m, ...updatedMessage } : m
         )
       );
-      showNotification("Message updated", "success");
     });
 
     socketClient.onMessageDeleted((data) => {
       setMessages((prev) => prev.filter((m) => m._id !== data.messageId));
-      showNotification("Message deleted", "success");
     });
 
     socketClient.onMessageReaction((data) => {
@@ -230,10 +226,6 @@ const Messaging = () => {
         prev.map((m) =>
           m._id === data.messageId ? { ...m, isPinned: data.isPinned } : m
         )
-      );
-      showNotification(
-        data.isPinned ? "Message pinned" : "Message unpinned",
-        "success"
       );
     });
 
@@ -281,16 +273,6 @@ const Messaging = () => {
       socket.on("disconnect", () => {
         setIsSocketConnected(false);
       });
-    }
-  };
-
-  const showNotification = (message, type = "success") => {
-    if (type === "success") {
-      setSuccess(message);
-      setTimeout(() => setSuccess(null), 3000);
-    } else {
-      setError(message);
-      setTimeout(() => setError(null), 3000);
     }
   };
 
@@ -386,7 +368,6 @@ const Messaging = () => {
     try {
       const uploadedFile = await uploadToCloudinary(file);
       setSelectedFile(uploadedFile);
-      showNotification("File uploaded successfully", "success");
     } catch (error) {
       setError("Failed to upload file");
     } finally {
@@ -406,10 +387,12 @@ const Messaging = () => {
         });
 
         if (response.ok) {
+          const updatedMessage = await response.json();
+          setMessages((prev) =>
+            prev.map((m) => (m._id === updatedMessage._id ? updatedMessage : m))
+          );
           setEditingMessage(null);
           setNewMessage("");
-          await fetchMessages(currentPage, searchQuery);
-          showNotification("Message updated successfully", "success");
         } else {
           const data = await response.json();
           setError(data.message || "Failed to update message");
@@ -468,7 +451,6 @@ const Messaging = () => {
 
       if (response.ok) {
         setMessages(prev => prev.filter(m => m._id !== messageId));
-        showNotification("Message deleted successfully", "success");
       } else {
         const data = await response.json();
         setError(data.message || "Failed to delete message");
@@ -859,28 +841,10 @@ const Messaging = () => {
                 </button>
               </motion.div>
             )}
-
-            {success && (
-              <motion.div
-                initial={{ opacity: 0, y: -20 }}
-                animate={{ opacity: 1, y: 0 }}
-                exit={{ opacity: 0, y: -20 }}
-                className="mb-2 p-2 bg-green-50 border border-green-200 rounded-lg flex items-center gap-2"
-              >
-                <Check className="text-green-600" size={14} />
-                <p className="text-[11px] text-green-800">{success}</p>
-                <button
-                  onClick={() => setSuccess(null)}
-                  className="ml-auto text-green-600"
-                >
-                  <X size={14} />
-                </button>
-              </motion.div>
-            )}
           </AnimatePresence>
 
           {loading ? (
-            <div className="flex flex-col justify-center items-center h-full">
+            <div className="flex flex-col justify-center items-center min-h-[calc(100vh-69px)]">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600"></div>
               <p className="mt-2 text-[11px] text-slate-600">Loading messages...</p>
             </div>
@@ -1103,7 +1067,7 @@ const Messaging = () => {
 
             <button
               onClick={handleSendMessage}
-              disabled={!newMessage.trim() && !selectedFile}
+              disabled={(!newMessage.trim() && !selectedFile) || uploadingFile}
               className="p-2 bg-green-500 hover:bg-green-600 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Send size={16} className="text-white" />
