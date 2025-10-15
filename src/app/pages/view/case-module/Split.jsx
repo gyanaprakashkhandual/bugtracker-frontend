@@ -90,12 +90,7 @@ const TestCaseSplitView = () => {
             });
     };
 
-    const projectId =
-        typeof window !== "undefined"
-            ? localStorage.getItem("currentProjectId")
-            : null;
-    const token =
-        typeof window !== "undefined" ? localStorage.getItem("token") : null;
+    c
 
     const BASE_URL = "http://localhost:5000/api/v1/test-case";
 
