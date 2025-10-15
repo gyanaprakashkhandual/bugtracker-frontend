@@ -578,17 +578,8 @@ export default function MediaComponent() {
   }
 
   return (
-    <div className="w-full max-w-7xl mx-auto p-4 space-y-4">
-      {/* Header */}
-      <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-        <div className="flex items-center justify-between">
-          <div className="flex items-center space-x-3">
-            <FileText className="w-5 h-5 text-blue-600" />
-            <h2 className="text-lg font-semibold text-gray-800">Media & Content</h2>
-          </div>
-        </div>
-      </div>
-
+    <div className="w-full max-w-full mx-auto p-1 space-y-4">
+      
       {/* Notifications */}
       <AnimatePresence>
         {error && (
@@ -624,7 +615,7 @@ export default function MediaComponent() {
       </AnimatePresence>
 
       {/* Tabs */}
-      <div className="flex space-x-2 bg-white p-2 rounded-lg shadow-sm border border-gray-200">
+      <div className="flex space-x-2 bg-white p-2 rounded-sm shadow-sm border border-gray-200">
         {[
           { id: "images", label: "Images", icon: ImageIcon, count: images.length },
           { id: "attachments", label: "Attachments", icon: Paperclip, count: attachments.length },

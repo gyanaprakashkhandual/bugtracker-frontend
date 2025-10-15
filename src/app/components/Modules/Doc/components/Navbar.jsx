@@ -33,15 +33,17 @@ import { useParams } from 'next/navigation';
 import { useProject } from '@/app/utils/Get.project';
 import { GoogleArrowRight } from '@/app/components/utils/Icon';
 import { Code, Table } from 'lucide-react';
+import DocListSidebar from './RightSidebar';
 
 const API_BASE_URL = 'http://localhost:5000/api/v1/doc';
 const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/upload';
 const UPLOAD_PRESET = 'test_case_preset';
 
-const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setToolbarCollapsed }) => {
+const Navbar = ({leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setToolbarCollapsed }) => {
     const { docId } = useDoc();
     const { testTypeId, testTypeName } = useTestType();
     const [projectId, setProjectId] = useState('');
+    const [RightSidebarOpen, setRightSidebarOpen] = useState(false);
     const [token, setToken] = useState('');
     const [status, setStatus] = useState('draft');
     const [priority, setPriority] = useState('medium');
@@ -720,13 +722,22 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
 
 
 
-                        <button className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
-                            <GoogleArrowRight />
-                        </button>
+                        <button
+    onClick={() => setRightSidebarOpen(!RightSidebarOpen)}
+    className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors"
+>
+    <GoogleArrowRight />
+</button>
+<DocListSidebar 
+    RightSidebarOpen={RightSidebarOpen}
+    setRightSidebarOpen={setRightSidebarOpen}
+/>
                     </div>
                 </div>
             </div>
+            
         </nav>
+        
     );
 };
 
