@@ -26,6 +26,11 @@ import {
 } from "lucide-react";
 import socketClient from "@/app/client/socket.client";
 
+/**
+ * Messaging Component - Real-time chat interface with WhatsApp-style design
+ * Features: Real-time messaging, reactions, replies, file uploads, typing indicators
+ */
+
 const API_BASE_URL = "http://localhost:5000/api/v1/message";
 const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/upload";
 const CLOUDINARY_UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
@@ -34,7 +39,7 @@ const getCurrentUser = () => {
   if (typeof window !== "undefined") {
     const userData = {
       id: localStorage.getItem("userId"),
-      _id: localStorage.getItem("userId"), // Also include _id for consistency
+      _id: localStorage.getItem("userId"),
       name: localStorage.getItem("userName"),
       email: localStorage.getItem("userEmail"),
       role: localStorage.getItem("userRole"),
@@ -46,12 +51,11 @@ const getCurrentUser = () => {
       isOrganizationOwner: localStorage.getItem("isOrganizationOwner") === 'true',
     };
 
-    // Fallback to parsed user object if individual fields are missing
     const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
 
     return {
-      ...storedUser, // This will include all backend fields
-      ...userData    // Override with individual fields
+      ...storedUser,
+      ...userData
     };
   }
 
@@ -95,6 +99,7 @@ const Messaging = () => {
   const [typingUsers, setTypingUsers] = useState([]);
   const [uploadingFile, setUploadingFile] = useState(false);
   const [selectedFile, setSelectedFile] = useState(null);
+  const [contextMenu, setContextMenu] = useState(null);
   const messagesEndRef = useRef(null);
   const messagesContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
@@ -103,7 +108,6 @@ const Messaging = () => {
 
   const emojis = ["👍", "❤️", "😊", "🎉", "🔥", "👏", "😮", "😢", "✨", "💯"];
 
-  // Sort messages by timestamp (newest at the bottom)
   const sortedMessages = [...messages].sort((a, b) =>
     new Date(a.createdAt) - new Date(b.createdAt)
   );
@@ -130,9 +134,7 @@ const Messaging = () => {
 
   const setupSocketListeners = () => {
     socketClient.onNewMessage((message) => {
-      console.log("📨 New message received:", message);
       setMessages((prev) => {
-        // Avoid duplicates
         if (prev.some((m) => m._id === message._id)) {
           return prev;
         }
@@ -144,7 +146,6 @@ const Messaging = () => {
     });
 
     socketClient.onMessageEdited((updatedMessage) => {
-      console.log("✏️ Message edited:", updatedMessage);
       setMessages((prev) =>
         prev.map((m) =>
           m._id === updatedMessage._id ? { ...m, ...updatedMessage } : m
@@ -154,13 +155,11 @@ const Messaging = () => {
     });
 
     socketClient.onMessageDeleted((data) => {
-      console.log("🗑️ Message deleted:", data);
       setMessages((prev) => prev.filter((m) => m._id !== data.messageId));
       showNotification("Message deleted", "success");
     });
 
     socketClient.onMessageReaction((data) => {
-      console.log("😊 Reaction added:", data);
       setMessages((prev) =>
         prev.map((m) =>
           m._id === data.messageId ? { ...m, reactions: data.reactions } : m
@@ -169,7 +168,6 @@ const Messaging = () => {
     });
 
     socketClient.onMessagePinned((data) => {
-      console.log("📌 Message pinned:", data);
       setMessages((prev) =>
         prev.map((m) =>
           m._id === data.messageId ? { ...m, isPinned: data.isPinned } : m
@@ -182,16 +180,30 @@ const Messaging = () => {
     });
 
     socketClient.onMessageRead((data) => {
-      console.log("✅ Message read:", data);
       setMessages((prev) =>
-        prev.map((m) =>
-          m._id === data.messageId ? { ...m, readBy: [...(m.readBy || []), data] } : m
-        )
+        prev.map((m) => {
+          if (m._id === data.messageId) {
+            const existingReadBy = m.readBy || [];
+            const isAlreadyRead = existingReadBy.some(
+              r => String(r.userId || r) === String(data.userId)
+            );
+
+            if (!isAlreadyRead) {
+              return {
+                ...m,
+                readBy: [...existingReadBy, {
+                  userId: data.userId,
+                  readAt: data.readAt || new Date().toISOString()
+                }]
+              };
+            }
+          }
+          return m;
+        })
       );
     });
 
     socketClient.onUserTyping((data) => {
-      console.log("⌨️ User typing:", data);
       setTypingUsers((prev) => {
         const filtered = prev.filter((u) => u.userId !== data.userId);
         return [...filtered, data];
@@ -199,7 +211,6 @@ const Messaging = () => {
     });
 
     socketClient.onUserStoppedTyping((data) => {
-      console.log("🛑 User stopped typing:", data);
       setTypingUsers((prev) => prev.filter((u) => u.userId !== data.userId));
     });
 
@@ -231,7 +242,6 @@ const Messaging = () => {
     }
 
     if (isTyping) {
-      // ✅ Use the correct method name
       socketClient.emitTypingStart(currentUser.organizationId);
       typingTimeoutRef.current = setTimeout(() => {
         socketClient.emitTypingStop(currentUser.organizationId);
@@ -256,7 +266,6 @@ const Messaging = () => {
 
       if (response.ok) {
         const fetchedMessages = data.messages || data.results || [];
-        // Sort messages by timestamp (oldest first)
         const sortedMessages = fetchedMessages.sort((a, b) =>
           new Date(a.createdAt) - new Date(b.createdAt)
         );
@@ -269,23 +278,8 @@ const Messaging = () => {
       }
     } catch (error) {
       setError("Error connecting to server");
-      console.error("Error fetching messages:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchStats = async () => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/stats`, {
-        headers: getHeaders(),
-      });
-      const data = await response.json();
-      if (response.ok) {
-        setStats(data.stats);
-      }
-    } catch (error) {
-      console.error("Error fetching stats:", error);
     }
   };
 
@@ -300,7 +294,7 @@ const Messaging = () => {
         setShowRepliesModal(messageId);
       }
     } catch (error) {
-      console.error("Error fetching replies:", error);
+      setError("Failed to fetch replies");
     }
   };
 
@@ -322,7 +316,6 @@ const Messaging = () => {
         type: file.type.startsWith('image/') ? 'image' : 'file'
       };
     } catch (error) {
-      console.error("Error uploading file:", error);
       throw error;
     }
   };
@@ -358,6 +351,7 @@ const Messaging = () => {
           setEditingMessage(null);
           setNewMessage("");
           await fetchMessages(currentPage, searchQuery);
+          showNotification("Message updated successfully", "success");
         } else {
           const data = await response.json();
           setError(data.message || "Failed to update message");
@@ -389,7 +383,6 @@ const Messaging = () => {
           setSelectedFile(null);
           handleTyping(false);
 
-          // Add the sent message to local state immediately
           setMessages(prev => {
             const newMessages = [...prev, sentMessage];
             return newMessages.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
@@ -403,7 +396,6 @@ const Messaging = () => {
       }
     } catch (error) {
       setError("Error connecting to server");
-      console.error("Error sending message:", error);
     }
   };
 
@@ -418,13 +410,13 @@ const Messaging = () => {
 
       if (response.ok) {
         setMessages(prev => prev.filter(m => m._id !== messageId));
+        showNotification("Message deleted successfully", "success");
       } else {
         const data = await response.json();
         setError(data.message || "Failed to delete message");
       }
     } catch (error) {
       setError("Error connecting to server");
-      console.error("Error deleting message:", error);
     }
   };
 
@@ -445,7 +437,7 @@ const Messaging = () => {
         );
       }
     } catch (error) {
-      console.error("Error adding reaction:", error);
+      setError("Failed to add reaction");
     }
     setShowEmojiPicker(null);
   };
@@ -459,15 +451,36 @@ const Messaging = () => {
         headers: getHeaders(),
       });
 
-      if (!response.ok) {
-        console.warn(`Failed to mark message ${messageId} as read`);
+      if (response.ok) {
+        const data = await response.json();
+
+        setMessages(prev =>
+          prev.map((m) => {
+            if (m._id === messageId) {
+              const existingReadBy = m.readBy || [];
+              const isAlreadyRead = existingReadBy.some(
+                r => String(r.userId || r) === String(currentUser.id)
+              );
+
+              if (!isAlreadyRead) {
+                return {
+                  ...m,
+                  readBy: [...existingReadBy, {
+                    userId: currentUser.id,
+                    readAt: new Date().toISOString()
+                  }]
+                };
+              }
+            }
+            return m;
+          })
+        );
       }
     } catch (error) {
-      console.error("Error marking as read:", error.message);
+      // Silent fail
     }
   };
 
-  // Optimized useEffect with debouncing and batch processing
   useEffect(() => {
     let isMounted = true;
 
@@ -480,9 +493,6 @@ const Messaging = () => {
 
       if (unreadMessages.length === 0) return;
 
-      console.log(`📖 Marking ${unreadMessages.length} messages as read`);
-
-      // Process in batches to avoid overwhelming the server
       const batchSize = 5;
       for (let i = 0; i < unreadMessages.length; i += batchSize) {
         if (!isMounted) break;
@@ -492,17 +502,15 @@ const Messaging = () => {
 
         try {
           await Promise.all(promises);
-          // Small delay between batches
           if (i + batchSize < unreadMessages.length) {
             await new Promise(resolve => setTimeout(resolve, 100));
           }
         } catch (error) {
-          console.error("Error in batch mark as read:", error.message);
+          // Silent fail
         }
       }
     };
 
-    // Add a small delay to avoid running on every render
     const timer = setTimeout(() => {
       markMessagesAsRead();
     }, 500);
@@ -512,14 +520,13 @@ const Messaging = () => {
       clearTimeout(timer);
     };
   }, [messages, currentUser.id]);
-  // Date formatting utility
+
   const formatMessageTime = (dateString) => {
     if (!dateString) return 'Just now';
 
     try {
       const date = new Date(dateString);
 
-      // Check if date is valid
       if (isNaN(date.getTime())) {
         return 'Just now';
       }
@@ -531,7 +538,6 @@ const Messaging = () => {
       if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
       if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
 
-      // For older messages, show date
       return date.toLocaleDateString([], {
         month: 'short',
         day: 'numeric',
@@ -539,7 +545,6 @@ const Messaging = () => {
         minute: '2-digit'
       });
     } catch (error) {
-      console.error('Error formatting date:', error);
       return 'Just now'
     }
   };
@@ -564,7 +569,6 @@ const Messaging = () => {
       }
     } catch (error) {
       setError("Error connecting to server");
-      console.error("Error toggling pin:", error);
     }
   };
 
@@ -581,25 +585,16 @@ const Messaging = () => {
 
   useEffect(() => {
     fetchMessages();
-    fetchStats();
   }, []);
 
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
-  useEffect(() => {
-    if (messages.length > 0) {
-      const unreadMessages = messages.filter(
-        (m) => !m.readBy?.some((r) => String(r.userId) === String(currentUser.id))
-      );
-      Promise.all(unreadMessages.map((m) => handleMarkAsRead(m._id)));
-    }
-  }, [messages]);
-
   const startEdit = (message) => {
     setEditingMessage(message);
     setNewMessage(message.content);
+    setContextMenu(null);
   };
 
   const cancelEdit = () => {
@@ -607,22 +602,87 @@ const Messaging = () => {
     setNewMessage("");
   };
 
-  // Fix the isMyMessage function
   const isMyMessage = (message) => {
     const currentUserId = currentUser.id || currentUser._id;
     const messageSenderId = message.senderId?._id || message.senderId;
-
-    console.log('🔍 Message Ownership Check:', {
-      currentUserId,
-      messageSenderId,
-      isMyMessage: String(messageSenderId) === String(currentUserId)
-    });
-
     return String(messageSenderId) === String(currentUserId);
   };
 
+  const handleContextMenu = (e, message) => {
+    e.preventDefault();
+    setContextMenu({
+      x: e.clientX,
+      y: e.clientY,
+      message: message
+    });
+  };
+
+  const handleReplyFromContext = () => {
+    setReplyingTo(contextMenu.message);
+    setContextMenu(null);
+  };
+
+  const handleEditFromContext = () => {
+    startEdit(contextMenu.message);
+  };
+
+  const handleDeleteFromContext = () => {
+    handleDeleteMessage(contextMenu.message._id);
+    setContextMenu(null);
+  };
+
+  useEffect(() => {
+    const handleClick = () => setContextMenu(null);
+    document.addEventListener('click', handleClick);
+    return () => document.removeEventListener('click', handleClick);
+  }, []);
+
   return (
     <div className="flex max-h-[calc(100vh-69px)] bg-white sidebar-scrollbar">
+
+      {/* Context Menu */}
+      <AnimatePresence>
+        {contextMenu && (
+          <motion.div
+            initial={{ opacity: 0, scale: 0.95 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.95 }}
+            style={{
+              position: 'fixed',
+              top: contextMenu.y,
+              left: contextMenu.x,
+              zIndex: 1000
+            }}
+            className="bg-white rounded-lg shadow-xl border border-slate-200 py-1 min-w-[150px]"
+          >
+            <button
+              onClick={handleReplyFromContext}
+              className="w-full px-4 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"
+            >
+              <Reply size={14} />
+              Reply
+            </button>
+            {isMyMessage(contextMenu.message) && (
+              <>
+                <button
+                  onClick={handleEditFromContext}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"
+                >
+                  <Edit2 size={14} />
+                  Edit
+                </button>
+                <button
+                  onClick={handleDeleteFromContext}
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
+                >
+                  <Trash2 size={14} />
+                  Delete
+                </button>
+              </>
+            )}
+          </motion.div>
+        )}
+      </AnimatePresence>
 
       {/* Replies Modal */}
       <AnimatePresence>
@@ -673,10 +733,7 @@ const Messaging = () => {
                         {reply.senderName}
                       </span>
                       <span className="text-[9px] text-slate-500 ml-auto">
-                        {new Date(reply.createdAt).toLocaleTimeString([], {
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
+                        {formatMessageTime(reply.createdAt)}
                       </span>
                     </div>
                     <p className="text-[12px] text-slate-700 leading-relaxed">
@@ -691,11 +748,9 @@ const Messaging = () => {
       </AnimatePresence>
 
       {/* Main Chat Container */}
-      <div className="flex-1 flex flex-col max-h-[calc(100vh-69px)]
-">
+      <div className="flex-1 flex flex-col max-h-[calc(100vh-69px)]">
         {/* Messages Area */}
         <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 bg-white">
-          {/* Notifications at top */}
           <AnimatePresence>
             {error && (
               <motion.div
@@ -747,10 +802,8 @@ const Messaging = () => {
             </div>
           ) : (
             <div className="space-y-2">
-              {/* Messages Area - Fixed Key Prop */}
               <div className="space-y-2">
                 {sortedMessages.map((message, index) => {
-                  // Ensure we have a proper key
                   const messageKey = message._id || `message-${index}-${Date.now()}`;
 
                   return (
@@ -768,6 +821,8 @@ const Messaging = () => {
                       showEmojiPicker={showEmojiPicker === message._id}
                       setShowEmojiPicker={setShowEmojiPicker}
                       emojis={emojis}
+                      onContextMenu={handleContextMenu}
+                      formatMessageTime={formatMessageTime}
                     />
                   );
                 })}
@@ -949,7 +1004,7 @@ const Messaging = () => {
               value={newMessage}
               onChange={(e) => {
                 setNewMessage(e.target.value);
-                handleTyping(e.target.value.length > 0); // ✅ Fixed function call
+                handleTyping(e.target.value.length > 0);
               }}
               onKeyPress={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
@@ -999,8 +1054,14 @@ const Messaging = () => {
   );
 };
 
-// WhatsApp-Style Message Bubble Component
-// WhatsApp-Style Message Bubble Component
+/**
+ * MessageBubble Component - Individual message display with WhatsApp-style design
+ * Supports right-click context menu, reactions, and read receipts
+ */
+/**
+ * MessageBubble Component - Individual message display with WhatsApp-style design
+ * Supports right-click context menu, reactions, and read receipts
+ */
 const MessageBubble = ({
   message,
   index,
@@ -1014,21 +1075,10 @@ const MessageBubble = ({
   showEmojiPicker,
   setShowEmojiPicker,
   emojis,
+  onContextMenu,
+  formatMessageTime,
 }) => {
   const [showActions, setShowActions] = useState(false);
-
-  // Debug info
-  useEffect(() => {
-    if (index === 0) { // Only log for first message to avoid spam
-      console.log('💬 Message Bubble Debug:', {
-        messageId: message._id,
-        senderId: message.senderId,
-        senderName: message.senderName,
-        isMyMessage,
-        alignment: isMyMessage ? 'RIGHT (My Message)' : 'LEFT (Other\'s Message)'
-      });
-    }
-  }, [message, isMyMessage, index]);
 
   return (
     <motion.div
@@ -1037,16 +1087,15 @@ const MessageBubble = ({
       exit={{ opacity: 0, x: isMyMessage ? 100 : -100 }}
       transition={{ delay: index * 0.02 }}
       className={`flex ${isMyMessage ? "justify-end" : "justify-start"} mb-2 px-3`}
+      onContextMenu={(e) => onContextMenu(e, message)}
     >
       <div className={`relative max-w-[75%] group`}>
-        {/* Message Bubble with clear right/left styling */}
         <div
           className={`rounded-2xl px-4 py-3 shadow-sm ${isMyMessage
-            ? "bg-[#dcf8c6] rounded-br-none" // WhatsApp green - right side
-            : "bg-white rounded-bl-none border border-gray-200" // White - left side
+              ? "bg-[#dcf8c6] rounded-br-none"
+              : "bg-white rounded-bl-none border border-gray-200"
             }`}
         >
-          {/* Sender Name (only show for others' messages) */}
           {!isMyMessage && (
             <div className="flex items-center gap-2 mb-2">
               <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
@@ -1055,31 +1104,33 @@ const MessageBubble = ({
               <span className="text-[12px] font-semibold text-gray-800">
                 {message.senderName}
               </span>
-              <span className="text-[9px] px-2 py-1 bg-blue-100 rounded-full text-blue-700">
-                {message.senderRole}
-              </span>
+              {message.senderRole && (
+                <span className="text-[9px] px-2 py-1 bg-blue-100 rounded-full text-blue-700">
+                  {message.senderRole}
+                </span>
+              )}
             </div>
           )}
 
-          {/* Message Content */}
           {message.content && (
-            <p className={`text-[14px] leading-relaxed break-words ${isMyMessage ? "text-gray-800" : "text-gray-800"
-              }`}>
+            <p
+              className={`text-[14px] leading-relaxed break-words ${isMyMessage ? "text-gray-800" : "text-gray-800"
+                }`}
+            >
               {message.content}
             </p>
           )}
 
-          {/* Message Footer */}
-          <div className={`flex items-center gap-2 mt-2 ${isMyMessage ? "justify-end" : "justify-start"}`}>
+          <div
+            className={`flex items-center gap-2 mt-2 ${isMyMessage ? "justify-end" : "justify-start"
+              }`}
+          >
             <span className="text-[11px] text-gray-500">
-              {new Date(message.createdAt).toLocaleTimeString([], {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}
+              {formatMessageTime(message.createdAt)}
             </span>
             {isMyMessage && (
               <span className="text-blue-500">
-                {message.readBy?.length > 1 ? (
+                {message.readBy && message.readBy.length > 0 ? (
                   <CheckCheck size={12} />
                 ) : (
                   <Check size={12} />
@@ -1088,16 +1139,9 @@ const MessageBubble = ({
             )}
           </div>
         </div>
-
-        {/* Debug indicator */}
-        <div className={`absolute top-1 text-[8px] font-bold ${isMyMessage ? "left-0 -ml-12 text-green-600" : "right-0 -mr-12 text-blue-600"
-          }`}>
-          {isMyMessage ? "YOU" : "OTHER"}
-        </div>
       </div>
     </motion.div>
   );
 };
-
 
 export default Messaging;
