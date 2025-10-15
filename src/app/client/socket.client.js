@@ -9,74 +9,74 @@ class SocketClient {
   }
 
   // Initialize socket connection
-// In socketClient.js - update the connect method
-connect(url = 'http://localhost:5000') {
-  // Prevent multiple connection attempts
-  if (this.isConnecting) {
-    console.log('Socket connection already in progress...');
-    return this.socket;
-  }
+  // In socketClient.js - update the connect method
+  connect(url = 'http://localhost:5000') {
+    // Prevent multiple connection attempts
+    if (this.isConnecting) {
+      console.log('Socket connection already in progress...');
+      return this.socket;
+    }
 
-  const token = this.getToken();
-  const userId = this.getUserId();
-  const userName = this.getUserName();
-  const organizationId = this.getOrganizationId();
+    const token = this.getToken();
+    const userId = this.getUserId();
+    const userName = this.getUserName();
+    const organizationId = this.getOrganizationId();
 
-  console.log('🔗 === FRONTEND SOCKET CONNECTION ATTEMPT ===');
-  console.log('📦 Data being sent to server:');
-  console.log('   - Token exists:', !!token);
-  console.log('   - Token preview:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
-  console.log('   - User ID:', userId);
-  console.log('   - User Name:', userName);
-  console.log('   - Organization ID:', organizationId);
-  console.log('   - All localStorage:', {
-    token: localStorage.getItem('token'),
-    userId: localStorage.getItem('userId'),
-    userName: localStorage.getItem('userName'),
-    organizationId: localStorage.getItem('organizationId')
-  });
-
-  if (!token) {
-    console.error('❌ NO TOKEN FOUND in localStorage');
-    return null;
-  }
-
-  if (!userId) {
-    console.error('❌ NO USER ID FOUND in localStorage');
-    return null;
-  }
-
-  if (this.socket?.connected) {
-    console.log('Socket already connected');
-    return this.socket;
-  }
-
-  this.isConnecting = true;
-
-  try {
-    this.socket = io(url, {
-      auth: { 
-        token: token,
-        userId: userId,
-        userName: userName,
-        organizationId: organizationId
-      },
-      transports: ['websocket', 'polling'],
-      reconnection: true,
-      reconnectionDelay: 1000,
-      reconnectionDelayMax: 5000,
-      reconnectionAttempts: 10,
-      timeout: 20000,
+    console.log('🔗 === FRONTEND SOCKET CONNECTION ATTEMPT ===');
+    console.log('📦 Data being sent to server:');
+    console.log('   - Token exists:', !!token);
+    console.log('   - Token preview:', token ? token.substring(0, 20) + '...' : 'NO TOKEN');
+    console.log('   - User ID:', userId);
+    console.log('   - User Name:', userName);
+    console.log('   - Organization ID:', organizationId);
+    console.log('   - All localStorage:', {
+      token: localStorage.getItem('token'),
+      userId: localStorage.getItem('userId'),
+      userName: localStorage.getItem('userName'),
+      organizationId: localStorage.getItem('organizationId')
     });
 
-    this.setupDefaultListeners();
-    return this.socket;
-  } catch (error) {
-    console.error('Socket connection error:', error);
-    this.isConnecting = false;
-    return null;
+    if (!token) {
+      console.error('❌ NO TOKEN FOUND in localStorage');
+      return null;
+    }
+
+    if (!userId) {
+      console.error('❌ NO USER ID FOUND in localStorage');
+      return null;
+    }
+
+    if (this.socket?.connected) {
+      console.log('Socket already connected');
+      return this.socket;
+    }
+
+    this.isConnecting = true;
+
+    try {
+      this.socket = io(url, {
+        auth: {
+          token: token,
+          userId: userId,
+          userName: userName,
+          organizationId: organizationId
+        },
+        transports: ['websocket', 'polling'],
+        reconnection: true,
+        reconnectionDelay: 1000,
+        reconnectionDelayMax: 5000,
+        reconnectionAttempts: 10,
+        timeout: 20000,
+      });
+
+      this.setupDefaultListeners();
+      return this.socket;
+    } catch (error) {
+      console.error('Socket connection error:', error);
+      this.isConnecting = false;
+      return null;
+    }
   }
-}
 
   // Setup default socket event listeners
   setupDefaultListeners() {
