@@ -37,26 +37,66 @@ const CLOUDINARY_UPLOAD_PRESET = "YOUR_UPLOAD_PRESET";
 
 const getCurrentUser = () => {
   if (typeof window !== "undefined") {
+    // Try to get from sessionStorage first (for non-persistent login), then localStorage
+    const token = sessionStorage.getItem("token") || localStorage.getItem("token");
+
+    // Get individual items from localStorage
+    const userId = localStorage.getItem("userId");
+    const userName = localStorage.getItem("userName");
+    const userEmail = localStorage.getItem("userEmail");
+    const userRole = localStorage.getItem("userRole");
+    const organizationId = localStorage.getItem("organizationId");
+    const organizationName = localStorage.getItem("organizationName");
+
+    // Try to parse stored user object
+    let storedUser = {};
+    try {
+      const userStr = localStorage.getItem("user");
+      if (userStr && userStr !== "{}") {
+        storedUser = JSON.parse(userStr);
+      }
+    } catch (e) {
+      console.error("Error parsing stored user:", e);
+    }
+
+    // Merge all data, prioritizing individual items over stored object
     const userData = {
-      id: localStorage.getItem("userId"),
-      _id: localStorage.getItem("userId"),
-      name: localStorage.getItem("userName"),
-      email: localStorage.getItem("userEmail"),
-      role: localStorage.getItem("userRole"),
-      token: localStorage.getItem("token"),
-      organizationId: localStorage.getItem("organizationId"),
-      organizationName: localStorage.getItem("organizationName"),
-      isVerified: localStorage.getItem("isVerified") === 'true',
-      isActive: localStorage.getItem("isActive") === 'true',
-      isOrganizationOwner: localStorage.getItem("isOrganizationOwner") === 'true',
+      id: userId || storedUser._id || storedUser.id,
+      _id: userId || storedUser._id || storedUser.id,
+      name: userName || storedUser.name,
+      email: userEmail || storedUser.email,
+      role: userRole || storedUser.role,
+      token: token,
+      organizationId: organizationId || storedUser.organizationId,
+      organizationName: organizationName || storedUser.organizationName,
+      isVerified: localStorage.getItem("isVerified") === 'true' || storedUser.isVerified,
+      isActive: localStorage.getItem("isActive") === 'true' || storedUser.isActive,
+      isOrganizationOwner: localStorage.getItem("isOrganizationOwner") === 'true' || storedUser.isOrganizationOwner,
     };
 
-    const storedUser = JSON.parse(localStorage.getItem("user") || "{}");
+    // Debug log
+    console.log('🔍 getCurrentUser - Retrieved Data:', {
+      userId: userData.id,
+      email: userData.email,
+      name: userData.name,
+      organizationId: userData.organizationId,
+      role: userData.role,
+      hasToken: !!token,
+      localStorageKeys: Object.keys(localStorage),
+      source: 'localStorage + sessionStorage'
+    });
 
-    return {
-      ...storedUser,
-      ...userData
-    };
+    // Warning if critical data is missing
+    if (!userData.id || !userData.email) {
+      console.error('⚠️ CRITICAL: User ID or Email is missing! User needs to re-login.');
+      console.error('LocalStorage dump:', {
+        userId: localStorage.getItem("userId"),
+        userEmail: localStorage.getItem("userEmail"),
+        userObject: localStorage.getItem("user")
+      });
+    }
+
+    return userData;
   }
 
   return {
@@ -115,8 +155,25 @@ const Messaging = () => {
   useEffect(() => {
     const organizationId = currentUser.organizationId;
 
+    console.log('🔍 Current User Data:', {
+      userId: currentUser.id,
+      name: currentUser.name,
+      email: currentUser.email,
+      organizationId: currentUser.organizationId,
+      organizationName: currentUser.organizationName,
+      role: currentUser.role
+    });
+
+    // Critical check for missing user data
+    if (!currentUser.id || !currentUser.email) {
+      setError("User session expired or invalid. Please log out and log in again.");
+      setLoading(false);
+      return;
+    }
+
     if (!organizationId) {
-      setError("Organization ID not found. Please log in again.");
+      setError("Organization ID not found. Please contact your admin to be added to an organization.");
+      setLoading(false);
       return;
     }
 
@@ -481,15 +538,22 @@ const Messaging = () => {
     }
   };
 
+  // FIXED: Only mark OTHER users' messages as read, not your own
   useEffect(() => {
     let isMounted = true;
 
     const markMessagesAsRead = async () => {
       if (!isMounted || messages.length === 0 || !currentUser.id) return;
 
-      const unreadMessages = messages.filter(
-        (m) => m._id && !m.readBy?.some((r) => String(r.userId) === String(currentUser.id))
-      );
+      // CRITICAL FIX: Filter out messages sent by current user
+      const unreadMessages = messages.filter((m) => {
+        const messageSenderId = m.senderId?._id || m.senderId;
+        const isMyMessage = String(messageSenderId) === String(currentUser.id);
+        const isUnread = !m.readBy?.some((r) => String(r.userId) === String(currentUser.id));
+
+        // Only mark as read if it's NOT my message AND it's unread
+        return !isMyMessage && isUnread && m._id;
+      });
 
       if (unreadMessages.length === 0) return;
 
@@ -605,7 +669,31 @@ const Messaging = () => {
   const isMyMessage = (message) => {
     const currentUserId = currentUser.id || currentUser._id;
     const messageSenderId = message.senderId?._id || message.senderId;
-    return String(messageSenderId) === String(currentUserId);
+
+    // Also check against email as a fallback
+    const currentUserEmail = currentUser.email;
+    const messageSenderEmail = message.senderId?.email || message.senderEmail;
+
+    // Check if IDs match (most reliable)
+    const idsMatch = currentUserId && messageSenderId &&
+      String(messageSenderId) === String(currentUserId);
+
+    // Check if emails match (fallback)
+    const emailsMatch = currentUserEmail && messageSenderEmail &&
+      String(currentUserEmail).toLowerCase() === String(messageSenderEmail).toLowerCase();
+
+    // Debug log
+    console.log('Checking message ownership:', {
+      currentUserId,
+      messageSenderId,
+      currentUserEmail,
+      messageSenderEmail,
+      idsMatch,
+      emailsMatch,
+      result: idsMatch || emailsMatch
+    });
+
+    return idsMatch || emailsMatch;
   };
 
   const handleContextMenu = (e, message) => {
@@ -812,6 +900,7 @@ const Messaging = () => {
                       message={message}
                       index={index}
                       isMyMessage={isMyMessage(message)}
+                      currentUserId={currentUser.id}
                       onReply={() => setReplyingTo(message)}
                       onEdit={() => startEdit(message)}
                       onDelete={() => handleDeleteMessage(message._id)}
@@ -835,11 +924,6 @@ const Messaging = () => {
                   className="flex items-center gap-2 text-slate-500 text-[10px] px-3"
                 >
                   <div className="flex gap-1">
-                    <motion.span
-                      animate={{ opacity: [0.4, 1, 0.4] }}
-                      transition={{ duration: 1, repeat: Infinity, delay: 0 }}
-                      className="w-1.5 h-1.5 bg-slate-400 rounded-full"
-                    />
                     <motion.span
                       animate={{ opacity: [0.4, 1, 0.4] }}
                       transition={{ duration: 1, repeat: Infinity, delay: 0.2 }}
@@ -1058,14 +1142,11 @@ const Messaging = () => {
  * MessageBubble Component - Individual message display with WhatsApp-style design
  * Supports right-click context menu, reactions, and read receipts
  */
-/**
- * MessageBubble Component - Individual message display with WhatsApp-style design
- * Supports right-click context menu, reactions, and read receipts
- */
 const MessageBubble = ({
   message,
   index,
   isMyMessage,
+  currentUserId,
   onReply,
   onEdit,
   onDelete,
@@ -1080,6 +1161,23 @@ const MessageBubble = ({
 }) => {
   const [showActions, setShowActions] = useState(false);
 
+  // FIXED: Calculate read status properly - exclude sender from readBy count
+  const getReadStatus = () => {
+    if (!isMyMessage) return null;
+
+    const readBy = message.readBy || [];
+
+    // Filter out the sender from read receipts
+    const othersWhoRead = readBy.filter(
+      r => String(r.userId || r) !== String(currentUserId)
+    );
+
+    // Show double tick only if others have read it
+    return othersWhoRead.length > 0;
+  };
+
+  const hasBeenRead = getReadStatus();
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
@@ -1092,8 +1190,8 @@ const MessageBubble = ({
       <div className={`relative max-w-[75%] group`}>
         <div
           className={`rounded-2xl px-4 py-3 shadow-sm ${isMyMessage
-              ? "bg-[#dcf8c6] rounded-br-none"
-              : "bg-white rounded-bl-none border border-gray-200"
+            ? "bg-[#dcf8c6] rounded-br-none"
+            : "bg-white rounded-bl-none border border-gray-200"
             }`}
         >
           {!isMyMessage && (
@@ -1130,7 +1228,7 @@ const MessageBubble = ({
             </span>
             {isMyMessage && (
               <span className="text-blue-500">
-                {message.readBy && message.readBy.length > 0 ? (
+                {hasBeenRead ? (
                   <CheckCheck size={12} />
                 ) : (
                   <Check size={12} />
