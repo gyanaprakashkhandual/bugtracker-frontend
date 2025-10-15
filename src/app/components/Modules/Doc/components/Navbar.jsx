@@ -21,6 +21,9 @@ import {
     FiSave,
     FiEye,
     FiUsers,
+    FiList,
+    FiLink,
+    FiType,
 } from 'react-icons/fi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useDoc } from '@/app/script/Doc.context';
@@ -41,6 +44,10 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
     const [viewCount, setViewCount] = useState(0);
     const [collaboratorCount, setCollaboratorCount] = useState(0);
     const [isAutoSaving, setIsAutoSaving] = useState(false);
+    const [showColorPicker, setShowColorPicker] = useState(false);
+    const [showBgColorPicker, setShowBgColorPicker] = useState(false);
+    const [textColor, setTextColor] = useState('#000000');
+    const [bgColor, setBgColor] = useState('#ffff00');
 
     // Safely access localStorage on the client side
     useEffect(() => {
@@ -50,110 +57,63 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
         }
     }, []);
 
-    // Event handlers for toolbar actions
-    const handleTextFormat = async (format) => {
-        if (!docId) return;
-        try {
-            const selection = window.getSelection();
-            if (!selection.rangeCount) return;
-
-            const range = selection.getRangeAt(0);
-            const startIndex = range.startOffset;
-            const endIndex = range.endOffset;
-
-            const response = await axios.put(
-                `${API_BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${docId}`,
-                {
-                    textFormat: {
-                        startIndex,
-                        endIndex,
-                        format,
-                    },
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            console.log(`${format} applied successfully`, response.data);
-        } catch (error) {
-            console.error(`Error applying ${format}:`, error.response?.data?.message || error.message);
+    // Text formatting functions using window.editorAPI
+    const handleTextFormat = (format) => {
+        if (window.editorAPI) {
+            window.editorAPI.applyTextFormat(format);
         }
     };
 
-    const handleAlignment = async (textAlign) => {
-        if (!docId) return;
-        try {
-            const selection = window.getSelection();
-            if (!selection.rangeCount) return;
-
-            const range = selection.getRangeAt(0);
-            const startIndex = range.startOffset;
-            const endIndex = range.endOffset;
-
-            const response = await axios.put(
-                `${API_BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${docId}`,
-                {
-                    textFormat: {
-                        startIndex,
-                        endIndex,
-                        format: 'align',
-                        textAlign,
-                    },
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            console.log(`Alignment ${textAlign} applied successfully`, response.data);
-        } catch (error) {
-            console.error(`Error applying alignment ${textAlign}:`, error.response?.data?.message || error.message);
+    const handleAlignment = (align) => {
+        if (window.editorAPI) {
+            window.editorAPI.applyAlignment(align);
         }
     };
 
-    const handleFontSize = async (fontSize) => {
-        if (!docId) return;
-        try {
-            const selection = window.getSelection();
-            if (!selection.rangeCount) return;
-
-            const range = selection.getRangeAt(0);
-            const startIndex = range.startOffset;
-            const endIndex = range.endOffset;
-
-            const response = await axios.put(
-                `${API_BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${docId}`,
-                {
-                    textFormat: {
-                        startIndex,
-                        endIndex,
-                        format: 'fontSize',
-                        fontSize: parseInt(fontSize),
-                    },
-                },
-                { headers: { Authorization: `Bearer ${token}` } }
-            );
-            console.log(`Font size ${fontSize} applied successfully`, response.data);
-        } catch (error) {
-            console.error(`Error applying font size ${fontSize}:`, error.response?.data?.message || error.message);
+    const handleFontSize = (size) => {
+        if (window.editorAPI) {
+            window.editorAPI.applyFontSize(parseInt(size));
         }
     };
 
-    const handleClearFormatting = async () => {
-        if (!docId) return;
-        try {
-            const selection = window.getSelection();
-            if (!selection.rangeCount) return;
+    const handleTextColor = (color) => {
+        setTextColor(color);
+        if (window.editorAPI) {
+            window.editorAPI.applyTextColor(color);
+        }
+        setShowColorPicker(false);
+    };
 
-            const range = selection.getRangeAt(0);
-            const startIndex = range.startOffset;
-            const endIndex = range.endOffset;
+    const handleBgColor = (color) => {
+        setBgColor(color);
+        if (window.editorAPI) {
+            window.editorAPI.applyBackgroundColor(color);
+        }
+        setShowBgColorPicker(false);
+    };
 
-            const response = await axios.delete(
-                `${API_BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${docId}/formatting`,
-                {
-                    data: { startIndex, endIndex },
-                    headers: { Authorization: `Bearer ${token}` },
-                }
-            );
-            console.log('Formatting cleared successfully', response.data);
-        } catch (error) {
-            console.error('Error clearing formatting:', error.response?.data?.message || error.message);
+    const handleClearFormatting = () => {
+        if (window.editorAPI) {
+            window.editorAPI.clearFormatting();
+        }
+    };
+
+    const handleBulletList = () => {
+        if (window.editorAPI) {
+            window.editorAPI.insertBulletList();
+        }
+    };
+
+    const handleNumberedList = () => {
+        if (window.editorAPI) {
+            window.editorAPI.insertNumberedList();
+        }
+    };
+
+    const handleInsertLink = () => {
+        const url = prompt('Enter URL:');
+        if (url && window.editorAPI) {
+            window.editorAPI.insertLink(url);
         }
     };
 
@@ -181,6 +141,10 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             console.log('Image uploaded successfully', docResponse.data);
+            
+            // Insert image into editor
+            const img = `<img src="${secure_url}" alt="${file.name}" style="max-width: 100%; height: auto; display: block; margin: 10px 0;" />`;
+            document.execCommand('insertHTML', false, img);
         } catch (error) {
             console.error('Error uploading image:', error.response?.data?.message || error.message);
         }
@@ -277,9 +241,10 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
     const handleSave = async () => {
         if (!docId) return;
         try {
+            const content = window.editorAPI ? window.editorAPI.getContent() : '';
             const response = await axios.put(
                 `${API_BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${docId}`,
-                { content: document.getElementById('editor').innerText },
+                { content },
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             console.log('Document saved successfully', response.data);
@@ -348,21 +313,21 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
                                     <button
                                         onClick={() => handleTextFormat('bold')}
                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                        title="Bold"
+                                        title="Bold (Ctrl+B)"
                                     >
                                         <FiBold className="h-3.5 w-3.5 text-slate-600" />
                                     </button>
                                     <button
                                         onClick={() => handleTextFormat('italic')}
                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                        title="Italic"
+                                        title="Italic (Ctrl+I)"
                                     >
                                         <FiItalic className="h-3.5 w-3.5 text-slate-600" />
                                     </button>
                                     <button
                                         onClick={() => handleTextFormat('underline')}
                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                        title="Underline"
+                                        title="Underline (Ctrl+U)"
                                     >
                                         <FiUnderline className="h-3.5 w-3.5 text-slate-600" />
                                     </button>
@@ -377,33 +342,56 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
 
                                 <div className="h-4 w-px bg-slate-200"></div>
 
+                                {/* Font Size */}
+                                <select
+                                    onChange={(e) => handleFontSize(e.target.value)}
+                                    className="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    defaultValue="12"
+                                >
+                                    <option value="8">8px</option>
+                                    <option value="9">9px</option>
+                                    <option value="10">10px</option>
+                                    <option value="11">11px</option>
+                                    <option value="12">12px</option>
+                                    <option value="14">14px</option>
+                                    <option value="16">16px</option>
+                                    <option value="18">18px</option>
+                                    <option value="20">20px</option>
+                                    <option value="24">24px</option>
+                                    <option value="28">28px</option>
+                                    <option value="32">32px</option>
+                                    <option value="36">36px</option>
+                                </select>
+
+                                <div className="h-4 w-px bg-slate-200"></div>
+
                                 {/* Alignment */}
                                 <div className="flex items-center space-x-1">
                                     <button
                                         onClick={() => handleAlignment('left')}
                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                        title="Align Left"
+                                        title="Align Left (Ctrl+Shift+L)"
                                     >
                                         <FiAlignLeft className="h-3.5 w-3.5 text-slate-600" />
                                     </button>
                                     <button
                                         onClick={() => handleAlignment('center')}
                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                        title="Align Center"
+                                        title="Align Center (Ctrl+Shift+E)"
                                     >
                                         <FiAlignCenter className="h-3.5 w-3.5 text-slate-600" />
                                     </button>
                                     <button
                                         onClick={() => handleAlignment('right')}
                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                        title="Align Right"
+                                        title="Align Right (Ctrl+Shift+R)"
                                     >
                                         <FiAlignRight className="h-3.5 w-3.5 text-slate-600" />
                                     </button>
                                     <button
                                         onClick={() => handleAlignment('justify')}
                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                        title="Justify"
+                                        title="Justify (Ctrl+Shift+J)"
                                     >
                                         <FiAlignJustify className="h-3.5 w-3.5 text-slate-600" />
                                     </button>
@@ -411,28 +399,112 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
 
                                 <div className="h-4 w-px bg-slate-200"></div>
 
-                                {/* Font Size */}
-                                <select
-                                    onChange={(e) => handleFontSize(e.target.value)}
-                                    className="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                >
-                                    <option value="16">16px</option>
-                                    <option value="14">14px</option>
-                                    <option value="12">12px</option>
-                                    <option value="18">18px</option>
-                                    <option value="20">20px</option>
-                                </select>
+                                {/* Lists */}
+                                <div className="flex items-center space-x-1">
+                                    <button
+                                        onClick={handleBulletList}
+                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                        title="Bullet List (Ctrl+Shift+8)"
+                                    >
+                                        <FiList className="h-3.5 w-3.5 text-slate-600" />
+                                    </button>
+                                    <button
+                                        onClick={handleNumberedList}
+                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                        title="Numbered List (Ctrl+Shift+7)"
+                                    >
+                                        <FiType className="h-3.5 w-3.5 text-slate-600" />
+                                    </button>
+                                </div>
 
                                 <div className="h-4 w-px bg-slate-200"></div>
 
                                 {/* Color & Media */}
                                 <div className="flex items-center space-x-1">
-                                    <button className="p-1.5 hover:bg-slate-100 rounded transition-colors" title="Text Color">
-                                        <div className="h-3.5 w-3.5 border-2 border-slate-400 rounded"></div>
+                                    {/* Text Color Picker */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setShowColorPicker(!showColorPicker)}
+                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                            title="Text Color"
+                                        >
+                                            <div className="h-3.5 w-3.5 border-2 border-slate-400 rounded" style={{ backgroundColor: textColor }}></div>
+                                        </button>
+                                        {showColorPicker && (
+                                            <div className="absolute top-full mt-1 z-50 bg-white border border-slate-200 rounded-lg shadow-lg p-2">
+                                                <input
+                                                    type="color"
+                                                    value={textColor}
+                                                    onChange={(e) => handleTextColor(e.target.value)}
+                                                    className="w-32 h-8 cursor-pointer"
+                                                />
+                                                <div className="grid grid-cols-5 gap-1 mt-2">
+                                                    {['#000000', '#434343', '#666666', '#999999', '#b7b7b7', '#cccccc', '#d9d9d9', '#efefef', '#f3f3f3', '#ffffff',
+                                                      '#980000', '#ff0000', '#ff9900', '#ffff00', '#00ff00', '#00ffff', '#4a86e8', '#0000ff', '#9900ff', '#ff00ff'].map(color => (
+                                                        <button
+                                                            key={color}
+                                                            onClick={() => handleTextColor(color)}
+                                                            className="w-6 h-6 rounded border border-slate-300 hover:scale-110 transition-transform"
+                                                            style={{ backgroundColor: color }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                                <button
+                                                    onClick={() => setShowColorPicker(false)}
+                                                    className="mt-2 w-full text-xs text-slate-600 hover:text-slate-900"
+                                                >
+                                                    Close
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    {/* Background Color Picker */}
+                                    <div className="relative">
+                                        <button
+                                            onClick={() => setShowBgColorPicker(!showBgColorPicker)}
+                                            className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                            title="Highlight Color"
+                                        >
+                                            <div className="h-3.5 w-3.5 rounded border border-slate-300" style={{ backgroundColor: bgColor }}></div>
+                                        </button>
+                                        {showBgColorPicker && (
+                                            <div className="absolute top-full mt-1 z-50 bg-white border border-slate-200 rounded-lg shadow-lg p-2">
+                                                <input
+                                                    type="color"
+                                                    value={bgColor}
+                                                    onChange={(e) => handleBgColor(e.target.value)}
+                                                    className="w-32 h-8 cursor-pointer"
+                                                />
+                                                <div className="grid grid-cols-5 gap-1 mt-2">
+                                                    {['#ffffff', '#ffff00', '#00ff00', '#00ffff', '#ff00ff', '#ff0000', '#0000ff', '#00ff99', '#ff9900', '#99ccff',
+                                                      '#ffccff', '#ffcc99', '#ccffcc', '#ccffff', '#ffcccc', '#ccccff', '#ffffcc', '#ccff99', '#ffccee', '#eeccff'].map(color => (
+                                                        <button
+                                                            key={color}
+                                                            onClick={() => handleBgColor(color)}
+                                                            className="w-6 h-6 rounded border border-slate-300 hover:scale-110 transition-transform"
+                                                            style={{ backgroundColor: color }}
+                                                        />
+                                                    ))}
+                                                </div>
+                                                <button
+                                                    onClick={() => setShowBgColorPicker(false)}
+                                                    className="mt-2 w-full text-xs text-slate-600 hover:text-slate-900"
+                                                >
+                                                    Close
+                                                </button>
+                                            </div>
+                                        )}
+                                    </div>
+
+                                    <button
+                                        onClick={handleInsertLink}
+                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                        title="Insert Link (Ctrl+K)"
+                                    >
+                                        <FiLink className="h-3.5 w-3.5 text-slate-600" />
                                     </button>
-                                    <button className="p-1.5 hover:bg-slate-100 rounded transition-colors" title="Background Color">
-                                        <div className="h-3.5 w-3.5 bg-yellow-200 border border-slate-300 rounded"></div>
-                                    </button>
+
                                     <label className="p-1.5 hover:bg-slate-100 rounded transition-colors cursor-pointer" title="Insert Image">
                                         <FiImage className="h-3.5 w-3.5 text-slate-600" />
                                         <input
@@ -454,7 +526,7 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
                                     <button
                                         onClick={handleAddComment}
                                         className="p-1.5 hover:bg-slate-100 rounded transition-colors"
-                                        title="Add Comment"
+                                        title="Add Comment (Ctrl+Alt+M)"
                                     >
                                         <FiMessageSquare className="h-3.5 w-3.5 text-slate-600" />
                                     </button>
@@ -466,6 +538,7 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
                                 <button
                                     onClick={handleClearFormatting}
                                     className="px-2 py-1 text-xs text-slate-600 hover:bg-slate-100 rounded transition-colors"
+                                    title="Clear Formatting (Ctrl+\"
                                 >
                                     Clear
                                 </button>
