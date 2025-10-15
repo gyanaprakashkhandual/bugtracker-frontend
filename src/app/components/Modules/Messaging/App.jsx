@@ -25,6 +25,7 @@ import {
   Download,
 } from "lucide-react";
 import socketClient from "@/app/client/socket.client";
+import { TechIconPattern } from "../../utils/Icon";
 
 /**
  * Messaging Component - Real-time chat interface with WhatsApp-style design
@@ -726,8 +727,7 @@ const Messaging = () => {
   }, []);
 
   return (
-    <div className="flex max-h-[calc(100vh-69px)] bg-white sidebar-scrollbar">
-
+    <div className="flex max-h-[calc(100vh-69px)] sidebar-scrollbar">
       {/* Context Menu */}
       <AnimatePresence>
         {contextMenu && (
@@ -837,8 +837,10 @@ const Messaging = () => {
 
       {/* Main Chat Container */}
       <div className="flex-1 flex flex-col max-h-[calc(100vh-69px)]">
+
+
         {/* Messages Area */}
-        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 bg-white">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 bg-white relative">
           <AnimatePresence>
             {error && (
               <motion.div
