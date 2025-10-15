@@ -29,6 +29,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useDoc } from '@/app/script/Doc.context';
 import { useTestType } from '@/app/script/TestType.context';
 import axios from 'axios';
+import { useParams } from 'next/navigation';
+import { useProject } from '@/app/utils/Get.project';
+import { GoogleArrowRight } from '@/app/components/utils/Icon';
+import { Code, Table } from 'lucide-react';
 
 const API_BASE_URL = 'http://localhost:5000/api/v1/doc';
 const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/upload';
@@ -36,7 +40,7 @@ const UPLOAD_PRESET = 'test_case_preset';
 
 const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setToolbarCollapsed }) => {
     const { docId } = useDoc();
-    const { testTypeId } = useTestType();
+    const { testTypeId, testTypeName } = useTestType();
     const [projectId, setProjectId] = useState('');
     const [token, setToken] = useState('');
     const [status, setStatus] = useState('draft');
@@ -48,6 +52,13 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
     const [showBgColorPicker, setShowBgColorPicker] = useState(false);
     const [textColor, setTextColor] = useState('#000000');
     const [bgColor, setBgColor] = useState('#ffff00');
+    const [fontSizeOpen, setFontSizeOpen] = useState(false);
+    const [fontSize, setFontSize] = useState(12);
+    const [statusOpen, setStatusOpen] = useState(false);
+    const [priorityOpen, setPriorityOpen] = useState(false);
+
+    const { slug } = useParams();
+    const { project } = useProject(slug);
 
     // Safely access localStorage on the client side
     useEffect(() => {
@@ -56,6 +67,25 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
             setToken(localStorage.getItem('token') || '');
         }
     }, []);
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (!e.target.closest('.relative')) {
+                setStatusOpen(false);
+                setPriorityOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+    useEffect(() => {
+        const handleClickOutside = (e) => {
+            if (fontSizeOpen && !e.target.closest('.relative')) {
+                setFontSizeOpen(false);
+            }
+        };
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [fontSizeOpen]);
 
     // Text formatting functions using window.editorAPI
     const handleTextFormat = (format) => {
@@ -141,7 +171,7 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
                 { headers: { Authorization: `Bearer ${token}` } }
             );
             console.log('Image uploaded successfully', docResponse.data);
-            
+
             // Insert image into editor
             const img = `<img src="${secure_url}" alt="${file.name}" style="max-width: 100%; height: auto; display: block; margin: 10px 0;" />`;
             document.execCommand('insertHTML', false, img);
@@ -290,10 +320,10 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
 
                     {/* Breadcrumb */}
                     <div className="flex items-center space-x-1.5 text-xs text-slate-600">
-                        <span className="font-medium">Project Name</span>
-                        <span className="text-slate-400">/</span>
-                        <span>Test Type Name</span>
-                        <span className="text-slate-400">/</span>
+                        <span className="font-medium">{project?.projectName}</span>
+                        <span className="text-slate-400">|</span>
+                        <span>{testTypeName}</span>
+                        <span className="text-slate-400">|</span>
                         <span>Untitled Document</span>
                     </div>
 
@@ -342,26 +372,36 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
 
                                 <div className="h-4 w-px bg-slate-200"></div>
 
-                                {/* Font Size */}
-                                <select
-                                    onChange={(e) => handleFontSize(e.target.value)}
-                                    className="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                    defaultValue="12"
-                                >
-                                    <option value="8">8px</option>
-                                    <option value="9">9px</option>
-                                    <option value="10">10px</option>
-                                    <option value="11">11px</option>
-                                    <option value="12">12px</option>
-                                    <option value="14">14px</option>
-                                    <option value="16">16px</option>
-                                    <option value="18">18px</option>
-                                    <option value="20">20px</option>
-                                    <option value="24">24px</option>
-                                    <option value="28">28px</option>
-                                    <option value="32">32px</option>
-                                    <option value="36">36px</option>
-                                </select>
+                                {/* Font Size - GitHub Style */}
+                                <div className="relative inline-block text-left">
+                                    <button
+                                        type="button"
+                                        className="inline-flex items-center justify-between px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:ring-offset-0 min-w-[80px]"
+                                        onClick={() => setFontSizeOpen(!fontSizeOpen)}
+                                    >
+                                        <span>{fontSize}px</span>
+                                        <svg className="ml-2 -mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                        </svg>
+                                    </button>
+
+                                    {fontSizeOpen && (
+                                        <div className="absolute right-0 mt-2 w-32 bg-white border border-slate-300 rounded-md shadow-lg z-10 max-h-64 overflow-auto">
+                                            {[8, 9, 10, 11, 12, 14, 16, 18, 20, 24, 28, 32, 36].map((size) => (
+                                                <button
+                                                    key={size}
+                                                    className="block w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-blue-50 hover:text-blue-600 first:rounded-t-md last:rounded-b-md"
+                                                    onClick={() => {
+                                                        handleFontSize(size);
+                                                        setFontSizeOpen(false);
+                                                    }}
+                                                >
+                                                    {size}px
+                                                </button>
+                                            ))}
+                                        </div>
+                                    )}
+                                </div>
 
                                 <div className="h-4 w-px bg-slate-200"></div>
 
@@ -440,14 +480,14 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
                                                 />
                                                 <div className="grid grid-cols-5 gap-1 mt-2">
                                                     {['#000000', '#434343', '#666666', '#999999', '#b7b7b7', '#cccccc', '#d9d9d9', '#efefef', '#f3f3f3', '#ffffff',
-                                                      '#980000', '#ff0000', '#ff9900', '#ffff00', '#00ff00', '#00ffff', '#4a86e8', '#0000ff', '#9900ff', '#ff00ff'].map(color => (
-                                                        <button
-                                                            key={color}
-                                                            onClick={() => handleTextColor(color)}
-                                                            className="w-6 h-6 rounded border border-slate-300 hover:scale-110 transition-transform"
-                                                            style={{ backgroundColor: color }}
-                                                        />
-                                                    ))}
+                                                        '#980000', '#ff0000', '#ff9900', '#ffff00', '#00ff00', '#00ffff', '#4a86e8', '#0000ff', '#9900ff', '#ff00ff'].map(color => (
+                                                            <button
+                                                                key={color}
+                                                                onClick={() => handleTextColor(color)}
+                                                                className="w-6 h-6 rounded border border-slate-300 hover:scale-110 transition-transform"
+                                                                style={{ backgroundColor: color }}
+                                                            />
+                                                        ))}
                                                 </div>
                                                 <button
                                                     onClick={() => setShowColorPicker(false)}
@@ -478,14 +518,14 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
                                                 />
                                                 <div className="grid grid-cols-5 gap-1 mt-2">
                                                     {['#ffffff', '#ffff00', '#00ff00', '#00ffff', '#ff00ff', '#ff0000', '#0000ff', '#00ff99', '#ff9900', '#99ccff',
-                                                      '#ffccff', '#ffcc99', '#ccffcc', '#ccffff', '#ffcccc', '#ccccff', '#ffffcc', '#ccff99', '#ffccee', '#eeccff'].map(color => (
-                                                        <button
-                                                            key={color}
-                                                            onClick={() => handleBgColor(color)}
-                                                            className="w-6 h-6 rounded border border-slate-300 hover:scale-110 transition-transform"
-                                                            style={{ backgroundColor: color }}
-                                                        />
-                                                    ))}
+                                                        '#ffccff', '#ffcc99', '#ccffcc', '#ccffff', '#ffcccc', '#ccccff', '#ffffcc', '#ccff99', '#ffccee', '#eeccff'].map(color => (
+                                                            <button
+                                                                key={color}
+                                                                onClick={() => handleBgColor(color)}
+                                                                className="w-6 h-6 rounded border border-slate-300 hover:scale-110 transition-transform"
+                                                                style={{ backgroundColor: color }}
+                                                            />
+                                                        ))}
                                                 </div>
                                                 <button
                                                     onClick={() => setShowBgColorPicker(false)}
@@ -530,6 +570,16 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
                                     >
                                         <FiMessageSquare className="h-3.5 w-3.5 text-slate-600" />
                                     </button>
+                                    <button
+                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                    >
+                                        <Table className="h-3.5 w-3.5 text-slate-600" />
+                                    </button>
+                                    <button
+                                        className="p-1.5 hover:bg-slate-100 rounded transition-colors"
+                                    >
+                                        <Code className="h-3.5 w-3.5 text-slate-600" />
+                                    </button>
                                 </div>
 
                                 <div className="h-4 w-px bg-slate-200"></div>
@@ -561,25 +611,100 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
 
                     {/* Status Indicators */}
                     <div className="flex items-center space-x-2 ml-2">
-                        <select
-                            value={status}
-                            onChange={(e) => handleStatusChange(e.target.value)}
-                            className="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="draft">Draft</option>
-                            <option value="in-progress">In Review</option>
-                            <option value="completed">Approved</option>
-                        </select>
+                        {/* Status Indicators - GitHub Style */}
+                        <div className="flex items-center space-x-2 ml-2">
+                            {/* Status Dropdown */}
+                            <div className="relative inline-block text-left">
+                                <button
+                                    type="button"
+                                    className="inline-flex items-center justify-between px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:ring-offset-0 min-w-[100px]"
+                                    onClick={() => setStatusOpen(!statusOpen)}
+                                >
+                                    <span>{status === 'draft' ? 'Draft' : status === 'in-progress' ? 'In Review' : 'Approved'}</span>
+                                    <svg className="ml-2 -mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
 
-                        <select
-                            value={priority}
-                            onChange={(e) => handlePriorityChange(e.target.value)}
-                            className="px-2 py-1 text-xs border border-slate-200 rounded hover:bg-slate-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        >
-                            <option value="medium">Medium</option>
-                            <option value="low">Low</option>
-                            <option value="high">High</option>
-                        </select>
+                                {statusOpen && (
+                                    <div className="absolute right-0 mt-2 w-32 bg-white border border-slate-300 rounded-md shadow-lg z-10">
+                                        <button
+                                            className="block w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-blue-50 hover:text-blue-600 first:rounded-t-md"
+                                            onClick={() => {
+                                                handleStatusChange('draft');
+                                                setStatusOpen(false);
+                                            }}
+                                        >
+                                            Draft
+                                        </button>
+                                        <button
+                                            className="block w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-blue-50 hover:text-blue-600"
+                                            onClick={() => {
+                                                handleStatusChange('in-progress');
+                                                setStatusOpen(false);
+                                            }}
+                                        >
+                                            In Review
+                                        </button>
+                                        <button
+                                            className="block w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-blue-50 hover:text-blue-600 last:rounded-b-md"
+                                            onClick={() => {
+                                                handleStatusChange('completed');
+                                                setStatusOpen(false);
+                                            }}
+                                        >
+                                            Approved
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+
+                            {/* Priority Dropdown */}
+                            <div className="relative inline-block text-left">
+                                <button
+                                    type="button"
+                                    className="inline-flex items-center justify-between px-3 py-1.5 text-xs font-medium text-slate-700 bg-white border border-slate-300 rounded-md hover:bg-slate-50 focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:ring-offset-0 min-w-[90px]"
+                                    onClick={() => setPriorityOpen(!priorityOpen)}
+                                >
+                                    <span>{priority.charAt(0).toUpperCase() + priority.slice(1)}</span>
+                                    <svg className="ml-2 -mr-1 h-4 w-4" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fillRule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clipRule="evenodd" />
+                                    </svg>
+                                </button>
+
+                                {priorityOpen && (
+                                    <div className="absolute right-0 mt-2 w-28 bg-white border border-slate-300 rounded-md shadow-lg z-10">
+                                        <button
+                                            className="block w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-blue-50 hover:text-blue-600 first:rounded-t-md"
+                                            onClick={() => {
+                                                handlePriorityChange('low');
+                                                setPriorityOpen(false);
+                                            }}
+                                        >
+                                            Low
+                                        </button>
+                                        <button
+                                            className="block w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-blue-50 hover:text-blue-600"
+                                            onClick={() => {
+                                                handlePriorityChange('medium');
+                                                setPriorityOpen(false);
+                                            }}
+                                        >
+                                            Medium
+                                        </button>
+                                        <button
+                                            className="block w-full text-left px-3 py-2 text-xs text-slate-700 hover:bg-blue-50 hover:text-blue-600 last:rounded-b-md"
+                                            onClick={() => {
+                                                handlePriorityChange('high');
+                                                setPriorityOpen(false);
+                                            }}
+                                        >
+                                            High
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
 
                         <div className="flex items-center space-x-1 px-2 py-1 bg-slate-50 rounded-lg border border-slate-200">
                             <FiEye className="h-3 w-3 text-slate-500" />
@@ -591,25 +716,12 @@ const Navbar = ({ leftSidebarOpen, setLeftSidebarOpen, toolbarCollapsed, setTool
                             <span className="text-xs text-slate-600">{collaboratorCount}</span>
                         </div>
 
-                        <div className="flex items-center space-x-1 px-2 py-1 bg-green-50 rounded-lg border border-green-200">
-                            <FiRefreshCw className={isAutoSaving ? 'h-3 w-3 text-green-600 animate-spin' : 'h-3 w-3 text-green-600'} />
-                            <span className="text-xs text-green-700">Auto-save ON</span>
-                        </div>
 
-                        <button
-                            onClick={handleSave}
-                            className="px-3 py-1.5 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all"
-                        >
-                            <FiSave className="h-3 w-3 inline mr-1" />
-                            Save
-                        </button>
+
+
 
                         <button className="p-1.5 hover:bg-slate-100 rounded-lg transition-colors">
-                            <svg className="h-4 w-4 text-slate-600" viewBox="0 0 16 16" fill="currentColor">
-                                <circle cx="8" cy="3" r="1.5" />
-                                <circle cx="8" cy="8" r="1.5" />
-                                <circle cx="8" cy="13" r="1.5" />
-                            </svg>
+                            <GoogleArrowRight />
                         </button>
                     </div>
                 </div>
