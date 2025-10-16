@@ -171,12 +171,31 @@ const DocManager = () => {
         }
     };
 
-    // Create document
+    // Create document - FIXED
+    // Create document - ENHANCED WITH LOGGING
     const createDocument = async (docData) => {
-        if (!projectId || !testTypeId) return;
+        if (!projectId || !testTypeId) {
+            console.error('Missing projectId or testTypeId');
+            return;
+        }
 
         try {
             const token = localStorage.getItem('token');
+
+            // Remove project and testType from payload since they're in the URL
+            const { project, testType, ...cleanDocData } = docData;
+            const payload = {
+                ...cleanDocData
+            };
+
+            console.log('=== CREATE DOCUMENT DEBUG START ===');
+            console.log('Project ID from props/state:', projectId);
+            console.log('TestType ID from props/state:', testTypeId);
+            console.log('Document data:', docData);
+            console.log('Cleaned payload (without project/testType):', payload);
+            console.log('API URL:', `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs`);
+            console.log('Token exists:', !!token);
+
             const response = await fetch(
                 `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs`,
                 {
@@ -185,32 +204,51 @@ const DocManager = () => {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                     },
-                    body: JSON.stringify({
-                        ...docData,
-                        project: projectId,
-                        testType: testTypeId,
-                    }),
+                    body: JSON.stringify(payload),
                 }
             );
 
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
+
+            const data = await response.json();
+            console.log('Full response data:', data);
+
             if (response.ok) {
-                const data = await response.json();
+                console.log('✅ Document created successfully:', data);
                 setShowCreateModal(false);
                 resetForm();
                 fetchDocs();
                 return data;
             } else {
-                const error = await response.json();
-                alert(error.message || 'Failed to create document');
-                throw new Error('Failed to create document');
+                console.error('❌ Error response details:', {
+                    status: response.status,
+                    statusText: response.statusText,
+                    data: data
+                });
+
+                // More detailed error messages
+                if (data.errors && Array.isArray(data.errors)) {
+                    const errorMessages = data.errors.map(err =>
+                        `${err.field || 'unknown'}: ${err.message}`
+                    ).join('\n');
+                    alert(`Failed to create document:\n${errorMessages}`);
+                } else {
+                    alert(data.message || `Failed to create document. Status: ${response.status}`);
+                }
+                return null;
             }
         } catch (error) {
-            console.error('Error creating document:', error);
-            throw error;
+            console.error('💥 Network/System error creating document:', {
+                name: error.name,
+                message: error.message,
+                stack: error.stack
+            });
+            alert('Network error creating document. Please check console for details.');
+            return null;
         }
     };
-
-    // Update document
+    // Update document - FIXED
     const updateDocument = async (docId, updateData) => {
         if (!projectId || !testTypeId) return;
 
@@ -228,21 +266,26 @@ const DocManager = () => {
                 }
             );
 
+            const data = await response.json();
+
             if (response.ok) {
                 setEditingDoc(null);
                 setShowCreateModal(false);
+                resetForm();
                 fetchDocs();
+                return data;
             } else {
-                const error = await response.json();
-                alert(error.message || 'Failed to update document');
+                alert(data.message || 'Failed to update document');
+                return null;
             }
         } catch (error) {
             console.error('Error updating document:', error);
-            alert('Error updating document');
+            alert('Error updating document. Please try again.');
+            return null;
         }
     };
 
-    // Archive document
+    // Archive document - FIXED
     const archiveDocument = async (docId) => {
         if (!projectId || !testTypeId) return;
 
@@ -255,26 +298,27 @@ const DocManager = () => {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
                     },
                 }
             );
 
             if (response.ok) {
-                fetchDocs();
+                await fetchDocs();
             } else {
-                const error = await response.json();
-                alert(error.message || 'Failed to archive document');
+                const data = await response.json();
+                alert(data.message || 'Failed to archive document');
             }
         } catch (error) {
             console.error('Error archiving document:', error);
-            alert('Error archiving document');
+            alert('Error archiving document. Please try again.');
         } finally {
             setArchiving(null);
             setActionMenu(null);
         }
     };
 
-    // Unarchive document
+    // Unarchive document - FIXED
     const unarchiveDocument = async (docId) => {
         if (!projectId || !testTypeId) return;
 
@@ -287,26 +331,27 @@ const DocManager = () => {
                     method: 'PUT',
                     headers: {
                         'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
                     },
                 }
             );
 
             if (response.ok) {
-                fetchDocs();
+                await fetchDocs();
             } else {
-                const error = await response.json();
-                alert(error.message || 'Failed to unarchive document');
+                const data = await response.json();
+                alert(data.message || 'Failed to unarchive document');
             }
         } catch (error) {
             console.error('Error unarchiving document:', error);
-            alert('Error unarchiving document');
+            alert('Error unarchiving document. Please try again.');
         } finally {
             setArchiving(null);
             setActionMenu(null);
         }
     };
 
-    // Delete document
+    // Delete document - FIXED
     const deleteDocument = async (docId) => {
         if (!projectId || !testTypeId) return;
 
@@ -321,19 +366,20 @@ const DocManager = () => {
                     method: 'DELETE',
                     headers: {
                         'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
                     },
                 }
             );
 
             if (response.ok) {
-                fetchDocs();
+                await fetchDocs();
             } else {
-                const error = await response.json();
-                alert(error.message || 'Failed to delete document');
+                const data = await response.json();
+                alert(data.message || 'Failed to delete document');
             }
         } catch (error) {
             console.error('Error deleting document:', error);
-            alert('Error deleting document');
+            alert('Error deleting document. Please try again.');
         } finally {
             setDeleting(null);
             setActionMenu(null);
@@ -363,7 +409,7 @@ const DocManager = () => {
         }
     };
 
-    // Handle form submission
+    // Handle form submission - FIXED
     const handleSubmit = async (e) => {
         e.preventDefault();
         setSubmitting(true);
@@ -405,6 +451,7 @@ const DocManager = () => {
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
                     },
                 }
             );
@@ -476,17 +523,17 @@ const DocManager = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
             {/* Enhanced Navbar */}
-            <nav className="bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-30 shadow-sm">
-                <div className="max-w-7xl mx-auto px-6">
+            <nav className="bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-30">
+                <div className="max-w-full mx-auto px-6">
                     <div className="flex justify-between items-center h-16">
                         <div className="flex items-center space-x-4">
-                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600">
                                 <FiFileText className="h-5 w-5 text-white" />
                             </div>
                             <div className="flex items-center space-x-2.5">
                                 <h1 className="text-base font-bold text-slate-900">Documents</h1>
                                 <span className="text-slate-300">/</span>
-                                <span className="text-sm text-slate-600 font-medium">{project?.name || 'Loading...'}</span>
+                                <span className="text-sm text-slate-600 font-medium">{project?.projectName || 'Loading...'}</span>
                                 {testTypeName && (
                                     <>
                                         <span className="text-slate-300">/</span>
@@ -505,7 +552,7 @@ const DocManager = () => {
                                     placeholder="Search documents..."
                                     value={searchQuery}
                                     onChange={handleSearch}
-                                    className="w-72 pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50/50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all shadow-sm hover:border-slate-300"
+                                    className="w-72 pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50/50 placeholder-slate-400 focus:outline-none focus:ring-0.5 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all shadow-sm hover:border-slate-300"
                                 />
                                 {searchQuery && (
                                     <button
@@ -529,7 +576,7 @@ const DocManager = () => {
                                     resetForm();
                                     setShowCreateModal(true);
                                 }}
-                                className="inline-flex items-center px-4 py-2.5 text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40"
+                                className="inline-flex items-center px-4 py-2.5 text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all shadow-sm shadow-blue-500/30 hover:shadow-md hover:shadow-blue-500/40"
                             >
                                 <FiPlus className="h-4 w-4 mr-2" />
                                 New Document
@@ -540,8 +587,8 @@ const DocManager = () => {
             </nav>
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto py-8 px-6">
-                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
+            <div className="max-w-full mx-auto">
+                <div className="bg-white/80 backdrop-blur-sm overflow-hidden">
                     {loading ? (
                         <div className="flex flex-col justify-center items-center py-24">
                             <div className="relative">
@@ -952,23 +999,7 @@ const DocManager = () => {
                                             </div>
                                         </div>
                                     </div>
-
-                                    {/* Content Input */}
-                                    <div>
-                                        <label htmlFor="content" className="block text-sm font-semibold text-slate-700 mb-2">
-                                            Content
-                                        </label>
-                                        <textarea
-                                            id="content"
-                                            rows={10}
-                                            value={formData.content}
-                                            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                                            className="w-full px-4 py-3 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all font-mono hover:border-slate-400 bg-slate-50/50 focus:bg-white"
-                                            placeholder="Document content..."
-                                        />
-                                    </div>
                                 </div>
-
                                 {/* Footer Buttons */}
                                 <div className="flex items-center justify-end space-x-3 mt-8 pt-6 border-t border-slate-200">
                                     <motion.button
