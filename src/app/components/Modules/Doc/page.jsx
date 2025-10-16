@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useParams } from 'next/navigation';
@@ -16,11 +16,14 @@ import {
     FiTag,
     FiFileText,
     FiCheckCircle,
-    FiMoreVertical
+    FiMoreVertical,
+    FiCheck,
+    FiX,
 } from 'react-icons/fi';
 import { useProject } from '@/app/utils/Get.project';
 import { useTestType } from "@/app/script/TestType.context";
 import { useDoc } from "@/app/script/Doc.context";
+import { GoogleArrowDown } from '../../utils/Icon';
 
 const BASE_URL = 'http://localhost:5000/api/v1/doc';
 
@@ -35,6 +38,7 @@ const DocManager = () => {
     const [projectId, setProjectId] = useState('');
     const [deleting, setDeleting] = useState(null);
     const [archiving, setArchiving] = useState(null);
+    const [submitting, setSubmitting] = useState(false);
 
     // Form state
     const [formData, setFormData] = useState({
@@ -53,6 +57,59 @@ const DocManager = () => {
 
     const categories = ['documentation', 'test-case', 'requirement', 'bug-report', 'meeting-notes'];
     const priorities = ['low', 'medium', 'high', 'critical'];
+
+    // GitHub-style dropdown states
+    const [categoryOpen, setCategoryOpen] = useState(false);
+    const [priorityOpen, setPriorityOpen] = useState(false);
+
+    const categoryRef = useRef(null);
+    const priorityRef = useRef(null);
+
+    // Close dropdowns when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (categoryRef.current && !categoryRef.current.contains(event.target)) {
+                setCategoryOpen(false);
+            }
+            if (priorityRef.current && !priorityRef.current.contains(event.target)) {
+                setPriorityOpen(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    const getCategoryIcon = (category) => {
+        const icons = {
+            'documentation': '📚',
+            'test-case': '🧪',
+            'requirement': '📋',
+            'bug-report': '🐛',
+            'meeting-notes': '📝'
+        };
+        return icons[category] || '📄';
+    };
+
+    const getPriorityColor = (priority) => {
+        const colors = {
+            low: 'bg-emerald-50 text-emerald-700 border-emerald-200',
+            medium: 'bg-blue-50 text-blue-700 border-blue-200',
+            high: 'bg-orange-50 text-orange-700 border-orange-200',
+            critical: 'bg-red-50 text-red-700 border-red-200'
+        };
+        return colors[priority] || colors.medium;
+    };
+
+    const getPriorityDot = (priority) => {
+        const colors = {
+            low: 'bg-emerald-500',
+            medium: 'bg-blue-500',
+            high: 'bg-orange-500',
+            critical: 'bg-red-500'
+        };
+        return colors[priority] || colors.medium;
+    };
 
     // Get project ID from localStorage
     useEffect(() => {
@@ -309,6 +366,7 @@ const DocManager = () => {
     // Handle form submission
     const handleSubmit = async (e) => {
         e.preventDefault();
+        setSubmitting(true);
         try {
             if (editingDoc) {
                 await updateDocument(editingDoc._id, formData);
@@ -317,6 +375,8 @@ const DocManager = () => {
             }
         } catch (error) {
             console.error('Error submitting form:', error);
+        } finally {
+            setSubmitting(false);
         }
     };
 
@@ -338,9 +398,7 @@ const DocManager = () => {
     // Handle open document with slug
     const handleOpenDocument = async (docId) => {
         try {
-            // Save docId to context
             setDocId(docId);
-
             const token = localStorage.getItem('token');
             const response = await fetch(
                 `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/docs/${docId}`,
@@ -403,232 +461,266 @@ const DocManager = () => {
 
     if (!projectId || !testTypeId) {
         return (
-            <div className="min-h-screen bg-slate-50 flex items-center justify-center">
+            <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-slate-50 flex items-center justify-center">
                 <div className="text-center">
-                    <div className="animate-spin rounded-full h-10 w-10 border-2 border-blue-600 border-t-transparent mx-auto"></div>
-                    <p className="mt-3 text-sm text-slate-600">Loading project information...</p>
+                    <div className="relative">
+                        <div className="w-16 h-16 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin mx-auto"></div>
+                        <div className="absolute inset-0 w-16 h-16 border-4 border-transparent border-t-blue-400 rounded-full animate-ping mx-auto"></div>
+                    </div>
+                    <p className="mt-6 text-sm font-medium text-slate-600">Loading project information...</p>
                 </div>
             </div>
         );
     }
 
     return (
-        <div className="min-h-screen bg-slate-50">
+        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50/30 to-slate-50">
             {/* Enhanced Navbar */}
-            <nav className="bg-white border-b border-slate-200">
+            <nav className="bg-white/80 backdrop-blur-xl border-b border-slate-200 sticky top-0 z-30 shadow-sm">
                 <div className="max-w-7xl mx-auto px-6">
-                    <div className="flex justify-between items-center h-14">
-                        <div className="flex items-center space-x-3">
-                            <FiFileText className="h-5 w-5 text-blue-600" />
-                            <div className="flex items-center space-x-2">
-                                <h1 className="text-sm font-semibold text-slate-900">Documents</h1>
+                    <div className="flex justify-between items-center h-16">
+                        <div className="flex items-center space-x-4">
+                            <div className="flex items-center justify-center w-10 h-10 rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-lg shadow-blue-500/30">
+                                <FiFileText className="h-5 w-5 text-white" />
+                            </div>
+                            <div className="flex items-center space-x-2.5">
+                                <h1 className="text-base font-bold text-slate-900">Documents</h1>
                                 <span className="text-slate-300">/</span>
-                                <span className="text-xs text-slate-500">{project?.name || 'Loading...'}</span>
+                                <span className="text-sm text-slate-600 font-medium">{project?.name || 'Loading...'}</span>
                                 {testTypeName && (
                                     <>
                                         <span className="text-slate-300">/</span>
-                                        <span className="text-xs text-slate-500">{testTypeName}</span>
+                                        <span className="text-sm px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg font-medium border border-blue-200">{testTypeName}</span>
                                     </>
                                 )}
                             </div>
                         </div>
 
-                        <div className="flex items-center space-x-2">
-                            {/* Search Bar */}
-                            <div className="relative">
-                                <FiSearch className="absolute left-3 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-slate-400" />
+                        <div className="flex items-center space-x-3">
+                            {/* Enhanced Search Bar */}
+                            <div className="relative group">
+                                <FiSearch className="absolute left-3.5 top-1/2 -translate-y-1/2 h-4 w-4 text-slate-400 group-focus-within:text-blue-500 transition-colors" />
                                 <input
                                     type="text"
                                     placeholder="Search documents..."
                                     value={searchQuery}
                                     onChange={handleSearch}
-                                    className="w-64 pl-9 pr-3 py-1.5 text-xs border border-slate-200 rounded-lg bg-slate-50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent focus:bg-white transition-all"
+                                    className="w-72 pl-10 pr-4 py-2.5 text-sm border border-slate-200 rounded-xl bg-slate-50/50 placeholder-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 focus:bg-white transition-all shadow-sm hover:border-slate-300"
                                 />
+                                {searchQuery && (
+                                    <button
+                                        onClick={() => {
+                                            setSearchQuery('');
+                                            fetchDocs();
+                                        }}
+                                        className="absolute right-3 top-1/2 -translate-y-1/2 p-1 hover:bg-slate-100 rounded-md transition-colors"
+                                    >
+                                        <FiX className="h-3.5 w-3.5 text-slate-400" />
+                                    </button>
+                                )}
                             </div>
 
-                            {/* Create Button */}
-                            <button
+                            {/* Enhanced Create Button */}
+                            <motion.button
+                                whileHover={{ scale: 1.02 }}
+                                whileTap={{ scale: 0.98 }}
                                 onClick={() => {
                                     setEditingDoc(null);
                                     resetForm();
                                     setShowCreateModal(true);
                                 }}
-                                className="inline-flex items-center px-3 py-1.5 text-xs font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-all shadow-sm"
+                                className="inline-flex items-center px-4 py-2.5 text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg shadow-blue-500/30 hover:shadow-xl hover:shadow-blue-500/40"
                             >
-                                <FiPlus className="h-3.5 w-3.5 mr-1.5" />
+                                <FiPlus className="h-4 w-4 mr-2" />
                                 New Document
-                            </button>
+                            </motion.button>
                         </div>
                     </div>
                 </div>
             </nav>
 
             {/* Main Content */}
-            <div className="max-w-7xl mx-auto py-6 px-6">
-                <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+            <div className="max-w-7xl mx-auto py-8 px-6">
+                <div className="bg-white/80 backdrop-blur-sm rounded-2xl border border-slate-200 shadow-xl overflow-hidden">
                     {loading ? (
-                        <div className="flex justify-center items-center py-16">
-                            <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent"></div>
+                        <div className="flex flex-col justify-center items-center py-24">
+                            <div className="relative">
+                                <div className="w-12 h-12 border-4 border-blue-200 border-t-blue-600 rounded-full animate-spin"></div>
+                                <div className="absolute inset-0 w-12 h-12 border-4 border-transparent border-t-blue-400 rounded-full animate-ping"></div>
+                            </div>
+                            <p className="mt-6 text-sm font-medium text-slate-600">Loading documents...</p>
                         </div>
                     ) : docs.length === 0 ? (
-                        <div className="text-center py-16">
-                            <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-slate-100 mb-3">
-                                <FiFileText className="h-6 w-6 text-slate-400" />
-                            </div>
-                            <h3 className="text-sm font-medium text-slate-900">No documents found</h3>
-                            <p className="mt-1 text-xs text-slate-500">
+                        <div className="text-center py-24 px-6">
+                            <motion.div
+                                initial={{ scale: 0.9, opacity: 0 }}
+                                animate={{ scale: 1, opacity: 1 }}
+                                className="inline-flex items-center justify-center w-20 h-20 rounded-2xl bg-gradient-to-br from-slate-100 to-slate-200 mb-6 shadow-inner"
+                            >
+                                <FiFileText className="h-10 w-10 text-slate-400" />
+                            </motion.div>
+                            <h3 className="text-lg font-bold text-slate-900 mb-2">No documents found</h3>
+                            <p className="text-sm text-slate-500 mb-6">
                                 {searchQuery ? 'Try adjusting your search terms' : 'Get started by creating your first document'}
                             </p>
                             {!searchQuery && (
-                                <div className="mt-4">
-                                    <button
-                                        onClick={() => setShowCreateModal(true)}
-                                        className="inline-flex items-center px-4 py-2 text-xs font-medium rounded-lg text-white bg-blue-600 hover:bg-blue-700 transition-all shadow-sm"
-                                    >
-                                        <FiPlus className="h-3.5 w-3.5 mr-1.5" />
-                                        Create Document
-                                    </button>
-                                </div>
+                                <motion.button
+                                    whileHover={{ scale: 1.05 }}
+                                    whileTap={{ scale: 0.95 }}
+                                    onClick={() => setShowCreateModal(true)}
+                                    className="inline-flex items-center px-6 py-3 text-sm font-semibold rounded-xl text-white bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg shadow-blue-500/30"
+                                >
+                                    <FiPlus className="h-4 w-4 mr-2" />
+                                    Create Document
+                                </motion.button>
                             )}
                         </div>
                     ) : (
                         <div className="overflow-x-auto">
                             <table className="min-w-full divide-y divide-slate-200">
-                                <thead className="bg-slate-50">
+                                <thead className="bg-gradient-to-r from-slate-50 to-slate-100">
                                     <tr>
-                                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">
                                             Document
                                         </th>
-                                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">
                                             Category
                                         </th>
-                                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">
                                             Status
                                         </th>
-                                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">
                                             Priority
                                         </th>
-                                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">
                                             Updated
                                         </th>
-                                        <th className="px-4 py-2.5 text-left text-xs font-semibold text-slate-600 uppercase tracking-wider">
+                                        <th className="px-6 py-4 text-left text-xs font-bold text-slate-700 uppercase tracking-wider">
                                             Author
                                         </th>
-                                        <th className="relative px-4 py-2.5">
+                                        <th className="relative px-6 py-4">
                                             <span className="sr-only">Actions</span>
                                         </th>
                                     </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-slate-100">
-                                    {docs.map((doc) => (
+                                    {docs.map((doc, index) => (
                                         <motion.tr
                                             key={doc._id}
-                                            initial={{ opacity: 0 }}
-                                            animate={{ opacity: 1 }}
-                                            className="hover:bg-slate-50 transition-colors"
+                                            initial={{ opacity: 0, y: 20 }}
+                                            animate={{ opacity: 1, y: 0 }}
+                                            transition={{ delay: index * 0.05 }}
+                                            className="hover:bg-blue-50/50 transition-all duration-200 group"
                                         >
-                                            <td className="px-4 py-3">
+                                            <td className="px-6 py-4">
                                                 <div className="flex items-center">
-                                                    <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-lg bg-blue-50">
-                                                        <FiFileText className="h-4 w-4 text-blue-600" />
+                                                    <div className="flex-shrink-0 w-10 h-10 flex items-center justify-center rounded-xl bg-gradient-to-br from-blue-50 to-blue-100 border border-blue-200 group-hover:from-blue-100 group-hover:to-blue-200 transition-all">
+                                                        <FiFileText className="h-5 w-5 text-blue-600" />
                                                     </div>
-                                                    <div className="ml-3">
-                                                        <div className="text-xs font-medium text-slate-900">
+                                                    <div className="ml-4">
+                                                        <div className="text-sm font-semibold text-slate-900 group-hover:text-blue-600 transition-colors">
                                                             {doc.title}
                                                         </div>
                                                         {doc.description && (
-                                                            <div className="text-xs text-slate-500 truncate max-w-xs mt-0.5">
+                                                            <div className="text-xs text-slate-500 truncate max-w-md mt-1">
                                                                 {doc.description}
                                                             </div>
                                                         )}
                                                     </div>
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3">
-                                                <span className="inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium bg-slate-100 text-slate-700 border border-slate-200">
-                                                    <FiTag className="h-3 w-3 mr-1" />
+                                            <td className="px-6 py-4">
+                                                <span className="inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-200">
+                                                    <span className="mr-1.5">{getCategoryIcon(doc.category)}</span>
                                                     {doc.category.replace('-', ' ')}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3">
-                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${getStatusBadge(doc.status)}`}>
-                                                    {doc.status === 'approved' && <FiCheckCircle className="h-3 w-3 mr-1" />}
-                                                    {doc.status === 'in-review' && <FiClock className="h-3 w-3 mr-1" />}
-                                                    {doc.status === 'archived' && <FiArchive className="h-3 w-3 mr-1" />}
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border ${getStatusBadge(doc.status)}`}>
+                                                    {doc.status === 'approved' && <FiCheckCircle className="h-3.5 w-3.5 mr-1.5" />}
+                                                    {doc.status === 'in-review' && <FiClock className="h-3.5 w-3.5 mr-1.5" />}
+                                                    {doc.status === 'archived' && <FiArchive className="h-3.5 w-3.5 mr-1.5" />}
                                                     {doc.status.replace('-', ' ')}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3">
-                                                <span className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${getPriorityBadge(doc.priority)}`}>
+                                            <td className="px-6 py-4">
+                                                <span className={`inline-flex items-center px-3 py-1.5 rounded-lg text-xs font-semibold border ${getPriorityBadge(doc.priority)}`}>
+                                                    <span className={`w-2 h-2 rounded-full ${getPriorityDot(doc.priority)} mr-2`} />
                                                     {doc.priority}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-xs text-slate-600">
+                                            <td className="px-6 py-4 text-sm text-slate-600">
                                                 <div className="flex items-center">
-                                                    <FiClock className="h-3 w-3 mr-1.5 text-slate-400" />
+                                                    <FiClock className="h-4 w-4 mr-2 text-slate-400" />
                                                     {formatDate(doc.updatedAt)}
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3 text-xs text-slate-600">
+                                            <td className="px-6 py-4 text-sm text-slate-600">
                                                 <div className="flex items-center">
-                                                    <FiUser className="h-3 w-3 mr-1.5 text-slate-400" />
+                                                    <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center text-white text-xs font-semibold mr-2 shadow-md">
+                                                        {doc.createdBy?.name?.charAt(0).toUpperCase() || 'U'}
+                                                    </div>
                                                     {doc.createdBy?.name || 'Unknown'}
                                                 </div>
                                             </td>
-                                            <td className="px-4 py-3">
+                                            <td className="px-6 py-4">
                                                 <div className="flex items-center justify-end space-x-2">
-                                                    <button
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.05 }}
+                                                        whileTap={{ scale: 0.95 }}
                                                         onClick={() => handleOpenDocument(doc._id)}
-                                                        className="text-xs font-medium text-blue-600 hover:text-blue-700 transition-colors"
+                                                        className="px-4 py-2 text-xs font-semibold text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-all border border-blue-200"
                                                     >
                                                         Open
-                                                    </button>
+                                                    </motion.button>
 
                                                     <div className="relative">
-                                                        <button
+                                                        <motion.button
+                                                            whileHover={{ scale: 1.05 }}
+                                                            whileTap={{ scale: 0.95 }}
                                                             onClick={() => setActionMenu(actionMenu === doc._id ? null : doc._id)}
-                                                            className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-md transition-all"
+                                                            className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
                                                             disabled={deleting === doc._id || archiving === doc._id}
                                                         >
                                                             {(deleting === doc._id || archiving === doc._id) ? (
-                                                                <div className="animate-spin h-3.5 w-3.5 border-2 border-slate-300 border-t-slate-600 rounded-full"></div>
+                                                                <div className="w-4 h-4 border-2 border-slate-300 border-t-slate-600 rounded-full animate-spin"></div>
                                                             ) : (
-                                                                <FiMoreVertical className="h-3.5 w-3.5" />
+                                                                <FiMoreVertical className="h-4 w-4" />
                                                             )}
-                                                        </button>
+                                                        </motion.button>
 
                                                         <AnimatePresence>
                                                             {actionMenu === doc._id && (
                                                                 <motion.div
-                                                                    initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                                                                    initial={{ opacity: 0, scale: 0.95, y: -10 }}
                                                                     animate={{ opacity: 1, scale: 1, y: 0 }}
-                                                                    exit={{ opacity: 0, scale: 0.95, y: -5 }}
-                                                                    transition={{ duration: 0.1 }}
-                                                                    className="absolute right-0 mt-1 w-44 rounded-lg shadow-lg bg-white border border-slate-200 z-20 overflow-hidden"
+                                                                    exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                                                                    transition={{ duration: 0.15 }}
+                                                                    className="absolute right-0 mt-2 w-48 rounded-xl shadow-xl bg-white border border-slate-200 z-20 overflow-hidden"
                                                                 >
                                                                     <div className="py-1">
                                                                         <button
                                                                             onClick={() => handleEdit(doc)}
-                                                                            className="flex items-center w-full px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
+                                                                            className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                                                                         >
-                                                                            <FiEdit className="h-3.5 w-3.5 mr-2 text-slate-400" />
+                                                                            <FiEdit className="h-4 w-4 mr-3" />
                                                                             Edit document
                                                                         </button>
 
                                                                         {doc.status === 'archived' ? (
                                                                             <button
                                                                                 onClick={() => unarchiveDocument(doc._id)}
-                                                                                className="flex items-center w-full px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
+                                                                                className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                                                                             >
-                                                                                <FiArchive className="h-3.5 w-3.5 mr-2 text-slate-400" />
+                                                                                <FiArchive className="h-4 w-4 mr-3" />
                                                                                 Unarchive
                                                                             </button>
                                                                         ) : (
                                                                             <button
                                                                                 onClick={() => archiveDocument(doc._id)}
-                                                                                className="flex items-center w-full px-3 py-2 text-xs text-slate-700 hover:bg-slate-50 transition-colors"
+                                                                                className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                                                                             >
-                                                                                <FiArchive className="h-3.5 w-3.5 mr-2 text-slate-400" />
+                                                                                <FiArchive className="h-4 w-4 mr-3" />
                                                                                 Archive
                                                                             </button>
                                                                         )}
@@ -637,9 +729,9 @@ const DocManager = () => {
 
                                                                         <button
                                                                             onClick={() => deleteDocument(doc._id)}
-                                                                            className="flex items-center w-full px-3 py-2 text-xs text-red-600 hover:bg-red-50 transition-colors"
+                                                                            className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                                                                         >
-                                                                            <FiTrash2 className="h-3.5 w-3.5 mr-2" />
+                                                                            <FiTrash2 className="h-4 w-4 mr-3" />
                                                                             Delete document
                                                                         </button>
                                                                     </div>
@@ -667,130 +759,250 @@ const DocManager = () => {
                         exit={{ opacity: 0 }}
                         className="fixed inset-0 overflow-y-auto z-50 flex items-center justify-center p-4"
                     >
-                        <div className="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" onClick={() => {
+                        <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-md" onClick={() => {
                             setShowCreateModal(false);
                             setEditingDoc(null);
                             resetForm();
                         }} />
 
                         <motion.div
-                            initial={{ scale: 0.95, opacity: 0 }}
-                            animate={{ scale: 1, opacity: 1 }}
-                            exit={{ scale: 0.95, opacity: 0 }}
-                            className="relative bg-white rounded-xl shadow-xl w-full max-w-2xl"
+                            initial={{ scale: 0.9, opacity: 0, y: 20 }}
+                            animate={{ scale: 1, opacity: 1, y: 0 }}
+                            exit={{ scale: 0.9, opacity: 0, y: 20 }}
+                            transition={{ type: 'spring', damping: 25, stiffness: 300 }}
+                            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-3xl border border-slate-200"
                         >
-                            <div className="px-6 py-4 border-b border-slate-200">
-                                <h3 className="text-base font-semibold text-slate-900">
-                                    {editingDoc ? 'Edit Document' : 'Create New Document'}
-                                </h3>
-                                <p className="mt-1 text-xs text-slate-500">
-                                    {editingDoc ? 'Update document details' : 'Fill in the details to create a new document'}
-                                </p>
+                            {/* Header with Close Button */}
+                            <div className="px-6 py-5 border-b border-slate-200 flex items-start justify-between bg-gradient-to-r from-slate-50 to-white">
+                                <div>
+                                    <h3 className="text-xl font-bold text-slate-900">
+                                        {editingDoc ? 'Edit Document' : 'Create New Document'}
+                                    </h3>
+                                    <p className="mt-1.5 text-sm text-slate-500">
+                                        {editingDoc ? 'Update document details' : 'Fill in the details to create a new document'}
+                                    </p>
+                                </div>
+                                <motion.button
+                                    whileHover={{ scale: 1.1, rotate: 90 }}
+                                    whileTap={{ scale: 0.9 }}
+                                    onClick={() => {
+                                        setShowCreateModal(false);
+                                        setEditingDoc(null);
+                                        resetForm();
+                                    }}
+                                    className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-xl transition-colors"
+                                >
+                                    <FiX className="w-5 h-5" />
+                                </motion.button>
                             </div>
 
-                            <form onSubmit={handleSubmit} className="px-6 py-4">
-                                <div className="space-y-4">
-                                    <div>
-                                        <label htmlFor="title" className="block text-xs font-medium text-slate-700 mb-1.5">
-                                            Title <span className="text-red-500">*</span>
-                                        </label>
-                                        <input
-                                            type="text"
-                                            id="title"
-                                            required
-                                            value={formData.title}
-                                            onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                                            className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            placeholder="Enter document title"
-                                        />
-                                    </div>
-
-                                    <div>
-                                        <label htmlFor="description" className="block text-xs font-medium text-slate-700 mb-1.5">
-                                            Description
-                                        </label>
-                                        <textarea
-                                            id="description"
-                                            rows={2}
-                                            value={formData.description}
-                                            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                                            className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                            placeholder="Brief description of the document"
-                                        />
-                                    </div>
-
-                                    <div className="grid grid-cols-2 gap-3">
+                            <form onSubmit={handleSubmit} className="px-6 py-6">
+                                <div className="space-y-6">
+                                    {/* Title and Description in one row */}
+                                    <div className="grid grid-cols-2 gap-4">
                                         <div>
-                                            <label htmlFor="category" className="block text-xs font-medium text-slate-700 mb-1.5">
+                                            <label htmlFor="title" className="block text-sm font-semibold text-slate-700 mb-2">
+                                                Title <span className="text-red-500">*</span>
+                                            </label>
+                                            <input
+                                                type="text"
+                                                id="title"
+                                                required
+                                                value={formData.title}
+                                                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                                className="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-slate-400"
+                                                placeholder="Enter document title"
+                                            />
+                                        </div>
+
+                                        <div>
+                                            <label htmlFor="description" className="block text-sm font-semibold text-slate-700 mb-2">
+                                                Description
+                                            </label>
+                                            <input
+                                                type="text"
+                                                id="description"
+                                                value={formData.description}
+                                                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                                className="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-slate-400"
+                                                placeholder="Brief description"
+                                            />
+                                        </div>
+                                    </div>
+
+                                    {/* GitHub Style Dropdowns */}
+                                    <div className="grid grid-cols-2 gap-4">
+                                        {/* Category Dropdown */}
+                                        <div ref={categoryRef}>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-2">
                                                 Category
                                             </label>
-                                            <select
-                                                id="category"
-                                                value={formData.category}
-                                                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                                                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            >
-                                                {categories.map((category) => (
-                                                    <option key={category} value={category}>
-                                                        {category.replace('-', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                            <div className="relative">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setCategoryOpen(!categoryOpen);
+                                                        setPriorityOpen(false);
+                                                    }}
+                                                    className="w-full px-4 py-2.5 text-sm text-left border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all hover:border-slate-400 flex items-center justify-between"
+                                                >
+                                                    <span className="flex items-center gap-2.5">
+                                                        <span className="text-lg">{getCategoryIcon(formData.category)}</span>
+                                                        <span className="capitalize font-medium text-slate-700">
+                                                            {formData.category.replace('-', ' ')}
+                                                        </span>
+                                                    </span>
+                                                    <GoogleArrowDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${categoryOpen ? 'rotate-180' : ''}`} />
+                                                </button>
+
+                                                <AnimatePresence>
+                                                    {categoryOpen && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -10 }}
+                                                            transition={{ duration: 0.15 }}
+                                                            className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
+                                                        >
+                                                            <div className="py-1 max-h-60 overflow-y-auto">
+                                                                {categories.map((category) => (
+                                                                    <button
+                                                                        key={category}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setFormData({ ...formData, category });
+                                                                            setCategoryOpen(false);
+                                                                        }}
+                                                                        className={`w-full px-4 py-2.5 text-sm text-left hover:bg-slate-50 transition-colors flex items-center justify-between group ${formData.category === category ? 'bg-blue-50 text-blue-700' : 'text-slate-700'
+                                                                            }`}
+                                                                    >
+                                                                        <span className="flex items-center gap-2.5">
+                                                                            <span className="text-lg">{getCategoryIcon(category)}</span>
+                                                                            <span className="capitalize font-medium">
+                                                                                {category.replace('-', ' ')}
+                                                                            </span>
+                                                                        </span>
+                                                                        {formData.category === category && (
+                                                                            <FiCheck className="w-4 h-4 text-blue-600" />
+                                                                        )}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
                                         </div>
 
-                                        <div>
-                                            <label htmlFor="priority" className="block text-xs font-medium text-slate-700 mb-1.5">
+                                        {/* Priority Dropdown */}
+                                        <div ref={priorityRef}>
+                                            <label className="block text-sm font-semibold text-slate-700 mb-2">
                                                 Priority
                                             </label>
-                                            <select
-                                                id="priority"
-                                                value={formData.priority}
-                                                onChange={(e) => setFormData({ ...formData, priority: e.target.value })}
-                                                className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                                            >
-                                                {priorities.map((priority) => (
-                                                    <option key={priority} value={priority}>
-                                                        {priority.charAt(0).toUpperCase() + priority.slice(1)}
-                                                    </option>
-                                                ))}
-                                            </select>
+                                            <div className="relative">
+                                                <button
+                                                    type="button"
+                                                    onClick={() => {
+                                                        setPriorityOpen(!priorityOpen);
+                                                        setCategoryOpen(false);
+                                                    }}
+                                                    className="w-full px-4 py-2.5 text-sm text-left border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white transition-all hover:border-slate-400 flex items-center justify-between"
+                                                >
+                                                    <span className="flex items-center gap-2.5">
+                                                        <span className={`w-2.5 h-2.5 rounded-full ${getPriorityDot(formData.priority)}`} />
+                                                        <span className="capitalize font-medium text-slate-700">{formData.priority}</span>
+                                                    </span>
+                                                    <GoogleArrowDown className={`w-4 h-4 text-slate-400 transition-transform duration-200 ${priorityOpen ? 'rotate-180' : ''}`} />
+                                                </button>
+
+                                                <AnimatePresence>
+                                                    {priorityOpen && (
+                                                        <motion.div
+                                                            initial={{ opacity: 0, y: -10 }}
+                                                            animate={{ opacity: 1, y: 0 }}
+                                                            exit={{ opacity: 0, y: -10 }}
+                                                            transition={{ duration: 0.15 }}
+                                                            className="absolute z-10 w-full mt-2 bg-white border border-slate-200 rounded-xl shadow-xl overflow-hidden"
+                                                        >
+                                                            <div className="py-1">
+                                                                {priorities.map((priority) => (
+                                                                    <button
+                                                                        key={priority}
+                                                                        type="button"
+                                                                        onClick={() => {
+                                                                            setFormData({ ...formData, priority });
+                                                                            setPriorityOpen(false);
+                                                                        }}
+                                                                        className={`w-full px-4 py-2.5 text-sm text-left hover:bg-slate-50 transition-colors flex items-center justify-between group ${formData.priority === priority ? 'bg-blue-50 text-blue-700' : 'text-slate-700'
+                                                                            }`}
+                                                                    >
+                                                                        <span className="flex items-center gap-2.5">
+                                                                            <span className={`w-2.5 h-2.5 rounded-full ${getPriorityDot(priority)}`} />
+                                                                            <span className="capitalize font-medium">{priority}</span>
+                                                                        </span>
+                                                                        {formData.priority === priority && (
+                                                                            <FiCheck className="w-4 h-4 text-blue-600" />
+                                                                        )}
+                                                                    </button>
+                                                                ))}
+                                                            </div>
+                                                        </motion.div>
+                                                    )}
+                                                </AnimatePresence>
+                                            </div>
                                         </div>
                                     </div>
 
+                                    {/* Content Input */}
                                     <div>
-                                        <label htmlFor="content" className="block text-xs font-medium text-slate-700 mb-1.5">
+                                        <label htmlFor="content" className="block text-sm font-semibold text-slate-700 mb-2">
                                             Content
                                         </label>
                                         <textarea
                                             id="content"
-                                            rows={6}
+                                            rows={10}
                                             value={formData.content}
                                             onChange={(e) => setFormData({ ...formData, content: e.target.value })}
-                                            className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                                            className="w-full px-4 py-3 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none transition-all font-mono hover:border-slate-400 bg-slate-50/50 focus:bg-white"
                                             placeholder="Document content..."
                                         />
                                     </div>
                                 </div>
 
-                                <div className="flex items-center justify-end space-x-2 mt-6 pt-4 border-t border-slate-200">
-                                    <button
+                                {/* Footer Buttons */}
+                                <div className="flex items-center justify-end space-x-3 mt-8 pt-6 border-t border-slate-200">
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
                                         type="button"
                                         onClick={() => {
                                             setShowCreateModal(false);
                                             setEditingDoc(null);
                                             resetForm();
                                         }}
-                                        className="px-4 py-2 text-xs font-medium text-slate-700 bg-white border border-slate-200 rounded-lg hover:bg-slate-50 transition-all"
+                                        className="px-6 py-2.5 text-sm font-semibold text-slate-700 bg-white border border-slate-300 rounded-xl hover:bg-slate-50 hover:border-slate-400 transition-all"
                                     >
                                         Cancel
-                                    </button>
-                                    <button
+                                    </motion.button>
+                                    <motion.button
+                                        whileHover={{ scale: 1.02 }}
+                                        whileTap={{ scale: 0.98 }}
                                         type="submit"
-                                        className="inline-flex items-center px-4 py-2 text-xs font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-all shadow-sm"
+                                        disabled={submitting}
+                                        className="inline-flex items-center px-6 py-2.5 text-sm font-semibold text-white bg-gradient-to-r from-blue-600 to-blue-700 rounded-xl hover:from-blue-700 hover:to-blue-800 transition-all shadow-lg shadow-blue-500/30 disabled:opacity-60 disabled:cursor-not-allowed min-w-[160px] justify-center"
                                     >
-                                        <FiSave className="h-3.5 w-3.5 mr-1.5" />
-                                        {editingDoc ? 'Update Document' : 'Create Document'}
-                                    </button>
+                                        {submitting ? (
+                                            <>
+                                                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin mr-2" />
+                                                {editingDoc ? 'Updating...' : 'Creating...'}
+                                            </>
+                                        ) : (
+                                            <>
+                                                <FiSave className="h-4 w-4 mr-2" />
+                                                {editingDoc ? 'Update Document' : 'Create Document'}
+                                            </>
+                                        )}
+                                    </motion.button>
                                 </div>
                             </form>
                         </motion.div>
