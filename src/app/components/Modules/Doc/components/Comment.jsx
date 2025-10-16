@@ -1,24 +1,25 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { MessageSquare, Send, Reply, CheckCircle, Trash2, MoreVertical, Clock, Loader2 } from "lucide-react";
 import { useTestType } from "@/app/script/TestType.context";
 import { useDoc } from "@/app/script/Doc.context";
 
 const CommentComponent = () => {
     const [comments, setComments] = useState([]);
     const [loading, setLoading] = useState(false);
-    const [showCommentForm, setShowCommentForm] = useState(false);
-    const [newComment, setNewComment] = useState({
-        text: "",
-        startIndex: 0,
-        endIndex: 0,
-    });
+    const [showCommentModal, setShowCommentModal] = useState(false);
+    const [newComment, setNewComment] = useState({ text: "" });
     const [replyingTo, setReplyingTo] = useState(null);
     const [replyText, setReplyText] = useState("");
     const [activeMenu, setActiveMenu] = useState(null);
+    const [postingComment, setPostingComment] = useState(false);
+    const [postingReply, setPostingReply] = useState(false);
 
-    // Get context values - Replace these with your actual context hooks
+    const modalRef = useRef(null);
+    const replyModalRef = useRef(null);
+
     const { docId } = useDoc();
     const { testTypeId } = useTestType();
 
@@ -36,6 +37,25 @@ const CommentComponent = () => {
             fetchComments();
         }
     }, [projectId, testTypeId, docId]);
+
+    // Close modal when clicking outside
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (modalRef.current && !modalRef.current.contains(event.target)) {
+                setShowCommentModal(false);
+            }
+            if (replyModalRef.current && !replyModalRef.current.contains(event.target)) {
+                setReplyingTo(null);
+                setReplyText("");
+            }
+            if (activeMenu && !event.target.closest('.menu-container')) {
+                setActiveMenu(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [activeMenu]);
 
     const fetchComments = async () => {
         setLoading(true);
@@ -63,32 +83,46 @@ const CommentComponent = () => {
     const handleAddComment = async () => {
         if (!newComment.text.trim()) return;
 
+        const commentPayload = {
+            text: newComment.text,
+            startIndex: newComment.startIndex || 0,
+            endIndex: newComment.endIndex || 0,
+        };
+
+        setPostingComment(true);
         try {
-            const response = await fetch(
-                `${baseURL}/projects/${projectId}/test-types/${testTypeId}/docs/${docId}/comments`,
-                {
-                    method: "POST",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                        "Content-Type": "application/json",
-                    },
-                    body: JSON.stringify(newComment),
-                }
-            );
+            const url = `${baseURL}/projects/${projectId}/test-types/${testTypeId}/docs/${docId}/comments`;
+
+            const response = await fetch(url, {
+                method: "POST",
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    "Content-Type": "application/json",
+                },
+                body: JSON.stringify(commentPayload),
+            });
+
             const data = await response.json();
+
             if (response.ok) {
                 setComments(data.comments || []);
-                setNewComment({ text: "", startIndex: 0, endIndex: 0 });
-                setShowCommentForm(false);
+                setNewComment({ text: "" });
+                setShowCommentModal(false);
+            } else {
+                console.error("Server responded with error:", response.status, data.message);
             }
         } catch (error) {
             console.error("Error adding comment:", error);
+        } finally {
+            setPostingComment(false);
         }
     };
+
 
     const handleReply = async (commentId) => {
         if (!replyText.trim()) return;
 
+        setPostingReply(true);
         try {
             const response = await fetch(
                 `${baseURL}/projects/${projectId}/test-types/${testTypeId}/docs/${docId}/comments/${commentId}/reply`,
@@ -108,6 +142,8 @@ const CommentComponent = () => {
             }
         } catch (error) {
             console.error("Error adding reply:", error);
+        } finally {
+            setPostingReply(false);
         }
     };
 
@@ -168,152 +204,119 @@ const CommentComponent = () => {
         return d.toLocaleDateString();
     };
 
-    const MessageSquareIcon = () => (
-        <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z" />
-        </svg>
-    );
-
-    const SendIcon = () => (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-        </svg>
-    );
-
-    const ReplyIcon = () => (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 10h10a8 8 0 018 8v2M3 10l6 6m-6-6l6-6" />
-        </svg>
-    );
-
-    const CheckCircleIcon = () => (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
-    );
-
-    const TrashIcon = () => (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-        </svg>
-    );
-
-    const MoreIcon = () => (
-        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 5v.01M12 12v.01M12 19v.01M12 6a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2zm0 7a1 1 0 110-2 1 1 0 010 2z" />
-        </svg>
-    );
-
-    const ClockIcon = () => (
-        <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
-        </svg>
+    // Skeleton Loader
+    const SkeletonLoader = () => (
+        <div className="divide-y divide-gray-200">
+            {[1, 2, 3].map((i) => (
+                <div key={i} className="p-4 animate-pulse">
+                    <div className="flex gap-3">
+                        <div className="w-8 h-8 rounded-full bg-gray-200"></div>
+                        <div className="flex-1 space-y-3">
+                            <div className="h-4 bg-gray-200 rounded w-32"></div>
+                            <div className="h-3 bg-gray-200 rounded w-48"></div>
+                            <div className="space-y-2">
+                                <div className="h-3 bg-gray-200 rounded w-full"></div>
+                                <div className="h-3 bg-gray-200 rounded w-3/4"></div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            ))}
+        </div>
     );
 
     return (
         <div className="w-full max-w-4xl mx-auto p-4 sm:p-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200">
+            <div className="bg-white rounded-xl shadow-lg border border-gray-100">
                 {/* Header */}
-                <div className="flex items-center justify-between p-4 border-b border-gray-200">
-                    <div className="flex items-center gap-2">
-                        <div className="text-blue-600">
-                            <MessageSquareIcon />
+                <div className="flex items-center justify-between p-5 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-indigo-50">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-blue-600 rounded-lg text-white shadow-md">
+                            <MessageSquare className="w-5 h-5" />
                         </div>
-                        <h2 className="text-lg font-semibold text-gray-800">
-                            Comments
+                        <div>
+                            <h2 className="text-xl font-bold text-gray-800">Comments</h2>
                             {comments.length > 0 && (
-                                <span className="ml-2 text-sm font-normal text-gray-500">
-                                    ({comments.length})
-                                </span>
+                                <p className="text-xs text-gray-500 mt-0.5">
+                                    {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+                                </p>
                             )}
-                        </h2>
+                        </div>
                     </div>
-                    <motion.button
-                        whileHover={{ scale: 1.05 }}
-                        whileTap={{ scale: 0.95 }}
-                        onClick={() => setShowCommentForm(!showCommentForm)}
-                        className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-lg hover:bg-blue-700 transition-colors"
-                    >
-                        Add Comment
-                    </motion.button>
+                    <div className="relative">
+                        <motion.button
+                            whileHover={{ scale: 1.02 }}
+                            whileTap={{ scale: 0.98 }}
+                            onClick={() => setShowCommentModal(!showCommentModal)}
+                            className="px-5 py-2.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm font-semibold rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-md hover:shadow-lg"
+                        >
+                            + Add Comment
+                        </motion.button>
+
+                        {/* Add Comment Modal */}
+                        <AnimatePresence>
+                            {showCommentModal && (
+                                <motion.div
+                                    ref={modalRef}
+                                    initial={{ opacity: 0, y: -10, scale: 0.95 }}
+                                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                                    exit={{ opacity: 0, y: -10, scale: 0.95 }}
+                                    transition={{ duration: 0.2 }}
+                                    className="absolute right-0 mt-2 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 overflow-hidden"
+                                >
+                                    <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-200">
+                                        <h3 className="text-sm font-semibold text-gray-800">New Comment</h3>
+                                    </div>
+                                    <div className="p-4 space-y-3">
+                                        <textarea
+                                            value={newComment.text}
+                                            onChange={(e) => setNewComment({ text: e.target.value })}
+                                            placeholder="Share your thoughts..."
+                                            className="w-full p-3 text-sm border border-gray-300 rounded-lg focus:ring-1 focus:outline-none focus:ring-blue-500 focus:border-transparent resize-none transition-all"
+                                            rows="4"
+                                            autoFocus
+                                        />
+                                        <div className="flex gap-2 justify-end">
+                                            <button
+                                                onClick={() => {
+                                                    setShowCommentModal(false);
+                                                    setNewComment({ text: "" });
+                                                }}
+                                                className="px-4 py-2 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors font-medium"
+                                            >
+                                                Cancel
+                                            </button>
+                                            <button
+                                                onClick={handleAddComment}
+                                                disabled={postingComment || !newComment.text.trim()}
+                                                className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-sm rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center gap-2 font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-md hover:shadow-lg min-w-[90px] justify-center"
+                                            >
+                                                {postingComment ? (
+                                                    <Loader2 className="w-4 h-4 animate-spin" />
+                                                ) : (
+                                                    <Send className="w-4 h-4" />
+                                                )}
+                                                {postingComment ? "Posting..." : "Post"}
+                                            </button>
+                                        </div>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
                 </div>
 
-                {/* Add Comment Form */}
-                <AnimatePresence>
-                    {showCommentForm && (
-                        <motion.div
-                            initial={{ height: 0, opacity: 0 }}
-                            animate={{ height: "auto", opacity: 1 }}
-                            exit={{ height: 0, opacity: 0 }}
-                            className="border-b border-gray-200 overflow-hidden"
-                        >
-                            <div className="p-4 space-y-3">
-                                <textarea
-                                    value={newComment.text}
-                                    onChange={(e) =>
-                                        setNewComment({ ...newComment, text: e.target.value })
-                                    }
-                                    placeholder="Write your comment..."
-                                    className="w-full p-3 text-sm border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
-                                    rows="3"
-                                />
-                                <div className="flex items-center gap-3 flex-wrap">
-                                    <div className="flex gap-2 flex-1 min-w-[140px]">
-                                        <input
-                                            type="number"
-                                            value={newComment.startIndex}
-                                            onChange={(e) =>
-                                                setNewComment({
-                                                    ...newComment,
-                                                    startIndex: parseInt(e.target.value) || 0,
-                                                })
-                                            }
-                                            placeholder="Start"
-                                            className="w-20 px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                                        />
-                                        <input
-                                            type="number"
-                                            value={newComment.endIndex}
-                                            onChange={(e) =>
-                                                setNewComment({
-                                                    ...newComment,
-                                                    endIndex: parseInt(e.target.value) || 0,
-                                                })
-                                            }
-                                            placeholder="End"
-                                            className="w-20 px-2 py-1.5 text-xs border border-gray-300 rounded focus:ring-2 focus:ring-blue-500"
-                                        />
-                                    </div>
-                                    <div className="flex gap-2">
-                                        <button
-                                            onClick={() => setShowCommentForm(false)}
-                                            className="px-3 py-1.5 text-sm text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
-                                        >
-                                            Cancel
-                                        </button>
-                                        <button
-                                            onClick={handleAddComment}
-                                            className="px-4 py-1.5 bg-blue-600 text-white text-sm rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-1.5"
-                                        >
-                                            <SendIcon />
-                                            Post
-                                        </button>
-                                    </div>
-                                </div>
-                            </div>
-                        </motion.div>
-                    )}
-                </AnimatePresence>
-
                 {/* Comments List */}
-                <div className="divide-y divide-gray-200">
+                <div className="divide-y divide-gray-100">
                     {loading ? (
-                        <div className="p-8 text-center text-gray-500 text-sm">
-                            Loading comments...
-                        </div>
+                        <SkeletonLoader />
                     ) : comments.length === 0 ? (
-                        <div className="p-8 text-center text-gray-500 text-sm">
-                            No comments yet. Be the first to comment!
+                        <div className="p-12 text-center">
+                            <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-gray-100 mb-4">
+                                <MessageSquare className="w-8 h-8 text-gray-400" />
+                            </div>
+                            <p className="text-gray-500 text-sm font-medium">No comments yet</p>
+                            <p className="text-gray-400 text-xs mt-1">Be the first to share your thoughts!</p>
                         </div>
                     ) : (
                         <AnimatePresence>
@@ -324,66 +327,62 @@ const CommentComponent = () => {
                                     animate={{ opacity: 1, y: 0 }}
                                     exit={{ opacity: 0, x: -20 }}
                                     transition={{ delay: index * 0.05 }}
-                                    className="p-4 hover:bg-gray-50 transition-colors"
+                                    className="p-5 hover:bg-gray-50 transition-all group"
                                 >
                                     <div className="flex gap-3">
                                         <div className="flex-shrink-0">
-                                            <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-500 to-purple-600 flex items-center justify-center text-white text-xs font-semibold">
+                                            <div className="w-10 h-10 rounded-full bg-gradient-to-br from-blue-500 via-purple-500 to-pink-500 flex items-center justify-center text-white text-sm font-bold shadow-md">
                                                 {comment.user?.name?.[0]?.toUpperCase() || "U"}
                                             </div>
                                         </div>
 
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-start justify-between gap-2">
-                                                <div>
-                                                    <p className="text-sm font-medium text-gray-900">
+                                                <div className="flex-1">
+                                                    <p className="text-sm font-semibold text-gray-900">
                                                         {comment.user?.name || "Unknown User"}
                                                     </p>
-                                                    <div className="flex items-center gap-2 mt-0.5 flex-wrap">
+                                                    <div className="flex items-center gap-2 mt-1 flex-wrap">
                                                         <p className="text-xs text-gray-500">
                                                             {comment.user?.email}
                                                         </p>
-                                                        <span className="text-gray-300">·</span>
-                                                        <p className="text-xs text-gray-500 flex items-center gap-1">
-                                                            <ClockIcon />
+                                                        <span className="text-gray-300">•</span>
+                                                        <p className="text-xs text-gray-400 flex items-center gap-1">
+                                                            <Clock className="w-3 h-3" />
                                                             {formatDate(comment.createdAt)}
                                                         </p>
                                                     </div>
                                                 </div>
 
-                                                <div className="relative">
+                                                <div className="relative menu-container">
                                                     <button
-                                                        onClick={() =>
-                                                            setActiveMenu(
-                                                                activeMenu === comment._id ? null : comment._id
-                                                            )
-                                                        }
-                                                        className="p-1 hover:bg-gray-200 rounded transition-colors"
+                                                        onClick={() => setActiveMenu(activeMenu === comment._id ? null : comment._id)}
+                                                        className="p-1.5 hover:bg-gray-200 rounded-lg transition-colors opacity-0 group-hover:opacity-100"
                                                     >
-                                                        <MoreIcon />
+                                                        <MoreVertical className="w-4 h-4" />
                                                     </button>
                                                     <AnimatePresence>
                                                         {activeMenu === comment._id && (
                                                             <motion.div
-                                                                initial={{ opacity: 0, scale: 0.95 }}
-                                                                animate={{ opacity: 1, scale: 1 }}
-                                                                exit={{ opacity: 0, scale: 0.95 }}
-                                                                className="absolute right-0 mt-1 w-36 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-10"
+                                                                initial={{ opacity: 0, scale: 0.95, y: -5 }}
+                                                                animate={{ opacity: 1, scale: 1, y: 0 }}
+                                                                exit={{ opacity: 0, scale: 0.95, y: -5 }}
+                                                                className="absolute right-0 mt-1 w-40 bg-white rounded-lg shadow-xl border border-gray-200 py-1 z-10"
                                                             >
                                                                 {!comment.resolved && (
                                                                     <button
                                                                         onClick={() => handleResolve(comment._id)}
-                                                                        className="w-full px-3 py-2 text-left text-xs text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                                                                        className="w-full px-3 py-2 text-left text-sm text-gray-700 hover:bg-green-50 flex items-center gap-2 transition-colors"
                                                                     >
-                                                                        <CheckCircleIcon />
+                                                                        <CheckCircle className="w-4 h-4" />
                                                                         Resolve
                                                                     </button>
                                                                 )}
                                                                 <button
                                                                     onClick={() => handleDelete(comment._id)}
-                                                                    className="w-full px-3 py-2 text-left text-xs text-red-600 hover:bg-red-50 flex items-center gap-2"
+                                                                    className="w-full px-3 py-2 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
                                                                 >
-                                                                    <TrashIcon />
+                                                                    <Trash2 className="w-4 h-4" />
                                                                     Delete
                                                                 </button>
                                                             </motion.div>
@@ -392,44 +391,38 @@ const CommentComponent = () => {
                                                 </div>
                                             </div>
 
-                                            <p className="mt-2 text-sm text-gray-700 leading-relaxed">
+                                            <p className="mt-3 text-sm text-gray-700 leading-relaxed">
                                                 {comment.text}
                                             </p>
 
-                                            {comment.startIndex !== undefined && comment.endIndex !== undefined && (
-                                                <div className="mt-2 inline-flex items-center gap-2 text-xs text-gray-500">
-                                                    <span className="px-2 py-0.5 bg-gray-100 rounded">
-                                                        Position: {comment.startIndex} - {comment.endIndex}
-                                                    </span>
-                                                </div>
-                                            )}
-
                                             {comment.resolved && (
-                                                <div className="mt-2 inline-flex items-center gap-1.5 px-2 py-1 bg-green-50 text-green-700 rounded text-xs ml-2">
-                                                    <CheckCircleIcon />
+                                                <div className="mt-3 inline-flex items-center gap-1.5 px-3 py-1 bg-green-50 text-green-700 rounded-full text-xs font-medium border border-green-200">
+                                                    <CheckCircle className="w-4 h-4" />
                                                     Resolved
                                                 </div>
                                             )}
 
                                             {/* Replies */}
                                             {comment.replies && comment.replies.length > 0 && (
-                                                <div className="mt-3 space-y-3 pl-4 border-l-2 border-gray-200">
+                                                <div className="mt-4 space-y-3 pl-4 border-l-2 border-indigo-200">
                                                     {comment.replies.map((reply) => (
                                                         <div key={reply._id} className="flex gap-2">
                                                             <div className="flex-shrink-0">
-                                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-green-500 to-teal-600 flex items-center justify-center text-white text-xs font-semibold">
+                                                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-green-400 to-teal-500 flex items-center justify-center text-white text-xs font-bold shadow">
                                                                     {reply.user?.name?.[0]?.toUpperCase() || "U"}
                                                                 </div>
                                                             </div>
-                                                            <div className="flex-1">
-                                                                <p className="text-xs font-medium text-gray-900">
-                                                                    {reply.user?.name || "Unknown User"}
-                                                                </p>
-                                                                <p className="text-xs text-gray-600 mt-1 leading-relaxed">
+                                                            <div className="flex-1 bg-gray-50 rounded-lg p-3">
+                                                                <div className="flex items-center justify-between">
+                                                                    <p className="text-xs font-semibold text-gray-900">
+                                                                        {reply.user?.name || "Unknown User"}
+                                                                    </p>
+                                                                    <p className="text-xs text-gray-400">
+                                                                        {formatDate(reply.createdAt)}
+                                                                    </p>
+                                                                </div>
+                                                                <p className="text-xs text-gray-600 mt-1.5 leading-relaxed">
                                                                     {reply.text}
-                                                                </p>
-                                                                <p className="text-xs text-gray-400 mt-1">
-                                                                    {formatDate(reply.createdAt)}
                                                                 </p>
                                                             </div>
                                                         </div>
@@ -437,48 +430,55 @@ const CommentComponent = () => {
                                                 </div>
                                             )}
 
-                                            {/* Reply Button & Form */}
+                                            {/* Reply Button & Modal */}
                                             {!comment.resolved && (
-                                                <div className="mt-3">
+                                                <div className="mt-4 relative">
                                                     {replyingTo === comment._id ? (
                                                         <motion.div
+                                                            ref={replyModalRef}
                                                             initial={{ opacity: 0, height: 0 }}
                                                             animate={{ opacity: 1, height: "auto" }}
                                                             exit={{ opacity: 0, height: 0 }}
-                                                            className="space-y-2"
+                                                            className="bg-gray-50 rounded-lg p-4 border border-gray-200 shadow-sm"
                                                         >
                                                             <textarea
                                                                 value={replyText}
                                                                 onChange={(e) => setReplyText(e.target.value)}
-                                                                placeholder="Write a reply..."
-                                                                className="w-full p-2 text-xs border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 resize-none"
-                                                                rows="2"
+                                                                placeholder="Write your reply..."
+                                                                className="w-full p-3 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-500 resize-none transition-all"
+                                                                rows="3"
+                                                                autoFocus
                                                             />
-                                                            <div className="flex gap-2">
+                                                            <div className="flex gap-2 mt-3 justify-end">
                                                                 <button
                                                                     onClick={() => {
                                                                         setReplyingTo(null);
                                                                         setReplyText("");
                                                                     }}
-                                                                    className="px-3 py-1 text-xs text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                                                    className="px-3 py-1.5 text-xs text-gray-600 hover:bg-gray-200 rounded-lg transition-colors font-medium"
                                                                 >
                                                                     Cancel
                                                                 </button>
                                                                 <button
                                                                     onClick={() => handleReply(comment._id)}
-                                                                    className="px-3 py-1 bg-blue-600 text-white text-xs rounded hover:bg-blue-700 transition-colors flex items-center gap-1"
+                                                                    disabled={postingReply || !replyText.trim()}
+                                                                    className="px-4 py-1.5 bg-gradient-to-r from-blue-600 to-indigo-600 text-white text-xs rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all flex items-center gap-1.5 font-semibold disabled:opacity-50 disabled:cursor-not-allowed shadow-md min-w-[80px] justify-center"
                                                                 >
-                                                                    <SendIcon />
-                                                                    Reply
+                                                                    {postingReply ? (
+                                                                        <Loader2 className="w-4 h-4 animate-spin" />
+                                                                    ) : (
+                                                                        <Send className="w-4 h-4" />
+                                                                    )}
+                                                                    {postingReply ? "Sending..." : "Reply"}
                                                                 </button>
                                                             </div>
                                                         </motion.div>
                                                     ) : (
                                                         <button
                                                             onClick={() => setReplyingTo(comment._id)}
-                                                            className="text-xs text-blue-600 hover:text-blue-700 font-medium flex items-center gap-1"
+                                                            className="text-xs text-blue-600 hover:text-blue-700 font-semibold flex items-center gap-1.5 hover:gap-2 transition-all"
                                                         >
-                                                            <ReplyIcon />
+                                                            <Reply className="w-4 h-4" />
                                                             Reply
                                                         </button>
                                                     )}
@@ -496,4 +496,4 @@ const CommentComponent = () => {
     );
 };
 
-export default CommentComponent
+export default CommentComponent;
