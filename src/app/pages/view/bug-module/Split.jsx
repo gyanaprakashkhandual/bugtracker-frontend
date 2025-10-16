@@ -29,7 +29,8 @@ import { useTestType } from "@/app/script/TestType.context";
 import { useConfirm } from "@/app/script/Confirm.context";
 import { GoogleArrowDown, GoogleArrowRight } from "@/app/components/utils/Icon";
 import { copyToClipboard } from "@/app/utils/Copy.text";
-import Loader from "@/app/components/utils/Loader";
+import SplitSkeletonLoader from "@/app/components/assets/Split.loader";
+import { BUG_EVENTS } from '@/app/components/Sidebars/Bug';
 
 
 
@@ -91,7 +92,6 @@ const BugSplitView = () => {
             });
     };
 
-
     const projectId =
         typeof window !== "undefined"
             ? localStorage.getItem("currentProjectId")
@@ -105,35 +105,62 @@ const BugSplitView = () => {
     // Search bugs API
     const searchBugs = useCallback(
         async (searchQuery) => {
-            if (!projectId || !testTypeId || !token) return;
+            if (!projectId || !testTypeId || !token) {
+                console.log('Missing required parameters:', { projectId, testTypeId, token: !!token });
+                return;
+            }
 
             try {
                 setLoading(true);
-                const response = await fetch(
-                    `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/search?search=${encodeURIComponent(
-                        searchQuery
-                    )}&page=1&limit=1000000`,
-                    {
-                        headers: {
-                            Authorization: `Bearer ${token}`,
-                        },
-                    }
-                );
+                const url = `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/search?search=${encodeURIComponent(searchQuery)}&page=1&limit=100`;
+                console.log('Search API URL:', url);
+                console.log('Search query:', searchQuery);
 
-                if (!response.ok) throw new Error("Failed to search bugs");
+                const response = await fetch(url, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.log('Error response body:', errorText);
+
+                    if (response.status === 403) {
+                        throw new Error("Access denied to this project or test type");
+                    }
+                    if (response.status === 404) {
+                        throw new Error("API endpoint not found");
+                    }
+                    if (response.status === 500) {
+                        throw new Error("Server error occurred");
+                    }
+                    throw new Error(`Failed to search bugs: ${response.status} ${errorText}`);
+                }
 
                 const data = await response.json();
-                setBugs(data.bugs || []);
+                console.log('Search API response data:', data);
+
+
             } catch (error) {
                 console.error("Error searching bugs:", error);
-                showAlert({ type: "error", message: "Failed to search bugs" });
+                console.error("Error details:", {
+                    message: error.message,
+                    stack: error.stack
+                });
+                showAlert({
+                    type: "error",
+                    message: error.message || "Failed to search bugs"
+                });
             } finally {
                 setLoading(false);
             }
         },
-        [projectId, testTypeId, token]
+        [projectId, testTypeId, token, showAlert]
     );
-
     // Filter bugs by date API
     const filterBugsByDate = useCallback(
         async (fromDate, toDate) => {
@@ -165,6 +192,30 @@ const BugSplitView = () => {
         },
         [projectId, testTypeId, token]
     );
+    useEffect(() => {
+        const handleBugChange = (event) => {
+            console.log('Bug changed, refreshing data:', event.detail);
+            fetchBugs(); // This will refresh your bugs list
+        };
+
+        // Listen to all relevant bug events
+        window.addEventListener(BUG_EVENTS.CHANGED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.CREATED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.UPDATED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.DELETED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.TRASHED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.RESTORED, handleBugChange);
+
+        // Cleanup event listeners on component unmount
+        return () => {
+            window.removeEventListener(BUG_EVENTS.CHANGED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.CREATED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.UPDATED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.DELETED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.TRASHED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.RESTORED, handleBugChange);
+        };
+    }, []);
     // Get all bugs API
     const fetchBugs = useCallback(async () => {
         if (!projectId || !testTypeId || !token) {
@@ -338,6 +389,103 @@ const BugSplitView = () => {
         }
     };
     // Move bug to trash API
+    const [lastSelectedBugId, setLastSelectedBugId] = useState(null);
+
+    // Load selected bug from localStorage on component mount
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            const savedBugId = localStorage.getItem(`selectedBug_${projectId}_${testTypeId}`);
+            if (savedBugId) {
+                setLastSelectedBugId(savedBugId);
+            }
+        }
+    }, [projectId, testTypeId]);
+
+    // Auto-select bug when bugs are loaded
+    useEffect(() => {
+        if (bugs.length > 0 && !selectedBug) {
+            // Try to select the last saved bug
+            if (lastSelectedBugId) {
+                const savedBug = bugs.find(bug => bug._id === lastSelectedBugId);
+                if (savedBug) {
+                    setSelectedBug(savedBug);
+                    fetchComments(savedBug._id);
+                    return;
+                }
+            }
+            // If no saved bug or saved bug not found, select the first bug
+            setSelectedBug(bugs[0]);
+            fetchComments(bugs[0]._id);
+        }
+    }, [bugs, lastSelectedBugId, selectedBug]);
+
+    // Save selected bug to localStorage whenever it changes
+    useEffect(() => {
+        if (selectedBug && typeof window !== 'undefined') {
+            localStorage.setItem(`selectedBug_${projectId}_${testTypeId}`, selectedBug._id);
+            setLastSelectedBugId(selectedBug._id);
+        }
+    }, [selectedBug, projectId, testTypeId]);
+
+    // Enhanced delete function with auto-navigation
+    const deleteBugPermanently = async (bugId) => {
+        try {
+            const response = await fetch(
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/permanent`,
+                {
+                    method: "DELETE",
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.message || "Failed to delete bug permanently");
+            }
+
+            const data = await response.json();
+
+            // Find the current bug index before removing
+            const currentIndex = bugs.findIndex(bug => bug._id === bugId);
+
+            setBugs(prev => prev.filter(bug => bug._id !== bugId));
+
+            // Auto-navigate to another bug
+            if (selectedBug?._id === bugId) {
+                const remainingBugs = bugs.filter(bug => bug._id !== bugId);
+
+                if (remainingBugs.length === 0) {
+                    // No bugs left
+                    setSelectedBug(null);
+                    localStorage.removeItem(`selectedBug_${projectId}_${testTypeId}`);
+                } else {
+                    // Select next bug, or previous if last bug was deleted
+                    let nextBug;
+                    if (currentIndex < remainingBugs.length) {
+                        nextBug = remainingBugs[currentIndex];
+                    } else {
+                        nextBug = remainingBugs[remainingBugs.length - 1];
+                    }
+
+                    setSelectedBug(nextBug);
+                    fetchComments(nextBug._id);
+                    localStorage.setItem(`selectedBug_${projectId}_${testTypeId}`, nextBug._id);
+                }
+            }
+
+            showAlert({ type: "success", message: "Bug deleted permanently" });
+        } catch (error) {
+            console.error("Error deleting bug permanently:", error);
+            showAlert({
+                type: "error",
+                message: error.message || "Failed to delete bug",
+            });
+        }
+    };
+
+    // Enhanced move to trash function with auto-navigation
     const moveBugToTrash = async (bugId) => {
         try {
             const response = await fetch(
@@ -357,9 +505,32 @@ const BugSplitView = () => {
 
             const data = await response.json();
 
-            setBugs((prev) => prev.filter((bug) => bug._id !== bugId));
+            // Find the current bug index before removing
+            const currentIndex = bugs.findIndex(bug => bug._id === bugId);
+
+            setBugs(prev => prev.filter(bug => bug._id !== bugId));
+
+            // Auto-navigate to another bug
             if (selectedBug?._id === bugId) {
-                setSelectedBug(null);
+                const remainingBugs = bugs.filter(bug => bug._id !== bugId);
+
+                if (remainingBugs.length === 0) {
+                    // No bugs left
+                    setSelectedBug(null);
+                    localStorage.removeItem(`selectedBug_${projectId}_${testTypeId}`);
+                } else {
+                    // Select next bug, or previous if last bug was deleted
+                    let nextBug;
+                    if (currentIndex < remainingBugs.length) {
+                        nextBug = remainingBugs[currentIndex];
+                    } else {
+                        nextBug = remainingBugs[remainingBugs.length - 1];
+                    }
+
+                    setSelectedBug(nextBug);
+                    fetchComments(nextBug._id);
+                    localStorage.setItem(`selectedBug_${projectId}_${testTypeId}`, nextBug._id);
+                }
             }
 
             showAlert({
@@ -371,43 +542,6 @@ const BugSplitView = () => {
             showAlert({
                 type: "error",
                 message: error.message || "Failed to move bug to trash",
-            });
-        }
-    };
-    // Delete bug permanently API
-    const deleteBugPermanently = async (bugId) => {
-
-        try {
-            const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/permanent`,
-                {
-                    method: "DELETE",
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                }
-            );
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(
-                    errorData.message || "Failed to delete bug permanently"
-                );
-            }
-
-            const data = await response.json();
-
-            setBugs((prev) => prev.filter((bug) => bug._id !== bugId));
-            if (selectedBug?._id === bugId) {
-                setSelectedBug(null);
-            }
-
-            showAlert({ type: "success", message: "Bug deleted permanently" });
-        } catch (error) {
-            console.error("Error deleting bug permanently:", error);
-            showAlert({
-                type: "error",
-                message: error.message || "Failed to delete bug",
             });
         }
     };
@@ -813,7 +947,7 @@ const BugSplitView = () => {
     };
 
     if (loading) {
-        return <Loader />;
+        return <SplitSkeletonLoader />
     }
 
     return (
@@ -1368,6 +1502,7 @@ const BugSplitView = () => {
                             {/* Navigation buttons */}
                             <div className="flex items-center gap-1">
                                 <motion.button
+                                    tooltip-data="Previous"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={goToPreviousBug}
@@ -1380,6 +1515,7 @@ const BugSplitView = () => {
                                     <ChevronLeft size={18} />
                                 </motion.button>
                                 <motion.button
+                                    tooltip-data="Next"
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={goToNextBug}
