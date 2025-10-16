@@ -23,7 +23,7 @@ import { useRouter } from 'next/navigation';
 import Messaging from '../Modules/Messaging/App';
 import AccessControlSystem from '../Modules/Access-Management/App';
 import Dashboard from '../Modules/Dashboard/App';
-import Notification from '../Modules/Notification/App';
+import NotificationCenter from '../Modules/Notification/App';
 
 
 const AppNavbar = () => {
@@ -122,8 +122,6 @@ const AppNavbar = () => {
                 return <TestTypeManagement />
             case 'UserManagement':
                 return <UserManagementDashboard />
-            case 'Notifications':
-                return <Notification />
             case 'Messages':
                 return <Messaging />
             case 'UserPanel':
@@ -245,17 +243,8 @@ const AppNavbar = () => {
                         <div className="flex items-center space-x-1 sm:space-x-2 flex-shrink-0">
                             {/* Bell Icon */}
                             <motion.button
-                                tooltip-data="Notification"
-                                tooltip-placement="bottom"
-                                onClick={() => handleComponentChange('Notifications')}
-                                className={`p-2 rounded-lg transition-all relative ${activeComponent === 'Notifications'
-                                    ? 'bg-blue-50 text-blue-700'
-                                    : 'text-gray-600 bg-gray-100 hover:bg-gray-200'
-                                    }`}
-                                whileHover={{ scale: 1.05 }}
-                                whileTap={{ scale: 0.95 }}
                             >
-                                <Bell className="w-5 h-5" />
+                                <NotificationCenter/>
                             </motion.button>
 
                             {/* Message Icon */}
