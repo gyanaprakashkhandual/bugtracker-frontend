@@ -725,7 +725,10 @@ const DocManager = () => {
                                                         <motion.button
                                                             whileHover={{ scale: 1.05 }}
                                                             whileTap={{ scale: 0.95 }}
-                                                            onClick={() => setActionMenu(actionMenu === doc._id ? null : doc._id)}
+                                                            onClick={(e) => {
+                                                                e.stopPropagation();
+                                                                setActionMenu(actionMenu === doc._id ? null : doc._id);
+                                                            }}
                                                             className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-lg transition-all"
                                                             disabled={deleting === doc._id || archiving === doc._id}
                                                         >
@@ -744,10 +747,14 @@ const DocManager = () => {
                                                                     exit={{ opacity: 0, scale: 0.95, y: -10 }}
                                                                     transition={{ duration: 0.15 }}
                                                                     className="absolute right-0 mt-2 w-48 rounded-xl shadow-xl bg-white border border-slate-200 z-20 overflow-hidden"
+                                                                    onClick={(e) => e.stopPropagation()}
                                                                 >
                                                                     <div className="py-1">
                                                                         <button
-                                                                            onClick={() => handleEdit(doc)}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                handleEdit(doc);
+                                                                            }}
                                                                             className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                                                                         >
                                                                             <FiEdit className="h-4 w-4 mr-3" />
@@ -756,7 +763,10 @@ const DocManager = () => {
 
                                                                         {doc.status === 'archived' ? (
                                                                             <button
-                                                                                onClick={() => unarchiveDocument(doc._id)}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    unarchiveDocument(doc._id);
+                                                                                }}
                                                                                 className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                                                                             >
                                                                                 <FiArchive className="h-4 w-4 mr-3" />
@@ -764,7 +774,10 @@ const DocManager = () => {
                                                                             </button>
                                                                         ) : (
                                                                             <button
-                                                                                onClick={() => archiveDocument(doc._id)}
+                                                                                onClick={(e) => {
+                                                                                    e.stopPropagation();
+                                                                                    archiveDocument(doc._id);
+                                                                                }}
                                                                                 className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-blue-50 hover:text-blue-600 transition-colors"
                                                                             >
                                                                                 <FiArchive className="h-4 w-4 mr-3" />
@@ -775,7 +788,10 @@ const DocManager = () => {
                                                                         <div className="border-t border-slate-100 my-1"></div>
 
                                                                         <button
-                                                                            onClick={() => deleteDocument(doc._id)}
+                                                                            onClick={(e) => {
+                                                                                e.stopPropagation();
+                                                                                deleteDocument(doc._id);
+                                                                            }}
                                                                             className="flex items-center w-full px-4 py-2.5 text-sm font-medium text-red-600 hover:bg-red-50 transition-colors"
                                                                         >
                                                                             <FiTrash2 className="h-4 w-4 mr-3" />
@@ -998,6 +1014,36 @@ const DocManager = () => {
                                                 </AnimatePresence>
                                             </div>
                                         </div>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div>
+                                        <label htmlFor="content" className="block text-sm font-semibold text-slate-700 mb-2">
+                                            Content <span className="text-red-500">*</span>
+                                        </label>
+                                        <textarea
+                                            id="content"
+                                            required
+                                            value={formData.content}
+                                            onChange={(e) => setFormData({ ...formData, content: e.target.value })}
+                                            className="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-slate-400 h-40 resize-none"
+                                            placeholder="Enter document content"
+                                        />
+                                    </div>
+
+                                    {/* Tags */}
+                                    <div>
+                                        <label htmlFor="tags" className="block text-sm font-semibold text-slate-700 mb-2">
+                                            Tags
+                                        </label>
+                                        <input
+                                            type="text"
+                                            id="tags"
+                                            value={formData.tags.join(', ')}
+                                            onChange={(e) => setFormData({ ...formData, tags: e.target.value.split(',').map(tag => tag.trim()).filter(tag => tag) })}
+                                            className="w-full px-4 py-2.5 text-sm border border-slate-300 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all hover:border-slate-400"
+                                            placeholder="Enter tags separated by comma"
+                                        />
                                     </div>
                                 </div>
                                 {/* Footer Buttons */}
