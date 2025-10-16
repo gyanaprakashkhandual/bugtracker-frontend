@@ -1,7 +1,10 @@
 'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, AlertCircle, Loader2, Archive, ChevronDown, GripVertical, ChevronLeft, ChevronRight, Image as ImageIcon, Save, Ban, Copy, ZoomIn, X } from 'lucide-react';
+import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Image as ImageIcon, Save, Ban, Link as LinkIcon, Copy, ZoomIn, Plus } from 'lucide-react';
+import { useTestType } from '@/app/script/TestType.context';
+import { useAlert } from '@/app/script/Alert.context';
+import TableSkeletonLoader from '@/app/components/assets/Table.loader';
 
 const TestCaseSpreadsheet = () => {
     const [testCases, setTestCases] = useState([]);
@@ -18,48 +21,57 @@ const TestCaseSpreadsheet = () => {
     const [rowHeights, setRowHeights] = useState({});
     const [resizing, setResizing] = useState(null);
     const [isCreatingTestCase, setIsCreatingTestCase] = useState(false);
+    const [activeCommentModal, setActiveCommentModal] = useState(null);
+    const [comments, setComments] = useState({});
+    const [loadingComments, setLoadingComments] = useState({});
+    const [newComment, setNewComment] = useState('');
+    const [submittingComment, setSubmittingComment] = useState(false);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalTestCases, setTotalTestCases] = useState(0);
     const [newRowEditing, setNewRowEditing] = useState(false);
     const [newRowTempData, setNewRowTempData] = useState({});
     const [imagePreviewModal, setImagePreviewModal] = useState(null);
-    const [activeImagesDropdown, setActiveImagesDropdown] = useState(null);
+    const [activeImageModal, setActiveImageModal] = useState(null);
     const [alert, setAlert] = useState(null);
+    const [expandedColumns, setExpandedColumns] = useState(new Set());
 
     const dropdownRef = useRef(null);
-    const imagesDropdownRef = useRef(null);
+    const commentModalRef = useRef(null);
+    const imageModalRef = useRef(null);
     const resizeStartX = useRef(0);
     const resizeStartY = useRef(0);
     const resizeStartWidth = useRef(0);
     const resizeStartHeight = useRef(0);
     const dropdownButtonRefs = useRef({});
-    const imagesButtonRefs = useRef({});
+    const commentButtonRefs = useRef({});
+    const imageButtonRefs = useRef({});
+    const fileInputRef = useRef(null);
 
-    // Get from localStorage or context
+    const { testTypeId, testTypeName } = useTestType();
+    const { showAlert } = useAlert();
+
     const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
-    const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
+    // API Configuration
     const BASE_URL = 'http://localhost:5000/api/v1/test-case';
-    const ROWS_PER_PAGE = 25;
+    const COMMENT_URL = 'http://localhost:5000/api/v1/comment';
+    const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
+    const CLOUDINARY_PRESET = 'test_case_preset';
+    const ROWS_PER_PAGE = 11;
 
     const columns = [
         { key: 'serialNumber', label: 'S.No', width: 90, editable: false, color: 'bg-purple-50', sticky: true },
-        { key: 'testCaseType', label: 'Type', width: 140, editable: true, type: 'select', options: ['Functional', 'Non-Functional', 'Integration', 'UI/UX', 'Security', 'Performance'], color: 'bg-blue-50', sticky: true },
-        { key: 'moduleName', label: 'Module', width: 115, editable: true, color: 'bg-green-50', sticky: true },
-        { key: 'testCaseDescription', label: 'Description', width: 290, editable: true, color: 'bg-yellow-50' },
-        { key: 'expectedResult', label: 'Expected Result', width: 290, editable: true, color: 'bg-pink-50' },
-        { key: 'actualResult', label: 'Actual Result', width: 290, editable: true, color: 'bg-indigo-50' },
+        { key: 'testCaseType', label: 'Type', width: 123, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Performance', 'API', 'Database', 'Security', 'Others'], color: 'bg-blue-50', sticky: true },
+        { key: 'moduleName', label: 'Module', width: 140, editable: true, color: 'bg-green-50', sticky: true },
+        { key: 'testCaseDescription', label: 'Description', width: 370, editable: true, color: 'bg-yellow-50', expandable: true },
+        { key: 'expectedResult', label: 'Expected Result', width: 250, editable: true, color: 'bg-pink-50', expandable: true },
+        { key: 'actualResult', label: 'Actual Result', width: 250, editable: true, color: 'bg-orange-50', expandable: true },
         { key: 'priority', label: 'Priority', width: 90, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
-        { key: 'status', label: 'Status', width: 100, editable: true, type: 'select', options: ['Pass', 'Fail'], color: 'bg-teal-50' },
-        { key: 'actions', label: 'Actions', width: 120, editable: false, color: 'bg-gray-100' }
+        { key: 'status', label: 'Status', width: 85, editable: true, type: 'select', options: ['Pass', 'Fail'], color: 'bg-teal-50' },
+        { key: 'actions', label: 'Actions', width: 130, editable: false, color: 'bg-gray-100' }
     ];
-
-    const showAlert = (alertData) => {
-        setAlert(alertData);
-        setTimeout(() => setAlert(null), 3000);
-    };
 
     useEffect(() => {
         const initialWidths = {};
@@ -75,8 +87,11 @@ const TestCaseSpreadsheet = () => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
                 setActiveDropdown(null);
             }
-            if (imagesDropdownRef.current && !imagesDropdownRef.current.contains(event.target)) {
-                setActiveImagesDropdown(null);
+            if (commentModalRef.current && !commentModalRef.current.contains(event.target)) {
+                setActiveCommentModal(null);
+            }
+            if (imageModalRef.current && !imageModalRef.current.contains(event.target)) {
+                setActiveImageModal(null);
             }
         };
 
@@ -105,26 +120,89 @@ const TestCaseSpreadsheet = () => {
             if (!response.ok) throw new Error('Failed to fetch test cases');
 
             const data = await response.json();
-
             setTestCases(data.testCases || []);
             setTotalPages(data.pagination?.totalPages || 1);
             setTotalTestCases(data.pagination?.totalTestCases || 0);
             setCurrentPage(page);
         } catch (error) {
             console.error('Error fetching test cases:', error);
-            showAlert({ type: 'error', message: 'Failed to fetch test cases' });
+            showAlert('error', 'Failed to fetch test cases');
         } finally {
             setLoading(false);
         }
     }, [projectId, testTypeId, token]);
 
+    const fetchComments = async (testCaseId) => {
+        if (!token || loadingComments[testCaseId]) return;
+
+        setLoadingComments(prev => ({ ...prev, [testCaseId]: true }));
+
+        try {
+            const response = await fetch(
+                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/${testCaseId}/comments`,
+                {
+                    headers: {
+                        'Authorization': `Bearer ${token}`
+                    }
+                }
+            );
+
+            if (!response.ok) throw new Error('Failed to fetch comments');
+
+            const data = await response.json();
+            setComments(prev => ({ ...prev, [testCaseId]: data.comments || [] }));
+        } catch (error) {
+            console.error('Error fetching comments:', error);
+        } finally {
+            setLoadingComments(prev => ({ ...prev, [testCaseId]: false }));
+        }
+    };
+
+    const submitComment = async (testCaseId) => {
+        if (!newComment.trim() || submittingComment) return;
+
+        setSubmittingComment(true);
+
+        try {
+            const response = await fetch(
+                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/${testCaseId}/comments`,
+                {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${token}`
+                    },
+                    body: JSON.stringify({
+                        comment: newComment,
+                        testCaseId: testCaseId
+                    })
+                }
+            );
+
+            if (!response.ok) throw new Error('Failed to submit comment');
+
+            const data = await response.json();
+            setComments(prev => ({
+                ...prev,
+                [testCaseId]: [data.comment, ...(prev[testCaseId] || [])]
+            }));
+            setNewComment('');
+            showAlert('success', 'Comment added successfully');
+        } catch (error) {
+            console.error('Error submitting comment:', error);
+            showAlert('error', 'Failed to submit comment');
+        } finally {
+            setSubmittingComment(false);
+        }
+    };
+
     const uploadImageToCloudinary = async (file) => {
         try {
             const formData = new FormData();
             formData.append('file', file);
-            formData.append('upload_preset', 'test_case_preset');
+            formData.append('upload_preset', CLOUDINARY_PRESET);
 
-            const response = await fetch('https://api.cloudinary.com/v1_1/dvytvjplt/image/upload', {
+            const response = await fetch(CLOUDINARY_URL, {
                 method: 'POST',
                 body: formData
             });
@@ -163,8 +241,7 @@ const TestCaseSpreadsheet = () => {
                         actualResult: testCaseData.actualResult || '',
                         image: testCaseData.image || '',
                         priority: testCaseData.priority || 'Medium',
-                        severity: testCaseData.severity || 'Medium',
-                        status: testCaseData.status || 'Pending'
+                        status: testCaseData.status || 'Pass'
                     })
                 }
             );
@@ -175,10 +252,10 @@ const TestCaseSpreadsheet = () => {
             setNewRowData({});
             setNewRowEditing(false);
             setNewRowTempData({});
-            showAlert({ type: 'success', message: 'Test case created successfully' });
+            showAlert('success', 'Test case created successfully');
         } catch (error) {
             console.error('Error creating test case:', error);
-            showAlert({ type: 'error', message: 'Failed to create test case' });
+            showAlert('error', 'Failed to create test case');
         } finally {
             setIsCreatingTestCase(false);
         }
@@ -214,7 +291,7 @@ const TestCaseSpreadsheet = () => {
                     newSet.delete(cellKey);
                     return newSet;
                 });
-                showAlert({ type: 'success', message: 'Field updated successfully' });
+                showAlert('success', 'Field updated successfully');
             }, 500);
         } catch (error) {
             console.error('Error updating test case:', error);
@@ -224,17 +301,17 @@ const TestCaseSpreadsheet = () => {
                 newSet.delete(cellKey);
                 return newSet;
             });
-            showAlert({ type: 'error', message: 'Failed to update field' });
+            showAlert('error', 'Failed to update field');
 
-            setTestCases(prev => prev.map(tc =>
-                tc._id === testCaseId ? { ...tc, [field]: tc[field] } : tc
+            setTestCases(prev => prev.map(testCase =>
+                testCase._id === testCaseId ? { ...testCase, [field]: testCase[field] } : testCase
             ));
         }
     };
 
     const handleCellEdit = (testCaseId, columnKey, value) => {
-        setTestCases(prev => prev.map(tc =>
-            tc._id === testCaseId ? { ...tc, [columnKey]: value } : tc
+        setTestCases(prev => prev.map(testCase =>
+            testCase._id === testCaseId ? { ...testCase, [columnKey]: value } : testCase
         ));
         updateTestCase(testCaseId, columnKey, value);
     };
@@ -283,6 +360,13 @@ const TestCaseSpreadsheet = () => {
     const startEditing = (testCaseId, columnKey, value) => {
         setEditingCell({ testCaseId, columnKey });
         setEditValue(value || '');
+
+        // Expand column if it's expandable
+        const column = columns.find(col => col.key === columnKey);
+        if (column?.expandable) {
+            setExpandedColumns(prev => new Set([...prev, columnKey]));
+            setColumnWidths(prev => ({ ...prev, [columnKey]: 600 }));
+        }
     };
 
     const stopEditing = () => {
@@ -299,13 +383,25 @@ const TestCaseSpreadsheet = () => {
         }
         setEditingCell(null);
         setEditValue('');
+
+        // Reset expanded columns
+        setExpandedColumns(new Set());
+        setColumnWidths(prev => {
+            const newWidths = { ...prev };
+            columns.forEach(col => {
+                if (col.expandable) {
+                    newWidths[col.key] = col.width;
+                }
+            });
+            return newWidths;
+        });
     };
 
     const handleImageUpload = async (testCaseId, file) => {
         if (!file) return;
 
         try {
-            showAlert({ type: 'success', message: 'Uploading image...' });
+            showAlert('success', 'Uploading image...');
             const imageUrl = await uploadImageToCloudinary(file);
 
             if (testCaseId === 'new') {
@@ -317,11 +413,24 @@ const TestCaseSpreadsheet = () => {
             } else {
                 handleCellEdit(testCaseId, 'image', imageUrl);
             }
-            showAlert({ type: 'success', message: 'Image uploaded successfully' });
+            showAlert('success', 'Image uploaded successfully');
         } catch (error) {
             console.error('Error uploading image:', error);
-            showAlert({ type: 'error', message: 'Failed to upload image' });
+            showAlert('error', 'Failed to upload image');
         }
+    };
+
+    const handleRemoveImage = (testCaseId) => {
+        if (testCaseId === 'new') {
+            if (newRowEditing) {
+                setNewRowTempData(prev => ({ ...prev, image: '' }));
+            } else {
+                handleNewRowEdit('image', '');
+            }
+        } else {
+            handleCellEdit(testCaseId, 'image', '');
+        }
+        showAlert('success', 'Image removed successfully');
     };
 
     const moveTestCaseToTrash = async (testCaseId) => {
@@ -339,10 +448,10 @@ const TestCaseSpreadsheet = () => {
             if (!response.ok) throw new Error('Failed to move test case to trash');
 
             await fetchTestCases(currentPage);
-            showAlert({ type: 'success', message: 'Test case moved to trash' });
+            showAlert('success', 'Test case moved to trash');
         } catch (error) {
             console.error('Error moving test case to trash:', error);
-            showAlert({ type: 'error', message: 'Failed to move test case to trash' });
+            showAlert('error', 'Failed to move test case to trash');
         }
     };
 
@@ -361,10 +470,10 @@ const TestCaseSpreadsheet = () => {
             if (!response.ok) throw new Error('Failed to delete test case permanently');
 
             await fetchTestCases(currentPage);
-            showAlert({ type: 'success', message: 'Test case deleted permanently' });
+            showAlert('success', 'Test case deleted permanently');
         } catch (error) {
             console.error('Error deleting test case permanently:', error);
-            showAlert({ type: 'error', message: 'Failed to delete test case permanently' });
+            showAlert('error', 'Failed to delete test case permanently');
         }
     };
 
@@ -411,8 +520,8 @@ const TestCaseSpreadsheet = () => {
         }
     }, [resizing, handleMouseMove, handleMouseUp]);
 
-    const filteredTestCases = testCases.filter(tc =>
-        Object.values(tc).some(value =>
+    const filteredTestCases = testCases.filter(testCase =>
+        Object.values(testCase).some(value =>
             value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
         )
     );
@@ -430,9 +539,7 @@ const TestCaseSpreadsheet = () => {
     const getStatusColor = (status) => {
         const colors = {
             'Pass': 'bg-green-100 text-green-800 border-green-300',
-            'Fail': 'bg-red-100 text-red-800 border-red-300',
-            'Pending': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-            'Blocked': 'bg-gray-100 text-gray-800 border-gray-300'
+            'Fail': 'bg-red-100 text-red-800 border-red-300'
         };
         return colors[status] || 'bg-gray-100 text-gray-800 border-gray-300';
     };
@@ -440,11 +547,12 @@ const TestCaseSpreadsheet = () => {
     const getTestCaseTypeColor = (type) => {
         const colors = {
             'Functional': 'bg-blue-100 text-blue-800 border-blue-300',
-            'Non-Functional': 'bg-purple-100 text-purple-800 border-purple-300',
-            'Integration': 'bg-green-100 text-green-800 border-green-300',
-            'UI/UX': 'bg-pink-100 text-pink-800 border-pink-300',
+            'User-Interface': 'bg-purple-100 text-purple-800 border-purple-300',
+            'Performance': 'bg-green-100 text-green-800 border-green-300',
+            'API': 'bg-yellow-100 text-yellow-800 border-yellow-300',
+            'Database': 'bg-indigo-100 text-indigo-800 border-indigo-300',
             'Security': 'bg-red-100 text-red-800 border-red-300',
-            'Performance': 'bg-orange-100 text-orange-800 border-orange-300'
+            'Others': 'bg-gray-100 text-gray-800 border-gray-300'
         };
         return colors[type] || 'bg-gray-100 text-gray-800 border-gray-300';
     };
@@ -472,7 +580,7 @@ const TestCaseSpreadsheet = () => {
 
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text);
-        showAlert({ type: 'success', message: 'Copied to clipboard' });
+        showAlert('success', 'Copied to clipboard');
     };
 
     const renderDropdown = (testCaseId, column, value) => {
@@ -490,7 +598,7 @@ const TestCaseSpreadsheet = () => {
         }
 
         return (
-            <div className="relative w-full h-full">
+            <div className="relative w-full h-full" ref={isActive ? dropdownRef : null}>
                 <button
                     ref={(el) => {
                         if (el) dropdownButtonRefs.current[cellKey] = el;
@@ -506,12 +614,11 @@ const TestCaseSpreadsheet = () => {
                 <AnimatePresence>
                     {isActive && (
                         <motion.div
-                            ref={dropdownRef}
                             initial={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className={`absolute ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-[100] overflow-hidden`}
+                            className={`absolute ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden`}
                         >
                             <div className="py-1 max-h-64 overflow-y-auto">
                                 {column.options.map((option) => {
@@ -547,25 +654,24 @@ const TestCaseSpreadsheet = () => {
         );
     };
 
-    const renderImagesDropdown = (testCaseId, image) => {
-        const cellKey = `images-${testCaseId}`;
-        const isActive = activeImagesDropdown === cellKey;
+    const renderImageButton = (testCaseId, image) => {
+        const cellKey = `image-${testCaseId}`;
+        const isActive = activeImageModal === cellKey;
+        const hasImage = image && image !== 'No Image Provided';
 
-        if (!image || image === 'No Image Provided' || image === '') return null;
-
-        const buttonRef = imagesButtonRefs.current[cellKey];
+        const buttonRef = imageButtonRefs.current[cellKey];
         const rect = buttonRef?.getBoundingClientRect();
         const spaceBelow = window.innerHeight - (rect?.bottom || 0);
-        const openUpward = spaceBelow < 300;
+        const openUpward = spaceBelow < 200;
 
         return (
             <>
                 <button
                     ref={(el) => {
-                        if (el) imagesButtonRefs.current[cellKey] = el;
+                        if (el) imageButtonRefs.current[cellKey] = el;
                     }}
-                    onClick={() => setActiveImagesDropdown(isActive ? null : cellKey)}
-                    className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors relative"
+                    onClick={() => setActiveImageModal(isActive ? null : cellKey)}
+                    className={`p-1.5 rounded transition-colors relative ${hasImage ? 'text-purple-600 hover:bg-purple-50' : 'text-gray-400 hover:bg-gray-50'}`}
                 >
                     <ImageIcon size={14} />
                 </button>
@@ -573,48 +679,183 @@ const TestCaseSpreadsheet = () => {
                 <AnimatePresence>
                     {isActive && (
                         <motion.div
-                            ref={imagesDropdownRef}
+                            ref={imageModalRef}
                             initial={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50`}
+                            className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50`}
                         >
                             <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
-                                <div className="flex items-center gap-1.5">
-                                    <ImageIcon size={16} className="text-gray-600" />
-                                    <h3 className="font-semibold text-gray-800 text-sm">Image</h3>
-                                </div>
+                                <h3 className="font-semibold text-gray-800 text-sm">Test Case Image</h3>
                                 <button
-                                    onClick={() => setActiveImagesDropdown(null)}
+                                    onClick={() => setActiveImageModal(null)}
                                     className="text-gray-400 hover:text-gray-600 transition-colors"
                                 >
                                     <X size={16} />
                                 </button>
                             </div>
-                            <div className="px-3 py-2">
-                                <div className="flex items-center justify-between gap-2">
-                                    <div className="flex items-center gap-2 flex-1">
-                                        <img
-                                            src={image}
-                                            alt="Test case screenshot"
-                                            className="w-10 h-10 object-cover rounded border border-gray-200"
-                                        />
-                                        <span className="text-xs text-gray-700">Screenshot</span>
+                            <div className="p-3">
+                                {hasImage ? (
+                                    <div className="space-y-3">
+                                        <div className="relative">
+                                            <img
+                                                src={image}
+                                                alt="Test case screenshot"
+                                                className="w-full h-32 object-cover rounded border border-gray-200"
+                                            />
+                                            <div className="absolute top-2 right-2 flex gap-1">
+                                                <button
+                                                    onClick={() => setImagePreviewModal(image)}
+                                                    className="p-1 bg-white rounded shadow hover:bg-gray-50 transition-colors"
+                                                    tooltip-data="View full size"
+                                                >
+                                                    <ZoomIn size={12} />
+                                                </button>
+                                                <button
+                                                    onClick={() => handleRemoveImage(testCaseId)}
+                                                    className="p-1 bg-white rounded shadow hover:bg-red-50 text-red-600 transition-colors"
+                                                    tooltip-data="Remove image"
+                                                >
+                                                    <X size={12} />
+                                                </button>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={() => fileInputRef.current?.click()}
+                                            className="w-full px-2 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center justify-center gap-1"
+                                        >
+                                            <ImageIcon size={14} />
+                                            Change Image
+                                        </button>
                                     </div>
+                                ) : (
                                     <button
-                                        onClick={() => setImagePreviewModal(image)}
-                                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                                        title="View full size"
+                                        onClick={() => fileInputRef.current?.click()}
+                                        className="w-full px-2 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center justify-center gap-1"
                                     >
-                                        <ZoomIn size={12} />
+                                        <ImageIcon size={14} />
+                                        Upload Image
                                     </button>
-                                </div>
+                                )}
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    onChange={(e) => {
+                                        const file = e.target.files[0];
+                                        if (file) {
+                                            handleImageUpload(testCaseId, file);
+                                            setActiveImageModal(null);
+                                        }
+                                    }}
+                                    className="hidden"
+                                />
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </>
+        );
+    };
+
+    const renderCommentModal = (testCaseId, buttonRef) => {
+        const isActive = activeCommentModal === testCaseId;
+        const testCaseComments = comments[testCaseId] || [];
+        const isLoading = loadingComments[testCaseId];
+
+        if (!isActive) return null;
+
+        const rect = buttonRef?.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - (rect?.bottom || 0);
+        const openUpward = spaceBelow < 400;
+
+        return (
+            <motion.div
+                ref={commentModalRef}
+                initial={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
+                transition={{ duration: 0.2 }}
+                className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50`}
+                style={{ maxHeight: '360px' }}
+            >
+                <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
+                    <div className="flex items-center gap-1.5">
+                        <MessageSquare size={16} className="text-gray-600" />
+                        <h3 className="font-semibold text-gray-800 text-sm">Comments</h3>
+                    </div>
+                    <button
+                        onClick={() => setActiveCommentModal(null)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
+
+                <div className="px-3 py-2 border-b border-gray-200">
+                    <div className="flex gap-1.5">
+                        <input
+                            type="text"
+                            value={newComment}
+                            onChange={(e) => setNewComment(e.target.value)}
+                            onKeyDown={(e) => {
+                                if (e.key === 'Enter' && !e.shiftKey) {
+                                    e.preventDefault();
+                                    submitComment(testCaseId);
+                                }
+                            }}
+                            placeholder="Add a comment..."
+                            className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            disabled={submittingComment}
+                        />
+                        <button
+                            onClick={() => submitComment(testCaseId)}
+                            disabled={!newComment.trim() || submittingComment}
+                            className="px-2 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        >
+                            {submittingComment ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                        </button>
+                    </div>
+                </div>
+
+                <div className="overflow-y-auto" style={{ maxHeight: '220px' }}>
+                    {isLoading ? (
+                        <div className="flex items-center justify-center py-6">
+                            <Loader2 size={20} className="animate-spin text-blue-600" />
+                        </div>
+                    ) : testCaseComments.length === 0 ? (
+                        <div className="text-center py-6 text-gray-500 text-xs">
+                            No comments yet. Be the first to comment!
+                        </div>
+                    ) : (
+                        <div className="divide-y divide-gray-100">
+                            {testCaseComments.map((comment, index) => (
+                                <div key={index} className="px-3 py-2">
+                                    <div className="flex items-start gap-2">
+                                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
+                                            <span className="text-xs font-semibold text-blue-600">
+                                                {comment.commentBy?.charAt(0).toUpperCase() || 'U'}
+                                            </span>
+                                        </div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="flex items-center gap-1.5 mb-0.5">
+                                                <span className="text-xs font-semibold text-gray-800">
+                                                    {comment.commentBy || 'Unknown User'}
+                                                </span>
+                                                <span className="text-xs text-gray-500">
+                                                    {new Date(comment.createdAt).toLocaleDateString()}
+                                                </span>
+                                            </div>
+                                            <p className="text-xs text-gray-700 break-words">{comment.comment}</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    )}
+                </div>
+            </motion.div>
         );
     };
 
@@ -630,20 +871,21 @@ const TestCaseSpreadsheet = () => {
             if (isNewRow) {
                 return (
                     <div className="flex items-center justify-center h-full space-x-1">
+                        {renderImageButton('new', newRowTempData.image || newRowData.image)}
                         {newRowEditing && (
                             <>
                                 <button
                                     onClick={handleNewRowManualSave}
                                     className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors"
                                     disabled={isCreatingTestCase}
-                                    title="Save"
+                                    tooltip-data="Save"
                                 >
                                     <Save size={14} />
                                 </button>
                                 <button
                                     onClick={handleNewRowCancel}
                                     className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                                    title="Cancel"
+                                    tooltip-data="Cancel"
                                 >
                                     <Ban size={14} />
                                 </button>
@@ -656,33 +898,40 @@ const TestCaseSpreadsheet = () => {
 
             return (
                 <div className="flex items-center justify-center h-full space-x-0.5 relative">
-                    {renderImagesDropdown(testCase._id, testCase.image)}
-                    <label className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors cursor-pointer">
-                        <ImageIcon size={14} />
-                        <input
-                            type="file"
-                            accept="image/*"
-                            className="hidden"
-                            onChange={(e) => {
-                                const file = e.target.files?.[0];
-                                if (file) handleImageUpload(testCase._id, file);
-                            }}
-                        />
-                    </label>
+                    {renderImageButton(testCase._id, testCase.image)}
+                    <button
+                        ref={(el) => {
+                            if (el) commentButtonRefs.current[testCase._id] = el;
+                        }}
+                        onClick={(e) => {
+                            e.stopPropagation();
+                            if (activeCommentModal === testCase._id) {
+                                setActiveCommentModal(null);
+                            } else {
+                                setActiveCommentModal(testCase._id);
+                                fetchComments(testCase._id);
+                            }
+                        }}
+                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        tooltip-data="Comment"
+                    >
+                        <MessageSquare size={14} />
+                    </button>
                     <button
                         onClick={() => moveTestCaseToTrash(testCase._id)}
                         className="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition-colors"
-                        title="Move to trash"
+                        tooltip-data="Trash"
                     >
                         <Archive size={14} />
                     </button>
                     <button
                         onClick={() => deleteTestCasePermanently(testCase._id)}
                         className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
-                        title="Delete permanently"
+                        tooltip-data="Delete"
                     >
                         <Trash2 size={14} />
                     </button>
+                    {renderCommentModal(testCase._id, commentButtonRefs.current[testCase._id])}
                 </div>
             );
         }
@@ -733,6 +982,8 @@ const TestCaseSpreadsheet = () => {
                     maxHeight: rowHeight,
                     overflow: 'hidden'
                 }}
+                content-data={column.expandable && value ? value : ''}
+                content-placement="top"
             >
                 <span
                     className={`flex-1 ${!value && isNewRow ? 'text-gray-400 italic' : ''}`}
@@ -744,7 +995,6 @@ const TestCaseSpreadsheet = () => {
                         WebkitLineClamp: Math.floor((rowHeight - 12) / 18),
                         WebkitBoxOrient: 'vertical'
                     }}
-                    title={displayValue}
                 >
                     {value ? displayValue : (isNewRow ? 'Double-click to edit' : '')}
                 </span>
@@ -779,11 +1029,8 @@ const TestCaseSpreadsheet = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-                <div className="text-center">
-                    <Loader2 size={40} className="animate-spin text-blue-600 mx-auto mb-3" />
-                    <p className="text-gray-600 font-medium text-sm">Loading test cases...</p>
-                </div>
+            <div className="flex items-center justify-center h-screen mt-15 bg-gradient-to-br from-gray-50 to-gray-100">
+                <TableSkeletonLoader />
             </div>
         );
     }
@@ -949,8 +1196,8 @@ const TestCaseSpreadsheet = () => {
                 {/* Left Side: Info */}
                 <div className="flex flex-col sm:flex-row items-center gap-2 text-xs text-gray-700">
                     <div>
-                        <span className="font-medium text-gray-600">Test Cases:</span>{' '}
-                        <span>{totalTestCases} total</span>
+                        <span className="font-medium text-gray-600">Test Type:</span>{' '}
+                        <span>{testTypeName || 'Not selected'}</span>
                     </div>
                     <div className="hidden sm:block h-3 w-px bg-gray-300 mx-2" />
                     <div>
