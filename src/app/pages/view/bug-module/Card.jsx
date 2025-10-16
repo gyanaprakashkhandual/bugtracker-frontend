@@ -73,7 +73,10 @@ const BugCardView = () => {
 
     const copyText = (text) => {
         navigator.clipboard.writeText(text).then(() => {
-            alert('Copied: ' + text);
+            showAlert({
+                type: "success",
+                message: "Text Copied"
+            })
         }).catch(() => {
             alert('Failed to copy!');
         });
@@ -713,44 +716,51 @@ const BugCardView = () => {
                                 </div>
 
                                 <div className="flex items-center gap-2 flex-shrink-0">
-                                    <span className="text-sm text-gray-600 font-medium">
+                                    <span className="text-sm text-gray-600 font-medium bg-gray-200 p-1 px-5 rounded-sm">
                                         {filteredBugs.findIndex(b => b._id === selectedBug._id) + 1} / {filteredBugs.length}
                                     </span>
 
                                     {!isEditing ? (
                                         <button
+                                            tooltip-data="Edit"
+                                            tooltip-placement="bottom"
                                             onClick={handleEditClick}
                                             className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
                                         >
                                             <Edit size={14} />
-                                            Edit
                                         </button>
                                     ) : (
                                         <>
                                             <button
+                                                tooltip-data="Save"
+                                                tooltip-placement="bottom"
                                                 onClick={handleSaveClick}
                                                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors"
                                             >
                                                 <Save size={14} />
-                                                Save
                                             </button>
                                             <button
+                                                tooltip-data="Cancel"
+                                                tooltip-placement="bottom"
                                                 onClick={handleCancelClick}
                                                 className="flex items-center gap-2 px-4 py-2 text-sm font-medium bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors"
                                             >
                                                 <X size={14} />
-                                                Cancel
                                             </button>
                                         </>
                                     )}
 
                                     <button
+                                        tooltip-data="Archive"
+                                        tooltip-placement="bottom"
                                         onClick={() => moveBugToTrash(selectedBug._id)}
                                         className="p-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
                                     >
                                         <Archive size={18} />
                                     </button>
                                     <button
+                                        tooltip-data="Delete"
+                                        tooltip-placement="bottom"
                                         onClick={() => deleteBugPermanently(selectedBug._id)}
                                         className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
                                     >
@@ -760,6 +770,8 @@ const BugCardView = () => {
                                     <div className="w-px h-6 bg-gray-300 mx-1"></div>
 
                                     <button
+                                        tooltip-data="Previous Bug"
+                                        tooltip-placement="bottom"
                                         onClick={goToPreviousBug}
                                         disabled={filteredBugs.findIndex(b => b._id === selectedBug._id) === 0}
                                         className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -767,6 +779,8 @@ const BugCardView = () => {
                                         <ChevronLeft size={20} />
                                     </button>
                                     <button
+                                        tooltip-data="Next Bug"
+                                        tooltip-placement="bottom"
                                         onClick={goToNextBug}
                                         disabled={filteredBugs.findIndex(b => b._id === selectedBug._id) === filteredBugs.length - 1}
                                         className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -774,6 +788,8 @@ const BugCardView = () => {
                                         <ChevronRight size={20} />
                                     </button>
                                     <button
+                                        tooltip-data="Close"
+                                        tooltip-placement="bottom"
                                         onClick={() => setSelectedBug(null)}
                                         className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
                                     >
@@ -1032,7 +1048,7 @@ const BugCardView = () => {
                                                             >
                                                                 <img
                                                                     src={img}
-                                                                    alt={`Bug screenshot ${index + 1}`}
+                                                                    alt="Image has not found by cloudinary"
                                                                     className="w-full h-40 object-cover rounded-lg border-2 border-gray-200 cursor-pointer hover:border-blue-400 transition-all"
                                                                     onClick={() => window.open(img, '_blank')}
                                                                 />
