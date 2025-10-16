@@ -234,7 +234,7 @@ const useTestTypes = (projectId, searchQuery = '', page = 1, limit = 50) => {
     try {
       const token = localStorage.getItem('token');
 
-      const response = await fetch(`${API_BASE}/test-types/${testTypeId}`, {
+      const response = await fetch(`${API_BASE}/test-type/test-types/${testTypeId}`, {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -799,15 +799,758 @@ const Dashboard = ({ selectedProjectId, projects }) => {
 };
 
 
-// TestType Dashboard (Placeholder)
-const TestTypeDashboard = () => {
+
+
+
+const API_BASE_URL = 'http://localhost:5000/api/v1';
+
+
+
+
+
+const TestTypeDashboard = ({ selectedProjectId, selectedTestTypeId, projects, testTypes }) => {
+  const [dashboardData, setDashboardData] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [retryCount, setRetryCount] = useState(0);
+  const chartRef = useRef(null);
+
+  const selectedProject = projects?.find(p => p._id === selectedProjectId);
+  const selectedTestType = testTypes?.find(t => t._id === selectedTestTypeId);
+
+  // Fetch data when project or test type changes
+  useEffect(() => {
+    if (selectedProjectId && selectedTestTypeId) {
+      fetchDashboardData();
+    } else {
+      setLoading(false);
+    }
+  }, [selectedProjectId, selectedTestTypeId, retryCount]);
+
+  // API Data Fetching Function
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      const token = localStorage.getItem('token');
+
+      if (!token) {
+        throw new Error('No authentication token found');
+      }
+
+      if (!selectedProjectId || !selectedTestTypeId) {
+        throw new Error('No project or test type selected');
+      }
+
+      console.log("🧩 Selected Project ID:", selectedProjectId || "❌ Not selected");
+      console.log("🧪 Selected Test Type ID:", selectedTestTypeId || "❌ Not selected");
+
+      const testCasesUrl = `${API_BASE_URL}/test-case/projects/${selectedProjectId}/test-types/${selectedTestTypeId}/test-cases`;
+      const bugsUrl = `${API_BASE_URL}/bug/projects/${selectedProjectId}/test-types/${selectedTestTypeId}/bugs`;
+
+      console.log("🔗 Test Cases URL:", testCasesUrl);
+      console.log("🐞 Bugs URL:", bugsUrl);
+
+      const [testCasesRes, bugsRes] = await Promise.all([
+        fetch(testCasesUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        }),
+        fetch(bugsUrl, {
+          headers: {
+            'Authorization': `Bearer ${token}`,
+            'Content-Type': 'application/json'
+          }
+        })
+      ]);
+
+      if (!testCasesRes.ok) {
+        throw new Error(`Test Cases API failed: ${testCasesRes.status}`);
+      }
+
+      if (!bugsRes.ok) {
+        throw new Error(`Bugs API failed: ${bugsRes.status}`);
+      }
+
+      const testCasesData = await testCasesRes.json();
+      const bugsData = await bugsRes.json();
+
+      setDashboardData({
+        testCases: testCasesData,
+        bugs: bugsData
+      });
+
+    } catch (err) {
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRetry = () => {
+    setRetryCount(prev => prev + 1);
+  };
+
+  // Process Test Case Data
+  const processTestCaseData = () => {
+    if (!dashboardData?.testCases?.testCases) return { byPriority: [], byStatus: [], byType: [] };
+
+    const testCases = dashboardData.testCases.testCases;
+
+    const priorityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
+    const statusCounts = { Pass: 0, Fail: 0 };
+    const typeCounts = { Functional: 0, 'User-Interface': 0, Performance: 0, API: 0, Database: 0, Security: 0, Others: 0 };
+
+    testCases.forEach(tc => {
+      if (tc.priority) priorityCounts[tc.priority] = (priorityCounts[tc.priority] || 0) + 1;
+      if (tc.status) statusCounts[tc.status] = (statusCounts[tc.status] || 0) + 1;
+      if (tc.testCaseType) typeCounts[tc.testCaseType] = (typeCounts[tc.testCaseType] || 0) + 1;
+    });
+
+    return {
+      byPriority: Object.entries(priorityCounts).map(([name, value]) => ({ name, value })),
+      byStatus: Object.entries(statusCounts).map(([name, value]) => ({ name, value })),
+      byType: Object.entries(typeCounts).map(([name, value]) => ({ name, value }))
+    };
+  };
+
+  // Process Bug Data
+  const processBugData = () => {
+    if (!dashboardData?.bugs?.bugs) return { byPriority: [], bySeverity: [], byStatus: [], byType: [] };
+
+    const bugs = dashboardData.bugs.bugs;
+
+    const priorityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
+    const severityCounts = { Critical: 0, High: 0, Medium: 0, Low: 0 };
+    const statusCounts = { New: 0, Open: 0, 'In Progress': 0, 'In Review': 0, Closed: 0, 'Re Open': 0 };
+    const typeCounts = { Functional: 0, 'User-Interface': 0, Security: 0, Database: 0, Performance: 0 };
+
+    bugs.forEach(bug => {
+      if (bug.priority) priorityCounts[bug.priority] = (priorityCounts[bug.priority] || 0) + 1;
+      if (bug.severity) severityCounts[bug.severity] = (severityCounts[bug.severity] || 0) + 1;
+      if (bug.status) statusCounts[bug.status] = (statusCounts[bug.status] || 0) + 1;
+      if (bug.bugType) typeCounts[bug.bugType] = (typeCounts[bug.bugType] || 0) + 1;
+    });
+
+    return {
+      byPriority: Object.entries(priorityCounts).map(([name, value]) => ({ name, value })),
+      bySeverity: Object.entries(severityCounts).map(([name, value]) => ({ name, value })),
+      byStatus: Object.entries(statusCounts).map(([name, value]) => ({ name, value })),
+      byType: Object.entries(typeCounts).map(([name, value]) => ({ name, value }))
+    };
+  };
+
+  // Loading State
+  if (loading) {
+    return (
+      <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <nav className="bg-white shadow-sm border-b border-gray-200">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="animate-pulse">
+                <div className="h-6 bg-gray-200 rounded w-48 mb-1"></div>
+              </div>
+              <div className="flex gap-3">
+                {[...Array(4)].map((_, i) => (
+                  <div key={i} className="bg-white rounded-lg border p-2 animate-pulse w-32">
+                    <div className="h-3 bg-gray-200 rounded w-3/4 mb-2"></div>
+                    <div className="h-5 bg-gray-200 rounded w-1/2"></div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </nav>
+
+        <div className="bg-gray-50 border-b border-gray-200 py-3">
+          <div className="max-w-7xl mx-auto px-6 lg:px-8">
+            <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3">
+              {[...Array(8)].map((_, i) => <SkeletonMicroCard key={i} />)}
+            </div>
+          </div>
+        </div>
+
+        <div className="max-w-7xl mx-auto px-6 lg:px-8 py-8">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+            <SkeletonChart />
+            <SkeletonChart />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error State
+  if (error) {
+    return (
+      <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen flex items-center justify-center p-6">
+        <motion.div
+          initial={{ opacity: 0, scale: 0.9 }}
+          animate={{ opacity: 1, scale: 1 }}
+          className="bg-white rounded-2xl shadow-xl p-8 max-w-md w-full text-center border border-red-100"
+        >
+          <div className="bg-red-50 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+            <FiAlertTriangle className="text-3xl text-red-500" />
+          </div>
+          <h3 className="text-xl font-bold text-gray-900 mb-2">Failed to Load</h3>
+          <p className="text-sm text-gray-600 mb-6">{error}</p>
+          <button
+            onClick={handleRetry}
+            className="px-5 py-2 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-lg hover:from-blue-700 hover:to-indigo-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center mx-auto text-sm font-medium"
+          >
+            <FiRefreshCw className="mr-2" />
+            Retry Loading
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // No Data State
+  if (!dashboardData) {
+    return (
+      <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-screen flex items-center justify-center">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="text-center"
+        >
+          <FiAlertTriangle className="text-4xl text-yellow-500 mx-auto mb-4" />
+          <h3 className="text-lg font-semibold text-gray-900 mb-2">No Data Available</h3>
+          <button
+            onClick={handleRetry}
+            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm"
+          >
+            <FiRefreshCw className="inline mr-2" />
+            Retry
+          </button>
+        </motion.div>
+      </div>
+    );
+  }
+
+  // Calculate Statistics
+  const testCaseStats = processTestCaseData();
+  const bugStats = processBugData();
+
+  const totalTestCases = dashboardData.testCases.pagination?.totalTestCases || 0;
+  const totalBugs = dashboardData.bugs.pagination?.totalBugs || 0;
+  const passedTests = testCaseStats.byStatus.find(s => s.name === 'Pass')?.value || 0;
+  const failedTests = testCaseStats.byStatus.find(s => s.name === 'Fail')?.value || 0;
+  const passRate = totalTestCases > 0 ? ((passedTests / totalTestCases) * 100).toFixed(1) : 0;
+
+  const criticalBugs = bugStats.bySeverity.find(s => s.name === 'Critical')?.value || 0;
+  const openBugs = bugStats.byStatus.find(s => s.name === 'Open')?.value || 0;
+
+  const testCasePriorityCounts = {
+    Critical: testCaseStats.byPriority.find(p => p.name === 'Critical')?.value || 0,
+    High: testCaseStats.byPriority.find(p => p.name === 'High')?.value || 0,
+    Medium: testCaseStats.byPriority.find(p => p.name === 'Medium')?.value || 0,
+    Low: testCaseStats.byPriority.find(p => p.name === 'Low')?.value || 0,
+  };
+
+  const testCaseTypeCounts = {
+    Functional: testCaseStats.byType.find(t => t.name === 'Functional')?.value || 0,
+    'User-Interface': testCaseStats.byType.find(t => t.name === 'User-Interface')?.value || 0,
+    Performance: testCaseStats.byType.find(t => t.name === 'Performance')?.value || 0,
+    API: testCaseStats.byType.find(t => t.name === 'API')?.value || 0,
+  };
+
+  const bugPriorityCounts = {
+    Critical: bugStats.byPriority.find(p => p.name === 'Critical')?.value || 0,
+    High: bugStats.byPriority.find(p => p.name === 'High')?.value || 0,
+    Medium: bugStats.byPriority.find(p => p.name === 'Medium')?.value || 0,
+    Low: bugStats.byPriority.find(p => p.name === 'Low')?.value || 0,
+  };
+
+  const bugStatusCounts = {
+    New: bugStats.byStatus.find(s => s.name === 'New')?.value || 0,
+    Open: bugStats.byStatus.find(s => s.name === 'Open')?.value || 0,
+    'In Progress': bugStats.byStatus.find(s => s.name === 'In Progress')?.value || 0,
+    'In Review': bugStats.byStatus.find(s => s.name === 'In Review')?.value || 0,
+    Closed: bugStats.byStatus.find(s => s.name === 'Closed')?.value || 0,
+    'Re Open': bugStats.byStatus.find(s => s.name === 'Re Open')?.value || 0,
+  };
+
+  // Main Dashboard Render
   return (
-    <div className="bg-white rounded-xl shadow-sm border p-6">
-      <h2 className="text-lg font-semibold text-gray-900">Test Type Details</h2>
-      <p className="text-gray-600 mt-2">Test type dashboard content</p>
+    <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 min-h-[calc(100vh-72px)] max-h-[calc(100vh-72px)] overflow-y-auto">
+      {/* Top Navbar with Summary Cards */}
+      <nav className="bg-white shadow-sm border-b border-gray-200">
+        <div className="max-w-7xl mx-auto px-6 lg:px-8">
+          <div className="flex justify-between items-center h-16">
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+            >
+              <h1 className="text-xl font-bold bg-gradient-to-r from-indigo-600 to-purple-600 bg-clip-text text-transparent">
+                {selectedTestType?.testTypeName || 'Test Type Dashboard'}
+              </h1>
+              <p className="text-xs text-gray-500 mt-0.5">
+                {selectedProject?.projectName || 'Project'}
+              </p>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              className="flex items-center gap-2"
+            >
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-lg border border-blue-200 px-3 py-1.5 flex items-center gap-2">
+                <FiCheckSquare className="text-blue-600 text-base" />
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[9px] font-semibold text-blue-700 uppercase">Test Cases</p>
+                  <p className="text-lg font-bold text-blue-900">{totalTestCases}</p>
+                  <p className="text-[8px] text-blue-600">Pass: {passRate}%</p>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-green-50 to-green-100 rounded-lg border border-green-200 px-3 py-1.5 flex items-center gap-2">
+                <FiCheckCircle className="text-green-600 text-base" />
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[9px] font-semibold text-green-700 uppercase">Passed</p>
+                  <p className="text-lg font-bold text-green-900">{passedTests}</p>
+                  <p className="text-[8px] text-green-600">Failed: {failedTests}</p>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-red-50 to-red-100 rounded-lg border border-red-200 px-3 py-1.5 flex items-center gap-2">
+                <FaBug className="text-red-600 text-base" />
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[9px] font-semibold text-red-700 uppercase">Total Bugs</p>
+                  <p className="text-lg font-bold text-red-900">{totalBugs}</p>
+                  <p className="text-[8px] text-red-600">Open: {openBugs}</p>
+                </div>
+              </div>
+
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 rounded-lg border border-orange-200 px-3 py-1.5 flex items-center gap-2">
+                <FiAlertTriangle className="text-orange-600 text-base" />
+                <div className="flex items-center gap-1.5">
+                  <p className="text-[9px] font-semibold text-orange-700 uppercase">Critical</p>
+                  <p className="text-lg font-bold text-orange-900">{criticalBugs}</p>
+                  <p className="text-[8px] text-orange-600">Attention</p>
+                </div>
+              </div>
+            </motion.div>
+          </div>
+        </div>
+      </nav>
+
+      {/* Micro Statistics Bar */}
+      <div className="bg-gray-50 border-b border-gray-200 py-3">
+        <div className="max-w-full mx-auto px-6 lg:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: -10 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.2 }}
+            className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 xl:grid-cols-8 gap-3"
+          >
+            <div className="bg-white rounded-lg border border-red-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-red-600 mb-1">Critical Bugs</p>
+              <p className="text-lg font-bold text-red-700">{bugPriorityCounts.Critical}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-orange-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-orange-600 mb-1">High Bugs</p>
+              <p className="text-lg font-bold text-orange-700">{bugPriorityCounts.High}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-yellow-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-yellow-600 mb-1">Medium Bugs</p>
+              <p className="text-lg font-bold text-yellow-700">{bugPriorityCounts.Medium}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-green-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-green-600 mb-1">Low Bugs</p>
+              <p className="text-lg font-bold text-green-700">{bugPriorityCounts.Low}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-blue-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-blue-600 mb-1">New Bugs</p>
+              <p className="text-lg font-bold text-blue-700">{bugStatusCounts.New}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-indigo-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-indigo-600 mb-1">In Progress</p>
+              <p className="text-lg font-bold text-indigo-700">{bugStatusCounts['In Progress']}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-purple-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-purple-600 mb-1">In Review</p>
+              <p className="text-lg font-bold text-purple-700">{bugStatusCounts['In Review']}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-gray-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-gray-600 mb-1">Closed</p>
+              <p className="text-lg font-bold text-gray-700">{bugStatusCounts.Closed}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-red-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-red-600 mb-1">Critical Tests</p>
+              <p className="text-lg font-bold text-red-700">{testCasePriorityCounts.Critical}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-orange-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-orange-600 mb-1">High Tests</p>
+              <p className="text-lg font-bold text-orange-700">{testCasePriorityCounts.High}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-yellow-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-yellow-600 mb-1">Medium Tests</p>
+              <p className="text-lg font-bold text-yellow-700">{testCasePriorityCounts.Medium}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-green-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-green-600 mb-1">Low Tests</p>
+              <p className="text-lg font-bold text-green-700">{testCasePriorityCounts.Low}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-blue-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-blue-600 mb-1">Functional</p>
+              <p className="text-lg font-bold text-blue-700">{testCaseTypeCounts.Functional}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-indigo-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-indigo-600 mb-1">UI Tests</p>
+              <p className="text-lg font-bold text-indigo-700">{testCaseTypeCounts['User-Interface']}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-purple-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-purple-600 mb-1">Performance</p>
+              <p className="text-lg font-bold text-purple-700">{testCaseTypeCounts.Performance}</p>
+            </div>
+
+            <div className="bg-white rounded-lg border border-pink-200 p-2 hover:shadow-md transition-shadow">
+              <p className="text-[10px] font-semibold text-pink-600 mb-1">API Tests</p>
+              <p className="text-lg font-bold text-pink-700">{testCaseTypeCounts.API}</p>
+            </div>
+          </motion.div>
+        </div>
+      </div>
+
+      {/* Main Content Area - Charts */}
+      <div className="max-w-full mx-auto px-1 lg:px-8 py-1" ref={chartRef}>
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+          {/* Test Case Status Chart */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.3 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 hover:shadow-xl transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                <FiCheckSquare className="mr-3 text-blue-600" />
+                Test Case Status
+              </h3>
+            </div>
+            <div className="h-96">
+              {testCaseStats.byStatus.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={testCaseStats.byStatus}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={120}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {testCaseStats.byStatus.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={entry.name === 'Pass' ? '#10b981' : '#ef4444'} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">
+                  No test case status data available
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Test Case Priority Chart */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.4 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 hover:shadow-xl transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                <FiAlertTriangle className="mr-3 text-orange-600" />
+                Test Case Priority
+              </h3>
+            </div>
+            <div className="h-96">
+              {testCaseStats.byPriority.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={testCaseStats.byPriority}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: '#6b7280', fontSize: 11 }}
+                      angle={-15}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="value" fill="#3b82f6" radius={[8, 8, 0, 0]} name="Test Cases" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">
+                  No test case priority data available
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Bug Status Distribution Chart */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.5 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 hover:shadow-xl transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                <FaBug className="mr-3 text-red-600" />
+                Bug Status Distribution
+              </h3>
+            </div>
+            <div className="h-96">
+              {bugStats.byStatus.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={bugStats.byStatus}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: '#6b7280', fontSize: 11 }}
+                      angle={-15}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="value" fill="#ef4444" radius={[8, 8, 0, 0]} name="Bugs" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">
+                  No bug status data available
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Bug Type Distribution Chart */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.6 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 hover:shadow-xl transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                <FaBug className="mr-3 text-pink-600" />
+                Bug Type Distribution
+              </h3>
+            </div>
+            <div className="h-96">
+              {bugStats.byType.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={bugStats.byType}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: '#6b7280', fontSize: 11 }}
+                      angle={-15}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="value" fill="#ec4899" radius={[8, 8, 0, 0]} name="Bugs" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">
+                  No bug type data available
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Bug Priority Distribution Chart */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.7 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 hover:shadow-xl transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                <FiAlertTriangle className="mr-3 text-orange-600" />
+                Bug Priority Distribution
+              </h3>
+            </div>
+            <div className="h-96">
+              {bugStats.byPriority.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <PieChart>
+                    <Pie
+                      data={bugStats.byPriority}
+                      cx="50%"
+                      cy="50%"
+                      labelLine={false}
+                      label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
+                      outerRadius={120}
+                      fill="#8884d8"
+                      dataKey="value"
+                    >
+                      {bugStats.byPriority.map((entry, index) => (
+                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      ))}
+                    </Pie>
+                    <Tooltip />
+                    <Legend />
+                  </PieChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">
+                  No bug priority data available
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Bug Severity Distribution Chart */}
+          <motion.div
+            initial={{ opacity: 0, x: 20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.8 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 hover:shadow-xl transition-shadow"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                <FiAlertTriangle className="mr-3 text-red-600" />
+                Bug Severity Distribution
+              </h3>
+            </div>
+            <div className="h-96">
+              {bugStats.bySeverity.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={bugStats.bySeverity}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: '#6b7280', fontSize: 11 }}
+                      angle={-15}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="value" fill="#f59e0b" radius={[8, 8, 0, 0]} name="Bugs" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">
+                  No bug severity data available
+                </div>
+              )}
+            </div>
+          </motion.div>
+
+          {/* Test Case Type Distribution Chart */}
+          <motion.div
+            initial={{ opacity: 0, x: -20 }}
+            animate={{ opacity: 1, x: 0 }}
+            transition={{ delay: 0.9 }}
+            className="bg-white rounded-xl shadow-sm border border-gray-200 p-8 hover:shadow-xl transition-shadow lg:col-span-2"
+          >
+            <div className="flex items-center justify-between mb-6">
+              <h3 className="text-xl font-bold text-gray-900 flex items-center">
+                <FiCheckSquare className="mr-3 text-indigo-600" />
+                Test Case Type Distribution
+              </h3>
+            </div>
+            <div className="h-96">
+              {testCaseStats.byType.length > 0 ? (
+                <ResponsiveContainer width="100%" height="100%">
+                  <BarChart data={testCaseStats.byType}>
+                    <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                    <XAxis
+                      dataKey="name"
+                      tick={{ fill: '#6b7280', fontSize: 11 }}
+                      angle={-15}
+                      textAnchor="end"
+                      height={80}
+                    />
+                    <YAxis tick={{ fill: '#6b7280', fontSize: 12 }} />
+                    <Tooltip
+                      contentStyle={{
+                        borderRadius: '12px',
+                        border: '1px solid #e5e7eb',
+                        boxShadow: '0 4px 6px rgba(0,0,0,0.1)'
+                      }}
+                    />
+                    <Legend />
+                    <Bar dataKey="value" fill="#6366f1" radius={[8, 8, 0, 0]} name="Test Cases" />
+                  </BarChart>
+                </ResponsiveContainer>
+              ) : (
+                <div className="h-full flex items-center justify-center text-gray-400">
+                  No test case type data available
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </div>
+      </div>
     </div>
   );
 };
+
+
 
 // Main Sidebar Component
 export default function DashboardSidebar() {
@@ -1057,7 +1800,12 @@ export default function DashboardSidebar() {
                   exit={{ opacity: 0, x: 20 }}
                   className="bg-white border border-gray-200 shadow-sm"
                 >
-                  <TestTypeDashboard />
+                  <TestTypeDashboard
+                    selectedProjectId={selectedProjectId}
+                    selectedTestTypeId={selectedTestTypeId}
+                    projects={projects}
+                    testTypes={testTypes}
+                  />
                 </motion.div>
               )}
             </AnimatePresence>
