@@ -1,9 +1,11 @@
 'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Image as ImageIcon, Save, Ban, Link as LinkIcon, Copy, ZoomIn } from 'lucide-react';
+import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Image as ImageIcon, Save, Ban, Link as LinkIcon, Copy, ZoomIn, Plus } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
+import { BUG_EVENTS } from '@/app/components/Sidebars/Bug';
+import TableSkeletonLoader from '@/app/components/assets/Table.loader';
 
 const BugSpreadsheet = () => {
     const [bugs, setBugs] = useState([]);
@@ -33,12 +35,18 @@ const BugSpreadsheet = () => {
     const [imagePreviewModal, setImagePreviewModal] = useState(null);
     const [activeLinksDropdown, setActiveLinksDropdown] = useState(null);
     const [activeImagesDropdown, setActiveImagesDropdown] = useState(null);
+    const [activeLinkModal, setActiveLinkModal] = useState(null);
+    const [activeImageModal, setActiveImageModal] = useState(null);
+    const [newLink, setNewLink] = useState('');
     const [alert, setAlert] = useState(null);
+    const [expandedColumns, setExpandedColumns] = useState(new Set());
 
     const dropdownRef = useRef(null);
     const commentModalRef = useRef(null);
     const linksDropdownRef = useRef(null);
     const imagesDropdownRef = useRef(null);
+    const linkModalRef = useRef(null);
+    const imageModalRef = useRef(null);
     const resizeStartX = useRef(0);
     const resizeStartY = useRef(0);
     const resizeStartWidth = useRef(0);
@@ -57,14 +65,14 @@ const BugSpreadsheet = () => {
 
     const BASE_URL = 'http://localhost:5000/api/v1/bug';
     const COMMENT_URL = 'http://localhost:5000/api/v1/comment';
-    const ROWS_PER_PAGE = 25;
+    const ROWS_PER_PAGE = 11;
 
     const columns = [
         { key: 'serialNumber', label: 'S.No', width: 90, editable: false, color: 'bg-purple-50', sticky: true },
         { key: 'bugType', label: 'Type', width: 130, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'], color: 'bg-blue-50', sticky: true },
         { key: 'moduleName', label: 'Module', width: 140, editable: true, color: 'bg-green-50', sticky: true },
-        { key: 'bugDesc', label: 'Description', width: 370, editable: true, color: 'bg-yellow-50' },
-        { key: 'bugRequirement', label: 'Requirement', width: 368, editable: true, color: 'bg-pink-50' },
+        { key: 'bugDesc', label: 'Description', width: 370, editable: true, color: 'bg-yellow-50', expandable: true },
+        { key: 'bugRequirement', label: 'Requirement', width: 368, editable: true, color: 'bg-pink-50', expandable: true },
         { key: 'priority', label: 'Priority', width: 90, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
         { key: 'severity', label: 'Severity', width: 90, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50' },
         { key: 'status', label: 'Status', width: 100, editable: true, type: 'select', options: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'], color: 'bg-teal-50' },
@@ -96,10 +104,40 @@ const BugSpreadsheet = () => {
             if (imagesDropdownRef.current && !imagesDropdownRef.current.contains(event.target)) {
                 setActiveImagesDropdown(null);
             }
+            if (linkModalRef.current && !linkModalRef.current.contains(event.target)) {
+                setActiveLinkModal(null);
+            }
+            if (imageModalRef.current && !imageModalRef.current.contains(event.target)) {
+                setActiveImageModal(null);
+            }
         };
 
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+    useEffect(() => {
+        const handleBugChange = (event) => {
+            console.log('Bug changed, refreshing data:', event.detail);
+            fetchBugs(); // This will refresh your bugs list
+        };
+
+        // Listen to all relevant bug events
+        window.addEventListener(BUG_EVENTS.CHANGED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.CREATED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.UPDATED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.DELETED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.TRASHED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.RESTORED, handleBugChange);
+
+        // Cleanup event listeners on component unmount
+        return () => {
+            window.removeEventListener(BUG_EVENTS.CHANGED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.CREATED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.UPDATED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.DELETED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.TRASHED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.RESTORED, handleBugChange);
+        };
     }, []);
 
     const fetchBugs = useCallback(async (page = 1) => {
@@ -365,6 +403,12 @@ const BugSpreadsheet = () => {
     const startEditing = (bugId, columnKey, value) => {
         setEditingCell({ bugId, columnKey });
         setEditValue(value || '');
+
+        // Expand column if it's description or requirement
+        if (columnKey === 'bugDesc' || columnKey === 'bugRequirement') {
+            setExpandedColumns(prev => new Set([...prev, columnKey]));
+            setColumnWidths(prev => ({ ...prev, [columnKey]: 600 }));
+        }
     };
 
     const stopEditing = () => {
@@ -381,6 +425,18 @@ const BugSpreadsheet = () => {
         }
         setEditingCell(null);
         setEditValue('');
+
+        // Reset expanded columns
+        setExpandedColumns(new Set());
+        setColumnWidths(prev => {
+            const newWidths = { ...prev };
+            columns.forEach(col => {
+                if (col.expandable) {
+                    newWidths[col.key] = col.width;
+                }
+            });
+            return newWidths;
+        });
     };
 
     const handleImageUpload = async (bugId, file) => {
@@ -415,9 +471,78 @@ const BugSpreadsheet = () => {
         }
     };
 
+    const handleAddLink = (bugId, link) => {
+        if (!link.trim()) return;
+
+        if (bugId === 'new') {
+            if (newRowEditing) {
+                const currentLinks = newRowTempData.refLinks || newRowData.refLinks || '';
+                const linksArray = currentLinks ? currentLinks.split(',') : [];
+                linksArray.push(link);
+                setNewRowTempData(prev => ({ ...prev, refLinks: linksArray.join(',') }));
+            } else {
+                const currentLinks = newRowData.refLinks || '';
+                const linksArray = currentLinks ? currentLinks.split(',') : [];
+                linksArray.push(link);
+                handleNewRowEdit('refLinks', linksArray.join(','));
+            }
+        } else {
+            const bug = bugs.find(b => b._id === bugId);
+            const currentLinks = bug?.refLinks || [];
+            const updatedLinks = Array.isArray(currentLinks) ? [...currentLinks, link] : [link];
+            handleCellEdit(bugId, 'refLinks', updatedLinks);
+        }
+
+        setNewLink('');
+        setActiveLinkModal(null);
+        showAlert({ type: 'success', message: 'Link added successfully' });
+    };
+
+    const handleRemoveImage = (bugId, imageToRemove) => {
+        if (bugId === 'new') {
+            if (newRowEditing) {
+                const currentImages = newRowTempData.images || newRowData.images || '';
+                const imagesArray = currentImages ? currentImages.split(',') : [];
+                const updatedImages = imagesArray.filter(img => img !== imageToRemove);
+                setNewRowTempData(prev => ({ ...prev, images: updatedImages.join(',') }));
+            } else {
+                const currentImages = newRowData.images || '';
+                const imagesArray = currentImages ? currentImages.split(',') : [];
+                const updatedImages = imagesArray.filter(img => img !== imageToRemove);
+                handleNewRowEdit('images', updatedImages.join(','));
+            }
+        } else {
+            const bug = bugs.find(b => b._id === bugId);
+            const currentImages = bug?.images || [];
+            const updatedImages = currentImages.filter(img => img !== imageToRemove);
+            handleCellEdit(bugId, 'images', updatedImages);
+        }
+        showAlert({ type: 'success', message: 'Image removed successfully' });
+    };
+
+    const handleRemoveLink = (bugId, linkToRemove) => {
+        if (bugId === 'new') {
+            if (newRowEditing) {
+                const currentLinks = newRowTempData.refLinks || newRowData.refLinks || '';
+                const linksArray = currentLinks ? currentLinks.split(',') : [];
+                const updatedLinks = linksArray.filter(link => link !== linkToRemove);
+                setNewRowTempData(prev => ({ ...prev, refLinks: updatedLinks.join(',') }));
+            } else {
+                const currentLinks = newRowData.refLinks || '';
+                const linksArray = currentLinks ? currentLinks.split(',') : [];
+                const updatedLinks = linksArray.filter(link => link !== linkToRemove);
+                handleNewRowEdit('refLinks', updatedLinks.join(','));
+            }
+        } else {
+            const bug = bugs.find(b => b._id === bugId);
+            const currentLinks = bug?.refLinks || [];
+            const updatedLinks = currentLinks.filter(link => link !== linkToRemove);
+            handleCellEdit(bugId, 'refLinks', updatedLinks);
+        }
+        showAlert({ type: 'success', message: 'Link removed successfully' });
+    };
+
     const moveBugToTrash = async (bugId) => {
-
-
         try {
             const response = await fetch(
                 `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/trash`,
@@ -440,8 +565,6 @@ const BugSpreadsheet = () => {
     };
 
     const deleteBugPermanently = async (bugId) => {
-
-
         try {
             const response = await fetch(
                 `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/permanent`,
@@ -648,8 +771,6 @@ const BugSpreadsheet = () => {
         const links = Array.isArray(refLinks) ? refLinks : (refLinks ? [refLinks] : []);
         const validLinks = links.filter(link => link && link !== 'No Link Provided');
 
-        if (validLinks.length === 0) return null;
-
         const buttonRef = linksButtonRefs.current[cellKey];
         const rect = buttonRef?.getBoundingClientRect();
         const spaceBelow = window.innerHeight - (rect?.bottom || 0);
@@ -682,35 +803,59 @@ const BugSpreadsheet = () => {
                                     <LinkIcon size={16} className="text-gray-600" />
                                     <h3 className="font-semibold text-gray-800 text-sm">Links</h3>
                                 </div>
-                                <button
-                                    onClick={() => setActiveLinksDropdown(null)}
-                                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                                >
-                                    <X size={16} />
-                                </button>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => setActiveLinkModal(bugId)}
+                                        className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                        title="Add new link"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveLinksDropdown(null)}
+                                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
                             </div>
                             <div className="max-h-64 overflow-y-auto">
-                                {validLinks.map((link, index) => (
-                                    <div key={index} className="px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <a
-                                                href={link}
-                                                target="_blank"
-                                                rel="noopener noreferrer"
-                                                className="flex-1 text-xs text-blue-600 hover:text-blue-800 truncate"
-                                            >
-                                                {link}
-                                            </a>
-                                            <button
-                                                onClick={() => copyToClipboard(link)}
-                                                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                                                title="Copy link"
-                                            >
-                                                <Copy size={12} />
-                                            </button>
-                                        </div>
+                                {validLinks.length === 0 ? (
+                                    <div className="px-3 py-4 text-center text-gray-500 text-xs">
+                                        No links added yet
                                     </div>
-                                ))}
+                                ) : (
+                                    validLinks.map((link, index) => (
+                                        <div key={index} className="px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <a
+                                                    href={link}
+                                                    target="_blank"
+                                                    rel="noopener noreferrer"
+                                                    className="flex-1 text-xs text-blue-600 hover:text-blue-800 truncate"
+                                                >
+                                                    {link}
+                                                </a>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        onClick={() => copyToClipboard(link)}
+                                                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                                        title="Copy link"
+                                                    >
+                                                        <Copy size={12} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRemoveLink(bugId, link)}
+                                                        className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                        title="Remove link"
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </motion.div>
                     )}
@@ -724,8 +869,6 @@ const BugSpreadsheet = () => {
         const isActive = activeImagesDropdown === cellKey;
         const imageArray = Array.isArray(images) ? images : (images ? [images] : []);
         const validImages = imageArray.filter(img => img && img !== 'No Image Provided' && img !== 'No Image provided');
-
-        if (validImages.length === 0) return null;
 
         const buttonRef = imagesButtonRefs.current[cellKey];
         const rect = buttonRef?.getBoundingClientRect();
@@ -759,40 +902,172 @@ const BugSpreadsheet = () => {
                                     <ImageIcon size={16} className="text-gray-600" />
                                     <h3 className="font-semibold text-gray-800 text-sm">Images</h3>
                                 </div>
-                                <button
-                                    onClick={() => setActiveImagesDropdown(null)}
-                                    className="text-gray-400 hover:text-gray-600 transition-colors"
-                                >
-                                    <X size={16} />
-                                </button>
+                                <div className="flex items-center gap-1">
+                                    <button
+                                        onClick={() => setActiveImageModal(bugId)}
+                                        className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                        title="Upload new image"
+                                    >
+                                        <Plus size={14} />
+                                    </button>
+                                    <button
+                                        onClick={() => setActiveImagesDropdown(null)}
+                                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                    >
+                                        <X size={16} />
+                                    </button>
+                                </div>
                             </div>
                             <div className="max-h-64 overflow-y-auto">
-                                {validImages.map((image, index) => (
-                                    <div key={index} className="px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
-                                        <div className="flex items-center justify-between gap-2">
-                                            <div className="flex items-center gap-2 flex-1">
-                                                <img
-                                                    src={image}
-                                                    alt={`Image ${index + 1}`}
-                                                    className="w-10 h-10 object-cover rounded border border-gray-200"
-                                                />
-                                                <span className="text-xs text-gray-700">Image {index + 1}</span>
-                                            </div>
-                                            <button
-                                                onClick={() => setImagePreviewModal(image)}
-                                                className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
-                                                title="View full size"
-                                            >
-                                                <ZoomIn size={12} />
-                                            </button>
-                                        </div>
+                                {validImages.length === 0 ? (
+                                    <div className="px-3 py-4 text-center text-gray-500 text-xs">
+                                        No images added yet
                                     </div>
-                                ))}
+                                ) : (
+                                    validImages.map((image, index) => (
+                                        <div key={index} className="px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                                            <div className="flex items-center justify-between gap-2">
+                                                <div className="flex items-center gap-2 flex-1">
+                                                    <img
+                                                        src={image}
+                                                        alt={`Image ${index + 1}`}
+                                                        className="w-10 h-10 object-cover rounded border border-gray-200"
+                                                    />
+                                                    <span className="text-xs text-gray-700">Image {index + 1}</span>
+                                                </div>
+                                                <div className="flex items-center gap-1">
+                                                    <button
+                                                        onClick={() => setImagePreviewModal(image)}
+                                                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                                        title="View full size"
+                                                    >
+                                                        <ZoomIn size={12} />
+                                                    </button>
+                                                    <button
+                                                        onClick={() => handleRemoveImage(bugId, image)}
+                                                        className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                        title="Remove image"
+                                                    >
+                                                        <X size={12} />
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    ))
+                                )}
                             </div>
                         </motion.div>
                     )}
                 </AnimatePresence>
             </>
+        );
+    };
+
+    const renderLinkModal = (bugId) => {
+        const isActive = activeLinkModal === bugId;
+        if (!isActive) return null;
+
+        const buttonRef = linksButtonRefs.current[`links-${bugId}`];
+        const rect = buttonRef?.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - (rect?.bottom || 0);
+        const openUpward = spaceBelow < 200;
+
+        return (
+            <motion.div
+                ref={linkModalRef}
+                initial={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50`}
+            >
+                <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-800 text-sm">Add Link</h3>
+                    <button
+                        onClick={() => setActiveLinkModal(null)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
+                <div className="p-3">
+                    <input
+                        type="text"
+                        value={newLink}
+                        onChange={(e) => setNewLink(e.target.value)}
+                        placeholder="Enter link URL..."
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
+                    />
+                    <div className="flex gap-2">
+                        <button
+                            onClick={() => setActiveLinkModal(null)}
+                            className="flex-1 px-2 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                        >
+                            Cancel
+                        </button>
+                        <button
+                            onClick={() => handleAddLink(bugId, newLink)}
+                            disabled={!newLink.trim()}
+                            className="flex-1 px-2 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                        >
+                            Add Link
+                        </button>
+                    </div>
+                </div>
+            </motion.div>
+        );
+    };
+
+    const renderImageModal = (bugId) => {
+        const isActive = activeImageModal === bugId;
+        if (!isActive) return null;
+
+        const buttonRef = imagesButtonRefs.current[`images-${bugId}`];
+        const rect = buttonRef?.getBoundingClientRect();
+        const spaceBelow = window.innerHeight - (rect?.bottom || 0);
+        const openUpward = spaceBelow < 200;
+
+        return (
+            <motion.div
+                ref={imageModalRef}
+                initial={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
+                animate={{ opacity: 1, y: 0, scale: 1 }}
+                exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
+                transition={{ duration: 0.15 }}
+                className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50`}
+            >
+                <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-800 text-sm">Upload Image</h3>
+                    <button
+                        onClick={() => setActiveImageModal(null)}
+                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                    >
+                        <X size={16} />
+                    </button>
+                </div>
+                <div className="p-3">
+                    <input
+                        ref={fileInputRef}
+                        type="file"
+                        accept="image/*"
+                        onChange={(e) => {
+                            const file = e.target.files[0];
+                            if (file) {
+                                handleImageUpload(bugId, file);
+                                setActiveImageModal(null);
+                            }
+                        }}
+                        className="hidden"
+                    />
+                    <button
+                        onClick={() => fileInputRef.current?.click()}
+                        className="w-full px-2 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center justify-center gap-1"
+                    >
+                        <ImageIcon size={14} />
+                        Choose Image
+                    </button>
+                </div>
+            </motion.div>
         );
     };
 
@@ -908,6 +1183,8 @@ const BugSpreadsheet = () => {
             if (isNewRow) {
                 return (
                     <div className="flex items-center justify-center h-full space-x-1">
+                        {renderLinksDropdown('new', newRowTempData.refLinks || newRowData.refLinks)}
+                        {renderImagesDropdown('new', newRowTempData.images || newRowData.images)}
                         {newRowEditing && (
                             <>
                                 <button
@@ -928,6 +1205,8 @@ const BugSpreadsheet = () => {
                             </>
                         )}
                         {isCreatingBug && <Loader2 size={14} className="animate-spin text-blue-500" />}
+                        {renderLinkModal('new')}
+                        {renderImageModal('new')}
                     </div>
                 );
             }
@@ -969,6 +1248,8 @@ const BugSpreadsheet = () => {
                         <Trash2 size={14} />
                     </button>
                     {renderCommentModal(bug._id, commentButtonRefs.current[bug._id])}
+                    {renderLinkModal(bug._id)}
+                    {renderImageModal(bug._id)}
                 </div>
             );
         }
@@ -1066,11 +1347,8 @@ const BugSpreadsheet = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-                <div className="text-center">
-                    <Loader2 size={40} className="animate-spin text-blue-600 mx-auto mb-3" />
-                    <p className="text-gray-600 font-medium text-sm">Loading bugs...</p>
-                </div>
+            <div className="flex items-center justify-center h-screen mt-15 bg-gradient-to-br from-gray-50 to-gray-100">
+                <TableSkeletonLoader />
             </div>
         );
     }
