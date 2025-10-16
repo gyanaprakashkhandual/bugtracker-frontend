@@ -4,9 +4,11 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Image as ImageIcon, Link as LinkIcon, Copy, Plus, Trash, Upload, CheckCircle } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
+import { BUG_EVENTS } from '@/app/components/Sidebars/Bug';
+import { BugCardSkeleton, BugCardSkeletonGrid } from '@/app/components/assets/Card.loader';
 
 // Bug Events
-const BUG_EVENTS = {
+const BUG_EVENTS_CARD = {
     CREATED: 'bug:created',
     UPDATED: 'bug:updated',
     DELETED: 'bug:deleted',
@@ -118,6 +120,32 @@ const BugCardView = () => {
             }
         }
     };
+
+    useEffect(() => {
+        const handleBugChange = (event) => {
+            console.log('Bug changed, refreshing data:', event.detail);
+            fetchBugs(); // This will refresh your bugs list
+        };
+
+        // Listen to all relevant bug events
+        window.addEventListener(BUG_EVENTS.CHANGED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.CREATED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.UPDATED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.DELETED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.TRASHED, handleBugChange);
+        window.addEventListener(BUG_EVENTS.RESTORED, handleBugChange);
+
+        // Cleanup event listeners on component unmount
+        return () => {
+            window.removeEventListener(BUG_EVENTS.CHANGED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.CREATED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.UPDATED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.DELETED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.TRASHED, handleBugChange);
+            window.removeEventListener(BUG_EVENTS.RESTORED, handleBugChange);
+        };
+    }, []); // Empty dependency array means this runs once on mount
+
 
     const fetchBugs = useCallback(async () => {
         if (!projectId || !testTypeId || !token) {
@@ -345,7 +373,6 @@ const BugCardView = () => {
         }
     };
 
-
     const handleEditClick = () => {
         setIsEditing(true);
         setEditFormData({
@@ -515,10 +542,7 @@ const BugCardView = () => {
     if (loading) {
         return (
             <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
-                <div className="text-center">
-                    <Loader2 size={48} className="animate-spin text-blue-600 mx-auto mb-4" />
-                    <p className="text-gray-600 font-medium">Loading bugs...</p>
-                </div>
+                <BugCardSkeletonGrid />
             </div>
         );
     }
@@ -539,14 +563,14 @@ const BugCardView = () => {
                                     key={bug._id}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white rounded-xl shadow-sm hover:shadow-lg transition-all duration-300 border border-gray-200 overflow-hidden"
+                                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200 overflow-hidden"
                                 >
                                     <div className="p-4">
                                         <div className="flex items-center justify-between mb-3">
                                             <span className="text-xs font-bold text-gray-500">{bug.serialNumber}</span>
                                             <div className="flex gap-1.5">
-                                                <span className={`w-2 h-2 rounded-full ${getBugTypeColor(bug.bugType)}`} title={bug.bugType}></span>
-                                                <span className={`w-2 h-2 rounded-full ${getStatusColor(bug.status)}`} title={bug.status}></span>
+                                                <span className={`w-2 h-2 rounded-full ${getBugTypeColor(bug.bugType)}`} tooltip-data={bug.bugType}></span>
+                                                <span className={`w-2 h-2 rounded-full ${getStatusColor(bug.status)}`} tooltip-data={bug.status}></span>
                                             </div>
                                         </div>
 
@@ -574,6 +598,8 @@ const BugCardView = () => {
                                                 View
                                             </button>
                                             <button
+                                                tooltip-data="Archive"
+                                                tooltip-placement="bottom"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     moveBugToTrash(bug._id);
@@ -583,6 +609,8 @@ const BugCardView = () => {
                                                 <Archive size={14} />
                                             </button>
                                             <button
+                                                tooltip-data="Delete"
+                                                tooltip-placement="bottom"
                                                 onClick={(e) => {
                                                     e.stopPropagation();
                                                     deleteBugPermanently(bug._id);
@@ -598,7 +626,7 @@ const BugCardView = () => {
                         </div>
 
                         {/* Pagination */}
-                        <div className="flex items-center user-select-none justify-between bg-white rounded-xl shadow-sm border border-gray-200 px-6 py-3">
+                        <div className="flex items-center user-select-none justify-between bg-white border border-gray-200 px-6 py-3 rounded-md shadow-sm">
                             <div className="text-sm text-gray-600">
                                 Page <span className="font-bold text-gray-900">{currentPage}</span> of <span className="font-bold text-gray-900">{totalPages}</span>
                             </div>
@@ -607,6 +635,8 @@ const BugCardView = () => {
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
+                                    tooltip-data="Previous"
+                                    tooltip-placement="top"
                                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                     disabled={currentPage === 1}
                                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
@@ -614,6 +644,8 @@ const BugCardView = () => {
                                     <ChevronLeft size={16} />
                                 </button>
                                 <button
+                                    tooltip-data="Next"
+                                    tooltip-placement="top"
                                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                     disabled={currentPage === totalPages}
                                     className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"

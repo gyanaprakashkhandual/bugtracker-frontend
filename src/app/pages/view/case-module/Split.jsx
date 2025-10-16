@@ -55,10 +55,16 @@ const TestCaseSplitView = () => {
     const sidebarRef = useRef(null);
     const datePickerRef = useRef(null);
     const fileInputRef = useRef(null);
-
+    
     const { showAlert } = useAlert();
     const { showConfirm } = useConfirm();
     const { testTypeId, testTypeName } = useTestType();
+     const projectId =
+        typeof window !== "undefined"
+            ? localStorage.getItem("currentProjectId")
+            : null;
+    const token =
+        typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
     const handleCopy = (text) => {
         copyToClipboard(text, showAlert);
@@ -90,7 +96,6 @@ const TestCaseSplitView = () => {
             });
     };
 
-    c
 
     const BASE_URL = "http://localhost:5000/api/v1/test-case";
 
@@ -305,6 +310,67 @@ const TestCaseSplitView = () => {
                 type: "error",
                 message: error.message || "Failed to delete test case",
             });
+        }
+    };
+     const fetchComments = async (bugId) => {
+        if (!token || !bugId) return;
+
+        setLoadingComments(true);
+
+        try {
+            const response = await fetch(
+                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/test-case/${bugId}/comments`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                }
+            );
+
+            if (!response.ok) throw new Error("Failed to fetch comments");
+
+            const data = await response.json();
+            setComments(data.comments || []);
+        } catch (error) {
+            console.error("Error fetching comments:", error);
+            showAlert({ type: "error", message: "Failed to fetch comments" });
+        } finally {
+            setLoadingComments(false);
+        }
+    };
+    // Add Comment
+    const submitComment = async (bugId) => {
+        if (!newComment.trim() || submittingComment) return;
+
+        setSubmittingComment(true);
+
+        try {
+            const response = await fetch(
+                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/test-case/${bugId}/comments`,
+                {
+                    method: "POST",
+                    headers: {
+                        "Content-Type": "application/json",
+                        Authorization: `Bearer ${token}`,
+                    },
+                    body: JSON.stringify({
+                        comment: newComment,
+                        bugId: bugId,
+                    }),
+                }
+            );
+
+            if (!response.ok) throw new Error("Failed to submit comment");
+
+            const data = await response.json();
+            setComments((prev) => [data.comment, ...prev]);
+            setNewComment("");
+            showAlert({ type: "success", message: "Comment added successfully" });
+        } catch (error) {
+            console.error("Error submitting comment:", error);
+            showAlert({ type: "error", message: "Failed to add comment" });
+        } finally {
+            setSubmittingComment(false);
         }
     };
 
