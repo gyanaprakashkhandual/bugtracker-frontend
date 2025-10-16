@@ -1,9 +1,12 @@
-export default async function TrashPage({ params }) {
-  const { slug } = await params;
+import DustbinNavbar from '@/app/components/Modules/Trash/App'
+import React from 'react'
 
+function page() {
   return (
     <div>
-      <h1>Trash for {slug}</h1>
+      <DustbinNavbar/>
     </div>
-  );
+  )
 }
+
+export default page
