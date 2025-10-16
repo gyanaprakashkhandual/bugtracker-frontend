@@ -25,6 +25,7 @@ import {
 import { FiFilter, FiTrash2, FiSettings } from "react-icons/fi";
 import { GoogleArrowDown } from '../utils/Icon';
 import { SiChatbot } from 'react-icons/si';
+import { BsFillKanbanFill } from 'react-icons/bs';
 
 // ============================================
 // STYLED DROPDOWN COMPONENT
@@ -113,6 +114,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
   const [selectedView, setSelectedView] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
   const [selectedManual, setSelectedManual] = useState(null);
+  const [isKanbanActive, setIsKanbanActive] = useState(false);
 
   // Sidebar states
   const [testTypeSidebarOpen, setTestTypeSidebarOpen] = useState(false);
@@ -146,17 +148,24 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
     }
   };
 
+  // Handle Kanban toggle
+  const handleKanbanToggle = () => {
+    const newKanbanState = !isKanbanActive;
+    setIsKanbanActive(newKanbanState);
+    closeAllSidebars();
+    emitStateChange('kanban', newKanbanState);
+  };
+
   // Handle manual add selection with proper state management
   const handleManualAdd = (value) => {
-    // If clicking the same option that's already selected, close the sidebar
     if (selectedManual === value) {
       closeAllSidebars();
       setSelectedManual(null);
       return;
     }
 
-    closeAllSidebars(); // Close all first
-    setSelectedManual(value); // Set the selected value
+    closeAllSidebars();
+    setSelectedManual(value);
 
     switch (value) {
       case 'addBug':
@@ -175,7 +184,6 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
 
   // Handle filter opening
   const handleFilterOpen = () => {
-    // If filter is already open, close it
     if (filterSidebarOpen) {
       setFilterSidebarOpen(false);
       return;
@@ -187,7 +195,6 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
 
   // Handle test type sidebar
   const handleTestTypeToggle = () => {
-    // If test type sidebar is already open, close it
     if (testTypeSidebarOpen) {
       setTestTypeSidebarOpen(false);
       return;
@@ -197,20 +204,24 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
     setTestTypeSidebarOpen(true);
   };
 
-  // Handle view change - close sidebars when changing view
+  // Handle view change - close sidebars and disable Kanban when changing view
   const handleViewChange = (value) => {
     closeAllSidebars();
+    setIsKanbanActive(false);
     setSelectedView(value);
     onViewChange?.(value);
     emitStateChange('view', value);
+    emitStateChange('kanban', false);
   };
 
-  // Handle report change - close sidebars when changing report
+  // Handle report change - close sidebars and disable Kanban when changing report
   const handleReportChange = (value) => {
     closeAllSidebars();
+    setIsKanbanActive(false);
     setSelectedReport(value);
     onReportChange?.(value);
     emitStateChange('report', value);
+    emitStateChange('kanban', false);
   };
 
   // View options
@@ -375,6 +386,19 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                 <span>Filter</span>
               </motion.button>
 
+              {/* Kanban Button with Text - Updated */}
+              <motion.button
+                tooltip-data="Kanban View"
+                tooltip-placement="bottom"
+                whileHover={{ scale: 1.05 }}
+                whileTap={{ scale: 0.95 }}
+                onClick={handleKanbanToggle}
+                className={`flex items-center gap-2 px-3 py-1.5 text-sm font-medium transition-all duration-200 rounded-lg ${isKanbanActive ? 'bg-blue-500 text-white' : 'bg-blue-100 text-blue-700 hover:bg-blue-200'}`}
+              >
+                <BsFillKanbanFill size={16} />
+                <span>Kanban</span>
+              </motion.button>
+
               {/* Chatbot Button with Text */}
               <motion.button
                 tooltip-data="Chat Bot"
@@ -401,18 +425,6 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                 <span>Doc</span>
               </motion.button>
 
-              {/* Code Space Icon */}
-              <motion.button
-                tooltip-data="Code Space"
-                tooltip-placement="bottom"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push(`/app/projects/${project?.slug}/code-space`)}
-                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-blue-50/50 hover:text-blue-600"
-              >
-                <CodeSquare size={18} />
-              </motion.button>
-
               {/* Trash Icon */}
               <motion.button
                 tooltip-data="Trash"
@@ -423,18 +435,6 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                 className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-red-50/50 hover:text-red-600"
               >
                 <FiTrash2 size={18} />
-              </motion.button>
-
-              {/* Settings Icon */}
-              <motion.button
-                tooltip-data="Settings"
-                tooltip-placement="bottom"
-                whileHover={{ scale: 1.05, rotate: 90 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => router.push(`/app/projects/${project?.slug}/settings`)}
-                className="p-2 text-gray-600 transition-all duration-200 rounded-lg hover:bg-blue-50/50 hover:text-blue-600"
-              >
-                <FiSettings size={18} />
               </motion.button>
             </div>
           </div>
@@ -504,6 +504,16 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    onClick={handleKanbanToggle}
+                    className={`flex items-center w-full px-3 py-2 space-x-2 text-sm transition-colors duration-200 rounded-lg ${isKanbanActive ? 'bg-blue-500 text-white' : 'text-gray-700 hover:text-blue-600 hover:bg-blue-50/50'}`}
+                  >
+                    <BsFillKanbanFill className="w-4 h-4" />
+                    <span>Kanban</span>
+                  </motion.button>
+
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
                     onClick={() => router.push(`/app/projects/${project?.slug}/chat`)}
                     className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
                   >
@@ -514,21 +524,11 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
-                    onClick={() => router.push(`/app/projects/${project?.slug}/reports`)}
+                    onClick={() => router.push(`/app/projects/${project?.slug}/test-data`)}
                     className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
                   >
                     <DockIcon className="w-4 h-4" />
                     <span>Documents</span>
-                  </motion.button>
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => router.push(`/app/projects/${project?.slug}/code-space`)}
-                    className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
-                  >
-                    <CodeSquare className="w-4 h-4" />
-                    <span>Code Space</span>
                   </motion.button>
 
                   <motion.button
@@ -539,16 +539,6 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                   >
                     <FiTrash2 className="w-4 h-4" />
                     <span>Trash</span>
-                  </motion.button>
-
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={() => router.push(`/app/projects/${project?.slug}/settings`)}
-                    className="flex items-center w-full px-3 py-2 space-x-2 text-sm text-gray-700 transition-colors duration-200 rounded-lg hover:text-blue-600 hover:bg-blue-50/50"
-                  >
-                    <FiSettings className="w-4 h-4" />
-                    <span>Settings</span>
                   </motion.button>
                 </div>
               </motion.div>
@@ -592,7 +582,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
         onClose={() => setFilterSidebarOpen(false)}
       />
 
-      {/* Page content starts after navbar - add padding top to ensure scrollbar starts after navbar */}
+      {/* Page content starts after navbar */}
       <div className="pt-16">
         {/* Your page content will go here */}
       </div>

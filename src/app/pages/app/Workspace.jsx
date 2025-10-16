@@ -7,6 +7,7 @@ import TestCaseSpreadsheet from '../view/case-module/Table'
 import BugSpreadsheet from '../view/bug-module/Table'
 import BugCardView from '../view/bug-module/Card'
 import BugSplitView from '../view/bug-module/Split'
+import BugKanbanView from '@/app/pages/view/bug-module/Kanban'
 
 function Workspace() {
     const [selectedView, setSelectedView] = useState(() => {
@@ -23,12 +24,15 @@ function Workspace() {
         return 'bug';
     });
 
+    const [isKanbanActive, setIsKanbanActive] = useState(false);
+
     // Initialize workspace state
     useEffect(() => {
         if (typeof window !== 'undefined' && !window.workspaceState) {
             window.workspaceState = {
                 selectedView: 'split',
-                selectedReport: 'bug'
+                selectedReport: 'bug',
+                isKanbanActive: false
             };
         }
     }, []);
@@ -38,10 +42,11 @@ function Workspace() {
         if (typeof window !== 'undefined') {
             window.workspaceState = {
                 selectedView,
-                selectedReport
+                selectedReport,
+                isKanbanActive
             };
         }
-    }, [selectedView, selectedReport]);
+    }, [selectedView, selectedReport, isKanbanActive]);
 
     // Listen for state changes from navbar
     useEffect(() => {
@@ -49,8 +54,12 @@ function Workspace() {
             const { type, value } = event.detail;
             if (type === 'view') {
                 setSelectedView(value);
+                setIsKanbanActive(false); // Disable Kanban when view changes
             } else if (type === 'report') {
                 setSelectedReport(value);
+                setIsKanbanActive(false); // Disable Kanban when report changes
+            } else if (type === 'kanban') {
+                setIsKanbanActive(value);
             }
         };
 
@@ -66,6 +75,11 @@ function Workspace() {
     }, []);
 
     const renderComponent = () => {
+        // If Kanban is active, show Kanban view (only for bug report currently)
+        if (isKanbanActive && selectedReport === 'bug') {
+            return <BugKanbanView />;
+        }
+
         // Bug Report (default)
         if (selectedReport === 'bug') {
             switch (selectedView) {
