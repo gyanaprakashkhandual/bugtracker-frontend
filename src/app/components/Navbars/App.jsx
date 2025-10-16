@@ -244,7 +244,7 @@ const AppNavbar = () => {
                             {/* Bell Icon */}
                             <motion.button
                             >
-                                <NotificationCenter/>
+                                <NotificationCenter />
                             </motion.button>
 
                             {/* Message Icon */}

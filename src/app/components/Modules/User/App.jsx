@@ -162,10 +162,10 @@ const UserProfileInterface = () => {
 
   const getRoleColor = (role) => {
     switch (role) {
-      case 'admin': return 'text-purple-600 bg-purple-100';
-      case 'user': return 'text-blue-600 bg-blue-100';
-      case 'moderator': return 'text-green-600 bg-green-100';
-      default: return 'text-gray-600 bg-gray-100';
+      case 'admin': return 'text-purple-600 bg-purple-100 dark:text-purple-400 dark:bg-purple-900';
+      case 'user': return 'text-blue-600 bg-blue-100 dark:text-blue-400 dark:bg-blue-900';
+      case 'moderator': return 'text-green-600 bg-green-100 dark:text-green-400 dark:bg-green-900';
+      default: return 'text-gray-600 bg-gray-100 dark:text-gray-400 dark:bg-gray-800';
     }
   };
 
@@ -180,19 +180,19 @@ const UserProfileInterface = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-2xl shadow-xl p-8"
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8"
         >
           <div className="flex items-center space-x-3">
             <motion.div
               animate={{ rotate: 360 }}
               transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-              className="w-6 h-6 border-2 border-blue-500 border-t-transparent rounded-full"
+              className="w-6 h-6 border-2 border-blue-500 dark:border-blue-400 border-t-transparent rounded-full"
             />
-            <span className="text-gray-700 font-medium">Loading user data...</span>
+            <span className="text-gray-700 dark:text-gray-300 font-medium">Loading user data...</span>
           </div>
         </motion.div>
       </div>
@@ -201,20 +201,20 @@ const UserProfileInterface = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
-          className="bg-white rounded-2xl shadow-xl p-8 text-center"
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center"
         >
-          <div className="w-16 h-16 bg-red-100 rounded-full flex items-center justify-center mx-auto mb-4">
-            <Settings className="w-8 h-8 text-red-600" />
+          <div className="w-16 h-16 bg-red-100 dark:bg-red-900 rounded-full flex items-center justify-center mx-auto mb-4">
+            <Settings className="w-8 h-8 text-red-600 dark:text-red-400" />
           </div>
-          <h3 className="text-xl font-semibold text-gray-900 mb-2">Error</h3>
-          <p className="text-gray-600 mb-4">{error}</p>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-2">Error</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{error}</p>
           <button
             onClick={fetchUserData}
-            className="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors"
+            className="px-6 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
           >
             Retry
           </button>
@@ -225,14 +225,14 @@ const UserProfileInterface = () => {
 
   if (!user) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 flex items-center justify-center p-4">
         <motion.div
           initial={{ opacity: 0, scale: 0.9 }}
           animate={{ opacity: 1, scale: 1 }}
-          className="bg-white rounded-2xl shadow-xl p-8 text-center"
+          className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 text-center"
         >
-          <h3 className="text-xl font-semibold text-gray-900 mb-4">Session Ended</h3>
-          <p className="text-gray-600">Please login again to continue</p>
+          <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 mb-4">Session Ended</h3>
+          <p className="text-gray-600 dark:text-gray-400">Please login again to continue</p>
         </motion.div>
       </div>
     );
@@ -241,7 +241,7 @@ const UserProfileInterface = () => {
   const RoleIcon = getRoleIcon(user.role);
 
   return (
-    <div className="h-auto bg-gradient-to-br from-slate-50 to-gray-100">
+    <div className="h-auto bg-gradient-to-br from-slate-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
       <div className="max-w-full mx-auto">
 
         {/* Main Profile Card */}
@@ -249,10 +249,10 @@ const UserProfileInterface = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1 }}
-          className="bg-white overflow-hidden h-[calc(100vh-70px)]"
+          className="bg-white dark:bg-gray-800 overflow-hidden h-[calc(100vh-70px)]"
         >
           {/* Profile Header */}
-          <div className="bg-[radial-gradient(circle_at_top_left,_#3b82f6,_#8b5cf6,_#ec4899)] px-8 py-12 text-white relative overflow-hidden">
+          <div className="bg-[radial-gradient(circle_at_top_left,_#3b82f6,_#8b5cf6,_#ec4899)] dark:bg-[radial-gradient(circle_at_top_left,_#1e40af,_#6b21a8,_#be185d)] px-8 py-12 text-white relative overflow-hidden">
             {/* Decorative SVG Background Elements */}
             <div className="absolute inset-0 pointer-events-none">
               <svg
@@ -352,13 +352,13 @@ const UserProfileInterface = () => {
                   </span>
 
                   {user.isVerified && (
-                    <span className="inline-flex items-center space-x-1 px-3 py-1 bg-green-100 text-green-700 rounded-full text-sm font-medium">
+                    <span className="inline-flex items-center space-x-1 px-3 py-1 bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-400 rounded-full text-sm font-medium">
                       <CheckCircle className="w-4 h-4" />
                       <span>Verified</span>
                     </span>
                   )}
 
-                  <span className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium ${user.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'
+                  <span className={`inline-flex items-center space-x-1 px-3 py-1 rounded-full text-sm font-medium ${user.isActive ? 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-400' : 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-400'
                     }`}>
                     <Activity className="w-4 h-4" />
                     <span>{user.isActive ? 'Active' : 'Inactive'}</span>
@@ -378,35 +378,35 @@ const UserProfileInterface = () => {
                 transition={{ delay: 0.5 }}
                 className="space-y-4"
               >
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Personal Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Personal Information</h3>
 
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-blue-100 rounded-lg flex items-center justify-center">
-                    <User className="w-5 h-5 text-blue-600" />
+                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center">
+                    <User className="w-5 h-5 text-blue-600 dark:text-blue-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Full Name</p>
-                    <p className="font-medium text-gray-900">{user.name}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Full Name</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{user.name}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-purple-100 rounded-lg flex items-center justify-center">
-                    <Mail className="w-5 h-5 text-purple-600" />
+                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="w-10 h-10 bg-purple-100 dark:bg-purple-900 rounded-lg flex items-center justify-center">
+                    <Mail className="w-5 h-5 text-purple-600 dark:text-purple-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Email Address</p>
-                    <p className="font-medium text-gray-900">{user.email}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Email Address</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{user.email}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-green-100 rounded-lg flex items-center justify-center">
-                    <Shield className="w-5 h-5 text-green-600" />
+                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="w-10 h-10 bg-green-100 dark:bg-green-900 rounded-lg flex items-center justify-center">
+                    <Shield className="w-5 h-5 text-green-600 dark:text-green-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">User ID</p>
-                    <p className="font-medium text-gray-900 font-mono text-sm">{user._id}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">User ID</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100 font-mono text-sm">{user._id}</p>
                   </div>
                 </div>
               </motion.div>
@@ -418,37 +418,37 @@ const UserProfileInterface = () => {
                 transition={{ delay: 0.6 }}
                 className="space-y-4"
               >
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Account Information</h3>
+                <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Account Information</h3>
 
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-indigo-100 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-indigo-600" />
+                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="w-10 h-10 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Account Created</p>
-                    <p className="font-medium text-gray-900">{formatDate(user.createdAt)}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Account Created</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{formatDate(user.createdAt)}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-orange-100 rounded-lg flex items-center justify-center">
-                    <Calendar className="w-5 h-5 text-orange-600" />
+                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="w-10 h-10 bg-orange-100 dark:bg-orange-900 rounded-lg flex items-center justify-center">
+                    <Calendar className="w-5 h-5 text-orange-600 dark:text-orange-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Last Updated</p>
-                    <p className="font-medium text-gray-900">{formatDate(user.updatedAt)}</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Last Updated</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100">{formatDate(user.updatedAt)}</p>
                   </div>
                 </div>
 
-                <div className="flex items-center space-x-3 p-4 bg-gray-50 rounded-lg">
-                  <div className="w-10 h-10 bg-pink-100 rounded-lg flex items-center justify-center">
-                    <Settings className="w-5 h-5 text-pink-600" />
+                <div className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
+                  <div className="w-10 h-10 bg-pink-100 dark:bg-pink-900 rounded-lg flex items-center justify-center">
+                    <Settings className="w-5 h-5 text-pink-600 dark:text-pink-400" />
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Account Status</p>
+                    <p className="text-sm text-gray-500 dark:text-gray-400">Account Status</p>
                     <div className="flex items-center space-x-2">
                       <span className={`w-2 h-2 rounded-full ${user.isActive ? 'bg-green-500' : 'bg-red-500'}`}></span>
-                      <p className="font-medium text-gray-900">{user.isActive ? 'Active' : 'Inactive'}</p>
+                      <p className="font-medium text-gray-900 dark:text-gray-100">{user.isActive ? 'Active' : 'Inactive'}</p>
                     </div>
                   </div>
                 </div>
