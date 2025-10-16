@@ -3,6 +3,8 @@
 import { useState, useEffect, useRef } from "react";
 import { useTestType } from "@/app/script/TestType.context";
 import { useDoc } from "@/app/script/Doc.context";
+import { useAlert } from "@/app/script/Alert.context";
+import { useConfirm } from "@/app/script/Confirm.context";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Image as ImageIcon,
