@@ -10,7 +10,6 @@ import {
 import { useAlert } from '@/app/script/Alert.context';
 import { useConfirm } from '@/app/script/Confirm.context';
 
-// Project Events - Emit custom events for project changes
 export const PROJECT_EVENTS = {
   CREATED: 'project:created',
   UPDATED: 'project:updated',
@@ -25,7 +24,6 @@ const emitProjectEvent = (eventType, projectData = null) => {
     });
     window.dispatchEvent(event);
 
-    // Also emit generic change event
     const changeEvent = new CustomEvent(PROJECT_EVENTS.CHANGED, {
       detail: { type: eventType, project: projectData, timestamp: Date.now() }
     });
@@ -59,7 +57,6 @@ const ProjectManagement = () => {
   const { showAlert } = useAlert();
   const { showConfirm } = useConfirm();
 
-  // Get token from localStorage
   const getToken = () => {
     if (typeof window !== 'undefined') {
       return localStorage.getItem('token');
@@ -67,7 +64,6 @@ const ProjectManagement = () => {
     return null;
   };
 
-  // API call function
   const apiCall = async (endpoint, options = {}) => {
     const token = getToken();
     if (!token) {
@@ -103,7 +99,6 @@ const ProjectManagement = () => {
     }
   };
 
-  // Fetch projects based on active tab
   const fetchProjects = async (page = 1, search = '') => {
     setLoading(true);
     const endpoint = activeTab === 'my'
@@ -123,7 +118,6 @@ const ProjectManagement = () => {
     setLoading(false);
   };
 
-  // Fetch statistics
   const fetchStats = async () => {
     const result = await apiCall('/admin/stats');
     if (result) {
@@ -131,7 +125,6 @@ const ProjectManagement = () => {
     }
   };
 
-  // Create or Update project
   const handleSubmitProject = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -139,7 +132,6 @@ const ProjectManagement = () => {
     try {
       let result;
       if (selectedProject) {
-        // Update existing project
         result = await apiCall(`/${selectedProject._id}`, {
           method: 'PUT',
           body: JSON.stringify(formData)
@@ -152,7 +144,6 @@ const ProjectManagement = () => {
           });
         }
       } else {
-        // Create new project
         result = await apiCall('/', {
           method: 'POST',
           body: JSON.stringify(formData)
@@ -164,7 +155,6 @@ const ProjectManagement = () => {
             message: `"${formData.projectName}" created successfully`
           });
 
-          // Emit project created event
           emitProjectEvent(PROJECT_EVENTS.CREATED, result.project || formData);
         }
       }
@@ -181,7 +171,6 @@ const ProjectManagement = () => {
     }
   };
 
-  // Delete project with confirmation
   const handleDeleteProject = async (project) => {
     const result = await showConfirm({
       title: `Delete "${project.projectName}"?`,
@@ -202,7 +191,6 @@ const ProjectManagement = () => {
           message: `"${project.projectName}" deleted successfully`,
         });
 
-        // Emit project deleted event
         emitProjectEvent(PROJECT_EVENTS.DELETED, project);
 
         fetchProjects();
@@ -211,13 +199,11 @@ const ProjectManagement = () => {
     }
   };
 
-  // Initial data fetch
   useEffect(() => {
     fetchProjects();
     fetchStats();
   }, [activeTab]);
 
-  // Handle search
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchProjects(1, searchTerm);
@@ -229,12 +215,10 @@ const ProjectManagement = () => {
   const currentProjects = activeTab === 'my' ? myProjects : projects;
 
   return (
-    <div className="bg-gray-50">
+    <div className="bg-gray-50 dark:bg-gray-900">
       <div className="max-w-full mx-auto">
-        {/* Main Content */}
-        <div className="bg-white rounded-sm">
-          {/* Tabs and Search */}
-          <div className="border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-sm">
+          <div className="border-b border-gray-200 dark:border-gray-700">
             <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
               <div className="flex space-x-4">
                 {['all', 'my', 'stats'].map((tab) => (
@@ -242,8 +226,8 @@ const ProjectManagement = () => {
                     key={tab}
                     onClick={() => setActiveTab(tab)}
                     className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === tab
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900'
+                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-100'
+                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
                       }`}
                   >
                     {tab === 'all' && 'All Projects'}
@@ -254,20 +238,20 @@ const ProjectManagement = () => {
               </div>
               <div className="flex items-center space-x-4">
                 <div className="relative">
-                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-5 w-5" />
                   <input
                     type="text"
                     placeholder="Search projects..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 w-64"
+                    className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 w-64 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   />
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setShowCreateModal(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+                  className="bg-blue-600 dark:bg-blue-700 text-white dark:text-gray-100 px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                 >
                   <FiPlus className="h-5 w-5" />
                   <span>New Project</span>
@@ -276,7 +260,6 @@ const ProjectManagement = () => {
             </div>
           </div>
 
-          {/* Content Area */}
           <div className="p-6">
             {activeTab === 'stats' ? (
               <StatsView stats={stats} />
@@ -301,7 +284,6 @@ const ProjectManagement = () => {
         </div>
       </div>
 
-      {/* Create/Edit Project Modal */}
       <AnimatePresence>
         {showCreateModal && (
           <Modal
@@ -314,7 +296,7 @@ const ProjectManagement = () => {
           >
             <form onSubmit={handleSubmitProject} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Project Name
                 </label>
                 <input
@@ -322,20 +304,20 @@ const ProjectManagement = () => {
                   required
                   value={formData.projectName}
                   onChange={(e) => setFormData({ ...formData, projectName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Enter project name"
                   disabled={saving}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Description
                 </label>
                 <textarea
                   value={formData.projectDesc}
                   onChange={(e) => setFormData({ ...formData, projectDesc: e.target.value })}
                   rows="4"
-                  className="w-full resize-none px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  className="w-full resize-none px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-500 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Enter project description"
                   disabled={saving}
                 />
@@ -348,7 +330,7 @@ const ProjectManagement = () => {
                     setSelectedProject(null);
                     setFormData({ projectName: '', projectDesc: '' });
                   }}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   disabled={saving}
                 >
                   Cancel
@@ -356,7 +338,7 @@ const ProjectManagement = () => {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 min-w-[120px] justify-center"
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white dark:text-gray-100 rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 min-w-[120px] justify-center"
                 >
                   {saving ? (
                     <>
@@ -376,13 +358,12 @@ const ProjectManagement = () => {
   );
 };
 
-// Projects View Component
 const ProjectsView = ({ projects, loading, pagination, onPageChange, onEdit, onDelete }) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="bg-gray-100 rounded-xl h-48 animate-pulse"></div>
+          <div key={i} className="bg-gray-100 dark:bg-gray-700 rounded-xl h-48 animate-pulse"></div>
         ))}
       </div>
     );
@@ -391,9 +372,9 @@ const ProjectsView = ({ projects, loading, pagination, onPageChange, onEdit, onD
   if (projects.length === 0) {
     return (
       <div className="text-center py-12">
-        <FiFolder className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No projects found</h3>
-        <p className="text-gray-500">Get started by creating your first project.</p>
+        <FiFolder className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No projects found</h3>
+        <p className="text-gray-500 dark:text-gray-400">Get started by creating your first project.</p>
       </div>
     );
   }
@@ -412,26 +393,25 @@ const ProjectsView = ({ projects, loading, pagination, onPageChange, onEdit, onD
         ))}
       </div>
 
-      {/* Pagination */}
       {pagination.totalPages > 1 && (
         <div className="flex justify-center items-center space-x-4 mt-8">
           <button
             onClick={() => onPageChange(pagination.currentPage - 1)}
             disabled={!pagination.hasPrev}
-            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-100"
           >
             <FiChevronLeft className="h-5 w-5" />
             <span>Previous</span>
           </button>
 
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
             Page {pagination.currentPage} of {pagination.totalPages}
           </span>
 
           <button
             onClick={() => onPageChange(pagination.currentPage + 1)}
             disabled={!pagination.hasNext}
-            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-100"
           >
             <span>Next</span>
             <FiChevronRight className="h-5 w-5" />
@@ -442,22 +422,28 @@ const ProjectsView = ({ projects, loading, pagination, onPageChange, onEdit, onD
   );
 };
 
-// Project Card Component
 const ProjectCard = ({ project, index, onEdit, onDelete }) => {
+  const displayName = project.projectName.length > 20
+    ? project.projectName.substring(0, 20) + '...'
+    : project.projectName;
+  const displayDesc = project.projectDesc.length > 50
+    ? project.projectDesc.substring(0, 50) + '...'
+    : project.projectDesc
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       whileHover={{ y: -4 }}
-      className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300"
+      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-all duration-300"
     >
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-1">
-            {project.projectName}
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg mb-1 line-clamp-1" tooltip-data={project.projectName}>
+            {displayName}
           </h3>
-          <p className="text-sm text-gray-500 mb-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
             by {project.user?.name || 'Unknown User'}
           </p>
         </div>
@@ -466,7 +452,7 @@ const ProjectCard = ({ project, index, onEdit, onDelete }) => {
             tooltip-data="Edit"
             tooltip-placement="bottom"
             onClick={() => onEdit(project)}
-            className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+            className="p-2 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
             <FiEdit className="h-4 w-4" />
           </button>
@@ -474,18 +460,20 @@ const ProjectCard = ({ project, index, onEdit, onDelete }) => {
             tooltip-data="Delete"
             tooltip-placement="bottom"
             onClick={() => onDelete(project)}
-            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+            className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
           >
             <FiTrash2 className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
-        {project.projectDesc || 'No description provided'}
+      <p
+        tooltip-data={project.projectDesc}
+        className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
+        {displayDesc || 'No description provided'}
       </p>
 
-      <div className="flex justify-between items-center text-xs text-gray-500">
+      <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
         <span>
           {new Date(project.createdAt).toLocaleDateString()}
         </span>
@@ -494,12 +482,11 @@ const ProjectCard = ({ project, index, onEdit, onDelete }) => {
   );
 };
 
-// Statistics View Component
 const StatsView = ({ stats }) => {
   if (!stats) {
     return (
       <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
       </div>
     );
   }
@@ -512,73 +499,72 @@ const StatsView = ({ stats }) => {
         transition={{ delay: 0.1 }}
         className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
       >
-        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 dark:from-blue-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="relative flex items-center justify-between">
             <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total Projects</p>
-              <p className="text-4xl font-bold text-gray-900 mt-3 mb-1">
+              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Projects</p>
+              <p className="text-4xl font-bold text-gray-900 dark:text-gray-100 mt-3 mb-1">
                 {stats?.totalProjects || 0}
               </p>
             </div>
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600  shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
-              <FiFolder className="h-7 w-7 text-white" />
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
+              <FiFolder className="h-7 w-7 text-white dark:text-gray-100" />
             </div>
           </div>
         </div>
 
-        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 dark:from-emerald-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="relative flex items-center justify-between">
             <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Recent Projects</p>
-              <p className="text-4xl font-bold text-gray-900 mt-3">
+              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Recent Projects</p>
+              <p className="text-4xl font-bold text-gray-900 dark:text-gray-100 mt-3">
                 {stats?.recentProjectsCount || 0}
               </p>
-              <p className="text-xs font-medium text-gray-400 mt-2 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
+              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mt-2 flex items-center gap-1">
+                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
                 Last 30 days
               </p>
             </div>
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600  shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
-              <FiBarChart2 className="h-7 w-7 text-white" />
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
+              <FiBarChart2 className="h-7 w-7 text-white dark:text-gray-100" />
             </div>
           </div>
         </div>
 
-        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
+        <div className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700 overflow-hidden">
+          <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 dark:from-purple-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
           <div className="relative flex items-center justify-between">
             <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Top Contributors</p>
-              <p className="text-4xl font-bold text-gray-900 mt-3 mb-1">
+              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Top Contributors</p>
+              <p className="text-4xl font-bold text-gray-900 dark:text-gray-100 mt-3 mb-1">
                 {stats?.projectsByUser?.length || 0}
               </p>
             </div>
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600  shadow-purple-500/30 group-hover:scale-110 transition-transform duration-300">
-              <FiUsers className="h-7 w-7 text-white" />
+            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 shadow-purple-500/30 group-hover:scale-110 transition-transform duration-300">
+              <FiUsers className="h-7 w-7 text-white dark:text-gray-100" />
             </div>
           </div>
         </div>
       </motion.div>
 
-      {/* Recent Projects */}
       <div>
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Projects</h3>
-        <div className="bg-gray-50 rounded-lg p-6">
+        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Projects</h3>
+        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
           {stats.recentProjects?.map((project, index) => (
             <motion.div
               key={project._id}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: index * 0.1 }}
-              className="flex items-center justify-between py-3 border-b border-gray-200 last:border-b-0"
+              className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700 last:border-b-0"
             >
               <div>
-                <p className="font-medium text-gray-900">{project.projectName}</p>
-                <p className="text-sm text-gray-500">by {project.user?.name}</p>
+                <p className="font-medium text-gray-900 dark:text-gray-100">{project.projectName}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400">by {project.user?.name}</p>
               </div>
-              <span className="text-sm text-gray-500">
+              <span className="text-sm text-gray-500 dark:text-gray-400">
                 {new Date(project.createdAt).toLocaleDateString()}
               </span>
             </motion.div>
@@ -589,28 +575,27 @@ const StatsView = ({ stats }) => {
   );
 };
 
-// Modal Component
 const Modal = ({ title, children, onClose }) => {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-gray-100 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center p-4 z-50"
       onClick={onClose}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <FiEye className="h-6 w-6" />
           </button>

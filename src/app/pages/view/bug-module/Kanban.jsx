@@ -7,6 +7,7 @@ import { useTestType } from '@/app/script/TestType.context';
 import { Archive, Calendar, Clock, MessageSquare, Link, ImageIcon } from 'lucide-react';
 import KanbanSkeleton from '@/app/components/assets/Kanban.loader';
 import { Inbox, ArrowDownToLine } from 'lucide-react';
+import { BUG_EVENTS } from '@/app/components/Sidebars/Bug';
 const BugKanbanView = () => {
     const [bugs, setBugs] = useState([]);
     const [selectedBug, setSelectedBug] = useState(null);
@@ -51,6 +52,30 @@ const BugKanbanView = () => {
             fetchBugs();
         }
     }, [projectId, testTypeId, token]);
+     useEffect(() => {
+            const handleBugChange = (event) => {
+                console.log('Bug changed, refreshing data:', event.detail);
+                fetchBugs(); // This will refresh your bugs list
+            };
+    
+            // Listen to all relevant bug events
+            window.addEventListener(BUG_EVENTS.CHANGED, handleBugChange);
+            window.addEventListener(BUG_EVENTS.CREATED, handleBugChange);
+            window.addEventListener(BUG_EVENTS.UPDATED, handleBugChange);
+            window.addEventListener(BUG_EVENTS.DELETED, handleBugChange);
+            window.addEventListener(BUG_EVENTS.TRASHED, handleBugChange);
+            window.addEventListener(BUG_EVENTS.RESTORED, handleBugChange);
+    
+            // Cleanup event listeners on component unmount
+            return () => {
+                window.removeEventListener(BUG_EVENTS.CHANGED, handleBugChange);
+                window.removeEventListener(BUG_EVENTS.CREATED, handleBugChange);
+                window.removeEventListener(BUG_EVENTS.UPDATED, handleBugChange);
+                window.removeEventListener(BUG_EVENTS.DELETED, handleBugChange);
+                window.removeEventListener(BUG_EVENTS.TRASHED, handleBugChange);
+                window.removeEventListener(BUG_EVENTS.RESTORED, handleBugChange);
+            };
+        }, []); // Empty dependency array means this runs once on mount
 
     const fetchBugs = async () => {
         try {
@@ -415,13 +440,20 @@ const BugKanbanView = () => {
                                             draggable
                                             onDragStart={(e) => handleDragStart(e, bug)}
                                             onDragEnd={handleDragEnd}
-                                            className={`bg-white rounded-lg p-3 shadow-sm border border-gray-200 cursor-move hover:shadow-md transition-all duration-200 ${draggedBug?._id === bug._id ? 'opacity-40 rotate-2 scale-95' : ''
+                                            className={`bg-white rounded-lg p-3 shadow-sm border border-gray-200 cursor-move hover:shadow-md transition-all duration-200 ${draggedBug?._id === bug._id ? 'opacity-90 shadow-lg rotate-2 scale-95' : ''
                                                 }`}
                                             initial={{ opacity: 0, scale: 0.95 }}
                                             animate={{ opacity: 1, scale: 1 }}
                                             exit={{ opacity: 0, scale: 0.95, rotate: 5 }}
                                             whileHover={{ y: -2 }}
-                                            whileDrag={{ scale: 1.05, rotate: 3, cursor: 'grabbing' }}
+                                            whileDrag={{
+                                                scale: 1.08,
+                                                rotate: 1,
+                                                opacity: 1,
+                                                zIndex: 1000,
+                                                boxShadow: "0 10px 20px rgba(0, 0, 0, 0.15)"
+                                            }}
+
                                             layout
                                             transition={{
                                                 layout: { duration: 0.3, ease: "easeInOut" },
