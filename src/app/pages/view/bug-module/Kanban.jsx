@@ -283,7 +283,7 @@ const BugKanbanView = () => {
                 {statuses.map((status) => (
                     <motion.div
                         key={status}
-                        className={`flex-shrink-0 w-[243px] ${statusColors[status]} border rounded-lg p-3 transition-all duration-300 ${dragOverColumn === status ? 'ring-2 ring-blue-400 ring-offset-2 shadow-lg scale-[1.02]' : ''
+                        className={`flex-shrink-0 w-[243px] min-h-[calc(100vh-80px)] ${statusColors[status]} border rounded-lg p-3 transition-all duration-300 ${dragOverColumn === status ? 'ring-2 ring-blue-400 ring-offset-2 shadow-lg scale-[1.02]' : ''
                             }`}
                         onDragOver={handleDragOver}
                         onDragEnter={() => handleDragEnter(status)}
