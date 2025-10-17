@@ -10,19 +10,16 @@ import {
     Plus,
     Menu,
     Pin,
-    Archive,
     Trash2,
-    MoreVertical,
     Edit2,
     Check,
     X,
-    Settings,
-    MessageSquare,
     Loader2
 } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context.js';
 import MessageParser from '../lib/message.parser.jsx';
 import CommandDropdown from '../components/Dropdown.jsx';
+
 
 const Chat = () => {
     const BASE_URL = 'http://localhost:5000/api/v1/chat';
@@ -45,13 +42,18 @@ const Chat = () => {
     const [selectedCommand, setSelectedCommand] = useState(null);
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [editTitle, setEditTitle] = useState('');
+    const [attachments, setAttachments] = useState([]);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
 
-    // Add these state variables
+    // Refs
+    const messagesEndRef = useRef(null);
+    const inputRef = useRef(null);
+    const fileInputRef = useRef(null);
     const [isRecording, setIsRecording] = useState(false);
     const [recordingTime, setRecordingTime] = useState(0);
     const recognitionRef = useRef(null);
     const recordingIntervalRef = useRef(null);
-    const interimTranscriptRef = useRef('');
 
     // Initialize speech recognition
     useEffect(() => {
@@ -60,36 +62,22 @@ const Chat = () => {
             recognitionRef.current = new SpeechRecognition();
             recognitionRef.current.continuous = true;
             recognitionRef.current.interimResults = true;
-            recognitionRef.current.lang = 'en-US'; // Change to 'hi-IN' for Hindi, etc.
+            recognitionRef.current.lang = 'en-US';
             recognitionRef.current.maxAlternatives = 1;
 
-            recognitionRef.current.onstart = () => {
-                console.log('Speech recognition started');
-                interimTranscriptRef.current = '';
-            };
-
             recognitionRef.current.onresult = (event) => {
-                let interimTranscript = '';
                 let finalTranscript = '';
 
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     const transcript = event.results[i][0].transcript;
                     if (event.results[i].isFinal) {
                         finalTranscript += transcript + ' ';
-                    } else {
-                        interimTranscript += transcript;
                     }
                 }
 
-                // Update with final transcript
                 if (finalTranscript) {
-                    setInputMessage(prev => {
-                        const newMessage = prev + finalTranscript;
-                        return newMessage;
-                    });
-                    interimTranscriptRef.current = '';
+                    setInputMessage(prev => prev + finalTranscript);
 
-                    // Auto-adjust textarea height
                     if (inputRef.current) {
                         setTimeout(() => {
                             inputRef.current.style.height = 'auto';
@@ -101,18 +89,14 @@ const Chat = () => {
 
             recognitionRef.current.onerror = (event) => {
                 console.error('Speech recognition error:', event.error);
-                if (event.error === 'no-speech') {
-                    console.log('No speech detected');
-                } else if (event.error === 'not-allowed') {
+                if (event.error === 'not-allowed') {
                     alert('Microphone access denied. Please allow microphone permissions.');
                 }
                 stopRecording();
             };
 
             recognitionRef.current.onend = () => {
-                console.log('Speech recognition ended');
                 if (isRecording) {
-                    // Restart if still recording (for continuous listening)
                     recognitionRef.current.start();
                 }
             };
@@ -126,19 +110,17 @@ const Chat = () => {
                 clearInterval(recordingIntervalRef.current);
             }
         };
-    }, []);
+    }, [isRecording]);
 
-    // Format recording time
     const formatTime = (seconds) => {
         const mins = Math.floor(seconds / 60);
         const secs = seconds % 60;
         return `${mins}:${secs.toString().padStart(2, '0')}`;
     };
 
-    // Start recording
     const startRecording = () => {
         if (!recognitionRef.current) {
-            alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
+            alert('Speech recognition is not supported in your browser.');
             return;
         }
 
@@ -147,17 +129,14 @@ const Chat = () => {
             setIsRecording(true);
             setRecordingTime(0);
 
-            // Start recording timer
             recordingIntervalRef.current = setInterval(() => {
                 setRecordingTime(prev => prev + 1);
             }, 1000);
         } catch (error) {
             console.error('Error starting speech recognition:', error);
-            alert('Could not start speech recognition. Please try again.');
         }
     };
 
-    // Stop recording
     const stopRecording = () => {
         if (recognitionRef.current) {
             recognitionRef.current.stop();
@@ -169,10 +148,8 @@ const Chat = () => {
 
         setIsRecording(false);
         setRecordingTime(0);
-        interimTranscriptRef.current = '';
     };
 
-    // Toggle recording
     const toggleRecording = () => {
         if (isRecording) {
             stopRecording();
@@ -181,7 +158,6 @@ const Chat = () => {
         }
     };
 
-    // Scroll to bottom
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
     };
@@ -190,7 +166,6 @@ const Chat = () => {
         scrollToBottom();
     }, [messages]);
 
-    // Image upload to Cloudinary
     const uploadImageToCloudinary = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -221,7 +196,6 @@ const Chat = () => {
         }
     };
 
-    // Handle image file selection
     const handleImageSelect = async (e) => {
         const files = Array.from(e.target.files);
         if (files.length === 0) return;
@@ -231,12 +205,10 @@ const Chat = () => {
 
         try {
             const uploadPromises = files.map(async (file, index) => {
-                // Validate file type
                 if (!file.type.startsWith('image/')) {
                     throw new Error(`${file.name} is not an image file`);
                 }
 
-                // Validate file size (max 10MB)
                 if (file.size > 10 * 1024 * 1024) {
                     throw new Error(`${file.name} is too large. Max size is 10MB`);
                 }
@@ -249,7 +221,6 @@ const Chat = () => {
             const uploadedImages = await Promise.all(uploadPromises);
             setAttachments((prev) => [...prev, ...uploadedImages]);
 
-            // Clear file input
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
@@ -261,51 +232,10 @@ const Chat = () => {
         }
     };
 
-    // Handle paste event for images
-    const handlePaste = async (e) => {
-        const items = e.clipboardData?.items;
-        if (!items) return;
-
-        const imageFiles = [];
-
-        for (let i = 0; i < items.length; i++) {
-            if (items[i].type.indexOf('image') !== -1) {
-                const file = items[i].getAsFile();
-                if (file) {
-                    imageFiles.push(file);
-                }
-            }
-        }
-
-        if (imageFiles.length > 0) {
-            e.preventDefault();
-            setIsUploading(true);
-            setUploadProgress(0);
-
-            try {
-                const uploadPromises = imageFiles.map(async (file, index) => {
-                    const uploadedImage = await uploadImageToCloudinary(file);
-                    setUploadProgress(((index + 1) / imageFiles.length) * 100);
-                    return uploadedImage;
-                });
-
-                const uploadedImages = await Promise.all(uploadPromises);
-                setAttachments((prev) => [...prev, ...uploadedImages]);
-            } catch (error) {
-                alert('Error uploading pasted images: ' + error.message);
-            } finally {
-                setIsUploading(false);
-                setUploadProgress(0);
-            }
-        }
-    };
-
-    // Remove attachment
     const removeAttachment = (index) => {
         setAttachments((prev) => prev.filter((_, i) => i !== index));
     };
 
-    // Fetch all chats
     const fetchChats = async () => {
         try {
             const response = await fetch(
@@ -326,7 +256,6 @@ const Chat = () => {
         }
     };
 
-    // Create new chat
     const createNewChat = async () => {
         try {
             const response = await fetch(BASE_URL, {
@@ -350,7 +279,6 @@ const Chat = () => {
             if (data.success) {
                 setCurrentChat(data.data);
                 setMessages([]);
-                // Save to localStorage
                 localStorage.setItem('lastChatId', data.data._id);
                 fetchChats();
             }
@@ -359,7 +287,6 @@ const Chat = () => {
         }
     };
 
-    // Load chat by ID
     const loadChat = async (chatId) => {
         try {
             const response = await fetch(`${BASE_URL}/${chatId}`, {
@@ -372,7 +299,6 @@ const Chat = () => {
             if (data.success) {
                 setCurrentChat(data.data);
                 setMessages(data.data.messages || []);
-                // Save to localStorage
                 localStorage.setItem('lastChatId', chatId);
             }
         } catch (error) {
@@ -380,7 +306,7 @@ const Chat = () => {
         }
     };
 
-    // Send message with attachments
+    // Enhanced message sending with bug API integration
     const sendMessage = async () => {
         if ((!inputMessage.trim() && attachments.length === 0) || !currentChat) return;
         if (inputRef.current) {
@@ -398,7 +324,7 @@ const Chat = () => {
         setMessages((prev) => [...prev, userMessage]);
         setInputMessage('');
         const tempAttachments = [...attachments];
-        setAttachments([]); // Clear attachments after sending
+        setAttachments([]);
         setIsLoading(true);
 
         try {
@@ -436,7 +362,6 @@ const Chat = () => {
         }
     };
 
-    // Update chat title
     const updateChatTitle = async () => {
         if (!editTitle.trim() || !currentChat) return;
 
@@ -461,7 +386,6 @@ const Chat = () => {
         }
     };
 
-    // Delete chat
     const deleteChat = async (chatId) => {
         try {
             const response = await fetch(`${BASE_URL}/${chatId}`, {
@@ -476,11 +400,9 @@ const Chat = () => {
             if (data.success) {
                 fetchChats();
                 if (currentChat?._id === chatId) {
-                    // Clear from localStorage if it's the current chat
                     localStorage.removeItem('lastChatId');
                     setCurrentChat(null);
                     setMessages([]);
-                    // Create a new chat automatically
                     createNewChat();
                 }
             }
@@ -489,7 +411,6 @@ const Chat = () => {
         }
     };
 
-    // Toggle pin
     const togglePin = async (chatId, isPinned) => {
         try {
             const response = await fetch(`${BASE_URL}/${chatId}`, {
@@ -510,7 +431,6 @@ const Chat = () => {
         }
     };
 
-    // Handle @ command
     const handleInputChange = (e) => {
         const value = e.target.value;
         setInputMessage(value);
@@ -522,7 +442,6 @@ const Chat = () => {
         }
     };
 
-    // Handle Enter key
     const handleKeyPress = (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
             e.preventDefault();
@@ -530,19 +449,15 @@ const Chat = () => {
         }
     };
 
-    // Initialize: Load last chat or create new one
     useEffect(() => {
         if (testTypeId && projectId && token) {
             fetchChats();
 
-            // Try to load last chat from localStorage
             const lastChatId = localStorage.getItem('lastChatId');
 
             if (lastChatId) {
-                // Load the last opened chat
                 loadChat(lastChatId);
             } else {
-                // Create a new chat if no last chat exists
                 createNewChat();
             }
         }
@@ -557,9 +472,8 @@ const Chat = () => {
                         initial={{ x: -300 }}
                         animate={{ x: 0 }}
                         exit={{ x: -300 }}
-                        className="w-64 bg-white border-r border-gray-200 flex flex-col kanban-scrollbar"
+                        className="w-64 bg-white border-r border-gray-200 flex flex-col"
                     >
-                        {/* New Chat Button */}
                         <div className="p-[7px] border-b border-gray-200">
                             <button
                                 onClick={createNewChat}
@@ -570,7 +484,6 @@ const Chat = () => {
                             </button>
                         </div>
 
-                        {/* Search */}
                         <div className="p-2">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
@@ -584,15 +497,10 @@ const Chat = () => {
                             </div>
                         </div>
 
-                        {/* Chat List */}
                         <div className="flex-1 overflow-y-auto">
                             {chats.length === 0 ? (
                                 <div className="p-8 text-center">
-                                    <MessageSquare className="w-12 h-12 mx-auto mb-3 text-gray-300" />
                                     <p className="text-sm text-gray-400">No chat history yet</p>
-                                    <p className="text-xs text-gray-300 mt-1">
-                                        Start a conversation to see it here
-                                    </p>
                                 </div>
                             ) : (
                                 <div className="space-y-1 p-2">
@@ -603,25 +511,21 @@ const Chat = () => {
                                         .map((chat) => (
                                             <motion.div
                                                 key={chat._id}
-
                                                 whileHover={{ scale: 1.02 }}
                                                 className={`p-3 rounded-lg cursor-pointer transition-colors group ${currentChat?._id === chat._id
-                                                    ? 'bg-blue-50 border border-blue-200'
-                                                    : 'hover:bg-gray-50'
+                                                        ? 'bg-blue-50 border border-blue-200'
+                                                        : 'hover:bg-gray-50'
                                                     }`}
                                                 onClick={() => loadChat(chat._id)}
                                             >
                                                 <div className="flex items-start justify-between gap-2">
-                                                    <div content-data={chat.title}
-                                                        content-placement="right"
-                                                        className="flex-1 min-w-0">
+                                                    <div className="flex-1 min-w-0">
                                                         <h3 className="text-sm font-medium text-gray-900 truncate">
                                                             {chat.title}
                                                         </h3>
                                                     </div>
                                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button
-                                                            tooltip-data="Pin"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 togglePin(chat._id, chat.isPinned);
@@ -629,12 +533,13 @@ const Chat = () => {
                                                             className="p-1 hover:bg-gray-200 rounded"
                                                         >
                                                             <Pin
-                                                                className={`w-3 h-3 ${chat.isPinned ? 'fill-blue-500 text-blue-500' : 'text-gray-400'
+                                                                className={`w-3 h-3 ${chat.isPinned
+                                                                        ? 'fill-blue-500 text-blue-500'
+                                                                        : 'text-gray-400'
                                                                     }`}
                                                             />
                                                         </button>
                                                         <button
-                                                            tooltip-data="Delete"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 deleteChat(chat._id);
@@ -725,12 +630,9 @@ const Chat = () => {
                                 <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <span className="text-2xl font-bold text-white">L</span>
                                 </div>
-                                <h2 className="text-2xl font-bold text-gray-900 mb-2">
-                                    Hello 👋
-                                </h2>
+                                <h2 className="text-2xl font-bold text-gray-900 mb-2">Hello 👋</h2>
                                 <p className="text-gray-600">
-                                    I'm Lumen, your QA testing assistant. I can help you manage test cases, bugs,
-                                    and projects using natural language commands.
+                                    I'm Lumen, your QA testing assistant. I can help you manage bugs, test cases, and projects using natural language commands.
                                 </p>
                             </div>
                         </div>
@@ -751,14 +653,20 @@ const Chat = () => {
                                     )}
                                     <div
                                         className={`max-w-3xl ${message.role === 'user'
-                                            ? 'bg-blue-500 text-white rounded-2xl rounded-tr-sm px-4 py-3'
-                                            : 'bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3'
+                                                ? 'bg-blue-500 text-white rounded-2xl rounded-tr-sm px-4 py-3'
+                                                : 'bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3'
                                             }`}
                                     >
-                                        <MessageParser content={message.content} role={message.role} attachments={message.attachments} />
+                                        <MessageParser
+                                            content={message.content}
+                                            role={message.role}
+                                            attachments={message.attachments}
+                                        />
                                         <div className="flex items-center gap-2 mt-2">
                                             <span
-                                                className={`text-xs ${message.role === 'user' ? 'text-blue-100' : 'text-gray-400'
+                                                className={`text-xs ${message.role === 'user'
+                                                        ? 'text-blue-100'
+                                                        : 'text-gray-400'
                                                     }`}
                                             >
                                                 {new Date(message.timestamp).toLocaleTimeString([], {
@@ -798,7 +706,6 @@ const Chat = () => {
                 {currentChat && (
                     <div className="bg-white border-t border-gray-200 px-6 py-4">
                         <div className="max-w-4xl mx-auto relative">
-                            {/* Command Dropdown */}
                             <AnimatePresence>
                                 {showCommandDropdown && (
                                     <CommandDropdown
@@ -812,7 +719,6 @@ const Chat = () => {
                                 )}
                             </AnimatePresence>
 
-                            {/* Selected Command Badge */}
                             {selectedCommand && (
                                 <div className="mb-2 flex items-center gap-2">
                                     <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
@@ -827,7 +733,6 @@ const Chat = () => {
                                 </div>
                             )}
 
-                            {/* Image Attachments Preview */}
                             {attachments.length > 0 && (
                                 <div className="mb-3 flex flex-wrap gap-2">
                                     {attachments.map((attachment, index) => (
@@ -853,7 +758,6 @@ const Chat = () => {
                                 </div>
                             )}
 
-                            {/* Upload Progress */}
                             {isUploading && (
                                 <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
                                     <div className="flex items-center gap-3">
@@ -874,7 +778,6 @@ const Chat = () => {
                             )}
 
                             <div className="w-full space-y-2">
-                                {/* Recording indicator */}
                                 {isRecording && (
                                     <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl p-3 animate-pulse">
                                         <div className="flex items-center gap-2">
@@ -883,9 +786,7 @@ const Chat = () => {
                                         </div>
                                         <span className="text-sm text-red-600">{formatTime(recordingTime)}</span>
                                         <div className="flex-1 flex items-center gap-1 px-2">
-                                            <div className="flex items-center gap-1">
-                                                <span className="text-xs text-red-600">Listening...</span>
-                                            </div>
+                                            <span className="text-xs text-red-600">Listening...</span>
                                         </div>
                                         <button
                                             onClick={stopRecording}
@@ -897,7 +798,6 @@ const Chat = () => {
                                 )}
 
                                 <div className="flex items-end gap-2 bg-gray-50 rounded-2xl border border-gray-200 p-2">
-                                    {/* Hidden file input */}
                                     <input
                                         ref={fileInputRef}
                                         type="file"
@@ -907,7 +807,6 @@ const Chat = () => {
                                         className="hidden"
                                     />
 
-                                    {/* Attachment button */}
                                     <button
                                         onClick={() => fileInputRef.current?.click()}
                                         disabled={isUploading || isRecording}
@@ -926,7 +825,7 @@ const Chat = () => {
                                             textarea.style.height = `${Math.min(textarea.scrollHeight, 400)}px`;
                                         }}
                                         onKeyPress={handleKeyPress}
-                                        placeholder="Lumen Add This test-case..."
+                                        placeholder="Ask Lumen about bugs, test cases, projects..."
                                         disabled={isUploading || isRecording}
                                         className="flex-1 bg-transparent border-none outline-none resize-none text-gray-900 placeholder-gray-400 disabled:opacity-50 overflow-y-auto"
                                         rows={1}
@@ -950,7 +849,12 @@ const Chat = () => {
 
                                     <button
                                         onClick={sendMessage}
-                                        disabled={(!inputMessage.trim() && attachments.length === 0) || isLoading || isUploading || isRecording}
+                                        disabled={
+                                            (!inputMessage.trim() && attachments.length === 0) ||
+                                            isLoading ||
+                                            isUploading ||
+                                            isRecording
+                                        }
                                         className="p-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors flex-shrink-0"
                                     >
                                         <Send className="w-5 h-5 text-white" />
