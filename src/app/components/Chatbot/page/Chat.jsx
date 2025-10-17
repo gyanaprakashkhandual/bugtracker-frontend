@@ -26,6 +26,9 @@ import CommandDropdown from '../components/Dropdown.jsx';
 
 const Chat = () => {
     const BASE_URL = 'http://localhost:5000/api/v1/chat';
+    const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
+    const CLOUDINARY_PRESET = 'test_case_preset';
+
     const projectId = typeof window !== 'undefined' ? localStorage.getItem('currentProjectId') : null;
     const { testTypeId, testTypeName } = useTestType();
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
@@ -43,8 +46,14 @@ const Chat = () => {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [editTitle, setEditTitle] = useState('');
 
+    // Image upload states
+    const [attachments, setAttachments] = useState([]);
+    const [isUploading, setIsUploading] = useState(false);
+    const [uploadProgress, setUploadProgress] = useState(0);
+
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
+    const fileInputRef = useRef(null);
 
     // Scroll to bottom
     const scrollToBottom = () => {
@@ -54,6 +63,121 @@ const Chat = () => {
     useEffect(() => {
         scrollToBottom();
     }, [messages]);
+
+    // Image upload to Cloudinary
+    const uploadImageToCloudinary = async (file) => {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('upload_preset', CLOUDINARY_PRESET);
+
+        try {
+            const response = await fetch(CLOUDINARY_URL, {
+                method: 'POST',
+                body: formData
+            });
+
+            const data = await response.json();
+
+            if (data.secure_url) {
+                return {
+                    url: data.secure_url,
+                    public_id: data.public_id,
+                    type: 'image',
+                    name: file.name,
+                    size: file.size,
+                    mimetype: file.type
+                };
+            }
+            throw new Error('Upload failed');
+        } catch (error) {
+            console.error('Cloudinary upload error:', error);
+            throw error;
+        }
+    };
+
+    // Handle image file selection
+    const handleImageSelect = async (e) => {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+
+        setIsUploading(true);
+        setUploadProgress(0);
+
+        try {
+            const uploadPromises = files.map(async (file, index) => {
+                // Validate file type
+                if (!file.type.startsWith('image/')) {
+                    throw new Error(`${file.name} is not an image file`);
+                }
+
+                // Validate file size (max 10MB)
+                if (file.size > 10 * 1024 * 1024) {
+                    throw new Error(`${file.name} is too large. Max size is 10MB`);
+                }
+
+                const uploadedImage = await uploadImageToCloudinary(file);
+                setUploadProgress(((index + 1) / files.length) * 100);
+                return uploadedImage;
+            });
+
+            const uploadedImages = await Promise.all(uploadPromises);
+            setAttachments((prev) => [...prev, ...uploadedImages]);
+
+            // Clear file input
+            if (fileInputRef.current) {
+                fileInputRef.current.value = '';
+            }
+        } catch (error) {
+            alert('Error uploading images: ' + error.message);
+        } finally {
+            setIsUploading(false);
+            setUploadProgress(0);
+        }
+    };
+
+    // Handle paste event for images
+    const handlePaste = async (e) => {
+        const items = e.clipboardData?.items;
+        if (!items) return;
+
+        const imageFiles = [];
+
+        for (let i = 0; i < items.length; i++) {
+            if (items[i].type.indexOf('image') !== -1) {
+                const file = items[i].getAsFile();
+                if (file) {
+                    imageFiles.push(file);
+                }
+            }
+        }
+
+        if (imageFiles.length > 0) {
+            e.preventDefault();
+            setIsUploading(true);
+            setUploadProgress(0);
+
+            try {
+                const uploadPromises = imageFiles.map(async (file, index) => {
+                    const uploadedImage = await uploadImageToCloudinary(file);
+                    setUploadProgress(((index + 1) / imageFiles.length) * 100);
+                    return uploadedImage;
+                });
+
+                const uploadedImages = await Promise.all(uploadPromises);
+                setAttachments((prev) => [...prev, ...uploadedImages]);
+            } catch (error) {
+                alert('Error uploading pasted images: ' + error.message);
+            } finally {
+                setIsUploading(false);
+                setUploadProgress(0);
+            }
+        }
+    };
+
+    // Remove attachment
+    const removeAttachment = (index) => {
+        setAttachments((prev) => prev.filter((_, i) => i !== index));
+    };
 
     // Fetch all chats
     const fetchChats = async () => {
@@ -100,6 +224,8 @@ const Chat = () => {
             if (data.success) {
                 setCurrentChat(data.data);
                 setMessages([]);
+                // Save to localStorage
+                localStorage.setItem('lastChatId', data.data._id);
                 fetchChats();
             }
         } catch (error) {
@@ -120,24 +246,29 @@ const Chat = () => {
             if (data.success) {
                 setCurrentChat(data.data);
                 setMessages(data.data.messages || []);
+                // Save to localStorage
+                localStorage.setItem('lastChatId', chatId);
             }
         } catch (error) {
             console.error('Error loading chat:', error);
         }
     };
 
-    // Send message
+    // Send message with attachments
     const sendMessage = async () => {
-        if (!inputMessage.trim() || !currentChat) return;
+        if ((!inputMessage.trim() && attachments.length === 0) || !currentChat) return;
 
         const userMessage = {
             role: 'user',
-            content: inputMessage,
+            content: inputMessage || 'Analyze this image',
+            attachments: attachments,
             timestamp: new Date()
         };
 
         setMessages((prev) => [...prev, userMessage]);
         setInputMessage('');
+        const tempAttachments = [...attachments];
+        setAttachments([]); // Clear attachments after sending
         setIsLoading(true);
 
         try {
@@ -148,9 +279,9 @@ const Chat = () => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    content: inputMessage,
+                    content: inputMessage || 'Analyze this image',
                     command: selectedCommand,
-                    attachments: []
+                    attachments: tempAttachments
                 })
             });
 
@@ -215,8 +346,12 @@ const Chat = () => {
             if (data.success) {
                 fetchChats();
                 if (currentChat?._id === chatId) {
+                    // Clear from localStorage if it's the current chat
+                    localStorage.removeItem('lastChatId');
                     setCurrentChat(null);
                     setMessages([]);
+                    // Create a new chat automatically
+                    createNewChat();
                 }
             }
         } catch (error) {
@@ -265,9 +400,21 @@ const Chat = () => {
         }
     };
 
+    // Initialize: Load last chat or create new one
     useEffect(() => {
         if (testTypeId && projectId && token) {
             fetchChats();
+
+            // Try to load last chat from localStorage
+            const lastChatId = localStorage.getItem('lastChatId');
+
+            if (lastChatId) {
+                // Load the last opened chat
+                loadChat(lastChatId);
+            } else {
+                // Create a new chat if no last chat exists
+                createNewChat();
+            }
         }
     }, [testTypeId, projectId, token]);
 
@@ -441,6 +588,13 @@ const Chat = () => {
                     {!currentChat ? (
                         <div className="h-full flex items-center justify-center">
                             <div className="text-center max-w-md">
+                                <Loader2 className="w-16 h-16 mx-auto mb-4 text-blue-500 animate-spin" />
+                                <p className="text-gray-500">Loading chat...</p>
+                            </div>
+                        </div>
+                    ) : messages.length === 0 ? (
+                        <div className="h-full flex items-center justify-center">
+                            <div className="text-center max-w-md">
                                 <div className="w-16 h-16 bg-green-500 rounded-full flex items-center justify-center mx-auto mb-4">
                                     <span className="text-2xl font-bold text-white">L</span>
                                 </div>
@@ -451,13 +605,6 @@ const Chat = () => {
                                     I'm Lumen, your QA testing assistant. I can help you manage test cases, bugs,
                                     and projects using natural language commands.
                                 </p>
-                            </div>
-                        </div>
-                    ) : messages.length === 0 ? (
-                        <div className="h-full flex items-center justify-center">
-                            <div className="text-center max-w-md">
-                                <MessageSquare className="w-16 h-16 mx-auto mb-4 text-gray-300" />
-                                <p className="text-gray-500">Start a conversation...</p>
                             </div>
                         </div>
                     ) : (
@@ -481,7 +628,7 @@ const Chat = () => {
                                             : 'bg-white border border-gray-200 rounded-2xl rounded-tl-sm px-4 py-3'
                                             }`}
                                     >
-                                        <MessageParser content={message.content} role={message.role} />
+                                        <MessageParser content={message.content} role={message.role} attachments={message.attachments} />
                                         <div className="flex items-center gap-2 mt-2">
                                             <span
                                                 className={`text-xs ${message.role === 'user' ? 'text-blue-100' : 'text-gray-400'
@@ -553,36 +700,94 @@ const Chat = () => {
                                 </div>
                             )}
 
+                            {/* Image Attachments Preview */}
+                            {attachments.length > 0 && (
+                                <div className="mb-3 flex flex-wrap gap-2">
+                                    {attachments.map((attachment, index) => (
+                                        <motion.div
+                                            key={index}
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            className="relative group"
+                                        >
+                                            <img
+                                                src={attachment.url}
+                                                alt={attachment.name}
+                                                className="w-20 h-20 object-cover rounded-lg border-2 border-gray-200"
+                                            />
+                                            <button
+                                                onClick={() => removeAttachment(index)}
+                                                className="absolute -top-2 -right-2 w-6 h-6 bg-red-500 text-white rounded-full flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity"
+                                            >
+                                                <X className="w-4 h-4" />
+                                            </button>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            )}
+
+                            {/* Upload Progress */}
+                            {isUploading && (
+                                <div className="mb-3 bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <div className="flex items-center gap-3">
+                                        <Loader2 className="w-4 h-4 animate-spin text-blue-500" />
+                                        <div className="flex-1">
+                                            <div className="text-sm text-blue-700 mb-1">
+                                                Uploading images... {Math.round(uploadProgress)}%
+                                            </div>
+                                            <div className="w-full bg-blue-200 rounded-full h-2">
+                                                <div
+                                                    className="bg-blue-500 h-2 rounded-full transition-all duration-300"
+                                                    style={{ width: `${uploadProgress}%` }}
+                                                />
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            )}
+
                             <div className="flex items-end gap-2 bg-gray-50 rounded-2xl border border-gray-200 p-2">
-                                <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
+                                {/* Hidden file input */}
+                                <input
+                                    ref={fileInputRef}
+                                    type="file"
+                                    accept="image/*"
+                                    multiple
+                                    onChange={handleImageSelect}
+                                    className="hidden"
+                                />
+
+                                {/* Attachment button */}
+                                <button
+                                    onClick={() => fileInputRef.current?.click()}
+                                    disabled={isUploading}
+                                    className="p-2 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                >
                                     <Paperclip className="w-5 h-5 text-gray-500" />
                                 </button>
-                                <button
-                                    onClick={() => setShowCommandDropdown(!showCommandDropdown)}
-                                    className={`p-2 hover:bg-gray-200 rounded-lg transition-colors ${showCommandDropdown ? 'bg-gray-200' : ''
-                                        }`}
-                                >
-                                    <span className="text-lg font-bold text-gray-600">@</span>
-                                </button>
+
                                 <textarea
                                     ref={inputRef}
                                     value={inputMessage}
                                     onChange={handleInputChange}
                                     onKeyPress={handleKeyPress}
-                                    placeholder="Message Lumen..."
-                                    className="flex-1 bg-transparent border-none outline-none resize-none max-h-32 text-gray-900 placeholder-gray-400"
+                                    placeholder="Message Lumen... (Attach images with 📎)"
+                                    disabled={isUploading}
+                                    className="flex-1 bg-transparent border-none outline-none resize-none max-h-32 text-gray-900 placeholder-gray-400 disabled:opacity-50"
                                     rows={1}
                                     style={{
                                         minHeight: '24px',
                                         maxHeight: '120px'
                                     }}
                                 />
+
                                 <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
                                     <Mic className="w-5 h-5 text-gray-500" />
                                 </button>
+
                                 <button
                                     onClick={sendMessage}
-                                    disabled={!inputMessage.trim() || isLoading}
+                                    disabled={(!inputMessage.trim() && attachments.length === 0) || isLoading || isUploading}
                                     className="p-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
                                 >
                                     <Send className="w-5 h-5 text-white" />
