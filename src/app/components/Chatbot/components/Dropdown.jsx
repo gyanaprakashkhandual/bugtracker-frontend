@@ -1,0 +1,315 @@
+'use client';
+
+import React, { useState, useEffect, useRef } from 'react';
+import { motion } from 'framer-motion';
+import {
+  FileText,
+  Bug,
+  FolderOpen,
+  CheckSquare,
+  Edit3,
+  Trash2,
+  Search,
+  Database,
+  Code,
+  FileCode,
+  GitBranch,
+  AlertCircle,
+  Clock,
+  Users,
+  Settings
+} from 'lucide-react';
+
+const CommandDropdown = ({ onSelect, onClose }) => {
+  const [searchQuery, setSearchQuery] = useState('');
+  const [selectedIndex, setSelectedIndex] = useState(0);
+  const dropdownRef = useRef(null);
+  const searchInputRef = useRef(null);
+
+  // Available commands (Future feature - these will trigger specific actions)
+  const commands = [
+    {
+      id: 'add-test-case',
+      name: 'Add Test Case',
+      description: 'Create a new test case',
+      icon: FileText,
+      category: 'Test Cases',
+      color: 'text-blue-500'
+    },
+    {
+      id: 'edit-test-case',
+      name: 'Edit Test Case',
+      description: 'Modify existing test case',
+      icon: Edit3,
+      category: 'Test Cases',
+      color: 'text-green-500'
+    },
+    {
+      id: 'delete-test-case',
+      name: 'Delete Test Case',
+      description: 'Remove a test case',
+      icon: Trash2,
+      category: 'Test Cases',
+      color: 'text-red-500'
+    },
+    {
+      id: 'get-test-case',
+      name: 'Get Test Case',
+      description: 'Retrieve test case details',
+      icon: Search,
+      category: 'Test Cases',
+      color: 'text-purple-500'
+    },
+    {
+      id: 'add-bug',
+      name: 'Add Bug',
+      description: 'Report a new bug',
+      icon: Bug,
+      category: 'Bugs',
+      color: 'text-orange-500'
+    },
+    {
+      id: 'update-bug',
+      name: 'Update Bug',
+      description: 'Update bug status or details',
+      icon: AlertCircle,
+      category: 'Bugs',
+      color: 'text-yellow-500'
+    },
+    {
+      id: 'get-bugs',
+      name: 'Get Bugs',
+      description: 'List all bugs',
+      icon: Database,
+      category: 'Bugs',
+      color: 'text-red-600'
+    },
+    {
+      id: 'create-project',
+      name: 'Create Project',
+      description: 'Start a new project',
+      icon: FolderOpen,
+      category: 'Projects',
+      color: 'text-indigo-500'
+    },
+    {
+      id: 'list-projects',
+      name: 'List Projects',
+      description: 'View all projects',
+      icon: GitBranch,
+      category: 'Projects',
+      color: 'text-cyan-500'
+    },
+    {
+      id: 'get-project-stats',
+      name: 'Project Statistics',
+      description: 'Get project analytics',
+      icon: Database,
+      category: 'Projects',
+      color: 'text-teal-500'
+    },
+    {
+      id: 'assign-task',
+      name: 'Assign Task',
+      description: 'Assign task to team member',
+      icon: Users,
+      category: 'Tasks',
+      color: 'text-pink-500'
+    },
+    {
+      id: 'update-status',
+      name: 'Update Status',
+      description: 'Change task or bug status',
+      icon: CheckSquare,
+      category: 'Tasks',
+      color: 'text-green-600'
+    },
+    {
+      id: 'code-review',
+      name: 'Code Review',
+      description: 'Request code review',
+      icon: Code,
+      category: 'Development',
+      color: 'text-violet-500'
+    },
+    {
+      id: 'generate-report',
+      name: 'Generate Report',
+      description: 'Create test report',
+      icon: FileCode,
+      category: 'Reports',
+      color: 'text-gray-600'
+    },
+    {
+      id: 'schedule-test',
+      name: 'Schedule Test',
+      description: 'Schedule automated test',
+      icon: Clock,
+      category: 'Automation',
+      color: 'text-blue-600'
+    }
+  ];
+
+  // Filter commands based on search
+  const filteredCommands = commands.filter(
+    (cmd) =>
+      cmd.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      cmd.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      cmd.category.toLowerCase().includes(searchQuery.toLowerCase())
+  );
+
+  // Group commands by category
+  const groupedCommands = filteredCommands.reduce((acc, cmd) => {
+    if (!acc[cmd.category]) {
+      acc[cmd.category] = [];
+    }
+    acc[cmd.category].push(cmd);
+    return acc;
+  }, {});
+
+  // Handle keyboard navigation
+  useEffect(() => {
+    const handleKeyDown = (e) => {
+      if (e.key === 'ArrowDown') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev + 1) % filteredCommands.length);
+      } else if (e.key === 'ArrowUp') {
+        e.preventDefault();
+        setSelectedIndex((prev) => (prev - 1 + filteredCommands.length) % filteredCommands.length);
+      } else if (e.key === 'Enter') {
+        e.preventDefault();
+        if (filteredCommands[selectedIndex]) {
+          onSelect(filteredCommands[selectedIndex].id);
+        }
+      } else if (e.key === 'Escape') {
+        e.preventDefault();
+        onClose();
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [filteredCommands, selectedIndex, onSelect, onClose]);
+
+  // Handle click outside
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        onClose();
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, [onClose]);
+
+  // Auto-focus search input
+  useEffect(() => {
+    searchInputRef.current?.focus();
+  }, []);
+
+  return (
+    <motion.div
+      ref={dropdownRef}
+      initial={{ opacity: 0, y: 10, scale: 0.95 }}
+      animate={{ opacity: 1, y: 0, scale: 1 }}
+      exit={{ opacity: 0, y: 10, scale: 0.95 }}
+      transition={{ duration: 0.15 }}
+      className="absolute bottom-full left-0 mb-2 w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden z-50"
+    >
+      {/* Search Header */}
+      <div className="p-3 border-b border-gray-200 bg-gray-50">
+        <div className="relative">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <input
+            ref={searchInputRef}
+            type="text"
+            placeholder="Search commands..."
+            value={searchQuery}
+            onChange={(e) => {
+              setSearchQuery(e.target.value);
+              setSelectedIndex(0);
+            }}
+            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
+        <p className="text-xs text-gray-500 mt-2">
+          💡 <strong>Future Feature:</strong> Commands will trigger specific actions (add test case, create bug, etc.)
+        </p>
+      </div>
+
+      {/* Commands List */}
+      <div className="max-h-96 overflow-y-auto">
+        {Object.keys(groupedCommands).length === 0 ? (
+          <div className="p-8 text-center">
+            <Search className="w-12 h-12 mx-auto mb-2 text-gray-300" />
+            <p className="text-sm text-gray-500">No commands found</p>
+          </div>
+        ) : (
+          <div className="p-2">
+            {Object.entries(groupedCommands).map(([category, categoryCommands]) => (
+              <div key={category} className="mb-3">
+                {/* Category Header */}
+                <div className="px-3 py-1 mb-1">
+                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                    {category}
+                  </h3>
+                </div>
+
+                {/* Category Commands */}
+                {categoryCommands.map((command, idx) => {
+                  const globalIndex = filteredCommands.indexOf(command);
+                  const Icon = command.icon;
+                  const isSelected = globalIndex === selectedIndex;
+
+                  return (
+                    <motion.button
+                      key={command.id}
+                      whileHover={{ scale: 1.01 }}
+                      whileTap={{ scale: 0.98 }}
+                      onClick={() => onSelect(command.id)}
+                      className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
+                        isSelected
+                          ? 'bg-blue-50 border border-blue-200'
+                          : 'hover:bg-gray-50 border border-transparent'
+                      }`}
+                    >
+                      <div
+                        className={`w-8 h-8 rounded-lg flex items-center justify-center ${
+                          isSelected ? 'bg-blue-100' : 'bg-gray-100'
+                        }`}
+                      >
+                        <Icon className={`w-4 h-4 ${command.color}`} />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h4 className="text-sm font-medium text-gray-900">
+                          {command.name}
+                        </h4>
+                        <p className="text-xs text-gray-500 truncate">
+                          {command.description}
+                        </p>
+                      </div>
+                      {isSelected && (
+                        <div className="text-xs text-blue-600 font-medium">↵</div>
+                      )}
+                    </motion.button>
+                  );
+                })}
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Footer */}
+      <div className="p-3 border-t border-gray-200 bg-gray-50">
+        <div className="flex items-center justify-between text-xs text-gray-500">
+          <span>Use ↑↓ to navigate</span>
+          <span>↵ to select • Esc to close</span>
+        </div>
+      </div>
+    </motion.div>
+  );
+};
+
+export default CommandDropdown;

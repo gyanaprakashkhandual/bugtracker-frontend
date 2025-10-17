@@ -1,10 +1,10 @@
-import LumenChat from '@/app/pages/services/Chatbot'
+import Chat from '@/app/components/Chatbot/page/Chat'
 import React from 'react'
 
 function page() {
   return (
     <div>
-        <LumenChat/>
+        <Chat/>
     </div>
   )
 }
