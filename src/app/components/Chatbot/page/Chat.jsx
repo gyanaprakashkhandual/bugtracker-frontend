@@ -46,14 +46,140 @@ const Chat = () => {
     const [isEditingTitle, setIsEditingTitle] = useState(false);
     const [editTitle, setEditTitle] = useState('');
 
-    // Image upload states
-    const [attachments, setAttachments] = useState([]);
-    const [isUploading, setIsUploading] = useState(false);
-    const [uploadProgress, setUploadProgress] = useState(0);
+    // Add these state variables
+    const [isRecording, setIsRecording] = useState(false);
+    const [recordingTime, setRecordingTime] = useState(0);
+    const recognitionRef = useRef(null);
+    const recordingIntervalRef = useRef(null);
+    const interimTranscriptRef = useRef('');
 
-    const messagesEndRef = useRef(null);
-    const inputRef = useRef(null);
-    const fileInputRef = useRef(null);
+    // Initialize speech recognition
+    useEffect(() => {
+        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
+            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+            recognitionRef.current = new SpeechRecognition();
+            recognitionRef.current.continuous = true;
+            recognitionRef.current.interimResults = true;
+            recognitionRef.current.lang = 'en-US'; // Change to 'hi-IN' for Hindi, etc.
+            recognitionRef.current.maxAlternatives = 1;
+
+            recognitionRef.current.onstart = () => {
+                console.log('Speech recognition started');
+                interimTranscriptRef.current = '';
+            };
+
+            recognitionRef.current.onresult = (event) => {
+                let interimTranscript = '';
+                let finalTranscript = '';
+
+                for (let i = event.resultIndex; i < event.results.length; i++) {
+                    const transcript = event.results[i][0].transcript;
+                    if (event.results[i].isFinal) {
+                        finalTranscript += transcript + ' ';
+                    } else {
+                        interimTranscript += transcript;
+                    }
+                }
+
+                // Update with final transcript
+                if (finalTranscript) {
+                    setInputMessage(prev => {
+                        const newMessage = prev + finalTranscript;
+                        return newMessage;
+                    });
+                    interimTranscriptRef.current = '';
+
+                    // Auto-adjust textarea height
+                    if (inputRef.current) {
+                        setTimeout(() => {
+                            inputRef.current.style.height = 'auto';
+                            inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 400)}px`;
+                        }, 0);
+                    }
+                }
+            };
+
+            recognitionRef.current.onerror = (event) => {
+                console.error('Speech recognition error:', event.error);
+                if (event.error === 'no-speech') {
+                    console.log('No speech detected');
+                } else if (event.error === 'not-allowed') {
+                    alert('Microphone access denied. Please allow microphone permissions.');
+                }
+                stopRecording();
+            };
+
+            recognitionRef.current.onend = () => {
+                console.log('Speech recognition ended');
+                if (isRecording) {
+                    // Restart if still recording (for continuous listening)
+                    recognitionRef.current.start();
+                }
+            };
+        }
+
+        return () => {
+            if (recognitionRef.current) {
+                recognitionRef.current.stop();
+            }
+            if (recordingIntervalRef.current) {
+                clearInterval(recordingIntervalRef.current);
+            }
+        };
+    }, []);
+
+    // Format recording time
+    const formatTime = (seconds) => {
+        const mins = Math.floor(seconds / 60);
+        const secs = seconds % 60;
+        return `${mins}:${secs.toString().padStart(2, '0')}`;
+    };
+
+    // Start recording
+    const startRecording = () => {
+        if (!recognitionRef.current) {
+            alert('Speech recognition is not supported in your browser. Please use Chrome, Edge, or Safari.');
+            return;
+        }
+
+        try {
+            recognitionRef.current.start();
+            setIsRecording(true);
+            setRecordingTime(0);
+
+            // Start recording timer
+            recordingIntervalRef.current = setInterval(() => {
+                setRecordingTime(prev => prev + 1);
+            }, 1000);
+        } catch (error) {
+            console.error('Error starting speech recognition:', error);
+            alert('Could not start speech recognition. Please try again.');
+        }
+    };
+
+    // Stop recording
+    const stopRecording = () => {
+        if (recognitionRef.current) {
+            recognitionRef.current.stop();
+        }
+
+        if (recordingIntervalRef.current) {
+            clearInterval(recordingIntervalRef.current);
+        }
+
+        setIsRecording(false);
+        setRecordingTime(0);
+        interimTranscriptRef.current = '';
+    };
+
+    // Toggle recording
+    const toggleRecording = () => {
+        if (isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    };
 
     // Scroll to bottom
     const scrollToBottom = () => {
@@ -257,6 +383,10 @@ const Chat = () => {
     // Send message with attachments
     const sendMessage = async () => {
         if ((!inputMessage.trim() && attachments.length === 0) || !currentChat) return;
+        if (inputRef.current) {
+            inputRef.current.style.height = 'auto';
+            inputRef.current.style.height = '24px';
+        }
 
         const userMessage = {
             role: 'user',
@@ -427,13 +557,13 @@ const Chat = () => {
                         initial={{ x: -300 }}
                         animate={{ x: 0 }}
                         exit={{ x: -300 }}
-                        className="w-64 bg-white border-r border-gray-200 flex flex-col"
+                        className="w-64 bg-white border-r border-gray-200 flex flex-col kanban-scrollbar"
                     >
                         {/* New Chat Button */}
-                        <div className="p-4 border-b border-gray-200">
+                        <div className="p-[7px] border-b border-gray-200">
                             <button
                                 onClick={createNewChat}
-                                className="w-full flex items-center gap-2 px-4 py-2 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                                className="w-full flex items-center gap-2 px-4 py-1 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
                             >
                                 <Plus className="w-4 h-4" />
                                 <span className="text-sm font-medium">New Chat</span>
@@ -441,7 +571,7 @@ const Chat = () => {
                         </div>
 
                         {/* Search */}
-                        <div className="p-4">
+                        <div className="p-2">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
                                 <input
@@ -449,7 +579,7 @@ const Chat = () => {
                                     placeholder="Search chats..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    className="w-full pl-9 pr-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500"
                                 />
                             </div>
                         </div>
@@ -473,6 +603,7 @@ const Chat = () => {
                                         .map((chat) => (
                                             <motion.div
                                                 key={chat._id}
+
                                                 whileHover={{ scale: 1.02 }}
                                                 className={`p-3 rounded-lg cursor-pointer transition-colors group ${currentChat?._id === chat._id
                                                     ? 'bg-blue-50 border border-blue-200'
@@ -481,21 +612,16 @@ const Chat = () => {
                                                 onClick={() => loadChat(chat._id)}
                                             >
                                                 <div className="flex items-start justify-between gap-2">
-                                                    <div className="flex-1 min-w-0">
+                                                    <div content-data={chat.title}
+                                                        content-placement="right"
+                                                        className="flex-1 min-w-0">
                                                         <h3 className="text-sm font-medium text-gray-900 truncate">
                                                             {chat.title}
                                                         </h3>
-                                                        <p className="text-xs text-gray-500 truncate mt-1">
-                                                            {chat.lastMessagePreview}
-                                                        </p>
-                                                        <div className="flex items-center gap-2 mt-2">
-                                                            <span className="text-xs text-gray-400">
-                                                                {chat.messageCount} messages
-                                                            </span>
-                                                        </div>
                                                     </div>
                                                     <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
                                                         <button
+                                                            tooltip-data="Pin"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 togglePin(chat._id, chat.isPinned);
@@ -508,6 +634,7 @@ const Chat = () => {
                                                             />
                                                         </button>
                                                         <button
+                                                            tooltip-data="Delete"
                                                             onClick={(e) => {
                                                                 e.stopPropagation();
                                                                 deleteChat(chat._id);
@@ -746,52 +873,89 @@ const Chat = () => {
                                 </div>
                             )}
 
-                            <div className="flex items-end gap-2 bg-gray-50 rounded-2xl border border-gray-200 p-2">
-                                {/* Hidden file input */}
-                                <input
-                                    ref={fileInputRef}
-                                    type="file"
-                                    accept="image/*"
-                                    multiple
-                                    onChange={handleImageSelect}
-                                    className="hidden"
-                                />
+                            <div className="w-full space-y-2">
+                                {/* Recording indicator */}
+                                {isRecording && (
+                                    <div className="flex items-center gap-3 bg-red-50 border border-red-200 rounded-xl p-3 animate-pulse">
+                                        <div className="flex items-center gap-2">
+                                            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
+                                            <span className="text-sm font-medium text-red-700">Recording</span>
+                                        </div>
+                                        <span className="text-sm text-red-600">{formatTime(recordingTime)}</span>
+                                        <div className="flex-1 flex items-center gap-1 px-2">
+                                            <div className="flex items-center gap-1">
+                                                <span className="text-xs text-red-600">Listening...</span>
+                                            </div>
+                                        </div>
+                                        <button
+                                            onClick={stopRecording}
+                                            className="px-3 py-1 bg-red-500 hover:bg-red-600 text-white text-sm rounded-lg transition-colors"
+                                        >
+                                            Stop
+                                        </button>
+                                    </div>
+                                )}
 
-                                {/* Attachment button */}
-                                <button
-                                    onClick={() => fileInputRef.current?.click()}
-                                    disabled={isUploading}
-                                    className="p-2 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                                >
-                                    <Paperclip className="w-5 h-5 text-gray-500" />
-                                </button>
+                                <div className="flex items-end gap-2 bg-gray-50 rounded-2xl border border-gray-200 p-2">
+                                    {/* Hidden file input */}
+                                    <input
+                                        ref={fileInputRef}
+                                        type="file"
+                                        accept="image/*"
+                                        multiple
+                                        onChange={handleImageSelect}
+                                        className="hidden"
+                                    />
 
-                                <textarea
-                                    ref={inputRef}
-                                    value={inputMessage}
-                                    onChange={handleInputChange}
-                                    onKeyPress={handleKeyPress}
-                                    placeholder="Message Lumen... (Attach images with 📎)"
-                                    disabled={isUploading}
-                                    className="flex-1 bg-transparent border-none outline-none resize-none max-h-32 text-gray-900 placeholder-gray-400 disabled:opacity-50"
-                                    rows={1}
-                                    style={{
-                                        minHeight: '24px',
-                                        maxHeight: '120px'
-                                    }}
-                                />
+                                    {/* Attachment button */}
+                                    <button
+                                        onClick={() => fileInputRef.current?.click()}
+                                        disabled={isUploading || isRecording}
+                                        className="p-2 hover:bg-gray-200 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                                    >
+                                        <Paperclip className="w-5 h-5 text-gray-500" />
+                                    </button>
 
-                                <button className="p-2 hover:bg-gray-200 rounded-lg transition-colors">
-                                    <Mic className="w-5 h-5 text-gray-500" />
-                                </button>
+                                    <textarea
+                                        ref={inputRef}
+                                        value={inputMessage}
+                                        onChange={(e) => {
+                                            handleInputChange(e);
+                                            const textarea = e.target;
+                                            textarea.style.height = 'auto';
+                                            textarea.style.height = `${Math.min(textarea.scrollHeight, 400)}px`;
+                                        }}
+                                        onKeyPress={handleKeyPress}
+                                        placeholder="Lumen Add This test-case..."
+                                        disabled={isUploading || isRecording}
+                                        className="flex-1 bg-transparent border-none outline-none resize-none text-gray-900 placeholder-gray-400 disabled:opacity-50 overflow-y-auto"
+                                        rows={1}
+                                        style={{
+                                            minHeight: '24px',
+                                            maxHeight: '400px',
+                                            lineHeight: '24px'
+                                        }}
+                                    />
 
-                                <button
-                                    onClick={sendMessage}
-                                    disabled={(!inputMessage.trim() && attachments.length === 0) || isLoading || isUploading}
-                                    className="p-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors"
-                                >
-                                    <Send className="w-5 h-5 text-white" />
-                                </button>
+                                    <button
+                                        onClick={toggleRecording}
+                                        disabled={isLoading || isUploading}
+                                        className={`p-2 rounded-lg transition-all flex-shrink-0 ${isRecording
+                                                ? 'bg-red-500 hover:bg-red-600'
+                                                : 'hover:bg-gray-200'
+                                            }`}
+                                    >
+                                        <Mic className={`w-5 h-5 ${isRecording ? 'text-white' : 'text-gray-500'}`} />
+                                    </button>
+
+                                    <button
+                                        onClick={sendMessage}
+                                        disabled={(!inputMessage.trim() && attachments.length === 0) || isLoading || isUploading || isRecording}
+                                        className="p-2 bg-blue-500 hover:bg-blue-600 disabled:bg-gray-300 disabled:cursor-not-allowed rounded-lg transition-colors flex-shrink-0"
+                                    >
+                                        <Send className="w-5 h-5 text-white" />
+                                    </button>
+                                </div>
                             </div>
                         </div>
                     </div>
