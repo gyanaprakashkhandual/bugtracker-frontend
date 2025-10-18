@@ -14,8 +14,8 @@ import {
   Clock,
   User,
   FolderOpen,
-  FileCode,
   Calendar,
+  RefreshCw,
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { FaEye, FaEdit, FaShieldAlt } from "react-icons/fa";
@@ -23,10 +23,7 @@ import { useAlert } from "@/app/script/Alert.context";
 import { useConfirm } from "@/app/script/Confirm.context";
 
 const AccessControlSystem = () => {
-  const [activeTab, setActiveTab] = useState("projects");
   const [projects, setProjects] = useState([]);
-  const [testTypes, setTestTypes] = useState([]);
-  const [selectedItem, setSelectedItem] = useState(null);
   const [selectedProject, setSelectedProject] = useState(null);
   const [accessList, setAccessList] = useState([]);
   const [users, setUsers] = useState([]);
@@ -47,8 +44,6 @@ const AccessControlSystem = () => {
     minutes: "00",
     period: "PM",
   });
-  const [projectDropdownOpen, setProjectDropdownOpen] = useState(false);
-  const [lastSelectedItem, setLastSelectedItem] = useState(null);
 
   const userDropdownRef = useRef(null);
   const calendarRef = useRef(null);
@@ -65,6 +60,7 @@ const AccessControlSystem = () => {
     userId: "",
     accessLevel: "view",
     expiresAt: "",
+    autoGrantTestTypes: true, // Auto-grant test type access by default
   });
 
   // Get auth token
@@ -108,13 +104,6 @@ const AccessControlSystem = () => {
     fetchProjects();
     fetchUsers();
   }, []);
-
-  // Fetch test types when tab changes to testTypes or when selected project changes
-  useEffect(() => {
-    if (activeTab === "testTypes") {
-      fetchTestTypes(selectedProject?._id);
-    }
-  }, [activeTab, selectedProject]);
 
   // Auto-dismiss messages
   useEffect(() => {
@@ -246,12 +235,11 @@ const AccessControlSystem = () => {
     if (!day) return;
     const date = new Date(currentYear, currentMonth, day);
     setSelectedDate(date);
-    setShowCalendar(false); // Auto close after selection
+    setShowCalendar(false);
   };
 
   const handleTimeChange = (field, value) => {
     setSelectedTime((prev) => ({ ...prev, [field]: value }));
-    // Auto close respective dropdown
     if (field === "hours") setShowHourDropdown(false);
     if (field === "minutes") setShowMinuteDropdown(false);
     if (field === "period") setShowPeriodDropdown(false);
@@ -310,29 +298,6 @@ const AccessControlSystem = () => {
     }
   };
 
-  const fetchTestTypes = async (projectId = null) => {
-    try {
-      setLoading(true);
-      let endpoint =
-        "http://localhost:5000/api/v1/test-type/accessible-test-types";
-
-      // If projectId is provided, fetch project-specific test types
-      if (projectId) {
-        endpoint = `http://localhost:5000/api/v1/test-type/projects/${projectId}/test-types`;
-      }
-
-      const data = await fetchWithAuth(endpoint);
-      setTestTypes(data.testTypes || data || []);
-      setError(null);
-    } catch (err) {
-      console.error("Error fetching test types:", err);
-      setError(err.message);
-      setTestTypes([]);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchUsers = async () => {
     try {
       const data = await fetchWithAuth(
@@ -341,20 +306,16 @@ const AccessControlSystem = () => {
       setUsers(data.users || data || []);
     } catch (err) {
       console.error("Error fetching users:", err);
-      // Don't set error here as it might not be critical
     }
   };
 
-  const fetchAccessList = async (itemId, type) => {
+  const fetchAccessList = async (projectId) => {
     setLoading(true);
     try {
-      const endpoint =
-        type === "project"
-          ? `http://localhost:5000/api/v1/access/project/${itemId}/users`
-          : `http://localhost:5000/api/v1/access/testtype/${itemId}/users`;
-
-      const data = await fetchWithAuth(endpoint);
-      setAccessList(data.accessList || data.users || data || []);
+      const data = await fetchWithAuth(
+        `http://localhost:5000/api/v1/access/project/${projectId}/details`
+      );
+      setAccessList(data.accessList || []);
       setError(null);
     } catch (err) {
       console.error("Error fetching access list:", err);
@@ -365,58 +326,48 @@ const AccessControlSystem = () => {
     }
   };
 
-  const handleItemSelect = (item) => {
-    setSelectedItem(item);
-    setLastSelectedItem(item);
-    fetchAccessList(
-      item._id,
-      activeTab === "projects" ? "project" : "testtype"
-    );
-  };
-
   const handleProjectSelect = (project) => {
     setSelectedProject(project);
-    setSelectedItem(null);
-    setAccessList([]);
-    fetchTestTypes(project._id);
+    fetchAccessList(project._id);
   };
 
   const handleGrantAccess = async () => {
-    if (!grantForm.userId || !selectedItem) {
-      setError("Please select a user");
+    if (!grantForm.userId || !selectedProject) {
+      setError("Please select a user and project");
       return;
     }
 
     setLoading(true);
     try {
-      const endpoint =
-        activeTab === "projects"
-          ? "http://localhost:5000/api/v1/access/project/grant"
-          : "http://localhost:5000/api/v1/access/testtype/grant";
-
       const body = {
-        [activeTab === "projects" ? "projectId" : "testTypeId"]:
-          selectedItem._id,
+        projectId: selectedProject._id,
         userId: grantForm.userId,
         accessLevel: grantForm.accessLevel,
         expiresAt: grantForm.expiresAt || undefined,
+        autoGrantTestTypes: grantForm.autoGrantTestTypes,
       };
 
-      await fetchWithAuth(endpoint, {
+      const data = await fetchWithAuth("http://localhost:5000/api/v1/access/project/grant", {
         method: "POST",
         body: JSON.stringify(body),
       });
 
       setShowGrantModal(false);
-      setGrantForm({ userId: "", accessLevel: "view", expiresAt: "" });
+      setGrantForm({
+        userId: "",
+        accessLevel: "view",
+        expiresAt: "",
+        autoGrantTestTypes: true
+      });
+
       showAlert({
         type: "success",
-        message: "Access granted",
+        message: data.autoTestTypeAccess
+          ? `Access granted! ${data.autoTestTypeAccess.testTypesGranted} test types were automatically granted.`
+          : "Access granted successfully!",
       });
-      fetchAccessList(
-        selectedItem._id,
-        activeTab === "projects" ? "project" : "testType"
-      );
+
+      fetchAccessList(selectedProject._id);
       setError(null);
     } catch (err) {
       console.error("Error granting access:", err);
@@ -427,32 +378,34 @@ const AccessControlSystem = () => {
   };
 
   const handleRevokeAccess = async (userId) => {
-    if (!selectedItem) return;
+    if (!selectedProject) return;
 
     const result = await showConfirm({
-      title: "Logout Confirmation",
-      message:
-        "Are you sure you want to log out? You will need to log in again to continue using the app.",
-      confirmText: "Logout",
-      cancelText: "Stay Logged In",
+      title: "Revoke Access",
+      message: "Are you sure you want to revoke access? This will also remove access to all test types in this project.",
+      confirmText: "Revoke",
+      cancelText: "Cancel",
       type: "warning",
     });
 
+    if (!result) return;
+
     setLoading(true);
     try {
-      const endpoint =
-        activeTab === "projects"
-          ? `http://localhost:5000/api/v1/access/project/revoke/${selectedItem._id}/${userId}`
-          : `http://localhost:5000/api/v1/access/testtype/revoke/${selectedItem._id}/${userId}`;
-
-      await fetchWithAuth(endpoint, {
-        method: "DELETE",
-      });
-      showAlert({ type: "success", message: "Access revoked successfully!" });
-      fetchAccessList(
-        selectedItem._id,
-        activeTab === "projects" ? "project" : "testtype"
+      await fetchWithAuth(
+        `http://localhost:5000/api/v1/access/project/revoke/${selectedProject._id}/${userId}`,
+        {
+          method: "DELETE",
+          body: JSON.stringify({ autoRevokeTestTypes: true }),
+        }
       );
+
+      showAlert({
+        type: "success",
+        message: "Access revoked successfully! All test type access has been removed."
+      });
+
+      fetchAccessList(selectedProject._id);
       setError(null);
     } catch (err) {
       console.error("Error revoking access:", err);
@@ -462,243 +415,146 @@ const AccessControlSystem = () => {
     }
   };
 
+  const handleUpdateAccess = async (userId, newAccessLevel) => {
+    if (!selectedProject) return;
+
+    setLoading(true);
+    try {
+      const data = await fetchWithAuth(
+        `http://localhost:5000/api/v1/access/project/update/${selectedProject._id}/${userId}`,
+        {
+          method: "PUT",
+          body: JSON.stringify({
+            accessLevel: newAccessLevel,
+            updateTestTypesAccess: true,
+          }),
+        }
+      );
+
+      showAlert({
+        type: "success",
+        message: data.testTypeAccessUpdate
+          ? `Access updated! ${data.testTypeAccessUpdate.testTypesUpdated} test types were updated.`
+          : "Access level updated successfully!",
+      });
+
+      fetchAccessList(selectedProject._id);
+      setError(null);
+    } catch (err) {
+      console.error("Error updating access:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleSyncTestTypes = async () => {
+    if (!selectedProject) return;
+
+    setLoading(true);
+    try {
+      const data = await fetchWithAuth(
+        `http://localhost:5000/api/v1/access/project/${selectedProject._id}/sync-test-types`,
+        {
+          method: "POST",
+        }
+      );
+
+      showAlert({
+        type: "success",
+        message: data.details || "Test type access synced successfully!",
+      });
+
+      fetchAccessList(selectedProject._id);
+      setError(null);
+    } catch (err) {
+      console.error("Error syncing test types:", err);
+      setError(err.message);
+    } finally {
+      setLoading(false);
+    }
+  };
+
   return (
-    <div className="max-h[calc(100vh-60px)] bg-gray-50">
-      {/* Header */}
-      <div className="bg-white border-b border-gray-200">
-        <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex items-center justify-between">
-            {/* Header */}
-            <div className="py-6">
-              <div className="flex items-center space-x-3">
-                <div className="p-2 bg-blue-100 rounded-lg">
-                  <Shield className="w-6 h-6 text-blue-600" />
-                </div>
-                <div>
-                  <h1 className="text-2xl font-bold text-gray-900">
-                    Access Control
-                  </h1>
-                  <p className="text-sm text-gray-500">
-                    Manage project and test type permissions
-                  </p>
-                </div>
-              </div>
-            </div>
-
-            {/* Tabs */}
-            <div className="flex space-x-8 border-b border-gray-200">
-              <button
-                onClick={() => {
-                  setActiveTab("projects");
-                  setSelectedItem(null);
-                  setAccessList([]);
-                  setSelectedProject(null);
-                }}
-                className={`pb-4 px-1 relative ${activeTab === "projects"
-                    ? "text-blue-600 font-medium"
-                    : "text-gray-500 hover:text-gray-700"
-                  }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <FolderOpen className="w-4 h-4" />
-                  <span>Projects</span>
-                </div>
-                {activeTab === "projects" && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
-                  />
-                )}
-              </button>
-              <button
-                onClick={() => {
-                  setActiveTab("testTypes");
-                  setSelectedItem(null);
-                  setAccessList([]);
-                }}
-                className={`pb-4 px-1 relative ${activeTab === "testTypes"
-                    ? "text-blue-600 font-medium"
-                    : "text-gray-500 hover:text-gray-700"
-                  }`}
-              >
-                <div className="flex items-center space-x-2">
-                  <FileCode className="w-4 h-4" />
-                  <span>Test Types</span>
-                </div>
-                {activeTab === "testTypes" && (
-                  <motion.div
-                    layoutId="activeTab"
-                    className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-600"
-                  />
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </div>
-
+    <div className="max-h[calc(100vh-60px)] bg-gray-50 dark:bg-gray-900">
       {/* Main Content */}
-      <div className="max-w-full mx-auto px-4 sm:px-6 lg:px-2 py-2">
+      <div className="max-w-full mx-auto">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Sidebar - Items List */}
+          {/* Left Sidebar - Projects List */}
           <div className="lg:col-span-1 space-y-4">
-            {/* Project Selector for Test Types */}
-            {activeTab === "testTypes" && (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4">
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Select Project
-                </label>
-                <div className="relative">
-                  <button
-                    onClick={() => setProjectDropdownOpen(!projectDropdownOpen)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md bg-white text-left text-gray-900 text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-colors flex items-center justify-between"
-                  >
-                    {selectedProject?.projectName || "All Test Types"}
-                    <svg
-                      className={`w-4 h-4 text-gray-600 transition-transform ${projectDropdownOpen ? "rotate-180" : ""
-                        }`}
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M19 14l-7 7m0 0l-7-7m7 7V3"
-                      />
-                    </svg>
-                  </button>
-                  {projectDropdownOpen && (
-                    <div className="absolute left-0 right-0 mt-1 bg-white border border-gray-200 rounded-md shadow-lg z-50">
-                      <button
-                        onClick={() => {
-                          handleProjectSelect(null);
-                          setProjectDropdownOpen(false);
-                        }}
-                        className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 text-sm text-gray-900 transition-colors"
-                      >
-                        All Test Types
-                      </button>
-                      {projects.map((project) => (
-                        <button
-                          key={project._id}
-                          onClick={() => {
-                            handleProjectSelect(project);
-                            setProjectDropdownOpen(false);
-                          }}
-                          className="w-full text-left px-3 py-2 hover:bg-gray-50 border-b border-gray-100 text-sm text-gray-900 transition-colors last:border-b-0"
-                        >
-                          {project.projectName}
-                        </button>
-                      ))}
-                    </div>
-                  )}
+            {/* Projects List */}
+            <div className="bg-white dark:bg-gray-800 border shadow-sm border-gray-200 dark:border-gray-700 overflow-hidden sidebar-scrollbar">
+              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
+                <div className="flex items-center justify-between">
+                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
+                    Projects
+                  </h2>
                 </div>
-                {selectedProject && (
-                  <p className="text-xs text-gray-500 mt-2">
-                    Showing test types for:{" "}
-                    <span className="font-medium">
-                      {selectedProject.projectName}
-                    </span>
-                  </p>
-                )}
-              </div>
-            )}
-
-            {/* Items List */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden sidebar-scrollbar">
-              <div className="p-4 border-b border-gray-200">
-                <h2 className="text-lg font-semibold text-gray-900">
-                  {activeTab === "projects" ? "Projects" : "Test Types"}
-                </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  {(activeTab === "projects" ? projects : testTypes).length}{" "}
-                  items
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  {projects.length} projects
                 </p>
               </div>
-              <div
-                className={`overflow-y-auto ${activeTab === "projects"
-                    ? "max-h-[calc(100vh-275px)]"
-                    : "max-h-[calc(100vh-410px)]"
-                  }`}
-              >
-                {loading && !selectedItem ? (
+              <div className="max-h-[calc(100vh-158px)] overflow-y-auto">
+                {loading && !selectedProject ? (
                   <div className="space-y-3 p-4">
                     {[...Array(6)].map((_, i) => (
                       <div
                         key={i}
-                        className="p-4 border-b border-gray-100 last:border-b-0"
+                        className="p-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                       >
-                        <div className="h-4 bg-gray-200 rounded w-2/3 animate-pulse mb-2"></div>
-                        <div className="h-3 bg-gray-200 rounded w-full animate-pulse mb-2"></div>
-                        <div className="h-3 bg-gray-200 rounded w-1/3 animate-pulse"></div>
+                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 animate-pulse mb-2"></div>
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full animate-pulse mb-2"></div>
+                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3 animate-pulse"></div>
                       </div>
                     ))}
                   </div>
-                ) : (activeTab === "projects" ? projects : testTypes).length ===
-                  0 ? (
+                ) : projects.length === 0 ? (
                   <div className="p-8 text-center">
-                    <div className="w-12 h-12 bg-gray-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      {activeTab === "projects" ? (
-                        <FolderOpen className="w-6 h-6 text-gray-400" />
-                      ) : (
-                        <FileCode className="w-6 h-6 text-gray-400" />
-                      )}
+                    <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mx-auto mb-3">
+                      <FolderOpen className="w-6 h-6 text-gray-400" />
                     </div>
-                    <p className="text-gray-500">
-                      {activeTab === "testTypes" && selectedProject
-                        ? `No test types found for ${selectedProject.projectName}`
-                        : `No ${activeTab === "projects" ? "projects" : "test types"
-                        } found`}
+                    <p className="text-gray-500 dark:text-gray-400">
+                      No projects found
                     </p>
                   </div>
                 ) : (
-                  (activeTab === "projects" ? projects : testTypes).map(
-                    (item) => (
-                      <button
-                        key={item._id}
-                        onClick={() => handleItemSelect(item)}
-                        className={`w-full text-left px-4 py-3 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-b-0 ${selectedItem?._id === item._id ? "bg-blue-50" : ""
-                          }`}
-                      >
-                        <h3 className="font-medium text-gray-900 mb-1">
-                          {activeTab === "projects"
-                            ? item.projectName
-                            : item.testTypeName}
-                        </h3>
-                        <p className="text-sm text-gray-500 line-clamp-2">
-                          {activeTab === "projects"
-                            ? item.projectDesc
-                            : item.testTypeDesc}
-                        </p>
-                        {activeTab === "testTypes" && item.testFramework && (
-                          <span className="inline-block mt-2 px-2 py-1 text-xs font-medium bg-gray-100 text-gray-700 rounded">
-                            {item.testFramework}
-                          </span>
-                        )}
-                      </button>
-                    )
-                  )
+                  projects.map((project) => (
+                    <button
+                      key={project._id}
+                      onClick={() => handleProjectSelect(project)}
+                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${selectedProject?._id === project._id
+                        ? "bg-blue-50 dark:bg-blue-900/20"
+                        : ""
+                        }`}
+                    >
+                      <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-1">
+                        {project.projectName}
+                      </h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
+                        {project.projectDesc}
+                      </p>
+                    </button>
+                  ))
                 )}
               </div>
             </div>
           </div>
+
           {/* Right Content - Access Management */}
           <div className="lg:col-span-2">
-            {selectedItem || lastSelectedItem ? (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 min-h-[calc(100vh-190px)] sidebar-scrollbar">
+            {selectedProject ? (
+              <div className="bg-white dark:bg-gray-800 shadow-sm  border border-gray-200 dark:border-gray-700 min-h-[calc(100vh-73px)] sidebar-scrollbar">
                 {/* Header */}
-                <div className="p-6 border-b border-gray-200">
+                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
-                      <h2 className="text-xl font-semibold text-gray-900">
-                        {activeTab === "projects"
-                          ? (selectedItem || lastSelectedItem).projectName
-                          : (selectedItem || lastSelectedItem).testTypeName}
-                      </h2>
-                      <p className="text-sm text-gray-500 mt-1">
-                        Manage user access and permissions
+                      <div className="flex items-center space-x-3">
+                        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                          {selectedProject.projectName}
+                        </h2>
+                      </div>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                        Manage user access - Test type access is automatically granted
                       </p>
                     </div>
                     <button
@@ -713,30 +569,30 @@ const AccessControlSystem = () => {
                 </div>
 
                 {/* Access List */}
-                <div className="divide-y divide-gray-100 max-h-[calc(100vh-350px)] overflow-y-auto">
+                <div className="divide-y divide-gray-100 dark:divide-gray-700 max-h-[calc(100vh-350px)] overflow-y-auto">
                   {loading ? (
                     <div className="space-y-3 p-4">
                       {[...Array(5)].map((_, i) => (
                         <div
                           key={i}
-                          className="flex items-center space-x-3 p-4 bg-gray-50 rounded"
+                          className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded"
                         >
-                          <div className="w-10 h-10 bg-gray-200 rounded-full animate-pulse"></div>
+                          <div className="w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full animate-pulse"></div>
                           <div className="flex-1 space-y-2">
-                            <div className="h-4 bg-gray-200 rounded w-1/3 animate-pulse"></div>
-                            <div className="h-3 bg-gray-200 rounded w-1/4 animate-pulse"></div>
+                            <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-1/3 animate-pulse"></div>
+                            <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/4 animate-pulse"></div>
                           </div>
-                          <div className="h-8 bg-gray-200 rounded w-20 animate-pulse"></div>
+                          <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded w-20 animate-pulse"></div>
                         </div>
                       ))}
                     </div>
                   ) : accessList.length === 0 ? (
                     <div className="p-8 text-center">
-                      <Users className="w-12 h-12 text-gray-300 mx-auto mb-3" />
-                      <p className="text-gray-500 mb-2">
+                      <Users className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                      <p className="text-gray-500 dark:text-gray-400 mb-2">
                         No users have access yet
                       </p>
-                      <p className="text-sm text-gray-400">
+                      <p className="text-sm text-gray-400 dark:text-gray-500">
                         Click "Grant Access" to add users
                       </p>
                     </div>
@@ -746,6 +602,7 @@ const AccessControlSystem = () => {
                         key={access._id}
                         access={access}
                         onRevoke={handleRevokeAccess}
+                        onUpdate={handleUpdateAccess}
                         loading={loading}
                       />
                     ))
@@ -753,13 +610,13 @@ const AccessControlSystem = () => {
                 </div>
               </div>
             ) : (
-              <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-12 text-center">
-                <Lock className="w-16 h-16 text-gray-300 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 mb-2">
-                  Please select
+              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
+                <Lock className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  Select a Project
                 </h3>
-                <p className="text-gray-500">
-                  Choose an item from the list to manage access permissions
+                <p className="text-gray-500 dark:text-gray-400">
+                  Choose a project from the list to manage access permissions
                 </p>
               </div>
             )}
@@ -774,10 +631,10 @@ const AccessControlSystem = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-white/10 backdrop-blur-sm flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-white/10 dark:bg-gray-900/10 backdrop-blur-sm flex items-center justify-center z-50 p-4"
             onClick={(e) => {
               if (e.target === e.currentTarget && !loading) {
-                // Only close if clicking the backdrop, not the modal
+                setShowGrantModal(false);
               }
             }}
           >
@@ -786,24 +643,23 @@ const AccessControlSystem = () => {
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
               onClick={(e) => e.stopPropagation()}
-              className="bg-white rounded-xl shadow-2xl max-w-md w-full"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full"
             >
               {/* Header */}
-              <div className="px-6 py-5 border-b border-gray-200">
+              <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-lg font-semibold text-gray-900">
+                    <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
                       Grant Access
                     </h3>
-                    <p className="text-sm text-gray-500 mt-1">
-                      Add user access to{" "}
-                      {selectedItem?.projectName || selectedItem?.testTypeName}
+                    <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                      Add user access to {selectedProject?.projectName}
                     </p>
                   </div>
                   <button
                     onClick={() => !loading && setShowGrantModal(false)}
                     disabled={loading}
-                    className="text-gray-400 hover:text-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     <X className="w-5 h-5" />
                   </button>
@@ -812,9 +668,9 @@ const AccessControlSystem = () => {
 
               {/* Body */}
               <div className="px-6 py-5 space-y-5">
-                {/* User Dropdown - GitHub Style */}
+                {/* User Dropdown */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
                     User <span className="text-red-500">*</span>
                   </label>
                   <div ref={userDropdownRef} className="relative">
@@ -824,13 +680,13 @@ const AccessControlSystem = () => {
                         !loading && setShowUserDropdown(!showUserDropdown)
                       }
                       disabled={loading}
-                      className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md text-left flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                      className="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-left flex items-center justify-between hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
                     >
                       <span
                         className={
                           selectedUser
-                            ? "text-gray-900 text-sm"
-                            : "text-gray-500 text-sm"
+                            ? "text-gray-900 dark:text-gray-100 text-sm"
+                            : "text-gray-500 dark:text-gray-400 text-sm"
                         }
                       >
                         {selectedUser
@@ -838,7 +694,7 @@ const AccessControlSystem = () => {
                           : "Select a user"}
                       </span>
                       <ChevronDown
-                        className={`w-4 h-4 text-gray-500 transition-transform ${showUserDropdown ? "rotate-180" : ""
+                        className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${showUserDropdown ? "rotate-180" : ""
                           }`}
                       />
                     </button>
@@ -849,16 +705,16 @@ const AccessControlSystem = () => {
                           initial={{ opacity: 0, y: -8 }}
                           animate={{ opacity: 1, y: 0 }}
                           exit={{ opacity: 0, y: -8 }}
-                          className="absolute z-50 mt-2 w-full bg-white border border-gray-300 rounded-md shadow-lg max-h-72 overflow-hidden"
+                          className="absolute z-50 mt-2 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-72 overflow-hidden"
                         >
                           {/* Search */}
-                          <div className="p-2 border-b border-gray-200">
+                          <div className="p-2 border-b border-gray-200 dark:border-gray-600">
                             <input
                               type="text"
                               placeholder="Search users..."
                               value={userSearch}
                               onChange={(e) => setUserSearch(e.target.value)}
-                              className="w-full px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                              className="w-full px-3 py-2 text-sm border border-gray-300 dark:border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100"
                               onClick={(e) => e.stopPropagation()}
                             />
                           </div>
@@ -866,7 +722,7 @@ const AccessControlSystem = () => {
                           {/* User List */}
                           <div className="max-h-56 overflow-y-auto">
                             {filteredUsers.length === 0 ? (
-                              <div className="px-4 py-8 text-center text-sm text-gray-500">
+                              <div className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
                                 No users found
                               </div>
                             ) : (
@@ -882,23 +738,23 @@ const AccessControlSystem = () => {
                                     setShowUserDropdown(false);
                                     setUserSearch("");
                                   }}
-                                  className="w-full px-4 py-2.5 text-left hover:bg-gray-50 flex items-center justify-between group transition-colors"
+                                  className="w-full px-4 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between group transition-colors"
                                 >
                                   <div className="flex items-center space-x-3 flex-1 min-w-0">
                                     <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-sm font-medium flex-shrink-0">
                                       {user.name?.charAt(0).toUpperCase()}
                                     </div>
                                     <div className="flex-1 min-w-0">
-                                      <p className="text-sm font-medium text-gray-900 truncate">
+                                      <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
                                         {user.name}
                                       </p>
-                                      <p className="text-xs text-gray-500 truncate">
+                                      <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                                         {user.email}
                                       </p>
                                     </div>
                                   </div>
                                   {grantForm.userId === user._id && (
-                                    <Check className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                                    <Check className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                                   )}
                                 </button>
                               ))
@@ -912,7 +768,7 @@ const AccessControlSystem = () => {
 
                 {/* Access Level */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
                     Access Level <span className="text-red-500">*</span>
                   </label>
                   <div className="grid grid-cols-3 gap-2">
@@ -930,20 +786,20 @@ const AccessControlSystem = () => {
                           }
                           disabled={loading}
                           className={`p-3 rounded-md border-2 transition-all disabled:opacity-50 disabled:cursor-not-allowed ${grantForm.accessLevel === level.value
-                              ? "border-blue-600 bg-blue-50"
-                              : "border-gray-200 hover:border-gray-300 bg-white"
+                            ? "border-blue-600 bg-blue-50 dark:bg-blue-900/20"
+                            : "border-gray-200 dark:border-gray-600 hover:border-gray-300 dark:hover:border-gray-500 bg-white dark:bg-gray-700"
                             }`}
                         >
                           <Icon
                             className={`w-5 h-5 mx-auto mb-1 ${grantForm.accessLevel === level.value
-                                ? "text-blue-600"
-                                : "text-gray-500"
+                              ? "text-blue-600 dark:text-blue-400"
+                              : "text-gray-500 dark:text-gray-400"
                               }`}
                           />
                           <p
                             className={`text-xs font-medium ${grantForm.accessLevel === level.value
-                                ? "text-blue-900"
-                                : "text-gray-700"
+                              ? "text-blue-900 dark:text-blue-300"
+                              : "text-gray-700 dark:text-gray-300"
                               }`}
                           >
                             {level.label}
@@ -954,11 +810,37 @@ const AccessControlSystem = () => {
                   </div>
                 </div>
 
+                {/* Auto Grant Test Types Toggle */}
+                <div className="flex items-center justify-between p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium text-blue-900 dark:text-blue-100">
+                      Auto-grant test type access
+                    </p>
+                    <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
+                      User will automatically get same access to all test types in this project
+                    </p>
+                  </div>
+                  <label className="relative inline-flex items-center cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={grantForm.autoGrantTestTypes}
+                      onChange={(e) =>
+                        setGrantForm({
+                          ...grantForm,
+                          autoGrantTestTypes: e.target.checked,
+                        })
+                      }
+                      className="sr-only peer"
+                    />
+                    <div className="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                  </label>
+                </div>
+
                 {/* Expiration Date & Time */}
                 <div>
-                  <label className="block text-sm font-semibold text-gray-900 mb-2">
+                  <label className="block text-sm font-semibold text-gray-900 dark:text-gray-100 mb-2">
                     Expiration Date & Time{" "}
-                    <span className="text-xs text-gray-500 font-normal">
+                    <span className="text-xs text-gray-500 dark:text-gray-400 font-normal">
                       (Optional)
                     </span>
                   </label>
@@ -971,9 +853,9 @@ const AccessControlSystem = () => {
                           !loading && setShowCalendar(!showCalendar)
                         }
                         disabled={loading}
-                        className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                        className="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md flex items-center justify-between hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all disabled:bg-gray-50 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
                       >
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
                           {selectedDate
                             ? selectedDate.toLocaleDateString("en-US", {
                               month: "short",
@@ -981,7 +863,7 @@ const AccessControlSystem = () => {
                             })
                             : "Date"}
                         </span>
-                        <Calendar className="w-4 h-4 text-gray-500" />
+                        <Calendar className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                       </button>
 
                       <AnimatePresence>
@@ -990,7 +872,7 @@ const AccessControlSystem = () => {
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 8 }}
-                            className="absolute z-50 bottom-full mb-2 left-0 bg-white border border-gray-300 rounded-lg shadow-xl p-3 w-72"
+                            className="absolute z-50 bottom-full mb-2 left-0 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-3 w-72"
                           >
                             {/* Month Navigation */}
                             <div className="flex items-center justify-between mb-3">
@@ -1004,11 +886,11 @@ const AccessControlSystem = () => {
                                     setCurrentMonth(currentMonth - 1);
                                   }
                                 }}
-                                className="p-1 hover:bg-gray-100 rounded"
+                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
                               >
-                                <ChevronDown className="w-4 h-4 rotate-90" />
+                                <ChevronDown className="w-4 h-4 rotate-90 text-gray-600 dark:text-gray-400" />
                               </button>
-                              <span className="text-sm font-semibold text-gray-900">
+                              <span className="text-sm font-semibold text-gray-900 dark:text-gray-100">
                                 {monthNames[currentMonth]} {currentYear}
                               </span>
                               <button
@@ -1021,9 +903,9 @@ const AccessControlSystem = () => {
                                     setCurrentMonth(currentMonth + 1);
                                   }
                                 }}
-                                className="p-1 hover:bg-gray-100 rounded"
+                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-600 rounded"
                               >
-                                <ChevronDown className="w-4 h-4 -rotate-90" />
+                                <ChevronDown className="w-4 h-4 -rotate-90 text-gray-600 dark:text-gray-400" />
                               </button>
                             </div>
 
@@ -1040,7 +922,7 @@ const AccessControlSystem = () => {
                               ].map((day) => (
                                 <div
                                   key={day}
-                                  className="text-center text-xs font-medium text-gray-500 py-1"
+                                  className="text-center text-xs font-medium text-gray-500 dark:text-gray-400 py-1"
                                 >
                                   {day}
                                 </div>
@@ -1061,7 +943,7 @@ const AccessControlSystem = () => {
                                 ${isToday(day) ? "border border-blue-500" : ""}
                                 ${isSelected(day)
                                       ? "bg-blue-600 text-white font-semibold"
-                                      : "hover:bg-gray-100 text-gray-700"
+                                      : "hover:bg-gray-100 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300"
                                     }
                               `}
                                 >
@@ -1079,7 +961,7 @@ const AccessControlSystem = () => {
                                 setCurrentYear(today.getFullYear());
                                 handleDateSelect(today.getDate());
                               }}
-                              className="w-full mt-3 py-2 text-sm text-blue-600 hover:bg-blue-50 rounded-md transition-colors font-medium"
+                              className="w-full mt-3 py-2 text-sm text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-colors font-medium"
                             >
                               Today
                             </button>
@@ -1096,13 +978,13 @@ const AccessControlSystem = () => {
                           !loading && setShowTimePicker(!showTimePicker)
                         }
                         disabled={loading}
-                        className="w-full px-3 py-2.5 bg-white border border-gray-300 rounded-md flex items-center justify-between hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all disabled:bg-gray-50 disabled:cursor-not-allowed"
+                        className="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md flex items-center justify-between hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 transition-all disabled:bg-gray-50 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
                       >
-                        <span className="text-sm text-gray-700">
+                        <span className="text-sm text-gray-700 dark:text-gray-300">
                           {selectedTime.hours}:{selectedTime.minutes}{" "}
                           {selectedTime.period}
                         </span>
-                        <Clock className="w-4 h-4 text-gray-500" />
+                        <Clock className="w-4 h-4 text-gray-500 dark:text-gray-400" />
                       </button>
 
                       <AnimatePresence>
@@ -1111,7 +993,7 @@ const AccessControlSystem = () => {
                             initial={{ opacity: 0, y: 8 }}
                             animate={{ opacity: 1, y: 0 }}
                             exit={{ opacity: 0, y: 8 }}
-                            className="absolute z-50 bottom-full mb-2 right-0 bg-white border border-gray-300 rounded-lg shadow-xl p-4 w-64"
+                            className="absolute z-50 bottom-full mb-2 right-0 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-4 w-64"
                           >
                             <div className="flex items-center justify-center space-x-2">
                               {/* Hours Dropdown */}
@@ -1121,7 +1003,7 @@ const AccessControlSystem = () => {
                                   onClick={() =>
                                     setShowHourDropdown(!showHourDropdown)
                                   }
-                                  className="w-16 px-3 py-2 border border-gray-300 rounded-md text-center text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="w-16 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-center text-sm hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100"
                                 >
                                   {selectedTime.hours}
                                 </button>
@@ -1131,7 +1013,7 @@ const AccessControlSystem = () => {
                                       initial={{ opacity: 0, y: -8 }}
                                       animate={{ opacity: 1, y: 0 }}
                                       exit={{ opacity: 0, y: -8 }}
-                                      className="absolute z-50 mt-1 w-16 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto"
+                                      className="absolute z-50 mt-1 w-16 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-48 overflow-y-auto"
                                     >
                                       {Array.from({ length: 12 }, (_, i) => {
                                         const hour = (i + 1)
@@ -1144,9 +1026,9 @@ const AccessControlSystem = () => {
                                             onClick={() =>
                                               handleTimeChange("hours", hour)
                                             }
-                                            className={`w-full px-3 py-2 text-sm text-center hover:bg-gray-50 ${selectedTime.hours === hour
-                                                ? "bg-blue-50 text-blue-600 font-medium"
-                                                : ""
+                                            className={`w-full px-3 py-2 text-sm text-center hover:bg-gray-50 dark:hover:bg-gray-600 ${selectedTime.hours === hour
+                                              ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium"
+                                              : "text-gray-700 dark:text-gray-300"
                                               }`}
                                           >
                                             {hour}
@@ -1158,7 +1040,7 @@ const AccessControlSystem = () => {
                                 </AnimatePresence>
                               </div>
 
-                              <span className="text-lg font-semibold text-gray-700">
+                              <span className="text-lg font-semibold text-gray-700 dark:text-gray-300">
                                 :
                               </span>
 
@@ -1169,7 +1051,7 @@ const AccessControlSystem = () => {
                                   onClick={() =>
                                     setShowMinuteDropdown(!showMinuteDropdown)
                                   }
-                                  className="w-16 px-3 py-2 border border-gray-300 rounded-md text-center text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="w-16 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-center text-sm hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100"
                                 >
                                   {selectedTime.minutes}
                                 </button>
@@ -1179,7 +1061,7 @@ const AccessControlSystem = () => {
                                       initial={{ opacity: 0, y: -8 }}
                                       animate={{ opacity: 1, y: 0 }}
                                       exit={{ opacity: 0, y: -8 }}
-                                      className="absolute z-50 mt-1 w-16 bg-white border border-gray-300 rounded-md shadow-lg max-h-48 overflow-y-auto"
+                                      className="absolute z-50 mt-1 w-16 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-48 overflow-y-auto"
                                     >
                                       {Array.from({ length: 60 }, (_, i) => {
                                         const minute = i
@@ -1195,9 +1077,9 @@ const AccessControlSystem = () => {
                                                 minute
                                               )
                                             }
-                                            className={`w-full px-3 py-2 text-sm text-center hover:bg-gray-50 ${selectedTime.minutes === minute
-                                                ? "bg-blue-50 text-blue-600 font-medium"
-                                                : ""
+                                            className={`w-full px-3 py-2 text-sm text-center hover:bg-gray-50 dark:hover:bg-gray-600 ${selectedTime.minutes === minute
+                                              ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium"
+                                              : "text-gray-700 dark:text-gray-300"
                                               }`}
                                           >
                                             {minute}
@@ -1216,7 +1098,7 @@ const AccessControlSystem = () => {
                                   onClick={() =>
                                     setShowPeriodDropdown(!showPeriodDropdown)
                                   }
-                                  className="w-16 px-3 py-2 border border-gray-300 rounded-md text-center text-sm hover:border-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                  className="w-16 px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md text-center text-sm hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-gray-600 text-gray-900 dark:text-gray-100"
                                 >
                                   {selectedTime.period}
                                 </button>
@@ -1226,7 +1108,7 @@ const AccessControlSystem = () => {
                                       initial={{ opacity: 0, y: -8 }}
                                       animate={{ opacity: 1, y: 0 }}
                                       exit={{ opacity: 0, y: -8 }}
-                                      className="absolute z-50 mt-1 w-16 bg-white border border-gray-300 rounded-md shadow-lg"
+                                      className="absolute z-50 mt-1 w-16 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg"
                                     >
                                       {["AM", "PM"].map((period) => (
                                         <button
@@ -1235,9 +1117,9 @@ const AccessControlSystem = () => {
                                           onClick={() =>
                                             handleTimeChange("period", period)
                                           }
-                                          className={`w-full px-3 py-2 text-sm text-center hover:bg-gray-50 ${selectedTime.period === period
-                                              ? "bg-blue-50 text-blue-600 font-medium"
-                                              : ""
+                                          className={`w-full px-3 py-2 text-sm text-center hover:bg-gray-50 dark:hover:bg-gray-600 ${selectedTime.period === period
+                                            ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400 font-medium"
+                                            : "text-gray-700 dark:text-gray-300"
                                             }`}
                                         >
                                           {period}
@@ -1255,7 +1137,7 @@ const AccessControlSystem = () => {
                   </div>
                   {selectedDate && (
                     <div className="mt-2 flex items-center justify-between">
-                      <p className="text-xs text-gray-600">
+                      <p className="text-xs text-gray-600 dark:text-gray-400">
                         Expires:{" "}
                         {selectedDate.toLocaleDateString("en-US", {
                           month: "long",
@@ -1271,14 +1153,14 @@ const AccessControlSystem = () => {
                           setSelectedDate(null);
                           setGrantForm({ ...grantForm, expiresAt: "" });
                         }}
-                        className="text-xs text-red-600 hover:text-red-700 font-medium"
+                        className="text-xs text-red-600 hover:text-red-700 dark:text-red-400 dark:hover:text-red-300 font-medium"
                       >
                         Clear
                       </button>
                     </div>
                   )}
                   {!selectedDate && (
-                    <p className="text-xs text-gray-500 mt-2">
+                    <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
                       Leave empty for permanent access
                     </p>
                   )}
@@ -1286,11 +1168,11 @@ const AccessControlSystem = () => {
               </div>
 
               {/* Footer */}
-              <div className="px-6 py-4 bg-gray-50 border-t border-gray-200 rounded-b-xl flex justify-end space-x-3">
+              <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 rounded-b-xl flex justify-end space-x-3">
                 <button
                   onClick={() => setShowGrantModal(false)}
                   disabled={loading}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 hover:bg-gray-100 dark:hover:bg-gray-600 rounded-md transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   Cancel
                 </button>
@@ -1318,19 +1200,20 @@ const AccessControlSystem = () => {
 };
 
 // Access List Item Component
-const AccessListItem = ({ access, onRevoke, loading }) => {
+const AccessListItem = ({ access, onRevoke, onUpdate, loading }) => {
   const [showActions, setShowActions] = useState(false);
+  const [showAccessLevelDropdown, setShowAccessLevelDropdown] = useState(false);
 
   const getLevelColor = (level) => {
     switch (level) {
       case "admin":
-        return "bg-purple-100 text-purple-700";
+        return "bg-purple-100 text-purple-700 dark:bg-purple-900/20 dark:text-purple-300";
       case "edit":
-        return "bg-blue-100 text-blue-700";
+        return "bg-blue-100 text-blue-700 dark:bg-blue-900/20 dark:text-blue-300";
       case "view":
-        return "bg-gray-100 text-gray-700";
+        return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
       default:
-        return "bg-gray-100 text-gray-700";
+        return "bg-gray-100 text-gray-700 dark:bg-gray-700 dark:text-gray-300";
     }
   };
 
@@ -1343,13 +1226,24 @@ const AccessListItem = ({ access, onRevoke, loading }) => {
     });
   };
 
+  const accessLevels = [
+    { value: "view", label: "View", icon: FaEye },
+    { value: "edit", label: "Edit", icon: FaEdit },
+    { value: "admin", label: "Admin", icon: FaShieldAlt },
+  ];
+
+  const currentLevel = accessLevels.find(level => level.value === access.accessLevel);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 10 }}
       animate={{ opacity: 1, y: 0 }}
-      className="p-4 hover:bg-gray-50 transition-colors"
+      className="p-4 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
       onMouseEnter={() => setShowActions(true)}
-      onMouseLeave={() => setShowActions(false)}
+      onMouseLeave={() => {
+        setShowActions(false);
+        setShowAccessLevelDropdown(false);
+      }}
     >
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-3 flex-1 min-w-0">
@@ -1358,22 +1252,15 @@ const AccessListItem = ({ access, onRevoke, loading }) => {
           </div>
           <div className="flex-1 min-w-0">
             <div className="flex items-center space-x-2">
-              <h4 className="font-medium text-gray-900 truncate">
+              <h4 className="font-medium text-gray-900 dark:text-gray-100 truncate">
                 {access.userId?.name || "Unknown User"}
               </h4>
-              <span
-                className={`px-2 py-1 text-xs font-medium rounded flex-shrink-0 ${getLevelColor(
-                  access.accessLevel
-                )}`}
-              >
-                {access.accessLevel}
-              </span>
             </div>
-            <div className="flex items-center space-x-3 mt-1 text-sm text-gray-500">
+            <div className="flex items-center space-x-3 mt-1 text-sm text-gray-500 dark:text-gray-400">
               <p className="truncate">{access.userId?.email || "No email"}</p>
               {access.userId?.role && (
                 <>
-                  <span className="text-gray-300">•</span>
+                  <span className="text-gray-300 dark:text-gray-600">•</span>
                   <p className="capitalize">{access.userId.role}</p>
                 </>
               )}
@@ -1381,37 +1268,103 @@ const AccessListItem = ({ access, onRevoke, loading }) => {
           </div>
         </div>
 
-        <AnimatePresence>
-          {showActions && (
-            <motion.button
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              exit={{ opacity: 0, scale: 0.9 }}
-              onClick={() => onRevoke(access.userId._id)}
-              disabled={loading}
-              className="ml-4 p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-              title="Revoke Access"
+        <div className="flex items-center space-x-2">
+          {/* Access Level Dropdown */}
+          <div className="relative">
+            <button
+              onClick={() => setShowAccessLevelDropdown(!showAccessLevelDropdown)}
+              className={`px-3 py-1 text-xs font-medium rounded flex items-center space-x-1 ${getLevelColor(access.accessLevel)}`}
             >
-              <Trash2 className="w-4 h-4" />
-            </motion.button>
-          )}
-        </AnimatePresence>
+              {currentLevel && <currentLevel.icon className="w-3 h-3" />}
+              <span>{access.accessLevel}</span>
+              <ChevronDown className="w-3 h-3" />
+            </button>
+
+            <AnimatePresence>
+              {showAccessLevelDropdown && (
+                <motion.div
+                  initial={{ opacity: 0, y: -8 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  exit={{ opacity: 0, y: -8 }}
+                  className="absolute z-50 mt-1 right-0 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg min-w-[120px]"
+                >
+                  {accessLevels.map((level) => {
+                    const Icon = level.icon;
+                    return (
+                      <button
+                        key={level.value}
+                        onClick={() => {
+                          onUpdate(access.userId._id, level.value);
+                          setShowAccessLevelDropdown(false);
+                        }}
+                        disabled={loading}
+                        className={`w-full px-3 py-2 text-sm text-left flex items-center space-x-2 hover:bg-gray-50 dark:hover:bg-gray-600 ${access.accessLevel === level.value
+                          ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
+                          : "text-gray-700 dark:text-gray-300"
+                          }`}
+                      >
+                        <Icon className="w-3 h-3" />
+                        <span>{level.label}</span>
+                      </button>
+                    );
+                  })}
+                </motion.div>
+              )}
+            </AnimatePresence>
+          </div>
+
+          <AnimatePresence>
+            {showActions && (
+              <motion.button
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.9 }}
+                onClick={() => onRevoke(access.userId._id)}
+                disabled={loading}
+                className="ml-2 p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
+                title="Revoke Access"
+              >
+                <Trash2 className="w-4 h-4" />
+              </motion.button>
+            )}
+          </AnimatePresence>
+        </div>
       </div>
 
-      <div className="mt-3 pl-13 flex items-center space-x-3 text-xs text-gray-500">
+      {/* Test Type Access Info */}
+      {access.testTypeAccess && (
+        <div className="mt-3 pl-13">
+          <div className="flex items-center space-x-4 text-xs">
+            <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
+              <Check className="w-3 h-3" />
+              <span>
+                {access.testTypeAccess.accessibleCount}/{access.testTypeAccess.totalCount} test types
+              </span>
+            </div>
+            <span className={`px-2 py-1 rounded-full text-xs ${access.testTypeAccess.syncStatus === 'synced'
+              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
+              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
+              }`}>
+              {access.testTypeAccess.syncStatus}
+            </span>
+          </div>
+        </div>
+      )}
+
+      <div className="mt-3 pl-13 flex items-center space-x-3 text-xs text-gray-500 dark:text-gray-400">
         <div className="flex items-center space-x-1">
           <User className="w-3 h-3" />
           <span>Granted by {access.grantedBy?.name || "Unknown"}</span>
         </div>
-        <span className="text-gray-300">•</span>
+        <span className="text-gray-300 dark:text-gray-600">•</span>
         <div className="flex items-center space-x-1">
           <Clock className="w-3 h-3" />
           <span>{formatDate(access.createdAt)}</span>
         </div>
         {access.expiresAt && (
           <>
-            <span className="text-gray-300">•</span>
-            <div className="flex items-center space-x-1 text-orange-600">
+            <span className="text-gray-300 dark:text-gray-600">•</span>
+            <div className="flex items-center space-x-1 text-orange-600 dark:text-orange-400">
               <Clock className="w-3 h-3" />
               <span>Expires {formatDate(access.expiresAt)}</span>
             </div>
