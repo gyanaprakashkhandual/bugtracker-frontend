@@ -5,6 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import { X, Shield, FileCode, Plus, MoreVertical, Edit2, Trash2 } from "lucide-react";
 import { useProject } from "@/app/script/Project.context";
 import { useTestType } from "@/app/script/TestType.context";
+import { useAlert } from "@/app/script/Alert.context";
+import { useConfirm } from "@/app/script/Confirm.context";
 import axios from 'axios';
 
 export default function TestTypeSidebar({ sidebarOpen, onClose }) {
@@ -22,6 +24,8 @@ export default function TestTypeSidebar({ sidebarOpen, onClose }) {
     const dropdownRefs = useRef({});
     const { selectedProject } = useProject();
     const { selectedTestType, selectTestType } = useTestType();
+    const { showAlert } = useAlert();
+    const { showConfirm } = useConfirm();
 
     const fetchTestTypes = async () => {
         if (!selectedProject?._id) {
@@ -121,6 +125,10 @@ export default function TestTypeSidebar({ sidebarOpen, onClose }) {
             setNewTestTypeDesc("");
             setIsCreateModalOpen(false);
             await fetchTestTypes();
+            showAlert({
+                type: "success",
+                message: "Test type created successfully"
+            });
         } catch (err) {
             alert(err.response?.data?.message || 'Failed to create test type');
         } finally {
@@ -153,35 +161,57 @@ export default function TestTypeSidebar({ sidebarOpen, onClose }) {
             setIsRenameModalOpen(false);
             setSelectedTestTypeForAction(null);
             await fetchTestTypes();
+            showAlert({
+                type: "success",
+                message: "Test type updated successfully"
+            })
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to rename test type');
+            showAlert(err.response?.data?.message || 'Failed to rename test type');
         } finally {
             setActionLoading(false);
         }
     };
 
     const handleMoveToTrash = async (testType) => {
-        if (!confirm(`Are you sure you want to move "${testType.testTypeName}" to trash?`)) return;
+        const result = await showConfirm({
+            title: "Move to Trash Confirmation",
+            message: `Are you sure you want to move "${testType.testTypeName}" to trash? This action can be undone later from the Trash section.`,
+            confirmText: "Move to Trash",
+            cancelText: "Cancel",
+            type: "warning",
+        });
+
+        if (!result) return; // User canceled
 
         try {
-            const token = localStorage.getItem('token');
+            const token = localStorage.getItem("token");
 
             await axios.patch(
                 `http://localhost:5000/api/v1/test-type/test-types/${testType._id}/trash`,
                 {},
                 {
                     headers: {
-                        Authorization: `Bearer ${token}`
-                    }
+                        Authorization: `Bearer ${token}`,
+                    },
                 }
             );
 
             setOpenDropdown(null);
             await fetchTestTypes();
+
+            showAlert({
+                type: "success",
+                message: `"${testType.testTypeName}" has been moved to trash successfully.`,
+            });
+
         } catch (err) {
-            alert(err.response?.data?.message || 'Failed to move to trash');
+            showAlert({
+                type: "error",
+                message: err.response?.data?.message || "Failed to move test type to trash.",
+            });
         }
     };
+
 
     const openRenameModal = (testType, event) => {
         event.stopPropagation();
@@ -281,7 +311,7 @@ export default function TestTypeSidebar({ sidebarOpen, onClose }) {
                                     {testTypes.map((testType) => (
                                         <motion.div
                                             key={testType._id}
-                                            whileHover={{ x: 2 }}
+
                                             transition={{ duration: 0.1 }}
                                             onClick={() => handleTestTypeClick(testType)}
                                             className={`
@@ -379,7 +409,7 @@ export default function TestTypeSidebar({ sidebarOpen, onClose }) {
                             placeholder="Description (optional)"
                             value={newTestTypeDesc}
                             onChange={(e) => setNewTestTypeDesc(e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                            className="resize-none w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg mb-4 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                             rows="3"
                         />
                         <div className="flex justify-end gap-2">
