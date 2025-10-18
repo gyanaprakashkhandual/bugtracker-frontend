@@ -1,16 +1,13 @@
+"use client";
+
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-    Send,
-    Github,
-    Link,
-    X,
-    Loader2
-} from 'lucide-react';
+import { Send, Github, Link, X, Loader2 } from 'lucide-react';
 import { useAlert } from '@/app/script/Alert.context';
+import { useProject } from '@/app/script/Project.context';
+import { useTestType } from '@/app/script/TestType.context';
 import { GoogleArrowDown } from '../utils/Icon';
 
-// Test Case Events
 export const TESTCASE_EVENTS = {
     CREATED: 'testcase:created',
     UPDATED: 'testcase:updated',
@@ -43,7 +40,6 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
         testCaseDescription: '',
         actualResult: '',
         expectedResult: '',
-        severity: '',
         priority: '',
         status: '',
         image: null
@@ -58,6 +54,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
     const [importResults, setImportResults] = useState(null);
 
     const { showAlert } = useAlert();
+    const { selectedProject } = useProject();
 
     const BASE_URL = 'http://localhost:5000/api/v1/test-case';
 
@@ -69,7 +66,6 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
 
     const dropdownOptions = {
         testCaseType: ['Functional', 'User-Interface', 'Performance', 'API', 'Database', 'Security', 'Others'],
-        severity: ['Critical', 'High', 'Medium', 'Low'],
         priority: ['Critical', 'High', 'Medium', 'Low'],
         status: ['Pass', 'Fail']
     };
@@ -111,10 +107,9 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             setIsSubmitting(true);
 
             const token = localStorage.getItem("token");
-            const projectId = localStorage.getItem("currentProjectId");
-            const testTypeId = localStorage.getItem("selectedTestTypeId");
+            const { testTypeId } = useTestType();
 
-            if (!token || !projectId || !testTypeId) {
+            if (!token || !selectedProject?._id || !testTypeId) {
                 showAlert({
                     type: "error",
                     message: "Missing required information. Please select a project and test type."
@@ -141,13 +136,12 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 testCaseDescription: formData.testCaseDescription || 'No description provided',
                 actualResult: formData.actualResult || 'Not executed',
                 expectedResult: formData.expectedResult || 'Expected behavior not defined',
-                severity: formData.severity || 'Medium',
                 priority: formData.priority || 'Medium',
                 status: formData.status || 'Pass',
                 image: imageUrl || 'No image provided'
             };
 
-            const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases`, {
+            const response = await fetch(`${BASE_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/test-cases`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -168,7 +162,6 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 testCaseDescription: '',
                 actualResult: '',
                 expectedResult: '',
-                severity: '',
                 priority: '',
                 status: '',
                 image: null
@@ -198,10 +191,9 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             setIsSubmitting(true);
 
             const token = localStorage.getItem("token");
-            const projectId = localStorage.getItem("currentProjectId");
             const testTypeId = localStorage.getItem("selectedTestTypeId");
 
-            if (!token || !projectId || !testTypeId) {
+            if (!token || !selectedProject?._id || !testTypeId) {
                 showAlert({
                     type: "error",
                     message: "Missing required information. Please select a project and test type."
@@ -213,7 +205,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 rawText: prompt.trim()
             };
 
-            const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/ai-text`, {
+            const response = await fetch(`${BASE_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/test-cases/ai-text`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -252,10 +244,9 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             setIsSubmitting(true);
 
             const token = localStorage.getItem("token");
-            const projectId = localStorage.getItem("currentProjectId");
             const testTypeId = localStorage.getItem("selectedTestTypeId");
 
-            if (!token || !projectId || !testTypeId) {
+            if (!token || !selectedProject?._id || !testTypeId) {
                 showAlert({
                     type: "error",
                     message: "Missing required information"
@@ -271,7 +262,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 return;
             }
 
-            const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/import/google-sheets`, {
+            const response = await fetch(`${BASE_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/test-cases/import/google-sheets`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -310,10 +301,9 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             setIsSubmitting(true);
 
             const token = localStorage.getItem("token");
-            const projectId = localStorage.getItem("currentProjectId");
             const testTypeId = localStorage.getItem("selectedTestTypeId");
 
-            if (!token || !projectId || !testTypeId) {
+            if (!token || !selectedProject?._id || !testTypeId) {
                 showAlert({
                     type: "error",
                     message: "Missing required information"
@@ -329,7 +319,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 return;
             }
 
-            const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/test-cases/generate/github`, {
+            const response = await fetch(`${BASE_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/test-cases/generate/github`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -366,7 +356,6 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
     const getDropdownPlaceholder = (field) => {
         const placeholders = {
             testCaseType: 'Type',
-            severity: 'Severity',
             priority: 'Priority',
             status: 'Status'
         };
@@ -381,24 +370,24 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             transition={{ duration: 0.3 }}
             className="flex flex-col h-full"
         >
-            <div className="flex-1 p-4 overflow-y-auto">
-                <div className="text-center text-gray-400 mt-20">
+            <div className="flex-1 p-6 overflow-y-auto">
+                <div className="text-center text-gray-400 dark:text-gray-500 mt-20">
                     <p className="text-xs">Start a conversation...</p>
                 </div>
             </div>
 
-            <div className="p-4 border-t bg-white">
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                 <div className="relative">
                     <textarea
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         placeholder="Message..."
-                        className="w-full p-3 pr-10 border border-gray-200 rounded-xl focus:ring-1 focus:ring-blue-500 focus:border-blue-500 resize-none bg-gray-50 hover:bg-gray-100 transition-colors text-xs"
+                        className="w-full p-3 pr-12 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-0.5 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none resize-none bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                         rows="1"
                         style={{ minHeight: '180px', maxHeight: '480px' }}
                         onInput={(e) => {
                             e.target.style.height = 'auto';
-                            e.target.style.height = Math.min(e.target.scrollHeight, 100) + 'px';
+                            e.target.style.height = Math.min(e.target.scrollHeight, 480) + 'px';
                         }}
                     />
                     <motion.button
@@ -406,9 +395,9 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                         whileTap={{ scale: 0.95 }}
                         onClick={handlePromptSubmit}
                         disabled={!prompt.trim() || isSubmitting}
-                        className="absolute right-2 top-1/2 transform -translate-y-1/2 p-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                        className="absolute right-3 bottom-3 p-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                     >
-                        {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
+                        {isSubmitting ? <Loader2 size={16} className="animate-spin" /> : <Send size={16} />}
                     </motion.button>
                 </div>
             </div>
@@ -419,16 +408,16 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
         <div className="relative flex-1">
             <button
                 onClick={() => toggleDropdown(field)}
-                className="w-full p-2.5 border border-gray-200 rounded-lg text-left flex items-center justify-between hover:border-gray-300 transition-all duration-200 bg-gray-50 hover:bg-gray-100 text-xs"
+                className="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-left flex items-center justify-between hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 bg-white dark:bg-gray-900 hover:bg-sky-50 dark:hover:bg-gray-800 text-xs focus:outline-none"
             >
-                <span className={formData[field] ? 'text-gray-900 font-medium' : 'text-gray-500'}>
+                <span className={formData[field] ? 'text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-500 dark:text-gray-400'}>
                     {formData[field] || getDropdownPlaceholder(field)}
                 </span>
                 <motion.div
                     animate={{ rotate: openDropdowns[field] ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
                 >
-                    <GoogleArrowDown size={14} className="text-gray-400" />
+                    <GoogleArrowDown size={14} className="text-gray-400 dark:text-gray-500" />
                 </motion.div>
             </button>
 
@@ -439,7 +428,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto"
+                        className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto"
                     >
                         {options.map((option) => (
                             <button
@@ -448,7 +437,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                                     handleInputChange(field, option);
                                     toggleDropdown(field);
                                 }}
-                                className="w-full p-2.5 text-left hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors font-medium text-gray-700 hover:text-gray-900 text-xs"
+                                className="w-full p-2.5 text-left hover:bg-sky-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg transition-colors font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 text-xs focus:outline-none"
                             >
                                 {option}
                             </button>
@@ -467,12 +456,8 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             transition={{ duration: 0.3 }}
             className="p-4 space-y-3 max-h-[calc(100vh-12rem)] overflow-y-auto"
         >
-            <div className="grid grid-cols-2 gap-2">
+            <div className="grid grid-cols-3 gap-2">
                 {renderDropdown('testCaseType', dropdownOptions.testCaseType)}
-                {renderDropdown('severity', dropdownOptions.severity)}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2">
                 {renderDropdown('priority', dropdownOptions.priority)}
                 {renderDropdown('status', dropdownOptions.status)}
             </div>
@@ -482,7 +467,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                     type="text"
                     value={formData.moduleName}
                     onChange={(e) => handleInputChange('moduleName', e.target.value)}
-                    className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 bg-gray-50 hover:bg-gray-100 transition-all duration-200 font-medium text-xs"
+                    className="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-0.5 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none bg-white dark:bg-gray-900  dark:hover:bg-gray-800 transition-all duration-200 font-medium text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="Module Name"
                 />
             </div>
@@ -491,7 +476,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 <textarea
                     value={formData.testCaseDescription}
                     onChange={(e) => handleInputChange('testCaseDescription', e.target.value)}
-                    className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 h-20 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-xs"
+                    className="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-0.5 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none h-20 resize-none bg-white dark:bg-gray-900 dark:hover:bg-gray-800 transition-all duration-200 text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="Test Case Description"
                 />
             </div>
@@ -500,7 +485,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 <textarea
                     value={formData.actualResult}
                     onChange={(e) => handleInputChange('actualResult', e.target.value)}
-                    className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 h-20 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-xs"
+                    className="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-0.5 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none h-20 resize-none bg-white dark:bg-gray-900  dark:hover:bg-gray-800 transition-all duration-200 text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="Actual Result"
                 />
             </div>
@@ -509,19 +494,19 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 <textarea
                     value={formData.expectedResult}
                     onChange={(e) => handleInputChange('expectedResult', e.target.value)}
-                    className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 h-20 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-xs"
+                    className="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-0.5 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none h-20 resize-none bg-white dark:bg-gray-900  dark:hover:bg-gray-800 transition-all duration-200 text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="Expected Result"
                 />
             </div>
 
             <div>
                 <div className="flex items-center justify-center w-full">
-                    <label className="flex flex-col items-center justify-center w-full h-16 border-2 border-gray-200 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all duration-200 group">
+                    <label className="flex flex-col items-center justify-center w-full h-16 border-2 border-gray-200 dark:border-gray-700 border-dashed rounded-lg cursor-pointer bg-white dark:bg-gray-900 hover:bg-sky-50 dark:hover:bg-gray-800 transition-all duration-200 group">
                         <div className="flex flex-col items-center justify-center">
-                            <p className="mb-1 text-xs text-gray-600 font-medium">
-                                <span className="text-blue-600">Click to upload</span> or drag and drop
+                            <p className="mb-1 text-xs text-gray-600 dark:text-gray-400 font-medium">
+                                <span className="text-blue-600 dark:text-blue-400">Click to upload</span> or drag and drop
                             </p>
-                            <p className="text-xs text-gray-500">PNG, JPG or GIF (MAX. 10MB)</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500">PNG, JPG or GIF (MAX. 10MB)</p>
                         </div>
                         <input
                             type="file"
@@ -535,9 +520,9 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg"
+                        className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg"
                     >
-                        <p className="text-xs text-green-700 font-medium">
+                        <p className="text-xs text-green-700 dark:text-green-400 font-medium">
                             {formData.image.name}
                         </p>
                     </motion.div>
@@ -550,11 +535,11 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                     whileTap={{ scale: 0.98 }}
                     onClick={handleSubmit}
                     disabled={isSubmitting}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2.5 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-2"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-2 focus:outline-none"
                 >
                     {isSubmitting ? (
                         <>
-                            <Loader2 size={14} className="animate-spin" />
+                            <Loader2 size={16} className="animate-spin" />
                             Submitting...
                         </>
                     ) : (
@@ -570,13 +555,12 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                         testCaseDescription: '',
                         actualResult: '',
                         expectedResult: '',
-                        severity: '',
                         priority: '',
                         status: '',
                         image: null
                     })}
                     disabled={isSubmitting}
-                    className="flex-1 bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg font-semibold hover:bg-gray-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+                    className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs focus:outline-none"
                 >
                     Clear
                 </motion.button>
@@ -593,8 +577,8 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             className="p-4 space-y-3"
         >
             <div className="text-center mb-4">
-                <h3 className="text-base font-bold text-gray-800 mb-1">Import Test Cases</h3>
-                <p className="text-xs text-gray-600">Select your import method</p>
+                <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 mb-1">Import Test Cases</h3>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Select your import method</p>
             </div>
 
             <div className="space-y-2">
@@ -602,12 +586,12 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowGoogleSheetModal(true)}
-                    className="w-full p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 flex items-center gap-3 group bg-gray-50"
+                    className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-600 hover:bg-sky-50 dark:hover:bg-gray-700 transition-all duration-200 flex items-center gap-3 group bg-white dark:bg-gray-800 focus:outline-none"
                 >
-                    <div className="p-2 bg-white rounded-lg group-hover:bg-blue-100 transition-colors">
-                        <Link size={18} className="text-gray-600 group-hover:text-blue-600" />
+                    <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/20 transition-colors">
+                        <Link size={18} className="text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
                     </div>
-                    <span className="text-xs text-gray-700 font-semibold group-hover:text-blue-700">
+                    <span className="text-xs text-gray-700 dark:text-gray-300 font-semibold group-hover:text-blue-700 dark:group-hover:text-blue-400">
                         Import from Google Sheet
                     </span>
                 </motion.button>
@@ -616,12 +600,12 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowGithubModal(true)}
-                    className="w-full p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 flex items-center gap-3 group bg-gray-50"
+                    className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-600 hover:bg-sky-50 dark:hover:bg-gray-700 transition-all duration-200 flex items-center gap-3 group bg-white dark:bg-gray-800 focus:outline-none"
                 >
-                    <div className="p-2 bg-white rounded-lg group-hover:bg-blue-100 transition-colors">
-                        <Github size={18} className="text-gray-600 group-hover:text-blue-600" />
+                    <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/20 transition-colors">
+                        <Github size={18} className="text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
                     </div>
-                    <span className="text-xs text-gray-700 font-semibold group-hover:text-blue-700">
+                    <span className="text-xs text-gray-700 dark:text-gray-300 font-semibold group-hover:text-blue-700 dark:group-hover:text-blue-400">
                         Connect with GitHub
                     </span>
                 </motion.button>
@@ -634,7 +618,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0  bg-white/10 backdrop-blur-sm flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
             onClick={() => {
                 setUrl('');
                 setImportResults(null);
@@ -646,12 +630,12 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 animate={{ scale: 1, y: 0 }}
                 exit={{ scale: 0.9, y: 20 }}
                 onClick={(e) => e.stopPropagation()}
-                className="bg-white rounded-xl shadow-2xl w-[500px] max-h-[80vh] overflow-y-auto"
+                className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[500px] max-h-[80vh] overflow-y-auto"
             >
-                <div className="p-4 border-b flex items-center justify-between">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                        {React.createElement(icon, { size: 18, className: "text-blue-600" })}
-                        <h3 className="text-sm font-bold text-gray-800">{title}</h3>
+                        {React.createElement(icon, { size: 18, className: "text-blue-600 dark:text-blue-400" })}
+                        <h3 className="text-xs font-bold text-gray-800 dark:text-gray-100">{title}</h3>
                     </div>
                     <button
                         onClick={() => {
@@ -659,9 +643,9 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                             setImportResults(null);
                             title.includes('Google') ? setShowGoogleSheetModal(false) : setShowGithubModal(false);
                         }}
-                        className="p-1 hover:bg-gray-100 rounded-lg transition-colors"
+                        className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors focus:outline-none"
                     >
-                        <X size={16} className="text-gray-600" />
+                        <X size={16} className="text-gray-600 dark:text-gray-400" />
                     </button>
                 </div>
 
@@ -669,7 +653,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                     {!importResults ? (
                         <>
                             <div>
-                                <label className="block text-xs font-medium text-gray-700 mb-1">
+                                <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                                     {title.includes('Google') ? 'Google Sheet URL' : 'GitHub Repository URL'}
                                 </label>
                                 <input
@@ -679,7 +663,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                                     placeholder={title.includes('Google')
                                         ? 'https://docs.google.com/spreadsheets/d/...'
                                         : 'https://github.com/owner/repo'}
-                                    className="w-full p-2.5 border border-gray-200 rounded-lg focus:ring-1 focus:ring-blue-500 focus:border-blue-500 text-xs"
+                                    className="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-0.5 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none text-xs bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                                 />
                             </div>
 
@@ -688,11 +672,11 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                                 whileTap={{ scale: 0.98 }}
                                 onClick={onSubmit}
                                 disabled={!url.trim() || isSubmitting}
-                                className="w-full bg-blue-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-blue-700 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-2"
+                                className="w-full bg-blue-600 dark:bg-blue-500 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-2 focus:outline-none"
                             >
                                 {isSubmitting ? (
                                     <>
-                                        <Loader2 size={14} className="animate-spin" />
+                                        <Loader2 size={16} className="animate-spin" />
                                         Importing...
                                     </>
                                 ) : (
@@ -702,11 +686,11 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                         </>
                     ) : (
                         <div className="space-y-3">
-                            <div className="p-3 bg-green-50 border border-green-200 rounded-lg">
-                                <p className="text-xs font-semibold text-green-800 mb-1">
+                            <div className="p-3 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                                <p className="text-xs font-semibold text-green-800 dark:text-green-400 mb-1">
                                     Import Successful
                                 </p>
-                                <p className="text-xs text-green-700">
+                                <p className="text-xs text-green-700 dark:text-green-500">
                                     {importResults.importedCount || importResults.statistics?.successfullyImported || 0} test cases imported
                                 </p>
                             </div>
@@ -714,17 +698,17 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                             {importResults.testCases && importResults.testCases.length > 0 && (
                                 <div className="max-h-60 overflow-y-auto space-y-2">
                                     {importResults.testCases.slice(0, 5).map((testCase, index) => (
-                                        <div key={index} className="p-2.5 bg-gray-50 border border-gray-200 rounded-lg">
-                                            <p className="text-xs font-semibold text-gray-800">{testCase.moduleName}</p>
-                                            <p className="text-xs text-gray-600 truncate">{testCase.testCaseDescription}</p>
+                                        <div key={index} className="p-2.5 bg-gray-50 dark:bg-gray-900 border border-gray-200 dark:border-gray-700 rounded-lg">
+                                            <p className="text-xs font-semibold text-gray-800 dark:text-gray-100">{testCase.moduleName}</p>
+                                            <p className="text-xs text-gray-600 dark:text-gray-400 truncate">{testCase.testCaseDescription}</p>
                                             <div className="flex gap-2 mt-1">
-                                                <span className="text-xs px-2 py-0.5 bg-blue-100 text-blue-700 rounded">{testCase.priority}</span>
-                                                <span className="text-xs px-2 py-0.5 bg-green-100 text-green-700 rounded">{testCase.status}</span>
+                                                <span className="text-xs px-2 py-0.5 bg-blue-100 dark:bg-blue-900/40 text-blue-700 dark:text-blue-400 rounded">{testCase.priority}</span>
+                                                <span className="text-xs px-2 py-0.5 bg-green-100 dark:bg-green-900/40 text-green-700 dark:text-green-400 rounded">{testCase.status}</span>
                                             </div>
                                         </div>
                                     ))}
                                     {importResults.testCases.length > 5 && (
-                                        <p className="text-xs text-gray-600 text-center">
+                                        <p className="text-xs text-gray-600 dark:text-gray-400 text-center">
                                             +{importResults.testCases.length - 5} more test cases
                                         </p>
                                     )}
@@ -732,13 +716,13 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                             )}
 
                             {importResults.errors && importResults.errors.length > 0 && (
-                                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-                                    <p className="text-xs font-semibold text-yellow-800 mb-1">
+                                <div className="p-3 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
+                                    <p className="text-xs font-semibold text-yellow-800 dark:text-yellow-400 mb-1">
                                         ⚠ Some errors occurred
                                     </p>
                                     <div className="max-h-20 overflow-y-auto space-y-1">
                                         {importResults.errors.map((error, index) => (
-                                            <p key={index} className="text-xs text-yellow-700">{error}</p>
+                                            <p key={index} className="text-xs text-yellow-700 dark:text-yellow-500">{error}</p>
                                         ))}
                                     </div>
                                 </div>
@@ -752,7 +736,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                                     setImportResults(null);
                                     title.includes('Google') ? setShowGoogleSheetModal(false) : setShowGithubModal(false);
                                 }}
-                                className="w-full bg-gray-100 text-gray-700 px-4 py-2.5 rounded-lg font-semibold hover:bg-gray-200 transition-all text-xs"
+                                className="w-full bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all text-xs focus:outline-none"
                             >
                                 Close
                             </motion.button>
@@ -764,19 +748,18 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
     );
 
     return (
-        <div className="h-[calc(100vh-4rem)] fixed right-0 sidebar-scrollbar mt-16 bg-gradient-to-b from-white to-gray-50 border-l border-gray-200 w-[28rem] flex flex-col shadow-xl z-50">
-            {/* Navigation Header */}
-            <div className="border-b border-gray-200 bg-white">
+        <div className="h-[calc(100vh-4rem)] fixed right-0 sidebar-scrollbar mt-16 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 w-[28rem] flex flex-col shadow-xl z-50">
+            <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                 <div className="flex">
                     {navItems.map((item) => (
                         <motion.button
                             key={item.id}
-                            whileHover={{ backgroundColor: '#f8fafc' }}
+                            whileHover={{ backgroundColor: activeTab === item.id ? '' : 'rgb(240 249 255)' }}
                             whileTap={{ scale: 0.98 }}
                             onClick={() => setActiveTab(item.id)}
-                            className={`flex-1 p-3 text-center transition-all duration-200 border-r border-gray-200 last:border-r-0 ${activeTab === item.id
-                                ? 'bg-blue-50 border-b-2 border-blue-600 text-blue-700'
-                                : 'text-gray-700 hover:text-gray-900'
+                            className={`flex-1 p-3 text-center transition-all duration-200 border-r border-gray-200 dark:border-gray-700 last:border-r-0 focus:outline-none ${activeTab === item.id
+                                ? 'bg-blue-50 dark:bg-blue-900/20 border-b-2 border-blue-600 dark:border-blue-400 text-blue-700 dark:text-blue-400'
+                                : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
                                 }`}
                         >
                             <span className="font-semibold text-xs">{item.label}</span>
@@ -785,7 +768,6 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 </div>
             </div>
 
-            {/* Content Area */}
             <div className="flex-1 overflow-hidden">
                 <AnimatePresence mode="wait">
                     {activeTab === 'text-prompt' && renderTextPrompt()}
@@ -794,7 +776,6 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
                 </AnimatePresence>
             </div>
 
-            {/* Modals */}
             <AnimatePresence>
                 {showGoogleSheetModal && renderImportModal(
                     'Import from Google Sheets',

@@ -11,6 +11,7 @@ import {
 import { GoogleArrowDown } from '../utils/Icon';
 import { useAlert } from '@/app/script/Alert.context';
 import { useTestType } from '@/app/script/TestType.context';
+import { useProject } from '@/app/script/Project.context';
 export const BUG_EVENTS = {
     CREATED: 'bug:created',
     UPDATED: 'bug:updated',
@@ -604,7 +605,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     type="text"
                     value={formData.moduleName}
                     onChange={(e) => handleInputChange('moduleName', e.target.value)}
-                    className="w-full p-2 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all duration-200 font-medium text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="w-full p-2 border border-gray-200 rounded-lg bg-gray-50 transition-all duration-200 font-medium text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="Module Name"
                     disabled={isSubmitting}
                 />
@@ -614,7 +615,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                 <textarea
                     value={formData.bugDesc}
                     onChange={(e) => handleInputChange('bugDesc', e.target.value)}
-                    className="w-full p-2 border border-gray-200 rounded-lg h-20 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="w-full p-2 border border-gray-200 rounded-lg h-20 resize-none bg-gray-50 transition-all duration-200 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="Bug Description"
                     disabled={isSubmitting}
                 />
@@ -624,7 +625,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                 <textarea
                     value={formData.bugRequirement}
                     onChange={(e) => handleInputChange('bugRequirement', e.target.value)}
-                    className="w-full p-2 border border-gray-200 rounded-lg h-20 resize-none bg-gray-50 hover:bg-gray-100 transition-all duration-200 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="w-full p-2 border border-gray-200 rounded-lg h-20 resize-none bg-gray-50 transition-all duration-200 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="Bug Requirement"
                     disabled={isSubmitting}
                 />
@@ -635,7 +636,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     type="text"
                     value={formData.refLink}
                     onChange={(e) => handleInputChange('refLink', e.target.value)}
-                    className="w-full p-2 border border-gray-200 rounded-lg bg-gray-50 hover:bg-gray-100 transition-all duration-200 font-medium text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="w-full p-2 border border-gray-200 rounded-lg bg-gray-50  transition-all duration-200 font-medium text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
                     placeholder="Reference Link"
                     disabled={isSubmitting}
                 />
