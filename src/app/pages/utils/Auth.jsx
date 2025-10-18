@@ -2,40 +2,8 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useRouter } from 'next/navigation';
-import {
-  Eye,
-  EyeOff,
-  Mail,
-  Lock,
-  User,
-  ChevronDown,
-  CheckCircle,
-  AlertCircle,
-  Loader2,
-  Crown,
-  Users,
-  Code2,
-  TestTube,
-  Database,
-  Brain,
-  Smartphone,
-  Cloud,
-  Shield,
-  Wrench,
-  Network,
-  BarChart3,
-  Palette,
-  Briefcase,
-  GitBranch,
-  Server,
-  Github,
-  FileSpreadsheet,
-  MessageSquare,
-  Zap
-} from 'lucide-react';
-import { FaRocket, FaBug, FaChartLine, FaCheckCircle } from 'react-icons/fa';
 import { useAlert } from '@/app/script/Alert.context';
-import { GoogleArrowDown } from '@/app/components/utils/Icon';
+import { Eye, EyeOff, Mail, Lock, User, ChevronDown, CheckCircle, Loader2 } from 'lucide-react';
 
 const AuthPage = () => {
   const router = useRouter();
@@ -60,61 +28,58 @@ const AuthPage = () => {
   });
 
   const roles = [
-    { value: 'admin', label: 'Admin', icon: <Crown className="w-4 h-4" /> },
-    { value: 'project manager', label: 'Project Manager', icon: <Users className="w-4 h-4" /> },
-    { value: 'developer', label: 'Developer', icon: <Code2 className="w-4 h-4" /> },
-    { value: 'qa tester', label: 'QA Tester', icon: <TestTube className="w-4 h-4" /> },
-    { value: 'hr manager', label: 'HR Manager', icon: <Users className="w-4 h-4" /> },
-    { value: 'devops engineer', label: 'DevOps Engineer', icon: <Server className="w-4 h-4" /> },
-    { value: 'ui-ux designer', label: 'UI/UX Designer', icon: <Palette className="w-4 h-4" /> },
-    { value: 'manager', label: 'Manager', icon: <Briefcase className="w-4 h-4" /> },
-    { value: 'product manager', label: 'Product Manager', icon: <BarChart3 className="w-4 h-4" /> },
-    { value: 'business analyst', label: 'Business Analyst', icon: <BarChart3 className="w-4 h-4" /> },
-    { value: 'scrum master', label: 'Scrum Master', icon: <GitBranch className="w-4 h-4" /> },
-    { value: 'data scientist', label: 'Data Scientist', icon: <Brain className="w-4 h-4" /> },
-    { value: 'data engineer', label: 'Data Engineer', icon: <Database className="w-4 h-4" /> },
-    { value: 'ml engineer', label: 'ML Engineer', icon: <Brain className="w-4 h-4" /> },
-    { value: 'ai engineer', label: 'AI Engineer', icon: <Brain className="w-4 h-4" /> },
-    { value: 'frontend developer', label: 'Frontend Developer', icon: <Code2 className="w-4 h-4" /> },
-    { value: 'backend developer', label: 'Backend Developer', icon: <Server className="w-4 h-4" /> },
-    { value: 'fullstack developer', label: 'Fullstack Developer', icon: <Code2 className="w-4 h-4" /> },
-    { value: 'mobile developer', label: 'Mobile Developer', icon: <Smartphone className="w-4 h-4" /> },
-    { value: 'cloud engineer', label: 'Cloud Engineer', icon: <Cloud className="w-4 h-4" /> },
-    { value: 'security engineer', label: 'Security Engineer', icon: <Shield className="w-4 h-4" /> },
-    { value: 'automation tester', label: 'Automation Tester', icon: <Wrench className="w-4 h-4" /> },
-    { value: 'manual tester', label: 'Manual Tester', icon: <TestTube className="w-4 h-4" /> },
-    { value: 'support engineer', label: 'Support Engineer', icon: <Network className="w-4 h-4" /> },
-    { value: 'system administrator', label: 'System Administrator', icon: <Server className="w-4 h-4" /> },
-    { value: 'solution architect', label: 'Solution Architect', icon: <BarChart3 className="w-4 h-4" /> },
-    { value: 'technical lead', label: 'Technical Lead', icon: <Users className="w-4 h-4" /> },
-    { value: 'software architect', label: 'Software Architect', icon: <Code2 className="w-4 h-4" /> },
-    { value: 'database administrator', label: 'Database Administrator', icon: <Database className="w-4 h-4" /> },
-    { value: 'intern', label: 'Intern', icon: <Users className="w-4 h-4" /> },
-    { value: 'other', label: 'Other', icon: <Wrench className="w-4 h-4" /> }
+    { value: 'admin', label: 'Admin' },
+    { value: 'project manager', label: 'Project Manager' },
+    { value: 'developer', label: 'Developer' },
+    { value: 'qa tester', label: 'QA Tester' },
+    { value: 'hr manager', label: 'HR Manager' },
+    { value: 'devops engineer', label: 'DevOps Engineer' },
+    { value: 'ui-ux designer', label: 'UI/UX Designer' },
+    { value: 'manager', label: 'Manager' },
+    { value: 'product manager', label: 'Product Manager' },
+    { value: 'business analyst', label: 'Business Analyst' },
+    { value: 'scrum master', label: 'Scrum Master' },
+    { value: 'data scientist', label: 'Data Scientist' },
+    { value: 'data engineer', label: 'Data Engineer' },
+    { value: 'ml engineer', label: 'ML Engineer' },
+    { value: 'ai engineer', label: 'AI Engineer' },
+    { value: 'frontend developer', label: 'Frontend Developer' },
+    { value: 'backend developer', label: 'Backend Developer' },
+    { value: 'fullstack developer', label: 'Fullstack Developer' },
+    { value: 'mobile developer', label: 'Mobile Developer' },
+    { value: 'cloud engineer', label: 'Cloud Engineer' },
+    { value: 'security engineer', label: 'Security Engineer' },
+    { value: 'automation tester', label: 'Automation Tester' },
+    { value: 'manual tester', label: 'Manual Tester' },
+    { value: 'support engineer', label: 'Support Engineer' },
+    { value: 'system administrator', label: 'System Administrator' },
+    { value: 'solution architect', label: 'Solution Architect' },
+    { value: 'technical lead', label: 'Technical Lead' },
+    { value: 'software architect', label: 'Software Architect' },
+    { value: 'database administrator', label: 'Database Administrator' },
+    { value: 'intern', label: 'Intern' },
+    { value: 'other', label: 'Other' }
   ];
 
   // Check for existing token on component mount
   useEffect(() => {
     const token = localStorage.getItem('token');
     const user = localStorage.getItem('user');
-
     if (token && user) {
       setShowLoginModal(true);
-
-      // Simulate authentication delay for better User experience
       setTimeout(() => {
         setShowLoginModal(false);
         showAlert({
           type: "success",
           message: "Welcome to Caffetest"
-        })
+        });
         router.push('/app');
       }, 2000);
     } else {
-      // Show info alert about Google sign-in
       showAlert({
         type: "info",
-        message: "For enhanced security and compatibility with VS Code environment, we currently support email-based authentication only. This ensures maximum protection for your testing projects and data."
+        message: "For enhanced security and compatibility with VS Code environment, we currently support email-based authentication only. This ensures maximum protection for your testing projects and data.",
+        duration: 7000
       });
     }
   }, [router, showAlert]);
@@ -129,15 +94,82 @@ const AuthPage = () => {
   const handleSendOTP = async (e) => {
     e.preventDefault();
     if (!formData.email) {
-      showAlert('Please enter your email address', 'error');
+      showAlert({
+        type: "error",
+        message: "Email is required"
+      });
       return;
     }
-
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      showAlert({
+        type: "error",
+        message: "Invalid email address"
+      });
+      return;
+    }
+    if (!formData.name) {
+      showAlert({
+        type: "error",
+        message: "Name is required"
+      });
+      return;
+    }
+    if (formData.name.length < 3) {
+      showAlert({
+        type: "error",
+        message: "Name must be at least 3 characters long"
+      });
+      return;
+    }
+    if (!formData.password) {
+      showAlert({
+        type: "error",
+        message: "Password is required"
+      });
+      return;
+    }
+    if (formData.password.length < 8) {
+      showAlert({
+        type: "error",
+        message: "Password must be at least 8 characters"
+      });
+      return;
+    }
+    if (!/[A-Z]/.test(formData.password)) {
+      showAlert({
+        type: "error",
+        message: "Password must contain at least one uppercase letter"
+      });
+      return;
+    }
+    if (!/[a-z]/.test(formData.password)) {
+      showAlert({
+        type: "error",
+        message: "Password must contain at least one lowercase letter"
+      });
+      return;
+    }
+    if (!/[0-9]/.test(formData.password)) {
+      showAlert({
+        type: "error",
+        message: "Password must contain at least one number"
+      });
+      return;
+    }
+    if (!/[@$!%*?&]/.test(formData.password)) {
+      showAlert({
+        type: "error",
+        message: "Password must contain at least one special character (@$!%*?&)"
+      });
+      return;
+    }
     if (!acceptTerms) {
-      showAlert('Please accept the Terms & Conditions and Privacy Policy to continue', 'error');
+      showAlert({
+        type: "error",
+        message: "Please accept the Terms & Conditions and Privacy Policy to continue"
+      });
       return;
     }
-
     setIsLoading(true);
     try {
       const response = await fetch('http://localhost:5000/api/v1/auth/send-otp', {
@@ -147,20 +179,24 @@ const AuthPage = () => {
         },
         body: JSON.stringify({ email: formData.email }),
       });
-
       const data = await response.json();
-
       if (response.ok) {
         setShowOTPForm(true);
         showAlert({
           type: "success",
           message: "OTP Sent successfully to Your Email"
-        })
+        });
       } else {
-        showAlert(data.message || 'Failed to send OTP', 'error');
+        showAlert({
+          type: "error",
+          message: data.message || 'Failed to send OTP'
+        });
       }
     } catch (error) {
-      showAlert('Network error. Please try again.', 'error');
+      showAlert({
+        type: "error",
+        message: 'Network error. Please try again.'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -168,16 +204,97 @@ const AuthPage = () => {
 
   const handleRegister = async (e) => {
     e.preventDefault();
-    if (!formData.name || !formData.email || !formData.password || !formData.otp) {
-      showAlert('Please fill in all fields', 'error');
+    if (!formData.name) {
+      showAlert({
+        type: "error",
+        message: "Name is required"
+      });
       return;
     }
-
+    if (formData.name.length < 3) {
+      showAlert({
+        type: "error",
+        message: "Name must be at least 3 characters long"
+      });
+      return;
+    }
+    if (!formData.email) {
+      showAlert({
+        type: "error",
+        message: "Email is required"
+      });
+      return;
+    }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      showAlert({
+        type: "error",
+        message: "Invalid email address"
+      });
+      return;
+    }
+    if (!formData.password) {
+      showAlert({
+        type: "error",
+        message: "Password is required"
+      });
+      return;
+    }
+    if (formData.password.length < 8) {
+      showAlert({
+        type: "error",
+        message: "Password must be at least 8 characters"
+      });
+      return;
+    }
+    if (!/[A-Z]/.test(formData.password)) {
+      showAlert({
+        type: "error",
+        message: "Password must contain at least one uppercase letter"
+      });
+      return;
+    }
+    if (!/[a-z]/.test(formData.password)) {
+      showAlert({
+        type: "error",
+        message: "Password must contain at least one lowercase letter"
+      });
+      return;
+    }
+    if (!/[0-9]/.test(formData.password)) {
+      showAlert({
+        type: "error",
+        message: "Password must contain at least one number"
+      });
+      return;
+    }
+    if (!/[@$!%*?&]/.test(formData.password)) {
+      showAlert({
+        type: "error",
+        message: "Password must contain at least one special character (@$!%*?&)"
+      });
+      return;
+    }
+    if (!formData.otp) {
+      showAlert({
+        type: "error",
+        message: "Verification code is required"
+      });
+      return;
+    }
     if (!acceptTerms) {
-      showAlert('Please accept the Terms & Conditions and Privacy Policy to continue', 'error');
+      showAlert({
+        type: "error",
+        message: "Please accept the Terms & Conditions and Privacy Policy to continue"
+      });
       return;
     }
-
+    if (!roles.some(role => role.value === selectedRole)) {
+      showAlert({
+        type: "error",
+        message: "Invalid role selected"
+      });
+      return;
+    }
     setIsLoading(true);
     try {
       const response = await fetch('http://localhost:5000/api/v1/auth/register', {
@@ -193,21 +310,28 @@ const AuthPage = () => {
           role: selectedRole
         }),
       });
-
       const data = await response.json();
-
       if (response.ok) {
-        showAlert('Registration successful! Please login.', 'success');
+        showAlert({
+          type: "success",
+          message: "Registration successful! Please login."
+        });
         setFormData({ name: '', email: '', password: '', otp: '' });
         setShowOTPForm(false);
         setTimeout(() => {
           setIsLogin(true);
         }, 2000);
       } else {
-        showAlert(data.message || 'Registration failed', 'error');
+        showAlert({
+          type: "error",
+          message: data.message || 'Registration failed'
+        });
       }
     } catch (error) {
-      showAlert('Network error. Please try again.', 'error');
+      showAlert({
+        type: "error",
+        message: 'Network error. Please try again.'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -215,11 +339,27 @@ const AuthPage = () => {
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    if (!formData.email || !formData.password) {
-      showAlert('Please enter email and password', 'error');
+    if (!formData.email) {
+      showAlert({
+        type: "error",
+        message: "Email is required"
+      });
       return;
     }
-
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email)) {
+      showAlert({
+        type: "error",
+        message: "Invalid email address"
+      });
+      return;
+    }
+    if (!formData.password) {
+      showAlert({
+        type: "error",
+        message: "Password is required"
+      });
+      return;
+    }
     setIsLoading(true);
     try {
       const response = await fetch('http://localhost:5000/api/v1/auth/login', {
@@ -233,52 +373,42 @@ const AuthPage = () => {
           persistent: isPersistent
         }),
       });
-
       const data = await response.json();
-
       if (response.ok) {
-        // Store token based on persistence preference
         if (isPersistent) {
           document.cookie = `token=${data.token}; path=/; max-age=86400`;
           localStorage.setItem('token', data.token);
         } else {
           sessionStorage.setItem('token', data.token);
         }
-
-        // Store ALL required user data for messaging app - MATCHING YOUR BACKEND RESPONSE
-        localStorage.setItem('userId', data.user._id); // Using _id from backend
+        localStorage.setItem('userId', data.user._id);
         localStorage.setItem('userName', data.user.name);
         localStorage.setItem('userEmail', data.user.email);
         localStorage.setItem('userRole', data.user.role);
         localStorage.setItem('isVerified', data.user.isVerified);
         localStorage.setItem('isActive', data.user.isActive);
         localStorage.setItem('isOrganizationOwner', data.user.isOrganizationOwner);
-
-        // Organization data
         localStorage.setItem('organizationId', data.user.organizationId);
         localStorage.setItem('organizationName', data.user.organizationName);
-
-        // Also store the complete user object as backup
         localStorage.setItem('user', JSON.stringify(data.user));
-
-        console.log('✅ Login successful - Stored user data:', {
-          userId: data.user._id,
-          userName: data.user.name,
-          organizationId: data.user.organizationId,
-          organizationName: data.user.organizationName
+        showAlert({
+          type: "success",
+          message: "Login successful! Redirecting..."
         });
-
-        showAlert('Login successful! Redirecting...', 'success');
-
-        // Redirect to app after successful login
         setTimeout(() => {
           router.push('/app');
         }, 2000);
       } else {
-        showAlert(data.message || 'Login failed', 'error');
+        showAlert({
+          type: "error",
+          message: data.message || 'Login failed'
+        });
       }
     } catch (error) {
-      showAlert('Network error. Please try again.', 'error');
+      showAlert({
+        type: "error",
+        message: 'Network error. Please try again.'
+      });
     } finally {
       setIsLoading(false);
     }
@@ -406,13 +536,12 @@ const AuthPage = () => {
               Integrated with GitHub, Google Sheets, Excel, OpenAI, and VS Code. Features AI-powered chatbot for intelligent test automation.
             </p>
 
-            {/* Feature Icons */}
+            {/* Feature Descriptions */}
             <div className="grid grid-cols-4 gap-4 mb-8">
               <motion.div
                 whileHover={{ scale: 1.1 }}
                 className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
               >
-                <FaRocket className="text-3xl text-blue-600 mb-2" />
                 <span className="text-xs font-medium text-gray-700">Automation</span>
               </motion.div>
 
@@ -420,7 +549,6 @@ const AuthPage = () => {
                 whileHover={{ scale: 1.1 }}
                 className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
               >
-                <Github className="text-3xl text-gray-800 mb-2" />
                 <span className="text-xs font-medium text-gray-700">GitHub</span>
               </motion.div>
 
@@ -428,7 +556,6 @@ const AuthPage = () => {
                 whileHover={{ scale: 1.1 }}
                 className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
               >
-                <FileSpreadsheet className="text-3xl text-green-600 mb-2" />
                 <span className="text-xs font-medium text-gray-700">Sheets</span>
               </motion.div>
 
@@ -436,7 +563,6 @@ const AuthPage = () => {
                 whileHover={{ scale: 1.1 }}
                 className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
               >
-                <MessageSquare className="text-3xl text-purple-600 mb-2" />
                 <span className="text-xs font-medium text-gray-700">AI Chat</span>
               </motion.div>
 
@@ -444,7 +570,6 @@ const AuthPage = () => {
                 whileHover={{ scale: 1.1 }}
                 className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
               >
-                <FaBug className="text-3xl text-red-600 mb-2" />
                 <span className="text-xs font-medium text-gray-700">Bug Track</span>
               </motion.div>
 
@@ -452,7 +577,6 @@ const AuthPage = () => {
                 whileHover={{ scale: 1.1 }}
                 className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
               >
-                <FaChartLine className="text-3xl text-orange-600 mb-2" />
                 <span className="text-xs font-medium text-gray-700">Analytics</span>
               </motion.div>
 
@@ -460,7 +584,6 @@ const AuthPage = () => {
                 whileHover={{ scale: 1.1 }}
                 className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
               >
-                <Brain className="text-3xl text-indigo-600 mb-2" />
                 <span className="text-xs font-medium text-gray-700">OpenAI</span>
               </motion.div>
 
@@ -468,7 +591,6 @@ const AuthPage = () => {
                 whileHover={{ scale: 1.1 }}
                 className="flex flex-col items-center p-4 bg-white rounded-lg shadow-md"
               >
-                <Zap className="text-3xl text-yellow-600 mb-2" />
                 <span className="text-xs font-medium text-gray-700">VS Code</span>
               </motion.div>
             </div>
@@ -586,10 +708,9 @@ const AuthPage = () => {
                             className="w-full px-4 py-3 bg-white border border-gray-300 rounded-lg flex items-center justify-between hover:bg-gray-50 focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all"
                           >
                             <div className="flex items-center gap-3 text-gray-700">
-                              {roles.find(role => role.value === selectedRole)?.icon}
                               <span className="font-medium">{roles.find(role => role.value === selectedRole)?.label}</span>
                             </div>
-                            <GoogleArrowDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
+                            <ChevronDown className={`w-4 h-4 text-gray-500 transition-transform duration-200 ${isDropdownOpen ? 'rotate-180' : ''}`} />
                           </button>
 
                           <AnimatePresence>
@@ -613,9 +734,6 @@ const AuthPage = () => {
                                       className={`w-full px-4 py-2.5 flex items-center gap-3 hover:bg-blue-50 transition-colors text-left ${selectedRole === role.value ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'
                                         }`}
                                     >
-                                      <span className={selectedRole === role.value ? 'text-blue-600' : 'text-gray-500'}>
-                                        {role.icon}
-                                      </span>
                                       <span>{role.label}</span>
                                       {selectedRole === role.value && (
                                         <CheckCircle className="w-4 h-4 ml-auto text-blue-600" />
