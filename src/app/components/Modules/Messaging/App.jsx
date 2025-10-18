@@ -26,22 +26,13 @@ import {
 } from "lucide-react";
 import socketClient from "@/app/client/socket.client";
 
-
-/**
- * Messaging Component - Real-time chat interface with WhatsApp-style design
- * Features: Real-time messaging, reactions, replies, file uploads, typing indicators
- */
-
 const API_BASE_URL = "http://localhost:5000/api/v1/message";
-const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/YOUR_CLOUD_NAME/upload";
+const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dvytvjplt/image/upload";
 const CLOUDINARY_UPLOAD_PRESET = 'test_case_preset';
 
 const getCurrentUser = () => {
   if (typeof window !== "undefined") {
-    // Try to get from sessionStorage first (for non-persistent login), then localStorage
     const token = sessionStorage.getItem("token") || localStorage.getItem("token");
-
-    // Get individual items from localStorage
     const userId = localStorage.getItem("userId");
     const userName = localStorage.getItem("userName");
     const userEmail = localStorage.getItem("userEmail");
@@ -49,18 +40,14 @@ const getCurrentUser = () => {
     const organizationId = localStorage.getItem("organizationId");
     const organizationName = localStorage.getItem("organizationName");
 
-    // Try to parse stored user object
     let storedUser = {};
     try {
       const userStr = localStorage.getItem("user");
       if (userStr && userStr !== "{}") {
         storedUser = JSON.parse(userStr);
       }
-    } catch (e) {
-      console.error("Error parsing stored user:", e);
-    }
+    } catch (e) { }
 
-    // Merge all data, prioritizing individual items over stored object
     const userData = {
       id: userId || storedUser._id || storedUser.id,
       _id: userId || storedUser._id || storedUser.id,
@@ -74,28 +61,6 @@ const getCurrentUser = () => {
       isActive: localStorage.getItem("isActive") === 'true' || storedUser.isActive,
       isOrganizationOwner: localStorage.getItem("isOrganizationOwner") === 'true' || storedUser.isOrganizationOwner,
     };
-
-    // Debug log
-    console.log('🔍 getCurrentUser - Retrieved Data:', {
-      userId: userData.id,
-      email: userData.email,
-      name: userData.name,
-      organizationId: userData.organizationId,
-      role: userData.role,
-      hasToken: !!token,
-      localStorageKeys: Object.keys(localStorage),
-      source: 'localStorage + sessionStorage'
-    });
-
-    // Warning if critical data is missing
-    if (!userData.id || !userData.email) {
-      console.error('⚠️ CRITICAL: User ID or Email is missing! User needs to re-login.');
-      console.error('LocalStorage dump:', {
-        userId: localStorage.getItem("userId"),
-        userEmail: localStorage.getItem("userEmail"),
-        userObject: localStorage.getItem("user")
-      });
-    }
 
     return userData;
   }
@@ -133,8 +98,8 @@ const Messaging = () => {
   const [replies, setReplies] = useState({});
   const [stats, setStats] = useState(null);
   const [showStats, setShowStats] = useState(false);
-  const [showEmojiPicker, setShowEmojiPicker] = useState(null);
   const [error, setError] = useState(null);
+  const [fullScreenImage, setFullScreenImage] = useState(null);
   const [isSocketConnected, setIsSocketConnected] = useState(false);
   const [typingUsers, setTypingUsers] = useState([]);
   const [uploadingFile, setUploadingFile] = useState(false);
@@ -144,9 +109,8 @@ const Messaging = () => {
   const messagesContainerRef = useRef(null);
   const typingTimeoutRef = useRef(null);
   const fileInputRef = useRef(null);
+  const messageInputRef = useRef(null);
   const currentUser = getCurrentUser();
-
-  const emojis = ["👍", "❤️", "😊", "🎉", "🔥", "👏", "😮", "😢", "✨", "💯"];
 
   const sortedMessages = [...messages].sort((a, b) =>
     new Date(a.createdAt) - new Date(b.createdAt)
@@ -155,16 +119,6 @@ const Messaging = () => {
   useEffect(() => {
     const organizationId = currentUser.organizationId;
 
-    console.log('🔍 Current User Data:', {
-      userId: currentUser.id,
-      name: currentUser.name,
-      email: currentUser.email,
-      organizationId: currentUser.organizationId,
-      organizationName: currentUser.organizationName,
-      role: currentUser.role
-    });
-
-    // Critical check for missing user data
     if (!currentUser.id || !currentUser.email) {
       setError("User session expired or invalid. Please log out and log in again.");
       setLoading(false);
@@ -399,7 +353,7 @@ const Messaging = () => {
         }
       } else {
         const messageData = {
-          content: newMessage,
+          content: newMessage || '',
           messageType: selectedFile ? selectedFile.type : "text",
           parentMessageId: replyingTo?._id || null,
           mentions: [],
@@ -441,7 +395,6 @@ const Messaging = () => {
   };
 
   const handleDeleteMessage = async (messageId) => {
-    if (!confirm("Are you sure you want to delete this message?")) return;
 
     try {
       const response = await fetch(`${API_BASE_URL}/${messageId}`, {
@@ -460,27 +413,6 @@ const Messaging = () => {
     }
   };
 
-  const handleReaction = async (messageId, emoji) => {
-    try {
-      const response = await fetch(`${API_BASE_URL}/${messageId}/reaction`, {
-        method: "POST",
-        headers: getHeaders(),
-        body: JSON.stringify({ emoji }),
-      });
-
-      if (response.ok) {
-        const updatedMessage = await response.json();
-        setMessages(prev =>
-          prev.map((m) =>
-            m._id === messageId ? { ...m, reactions: updatedMessage.reactions } : m
-          )
-        );
-      }
-    } catch (error) {
-      setError("Failed to add reaction");
-    }
-    setShowEmojiPicker(null);
-  };
 
   const handleMarkAsRead = async (messageId) => {
     try {
@@ -516,25 +448,20 @@ const Messaging = () => {
           })
         );
       }
-    } catch (error) {
-      // Silent fail
-    }
+    } catch (error) { }
   };
 
-  // FIXED: Only mark OTHER users' messages as read, not your own
   useEffect(() => {
     let isMounted = true;
 
     const markMessagesAsRead = async () => {
       if (!isMounted || messages.length === 0 || !currentUser.id) return;
 
-      // CRITICAL FIX: Filter out messages sent by current user
       const unreadMessages = messages.filter((m) => {
         const messageSenderId = m.senderId?._id || m.senderId;
         const isMyMessage = String(messageSenderId) === String(currentUser.id);
         const isUnread = !m.readBy?.some((r) => String(r.userId) === String(currentUser.id));
 
-        // Only mark as read if it's NOT my message AND it's unread
         return !isMyMessage && isUnread && m._id;
       });
 
@@ -552,9 +479,7 @@ const Messaging = () => {
           if (i + batchSize < unreadMessages.length) {
             await new Promise(resolve => setTimeout(resolve, 100));
           }
-        } catch (error) {
-          // Silent fail
-        }
+        } catch (error) { }
       }
     };
 
@@ -642,6 +567,9 @@ const Messaging = () => {
     setEditingMessage(message);
     setNewMessage(message.content);
     setContextMenu(null);
+    setTimeout(() => {
+      messageInputRef.current?.focus();
+    }, 100);
   };
 
   const cancelEdit = () => {
@@ -652,29 +580,13 @@ const Messaging = () => {
   const isMyMessage = (message) => {
     const currentUserId = currentUser.id || currentUser._id;
     const messageSenderId = message.senderId?._id || message.senderId;
-
-    // Also check against email as a fallback
     const currentUserEmail = currentUser.email;
     const messageSenderEmail = message.senderId?.email || message.senderEmail;
 
-    // Check if IDs match (most reliable)
     const idsMatch = currentUserId && messageSenderId &&
       String(messageSenderId) === String(currentUserId);
-
-    // Check if emails match (fallback)
     const emailsMatch = currentUserEmail && messageSenderEmail &&
       String(currentUserEmail).toLowerCase() === String(messageSenderEmail).toLowerCase();
-
-    // Debug log
-    console.log('Checking message ownership:', {
-      currentUserId,
-      messageSenderId,
-      currentUserEmail,
-      messageSenderEmail,
-      idsMatch,
-      emailsMatch,
-      result: idsMatch || emailsMatch
-    });
 
     return idsMatch || emailsMatch;
   };
@@ -691,6 +603,9 @@ const Messaging = () => {
   const handleReplyFromContext = () => {
     setReplyingTo(contextMenu.message);
     setContextMenu(null);
+    setTimeout(() => {
+      messageInputRef.current?.focus();
+    }, 100);
   };
 
   const handleEditFromContext = () => {
@@ -710,7 +625,34 @@ const Messaging = () => {
 
   return (
     <div className="flex max-h-[calc(100vh-69px)] sidebar-scrollbar">
-      {/* Context Menu */}
+      <AnimatePresence>
+        {fullScreenImage && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black/90 z-50 flex items-center justify-center p-4"
+            onClick={() => setFullScreenImage(null)}
+          >
+            <button
+              onClick={() => setFullScreenImage(null)}
+              className="absolute top-4 right-4 p-2 bg-white/10 hover:bg-white/20 rounded-full transition-colors"
+            >
+              <X size={24} className="text-white" />
+            </button>
+            <motion.img
+              initial={{ scale: 0.8 }}
+              animate={{ scale: 1 }}
+              exit={{ scale: 0.8 }}
+              src={fullScreenImage}
+              alt="Full screen"
+              className="max-w-full max-h-full object-contain"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       <AnimatePresence>
         {contextMenu && (
           <motion.div
@@ -723,11 +665,11 @@ const Messaging = () => {
               left: contextMenu.x,
               zIndex: 1000
             }}
-            className="bg-white rounded-lg shadow-xl border border-slate-200 py-1 min-w-[150px]"
+            className="bg-white dark:bg-gray-800 rounded-lg shadow-xl border border-slate-200 dark:border-gray-700 py-1 min-w-[150px]"
           >
             <button
               onClick={handleReplyFromContext}
-              className="w-full px-4 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"
+              className="w-full px-4 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-gray-700 flex items-center gap-2 dark:text-gray-100"
             >
               <Reply size={14} />
               Reply
@@ -736,14 +678,14 @@ const Messaging = () => {
               <>
                 <button
                   onClick={handleEditFromContext}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-slate-50 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-slate-50 dark:hover:bg-gray-700 flex items-center gap-2 dark:text-gray-100"
                 >
                   <Edit2 size={14} />
                   Edit
                 </button>
                 <button
                   onClick={handleDeleteFromContext}
-                  className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 text-red-600 flex items-center gap-2"
+                  className="w-full px-4 py-2 text-left text-sm hover:bg-red-50 dark:hover:bg-red-900 text-red-600 dark:text-red-400 flex items-center gap-2"
                 >
                   <Trash2 size={14} />
                   Delete
@@ -754,7 +696,6 @@ const Messaging = () => {
         )}
       </AnimatePresence>
 
-      {/* Replies Modal */}
       <AnimatePresence>
         {showRepliesModal && replies[showRepliesModal] && (
           <motion.div
@@ -768,19 +709,19 @@ const Messaging = () => {
               initial={{ scale: 0.9, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.9, opacity: 0 }}
-              className="bg-white rounded-xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden"
+              className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-lg w-full max-h-[80vh] overflow-hidden"
               onClick={(e) => e.stopPropagation()}
             >
-              <div className="flex items-center justify-between p-4 border-b">
-                <h3 className="text-sm font-semibold text-slate-800 flex items-center gap-2">
+              <div className="flex items-center justify-between p-4 border-b dark:border-gray-700">
+                <h3 className="text-sm font-semibold text-slate-800 dark:text-gray-100 flex items-center gap-2">
                   <MessageSquare size={16} />
                   Replies ({replies[showRepliesModal]?.length})
                 </h3>
                 <button
                   onClick={() => setShowRepliesModal(null)}
-                  className="p-1 hover:bg-slate-100 rounded-full"
+                  className="p-1 hover:bg-slate-100 dark:hover:bg-gray-700 rounded-full"
                 >
-                  <X size={16} />
+                  <X size={16} className="dark:text-gray-100" />
                 </button>
               </div>
               <div className="overflow-y-auto max-h-[calc(80vh-120px)] p-4 space-y-3">
@@ -791,22 +732,22 @@ const Messaging = () => {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ delay: idx * 0.05 }}
                     className={`rounded-lg p-3 ${String(reply.senderId) === String(currentUser.id)
-                      ? "bg-[#dcf8c6] ml-auto"
-                      : "bg-slate-100 mr-auto"
+                      ? "bg-[#dcf8c6] dark:bg-green-900 ml-auto"
+                      : "bg-slate-100 dark:bg-gray-700 mr-auto"
                       } max-w-[85%]`}
                   >
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-6 h-6 bg-gradient-to-br from-green-500 to-teal-600 rounded-full flex items-center justify-center text-white text-[9px] font-bold">
                         {reply.senderName?.charAt(0).toUpperCase()}
                       </div>
-                      <span className="font-semibold text-[11px] text-slate-800">
+                      <span className="font-semibold text-[11px] text-slate-800 dark:text-gray-100">
                         {reply.senderName}
                       </span>
-                      <span className="text-[9px] text-slate-500 ml-auto">
+                      <span className="text-[9px] text-slate-500 dark:text-gray-400 ml-auto">
                         {formatMessageTime(reply.createdAt)}
                       </span>
                     </div>
-                    <p className="text-[12px] text-slate-700 leading-relaxed">
+                    <p className="text-[12px] text-slate-700 dark:text-gray-200 leading-relaxed">
                       {reply.content}
                     </p>
                   </motion.div>
@@ -817,25 +758,21 @@ const Messaging = () => {
         )}
       </AnimatePresence>
 
-      {/* Main Chat Container */}
       <div className="flex-1 flex flex-col max-h-[calc(100vh-69px)]">
-
-
-        {/* Messages Area */}
-        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 bg-white relative">
+        <div ref={messagesContainerRef} className="flex-1 overflow-y-auto p-4 bg-white dark:bg-gray-900 relative">
           <AnimatePresence>
             {error && (
               <motion.div
                 initial={{ opacity: 0, y: -20 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -20 }}
-                className="mb-2 p-2 bg-red-50 border border-red-200 rounded-lg flex items-center gap-2"
+                className="mb-2 p-2 bg-red-50 dark:bg-red-900 border border-red-200 dark:border-red-700 rounded-lg flex items-center gap-2"
               >
-                <AlertCircle className="text-red-600" size={14} />
-                <p className="text-[11px] text-red-800">{error}</p>
+                <AlertCircle className="text-red-600 dark:text-red-400" size={14} />
+                <p className="text-[11px] text-red-800 dark:text-red-200">{error}</p>
                 <button
                   onClick={() => setError(null)}
-                  className="ml-auto text-red-600"
+                  className="ml-auto text-red-600 dark:text-red-400"
                 >
                   <X size={14} />
                 </button>
@@ -846,10 +783,10 @@ const Messaging = () => {
           {loading ? (
             <div className="flex flex-col justify-center items-center min-h-[calc(100vh-69px)]">
               <div className="animate-spin rounded-full h-10 w-10 border-b-2 border-green-600"></div>
-              <p className="mt-2 text-[11px] text-slate-600">Loading messages...</p>
+              <p className="mt-2 text-[11px] text-slate-600 dark:text-gray-400">Loading messages...</p>
             </div>
           ) : sortedMessages.length === 0 ? (
-            <div className="flex flex-col justify-center items-center h-full text-slate-500">
+            <div className="flex flex-col justify-center items-center h-full text-slate-500 dark:text-gray-400">
               <MessageSquare size={40} className="mb-2 opacity-50" />
               <p className="text-xs font-medium">No messages yet</p>
               <p className="text-[10px]">Start a conversation!</p>
@@ -867,17 +804,19 @@ const Messaging = () => {
                       index={index}
                       isMyMessage={isMyMessage(message)}
                       currentUserId={currentUser.id}
-                      onReply={() => setReplyingTo(message)}
+                      onReply={() => {
+                        setReplyingTo(message);
+                        setTimeout(() => {
+                          messageInputRef.current?.focus();
+                        }, 100);
+                      }}
                       onEdit={() => startEdit(message)}
                       onDelete={() => handleDeleteMessage(message._id)}
-                      onReaction={(emoji) => handleReaction(message._id, emoji)}
                       onPin={() => handleTogglePin(message._id)}
                       onToggleReplies={() => fetchReplies(message._id)}
-                      showEmojiPicker={showEmojiPicker === message._id}
-                      setShowEmojiPicker={setShowEmojiPicker}
-                      emojis={emojis}
                       onContextMenu={handleContextMenu}
                       formatMessageTime={formatMessageTime}
+                      onImageClick={setFullScreenImage}
                     />
                   );
                 })}
@@ -887,7 +826,7 @@ const Messaging = () => {
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  className="flex items-center gap-2 text-slate-500 text-[10px] px-3"
+                  className="flex items-center gap-2 text-slate-500 dark:text-gray-400 text-[10px] px-3"
                 >
                   <div className="flex gap-1">
                     <motion.span
@@ -912,57 +851,55 @@ const Messaging = () => {
           )}
         </div>
 
-        {/* Pagination */}
         {totalPages > 1 && (
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="flex justify-center items-center gap-2 py-2 bg-white border-t"
+            className="flex justify-center items-center gap-2 py-2 bg-white dark:bg-gray-800 border-t dark:border-gray-700"
           >
             <button
               onClick={() => fetchMessages(currentPage - 1, searchQuery)}
               disabled={currentPage === 1}
-              className="px-2.5 py-1 text-[11px] bg-slate-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-300 font-medium"
+              className="px-2.5 py-1 text-[11px] bg-slate-200 dark:bg-gray-700 dark:text-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-300 dark:hover:bg-gray-600 font-medium"
             >
               Previous
             </button>
-            <span className="px-2 py-1 text-[10px] font-medium text-slate-700">
+            <span className="px-2 py-1 text-[10px] font-medium text-slate-700 dark:text-gray-300">
               {currentPage} / {totalPages}
             </span>
             <button
               onClick={() => fetchMessages(currentPage + 1, searchQuery)}
               disabled={currentPage === totalPages}
-              className="px-2.5 py-1 text-[11px] bg-slate-200 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-300 font-medium"
+              className="px-2.5 py-1 text-[11px] bg-slate-200 dark:bg-gray-700 dark:text-gray-100 rounded-md disabled:opacity-50 disabled:cursor-not-allowed hover:bg-slate-300 dark:hover:bg-gray-600 font-medium"
             >
               Next
             </button>
           </motion.div>
         )}
 
-        {/* Input Area */}
-        <div className="bg-white border-t border-green-600 px-4 py-2">
+        <div className="bg-white dark:bg-gray-800 border-t border-green-600 dark:border-green-700 px-4 py-2">
           <AnimatePresence>
             {replyingTo && (
               <motion.div
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex items-center justify-between mb-2 p-2 bg-green-50 rounded-lg border-l-4 border-green-500"
+                className="flex items-center justify-between mb-2 p-2 bg-green-50 dark:bg-green-900 rounded-lg border-l-4 border-green-500"
               >
                 <div className="flex items-center gap-2">
-                  <Reply size={12} className="text-green-600" />
+                  <Reply size={12} className="text-green-600 dark:text-green-400" />
                   <div>
-                    <span className="text-[10px] font-semibold text-slate-700">
+                    <span className="text-[10px] font-semibold text-slate-700 dark:text-gray-200">
                       Replying to {replyingTo.senderName}
                     </span>
-                    <p className="text-[10px] text-slate-500 truncate max-w-xs">
+                    <p className="text-[10px] text-slate-500 dark:text-gray-400 truncate max-w-xs">
                       {replyingTo.content}
                     </p>
                   </div>
                 </div>
                 <button
                   onClick={() => setReplyingTo(null)}
-                  className="text-slate-500 hover:text-slate-700"
+                  className="text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200"
                 >
                   <X size={12} />
                 </button>
@@ -974,17 +911,17 @@ const Messaging = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex items-center justify-between mb-2 p-2 bg-amber-50 rounded-lg border-l-4 border-amber-500"
+                className="flex items-center justify-between mb-2 p-2 bg-amber-50 dark:bg-amber-900 rounded-lg border-l-4 border-amber-500"
               >
                 <div className="flex items-center gap-2">
-                  <Edit2 size={12} className="text-amber-600" />
-                  <span className="text-[10px] font-semibold text-slate-700">
+                  <Edit2 size={12} className="text-amber-600 dark:text-amber-400" />
+                  <span className="text-[10px] font-semibold text-slate-700 dark:text-gray-200">
                     Editing message
                   </span>
                 </div>
                 <button
                   onClick={cancelEdit}
-                  className="text-slate-500 hover:text-slate-700"
+                  className="text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200"
                 >
                   <X size={12} />
                 </button>
@@ -996,7 +933,7 @@ const Messaging = () => {
                 initial={{ opacity: 0, height: 0 }}
                 animate={{ opacity: 1, height: "auto" }}
                 exit={{ opacity: 0, height: 0 }}
-                className="flex items-center justify-between mb-2 p-2 bg-blue-50 rounded-lg"
+                className="flex items-center justify-between mb-2 p-2 bg-blue-50 dark:bg-blue-900 rounded-lg"
               >
                 <div className="flex items-center gap-2">
                   {selectedFile.type === 'image' ? (
@@ -1006,13 +943,13 @@ const Messaging = () => {
                       className="w-12 h-12 object-cover rounded"
                     />
                   ) : (
-                    <Paperclip size={16} className="text-blue-600" />
+                    <Paperclip size={16} className="text-blue-600 dark:text-blue-400" />
                   )}
-                  <span className="text-[10px] text-slate-700">{selectedFile.name} ready to send</span>
+                  <span className="text-[10px] text-slate-700 dark:text-gray-200">{selectedFile.name} ready to send</span>
                 </div>
                 <button
                   onClick={() => setSelectedFile(null)}
-                  className="text-slate-500 hover:text-slate-700"
+                  className="text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200"
                 >
                   <X size={12} />
                 </button>
@@ -1020,14 +957,7 @@ const Messaging = () => {
             )}
           </AnimatePresence>
 
-          <div className="flex items-center gap-2 bg-slate-50 rounded-full px-3 py-2">
-            <button
-              onClick={() => setShowEmojiPicker(showEmojiPicker ? null : "input")}
-              className="p-1 hover:bg-slate-100 rounded-full"
-            >
-              <Smile size={18} className="text-slate-600" />
-            </button>
-
+          <div className="flex items-center gap-2 bg-slate-50 dark:bg-gray-700 rounded-full px-3 py-2">
             <input
               type="file"
               ref={fileInputRef}
@@ -1039,16 +969,17 @@ const Messaging = () => {
             <button
               onClick={() => fileInputRef.current?.click()}
               disabled={uploadingFile}
-              className="p-1 hover:bg-slate-100 rounded-full"
+              className="p-1 hover:bg-slate-100 dark:hover:bg-gray-600 rounded-full"
             >
               {uploadingFile ? (
-                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-600"></div>
+                <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-slate-600 dark:border-gray-300"></div>
               ) : (
-                <Paperclip size={18} className="text-slate-600" />
+                <Paperclip size={18} className="text-slate-600 dark:text-gray-300" />
               )}
             </button>
 
             <input
+              ref={messageInputRef}
               type="text"
               placeholder="Type a message"
               value={newMessage}
@@ -1062,52 +993,23 @@ const Messaging = () => {
                   handleSendMessage();
                 }
               }}
-              className="flex-1 px-3 py-1.5 text-[13px] bg-transparent focus:outline-none"
+              className="flex-1 px-3 py-1.5 text-[13px] bg-transparent dark:text-gray-100 focus:outline-none placeholder:text-slate-500 dark:placeholder:text-gray-400"
             />
 
             <button
               onClick={handleSendMessage}
               disabled={(!newMessage.trim() && !selectedFile) || uploadingFile}
-              className="p-2 bg-green-500 hover:bg-green-600 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="p-2 bg-green-500 hover:bg-green-600 dark:bg-green-600 dark:hover:bg-green-700 rounded-full disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               <Send size={16} className="text-white" />
             </button>
           </div>
-
-          {/* Emoji Picker for Input */}
-          <AnimatePresence>
-            {showEmojiPicker === "input" && (
-              <motion.div
-                initial={{ opacity: 0, scale: 0.8, y: 10 }}
-                animate={{ opacity: 1, scale: 1, y: 0 }}
-                exit={{ opacity: 0, scale: 0.8, y: 10 }}
-                className="absolute bottom-full left-4 mb-2 p-3 bg-white rounded-lg shadow-xl flex gap-1.5 z-10 border border-slate-200"
-              >
-                {emojis.map((emoji) => (
-                  <button
-                    key={emoji}
-                    onClick={() => {
-                      setNewMessage((prev) => prev + emoji);
-                      setShowEmojiPicker(null);
-                    }}
-                    className="text-lg hover:bg-slate-100 rounded p-1.5 transition-colors"
-                  >
-                    {emoji}
-                  </button>
-                ))}
-              </motion.div>
-            )}
-          </AnimatePresence>
         </div>
       </div>
     </div>
   );
 };
 
-/**
- * MessageBubble Component - Individual message display with WhatsApp-style design
- * Supports right-click context menu, reactions, and read receipts
- */
 const MessageBubble = ({
   message,
   index,
@@ -1116,29 +1018,22 @@ const MessageBubble = ({
   onReply,
   onEdit,
   onDelete,
-  onReaction,
   onPin,
   onToggleReplies,
-  showEmojiPicker,
-  setShowEmojiPicker,
-  emojis,
   onContextMenu,
   formatMessageTime,
+  onImageClick,
 }) => {
   const [showActions, setShowActions] = useState(false);
 
-  // FIXED: Calculate read status properly - exclude sender from readBy count
   const getReadStatus = () => {
     if (!isMyMessage) return null;
 
     const readBy = message.readBy || [];
-
-    // Filter out the sender from read receipts
     const othersWhoRead = readBy.filter(
       r => String(r.userId || r) !== String(currentUserId)
     );
 
-    // Show double tick only if others have read it
     return othersWhoRead.length > 0;
   };
 
@@ -1154,10 +1049,17 @@ const MessageBubble = ({
       onContextMenu={(e) => onContextMenu(e, message)}
     >
       <div className={`relative max-w-[75%] group`}>
+        {message.parentMessageId && (
+          <div className="mb-1 ml-3 p-2 bg-slate-100 dark:bg-gray-700 rounded-lg text-[10px] text-slate-600 dark:text-gray-300 border-l-2 border-green-500">
+            <Reply size={10} className="inline mr-1" />
+            <span className="font-semibold">{message.parentMessageId.senderName || 'Someone'}</span>: {message.parentMessageId.content?.substring(0, 50)}{message.parentMessageId.content?.length > 50 ? '...' : ''}
+          </div>
+        )}
+
         <div
           className={`rounded-2xl px-4 py-3 shadow-sm ${isMyMessage
-            ? "bg-[#dcf8c6] rounded-br-none"
-            : "bg-white rounded-bl-none border border-gray-200"
+            ? "bg-[#dcf8c6] dark:bg-green-900 rounded-br-none"
+            : "bg-white dark:bg-gray-800 rounded-bl-none border border-gray-200 dark:border-gray-700"
             }`}
         >
           {!isMyMessage && (
@@ -1165,20 +1067,49 @@ const MessageBubble = ({
               <div className="w-6 h-6 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center text-white text-[10px] font-bold">
                 {message.senderName?.charAt(0).toUpperCase()}
               </div>
-              <span className="text-[12px] font-semibold text-gray-800">
+              <span className="text-[12px] font-semibold text-gray-800 dark:text-gray-100">
                 {message.senderName}
               </span>
               {message.senderRole && (
-                <span className="text-[9px] px-2 py-1 bg-blue-100 rounded-full text-blue-700">
+                <span className="text-[9px] px-2 py-1 bg-blue-100 dark:bg-blue-900 rounded-full text-blue-700 dark:text-blue-300">
                   {message.senderRole}
                 </span>
               )}
             </div>
           )}
 
+          {message.messageType === 'image' && message.fileUrl && (
+            <div className="mb-2">
+              <img
+                src={message.fileUrl}
+                alt={message.fileName || 'Image'}
+                className="max-w-full rounded-lg max-h-64 object-cover cursor-pointer hover:opacity-90 transition-opacity"
+                onClick={() => onImageClick(message.fileUrl)}
+              />
+            </div>
+          )}
+
+          {message.messageType === 'file' && message.fileUrl && (
+            <div className="mb-2 p-2 bg-slate-100 dark:bg-gray-700 rounded-lg flex items-center gap-2">
+              <Paperclip size={16} className="text-slate-600 dark:text-gray-300" />
+              <div className="flex-1">
+                <p className="text-[11px] font-medium text-slate-800 dark:text-gray-100">{message.fileName}</p>
+                <p className="text-[9px] text-slate-500 dark:text-gray-400">{(message.fileSize / 1024).toFixed(2)} KB</p>
+              </div>
+              <a
+                href={message.fileUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="p-1 hover:bg-slate-200 dark:hover:bg-gray-600 rounded"
+              >
+                <Download size={14} className="text-slate-600 dark:text-gray-300" />
+              </a>
+            </div>
+          )}
+
           {message.content && (
             <p
-              className={`text-[14px] leading-relaxed break-words ${isMyMessage ? "text-gray-800" : "text-gray-800"
+              className={`text-[14px] leading-relaxed break-words ${isMyMessage ? "text-gray-800 dark:text-gray-100" : "text-gray-800 dark:text-gray-100"
                 }`}
             >
               {message.content}
@@ -1189,11 +1120,14 @@ const MessageBubble = ({
             className={`flex items-center gap-2 mt-2 ${isMyMessage ? "justify-end" : "justify-start"
               }`}
           >
-            <span className="text-[11px] text-gray-500">
+            <span className="text-[11px] text-gray-500 dark:text-gray-400">
               {formatMessageTime(message.createdAt)}
             </span>
+            {message.isEdited && (
+              <span className="text-[9px] text-gray-400 dark:text-gray-500">(edited)</span>
+            )}
             {isMyMessage && (
-              <span className="text-blue-500">
+              <span className="text-blue-500 dark:text-blue-400">
                 {hasBeenRead ? (
                   <CheckCheck size={12} />
                 ) : (
@@ -1202,6 +1136,18 @@ const MessageBubble = ({
               </span>
             )}
           </div>
+        </div>
+
+        <div className="absolute -top-1 right-0 opacity-0 group-hover:opacity-100 transition-opacity flex gap-1">
+          {message.replyCount > 0 && (
+            <button
+              onClick={onToggleReplies}
+              className="p-1 bg-white dark:bg-gray-700 rounded-full shadow-md hover:bg-slate-100 dark:hover:bg-gray-600 text-[9px] px-2"
+            >
+              <MessageSquare size={12} className="inline mr-1 text-slate-600 dark:text-gray-300" />
+              {message.replyCount}
+            </button>
+          )}
         </div>
       </div>
     </motion.div>
