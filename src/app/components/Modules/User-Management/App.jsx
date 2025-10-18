@@ -1,28 +1,27 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FiPlus, FiEdit, FiTrash2, FiSearch,
-  FiChevronLeft, FiChevronRight, FiEye, FiEyeOff,
-  FiBarChart2, FiUsers, FiShield, FiChevronDown, FiCheck, FiPower
+  FiPlus, FiEdit, FiTrash2, FiSearch, FiUser,
+  FiChevronLeft, FiChevronRight, FiEye, FiUserCheck,
+  FiUserX, FiShield, FiMail, FiCalendar, FiActivity, FiChevronDown, FiCheck
 } from 'react-icons/fi';
 import { useAlert } from '@/app/script/Alert.context';
 import { useConfirm } from '@/app/script/Confirm.context';
 
 const UserManagement = () => {
-  const { showAlert } = useAlert();
-  const { showConfirm } = useConfirm();
-
   const [users, setUsers] = useState([]);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
+  const [showRoleModal, setShowRoleModal] = useState(false);
   const [selectedUser, setSelectedUser] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [saving, setSaving] = useState(false);
-  const [showPassword, setShowPassword] = useState(false);
+  const [userRole, setUserRole] = useState('user');
+  const [showRoleDropdown, setShowRoleDropdown] = useState(false);
+  const roleDropdownRef = useRef(null);
   const [pagination, setPagination] = useState({
     currentPage: 1,
     totalPages: 1,
@@ -35,42 +34,18 @@ const UserManagement = () => {
     name: '',
     email: '',
     password: '',
-    role: 'developer'
+    role: 'user'
   });
-  const [roleDropdownOpen, setRoleDropdownOpen] = useState(false);
+
+  const { showAlert } = useAlert();
+  const { showConfirm } = useConfirm();
 
   const roles = [
-    'admin',
-    'project manager',
-    'developer',
-    'qa tester',
-    'hr manager',
-    'devops engineer',
-    'ui-ux designer',
-    'manager',
-    'product manager',
-    'business analyst',
-    'scrum master',
-    'data scientist',
-    'data engineer',
-    'ml engineer',
-    'ai engineer',
-    'frontend developer',
-    'backend developer',
-    'fullstack developer',
-    'mobile developer',
-    'cloud engineer',
-    'security engineer',
-    'automation tester',
-    'manual tester',
-    'support engineer',
-    'system administrator',
-    'solution architect',
-    'technical lead',
-    'software architect',
-    'database administrator',
-    'intern',
-    'other'
+    { value: 'admin', label: 'Admin', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' },
+    { value: 'project manager', label: 'Project Manager', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
+    { value: 'developer', label: 'Developer', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' },
+    { value: 'qa tester', label: 'QA Tester', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300' },
+    { value: 'user', label: 'User', color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' }
   ];
 
   const getToken = () => {
@@ -82,11 +57,10 @@ const UserManagement = () => {
 
   const apiCall = async (endpoint, options = {}) => {
     const token = getToken();
-
     if (!token) {
       showAlert({
         type: 'error',
-        message: 'Please login first. Token not found.'
+        message: 'Please login first'
       });
       return null;
     }
@@ -116,13 +90,13 @@ const UserManagement = () => {
     }
   };
 
-  const fetchAllUsers = async (page = 1, search = '') => {
+  const fetchUsers = async (page = 1, search = '') => {
     setLoading(true);
     const endpoint = `/admin/users?page=${page}&limit=8&search=${search}`;
     const result = await apiCall(endpoint);
 
     if (result) {
-      setUsers(result.users || []);
+      setUsers(result.users || result.data || []);
       setPagination(result.pagination || {
         currentPage: 1,
         totalPages: 1,
@@ -137,7 +111,7 @@ const UserManagement = () => {
   const fetchStats = async () => {
     const result = await apiCall('/admin/users/stats');
     if (result) {
-      setStats(result.stats || result);
+      setStats(result.stats || result.data);
     }
   };
 
@@ -154,11 +128,11 @@ const UserManagement = () => {
       if (result) {
         showAlert({
           type: 'success',
-          message: `"${formData.name}" created successfully`
+          message: `User "${formData.name}" created successfully`
         });
         setShowCreateModal(false);
-        setFormData({ name: '', email: '', password: '', role: 'developer' });
-        fetchAllUsers();
+        setFormData({ name: '', email: '', password: '', role: 'user' });
+        fetchUsers();
         fetchStats();
       }
     } finally {
@@ -171,26 +145,20 @@ const UserManagement = () => {
     setSaving(true);
 
     try {
-      const updateData = {
-        name: formData.name,
-        role: formData.role,
-        isActive: formData.isActive
-      };
-
       const result = await apiCall(`/admin/users/${selectedUser._id}`, {
         method: 'PUT',
-        body: JSON.stringify(updateData)
+        body: JSON.stringify(formData)
       });
 
       if (result) {
         showAlert({
           type: 'success',
-          message: `"${formData.name}" updated successfully`
+          message: `User "${formData.name}" updated successfully`
         });
         setShowCreateModal(false);
         setSelectedUser(null);
-        setFormData({ name: '', email: '', password: '', role: 'developer' });
-        fetchAllUsers();
+        setFormData({ name: '', email: '', password: '', role: 'user' });
+        fetchUsers();
         fetchStats();
       }
     } finally {
@@ -212,32 +180,33 @@ const UserManagement = () => {
       message: "This action cannot be undone. All user data will be permanently lost.",
       confirmText: "Delete User",
       cancelText: "Keep User",
-      type: "danger"
+      type: "danger",
     });
 
-    if (result && result.isConfirmed) {
+    if (result) {
       const apiResult = await apiCall(`/admin/users/${user._id}`, {
         method: 'DELETE'
       });
 
       if (apiResult) {
         showAlert({
-          type: 'success',
-          message: `"${user.name}" deleted successfully`
+          type: "success",
+          message: `"${user.name}" deleted successfully`,
         });
-        fetchAllUsers();
+        fetchUsers();
         fetchStats();
       }
     }
   };
 
   const handleToggleStatus = async (user) => {
+    const action = user.isActive ? 'deactivate' : 'activate';
     const result = await showConfirm({
-      title: `${user.isActive ? 'Deactivate' : 'Activate'} "${user.name}"?`,
-      message: `User will be ${user.isActive ? 'deactivated' : 'activated'}.`,
-      confirmText: user.isActive ? 'Deactivate' : 'Activate',
+      title: `${action === 'activate' ? 'Activate' : 'Deactivate'} "${user.name}"?`,
+      message: `Are you sure you want to ${action} this user?`,
+      confirmText: action === 'activate' ? 'Activate' : 'Deactivate',
       cancelText: "Cancel",
-      type: "warning"
+      type: "warning",
     });
 
     if (result) {
@@ -247,66 +216,112 @@ const UserManagement = () => {
 
       if (apiResult) {
         showAlert({
-          type: 'success',
-          message: `"${user.name}" ${user.isActive ? 'deactivated' : 'activated'} successfully`
+          type: "success",
+          message: `"${user.name}" ${action}d successfully`,
         });
-        fetchAllUsers();
+        fetchUsers();
+        fetchStats();
+      }
+    }
+  };
+
+  const handleUpdateRole = async (user, newRole) => {
+    const result = await showConfirm({
+      title: `Change role for "${user.name}"?`,
+      message: `Change role from ${user.role} to ${newRole}?`,
+      confirmText: "Update Role",
+      cancelText: "Cancel",
+      type: "warning",
+    });
+
+    if (result) {
+      const apiResult = await apiCall(`/admin/users/${user._id}/role`, {
+        method: 'PATCH',
+        body: JSON.stringify({ role: newRole })
+      });
+
+      if (apiResult) {
+        showAlert({
+          type: "success",
+          message: `Role updated to ${newRole} for "${user.name}"`,
+        });
+        fetchUsers();
         fetchStats();
       }
     }
   };
 
   useEffect(() => {
-    fetchAllUsers();
+    fetchUsers();
     fetchStats();
-  }, [activeTab]);
+  }, []);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
-      fetchAllUsers(1, searchTerm);
+      fetchUsers(1, searchTerm);
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (roleDropdownRef.current && !roleDropdownRef.current.contains(e.target)) {
+        setShowRoleDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+  const isAdmin = currentUser.role === 'admin';
+
+  if (!isAdmin) {
+    return (
+      <div className="bg-gray-50 dark:bg-gray-900 min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <FiShield className="h-16 w-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">Access Denied</h3>
+          <p className="text-gray-500 dark:text-gray-400">Only administrators can access user management</p>
+        </div>
+      </div>
+    );
+  }
+
+  const selectedRole = roles.find(r => r.value === formData.role);
+
   return (
-    <div className="bg-gray-50 min-h-screen">
+    <div className="bg-gray-50 dark:bg-gray-900">
       <div className="max-w-full mx-auto">
-        <div className="bg-white rounded-sm">
-          <div className="border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-sm">
+          <div className="border-b border-gray-200 dark:border-gray-700">
             <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-              <div className="flex space-x-4">
-                {['all', 'stats'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === tab
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                  >
-                    {tab === 'all' && 'All Users'}
-                    {tab === 'stats' && 'Statistics'}
-                  </button>
-                ))}
+              <div className="flex items-center space-x-3">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  User Management
+                </h2>
+                <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2.5 py-0.5 rounded-full text-sm font-medium">
+                  {pagination.totalUsers} users
+                </span>
               </div>
 
               <div className="flex items-center space-x-4">
                 <div className="relative">
-                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-5 w-5" />
                   <input
                     type="text"
                     placeholder="Search users..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 w-64"
+                    className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 w-64"
                   />
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setShowCreateModal(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+                  className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                 >
                   <FiPlus className="h-5 w-5" />
                   <span>New User</span>
@@ -316,29 +331,84 @@ const UserManagement = () => {
           </div>
 
           <div className="p-6">
-            {activeTab === 'stats' ? (
-              <StatsView stats={stats} />
-            ) : (
-              <UsersView
-                users={users}
-                loading={loading}
-                pagination={pagination}
-                onPageChange={fetchAllUsers}
-                onEdit={(user) => {
-                  setSelectedUser(user);
-                  setFormData({
-                    name: user.name,
-                    email: user.email,
-                    password: '',
-                    role: user.role,
-                    isActive: user.isActive
-                  });
-                  setShowCreateModal(true);
-                }}
-                onDelete={handleDeleteUser}
-                onToggleStatus={handleToggleStatus}
-              />
-            )}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Total Users</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                      {stats?.totalUsers || 0}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-blue-100 dark:bg-blue-900 rounded-lg">
+                    <FiUser className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Active Users</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                      {stats?.activeUsers || 0}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
+                    <FiUserCheck className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Admins</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                      {stats?.adminCount || 0}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-purple-100 dark:bg-purple-900 rounded-lg">
+                    <FiShield className="h-6 w-6 text-purple-600 dark:text-purple-400" />
+                  </div>
+                </div>
+              </div>
+
+              <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Verified</p>
+                    <p className="text-2xl font-bold text-gray-900 dark:text-gray-100 mt-1">
+                      {stats?.verifiedUsers || 0}
+                    </p>
+                  </div>
+                  <div className="p-3 bg-green-100 dark:bg-green-900 rounded-lg">
+                    <FiMail className="h-6 w-6 text-green-600 dark:text-green-400" />
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <UsersView
+              users={users}
+              loading={loading}
+              pagination={pagination}
+              onPageChange={fetchUsers}
+              onEdit={(user) => {
+                setSelectedUser(user);
+                setFormData({
+                  name: user.name,
+                  email: user.email,
+                  password: '',
+                  role: user.role
+                });
+                setShowCreateModal(true);
+              }}
+              onDelete={handleDeleteUser}
+              onToggleStatus={handleToggleStatus}
+              onUpdateRole={handleUpdateRole}
+              roles={roles}
+            />
           </div>
         </div>
       </div>
@@ -350,123 +420,121 @@ const UserManagement = () => {
             onClose={() => {
               setShowCreateModal(false);
               setSelectedUser(null);
-              setFormData({ name: '', email: '', password: '', role: 'developer' });
-              setRoleDropdownOpen(false);
-              setShowPassword(false);
+              setFormData({ name: '', email: '', password: '', role: 'user' });
             }}
           >
             <form onSubmit={handleSubmitUser} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Name
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Full Name
                 </label>
                 <input
                   type="text"
                   required
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
-                  placeholder="Enter user name"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                  placeholder="Enter full name"
                   disabled={saving}
                 />
               </div>
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Email
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                  Email Address
                 </label>
                 <input
                   type="email"
-                  required={!selectedUser}
+                  required
                   value={formData.email}
                   onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Enter email address"
-                  disabled={saving || selectedUser}
+                  disabled={saving}
                 />
               </div>
+
               {!selectedUser && (
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-2">
-                    Password (Optional)
+                  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                    Password
                   </label>
-                  <div className="relative">
-                    <input
-                      type={showPassword ? "text" : "password"}
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 pr-10"
-                      placeholder="Leave blank for default password"
-                      disabled={saving}
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600"
-                    >
-                      {showPassword ? <FiEyeOff className="h-5 w-5" /> : <FiEye className="h-5 w-5" />}
-                    </button>
-                  </div>
+                  <input
+                    type="password"
+                    required={!selectedUser}
+                    value={formData.password}
+                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                    className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
+                    placeholder="Enter password"
+                    disabled={saving}
+                  />
                 </div>
               )}
+
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Role
                 </label>
-                <div className="relative">
+                <div ref={roleDropdownRef} className="relative">
                   <button
                     type="button"
-                    onClick={() => setRoleDropdownOpen(!roleDropdownOpen)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 bg-white text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
+                    onClick={() => !saving && setShowRoleDropdown(!showRoleDropdown)}
                     disabled={saving}
+                    className="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-left flex items-center justify-between hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
                   >
-                    <span className="text-gray-900 capitalize">{formData.role}</span>
-                    <FiChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${roleDropdownOpen ? 'transform rotate-180' : ''}`} />
+                    <span className="text-sm text-gray-900 dark:text-gray-100">
+                      {selectedRole ? selectedRole.label : 'Select a role'}
+                    </span>
+                    <FiChevronDown className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${showRoleDropdown ? 'rotate-180' : ''}`} />
                   </button>
 
                   <AnimatePresence>
-                    {roleDropdownOpen && (
+                    {showRoleDropdown && (
                       <motion.div
-                        initial={{ opacity: 0, y: 10 }}
+                        initial={{ opacity: 0, y: -8 }}
                         animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute z-50 w-full bottom-full mb-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
+                        exit={{ opacity: 0, y: -8 }}
+                        className="absolute z-50 mt-2 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg"
                       >
-                        {roles.map((role) => (
-                          <button
-                            key={role}
-                            type="button"
-                            onClick={() => {
-                              setFormData({ ...formData, role });
-                              setRoleDropdownOpen(false);
-                            }}
-                            className="w-full px-3 py-2 text-left hover:bg-gray-100 transition-colors flex items-center justify-between group"
-                            disabled={saving}
-                          >
-                            <span className={`text-sm capitalize ${formData.role === role ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
-                              {role}
-                            </span>
-                            {formData.role === role && (
-                              <FiCheck className="h-4 w-4 text-blue-600" />
-                            )}
-                          </button>
-                        ))}
+                        <div className="max-h-60 overflow-y-auto">
+                          {roles.map((role) => (
+                            <button
+                              key={role.value}
+                              type="button"
+                              onClick={() => {
+                                setFormData({ ...formData, role: role.value });
+                                setShowRoleDropdown(false);
+                              }}
+                              className="w-full px-4 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between group transition-colors"
+                            >
+                              <div className="flex items-center space-x-3 flex-1 min-w-0">
+                                <div className="flex-1 min-w-0">
+                                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                                    {role.label}
+                                  </p>
+                                </div>
+                              </div>
+                              {formData.role === role.value && (
+                                <FiCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                              )}
+                            </button>
+                          ))}
+                        </div>
                       </motion.div>
                     )}
                   </AnimatePresence>
                 </div>
               </div>
+
               <div className="flex justify-end space-x-3 pt-4">
                 <button
                   type="button"
                   onClick={() => {
                     setShowCreateModal(false);
                     setSelectedUser(null);
-                    setFormData({ name: '', email: '', password: '', role: 'developer' });
-                    setRoleDropdownOpen(false);
-                    setShowPassword(false);
+                    setFormData({ name: '', email: '', password: '', role: 'user' });
                   }}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   disabled={saving}
                 >
                   Cancel
@@ -474,7 +542,7 @@ const UserManagement = () => {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 min-w-[120px] justify-center"
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 min-w-[120px] justify-center"
                 >
                   {saving ? (
                     <>
@@ -494,12 +562,12 @@ const UserManagement = () => {
   );
 };
 
-const UsersView = ({ users, loading, pagination, onPageChange, onEdit, onDelete, onToggleStatus }) => {
+const UsersView = ({ users, loading, pagination, onPageChange, onEdit, onDelete, onToggleStatus, onUpdateRole, roles }) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="bg-gray-100 rounded-xl h-48 animate-pulse"></div>
+          <div key={i} className="bg-gray-100 dark:bg-gray-700 rounded-xl h-48 animate-pulse"></div>
         ))}
       </div>
     );
@@ -508,9 +576,9 @@ const UsersView = ({ users, loading, pagination, onPageChange, onEdit, onDelete,
   if (users.length === 0) {
     return (
       <div className="text-center py-12">
-        <FiUsers className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No users found</h3>
-        <p className="text-gray-500">Get started by creating your first user.</p>
+        <FiUser className="h-16 w-16 text-gray-400 dark:text-gray-500 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No users found</h3>
+        <p className="text-gray-500 dark:text-gray-400">Get started by creating your first user.</p>
       </div>
     );
   }
@@ -526,6 +594,8 @@ const UsersView = ({ users, loading, pagination, onPageChange, onEdit, onDelete,
             onEdit={onEdit}
             onDelete={onDelete}
             onToggleStatus={onToggleStatus}
+            onUpdateRole={onUpdateRole}
+            roles={roles}
           />
         ))}
       </div>
@@ -535,20 +605,20 @@ const UsersView = ({ users, loading, pagination, onPageChange, onEdit, onDelete,
           <button
             onClick={() => onPageChange(pagination.currentPage - 1)}
             disabled={!pagination.hasPrev}
-            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-100"
           >
             <FiChevronLeft className="h-5 w-5" />
             <span>Previous</span>
           </button>
 
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
             Page {pagination.currentPage} of {pagination.totalPages}
           </span>
 
           <button
             onClick={() => onPageChange(pagination.currentPage + 1)}
             disabled={!pagination.hasNext}
-            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-900 dark:text-gray-100"
           >
             <span>Next</span>
             <FiChevronRight className="h-5 w-5" />
@@ -559,217 +629,180 @@ const UsersView = ({ users, loading, pagination, onPageChange, onEdit, onDelete,
   );
 };
 
-const UserCard = ({ user, index, onEdit, onDelete, onToggleStatus }) => {
+const UserCard = ({ user, index, onEdit, onDelete, onToggleStatus, onUpdateRole, roles }) => {
+  const [showCardRoleDropdown, setShowCardRoleDropdown] = useState(false);
+  const cardRoleDropdownRef = useRef(null);
+
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (cardRoleDropdownRef.current && !cardRoleDropdownRef.current.contains(e.target)) {
+        setShowCardRoleDropdown(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
+
+  const getRoleColor = (role) => {
+    const roleObj = roles.find(r => r.value === role);
+    return roleObj ? roleObj.color : 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300';
+  };
+
+  const getRoleLabel = (role) => {
+    const roleObj = roles.find(r => r.value === role);
+    return roleObj ? roleObj.label : role;
+  };
+
+  const selectedRole = roles.find(r => r.value === user.role);
+
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       whileHover={{ y: -4 }}
-      className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300"
+      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-all duration-300"
     >
       <div className="flex justify-between items-start mb-4">
-        <div className="flex-1">
-          <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-1">
+        <div>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg mb-1 line-clamp-1">
             {user.name}
           </h3>
-          <p className="text-sm text-gray-500 mb-2 line-clamp-1">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 flex items-center">
+            <FiMail className="h-3 w-3 mr-1" />
             {user.email}
           </p>
         </div>
+        <div className="flex space-x-2">
+          <button
+            tooltip-data="Edit"
+            tooltip-placement="bottom"
+            onClick={() => onEdit(user)}
+            className="p-2 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+          >
+            <FiEdit className="h-4 w-4" />
+          </button>
+          <button
+            tooltip-data="Delete"
+            tooltip-placement="bottom"
+            onClick={() => onDelete(user)}
+            className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+          >
+            <FiTrash2 className="h-4 w-4" />
+          </button>
+        </div>
       </div>
 
-      <div className="flex items-center justify-between">
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
-          <FiShield className="h-3 w-3 mr-1" />
-          {user.role}
+      <div className="space-y-3 mb-4">
+        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${getRoleColor(user.role)}`}>
+          {getRoleLabel(user.role)}
         </span>
-        <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${user.isActive ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-          {user.isActive ? 'Active' : 'Inactive'}
+
+        <div className="flex items-center justify-between text-sm">
+          <span className={`flex items-center ${user.isActive ? 'text-green-600 dark:text-green-400' : 'text-red-600 dark:text-red-400'}`}>
+            {user.isActive ? (
+              <FiUserCheck className="h-3 w-3 mr-1" />
+            ) : (
+              <FiUserX className="h-3 w-3 mr-1" />
+            )}
+            {user.isActive ? 'Active' : 'Inactive'}
+          </span>
+          <span className={`flex items-center ${user.isVerified ? 'text-green-600 dark:text-green-400' : 'text-yellow-600 dark:text-yellow-400'}`}>
+            <FiMail className="h-3 w-3 mr-1" />
+            {user.isVerified ? 'Verified' : 'Pending'}
+          </span>
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center text-xs text-gray-500 dark:text-gray-400">
+        <span className="flex items-center">
+          <FiCalendar className="h-3 w-3 mr-1" />
+          {new Date(user.createdAt).toLocaleDateString()}
         </span>
       </div>
 
-      <div className="flex gap-6 align-middle items-center mt-3 text-xs text-gray-500">
-        Created {new Date(user.createdAt).toLocaleDateString()}
-        <div>
-          <div className="flex space-x-2">
-            <button
-              tooltip-data="Edit"
-              onClick={() => onEdit(user)}
-              className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
-            >
-              <FiEdit className="h-4 w-4" />
-            </button>
-            <button
-              tooltip-data="Change Status"
-              onClick={() => onToggleStatus(user)}
-              className={`p-2 transition-colors ${user.isActive ? 'text-gray-400 hover:text-yellow-600' : 'text-gray-400 hover:text-green-600'}`}
-            >
-              <FiPower className="h-4 w-4" />
-            </button>
-            <button
-              tooltip-data="Remove"
-              onClick={() => onDelete(user)}
-              className="p-2 text-gray-400 hover:text-red-600 transition-colors"
-            >
-              <FiTrash2 className="h-4 w-4" />
-            </button>
-          </div>
+      <div className="flex space-x-2 mt-4">
+        <button
+          onClick={() => onToggleStatus(user)}
+          className={`flex-1 px-3 py-2 text-xs font-medium rounded-lg transition-colors ${user.isActive
+            ? 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-300 hover:bg-red-200 dark:hover:bg-red-800'
+            : 'bg-green-100 text-green-700 dark:bg-green-900 dark:text-green-300 hover:bg-green-200 dark:hover:bg-green-800'
+            }`}
+        >
+          {user.isActive ? 'Deactivate' : 'Activate'}
+        </button>
+
+        <div ref={cardRoleDropdownRef} className="relative flex-1">
+          <button
+            type="button"
+            onClick={() => setShowCardRoleDropdown(!showCardRoleDropdown)}
+            className="w-full px-3 py-2 text-xs bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-left flex items-center justify-between hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-1 focus:ring-blue-500 transition-all"
+          >
+            <span className="text-gray-900 dark:text-gray-100 truncate">
+              {selectedRole ? selectedRole.label : user.role}
+            </span>
+            <FiChevronDown className={`w-3 h-3 text-gray-500 dark:text-gray-400 transition-transform flex-shrink-0 ml-1 ${showCardRoleDropdown ? 'rotate-180' : ''}`} />
+          </button>
+
+          <AnimatePresence>
+            {showCardRoleDropdown && (
+              <motion.div
+                initial={{ opacity: 0, y: -8 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={{ opacity: 0, y: -8 }}
+                className="absolute z-50 mt-1 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg"
+              >
+                <div className="max-h-48 overflow-y-auto">
+                  {roles.map((role) => (
+                    <button
+                      key={role.value}
+                      type="button"
+                      onClick={() => {
+                        onUpdateRole(user, role.value);
+                        setShowCardRoleDropdown(false);
+                      }}
+                      className="w-full px-3 py-2 text-xs text-left hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between group transition-colors"
+                    >
+                      <span className="text-gray-900 dark:text-gray-100 truncate">
+                        {role.label}
+                      </span>
+                      {user.role === role.value && (
+                        <FiCheck className="w-3 h-3 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                      )}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </div>
     </motion.div>
   );
-};
-
-const StatsView = ({ stats }) => {
-  if (!stats) {
-    return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
-      >
-        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total Users</p>
-              <p className="text-4xl font-bold text-gray-900 mt-3 mb-1">
-                {stats?.totalUsers || 0}
-              </p>
-            </div>
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
-              <FiUsers className="h-7 w-7 text-white" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Active Users</p>
-              <p className="text-4xl font-bold text-gray-900 mt-3">
-                {stats?.activeUsers || 0}
-              </p>
-              <p className="text-xs font-medium text-gray-400 mt-2 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                {stats?.inactiveUsers || 0} inactive
-              </p>
-            </div>
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
-              <FiShield className="h-7 w-7 text-white" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Verified Users</p>
-              <p className="text-4xl font-bold text-gray-900 mt-3 mb-1">
-                {stats?.verifiedUsers || 0}
-              </p>
-            </div>
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-purple-500/30 group-hover:scale-110 transition-transform duration-300">
-              <FiBarChart2 className="h-7 w-7 text-white" />
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {stats.usersByRole && stats.usersByRole.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Users by Role</h3>
-          <div className="bg-gray-50 rounded-lg p-6">
-            {stats.usersByRole.map((item, index) => (
-              <motion.div
-                key={item._id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="flex items-center justify-between py-3 border-b border-gray-200 last:border-b-0"
-              >
-                <div className="flex items-center">
-                  <FiShield className="h-4 w-4 text-gray-500 mr-3" />
-                  <span className="font-medium text-gray-900 capitalize">{item._id}</span>
-                </div>
-                <span className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-sm font-medium">
-                  {item.count} users
-                </span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {stats.recentUsers && stats.recentUsers.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Users</h3>
-          <div className="bg-gray-50 rounded-lg p-6">
-            {stats.recentUsers.map((user, index) => (
-              <motion.div
-                key={user._id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="flex items-center justify-between py-3 border-b border-gray-200 last:border-b-0"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">{user.name}</p>
-                  <p className="text-sm text-gray-500">{user.email}</p>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 capitalize">
-                    <FiShield className="h-3 w-3 mr-1" />
-                    {user.role}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {new Date(user.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
+}
 const Modal = ({ title, children, onClose }) => {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-gray-100 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center p-4 z-50"
+      onClick={onClose}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
-            <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
+            <FiEye className="h-6 w-6" />
           </button>
         </div>
         <div className="p-6">{children}</div>
@@ -777,5 +810,4 @@ const Modal = ({ title, children, onClose }) => {
     </motion.div>
   );
 };
-
 export default UserManagement;
