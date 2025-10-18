@@ -28,10 +28,6 @@ const ProjectSidebar = () => {
     const { showConfirm } = useConfirm();
 
     const {
-        isModalOpen,
-        modalMode,
-        openEditModal,
-        closeModal,
         selectedProject,
         setSelectedProject,
     } = useProject();
@@ -43,12 +39,6 @@ const ProjectSidebar = () => {
             return localStorage.getItem("token");
         }
         return null;
-    };
-
-    const storeProjectId = (projectId) => {
-        if (typeof window !== "undefined") {
-            localStorage.setItem("currentProjectId", projectId);
-        }
     };
 
     const fetchUserData = async () => {
@@ -165,7 +155,7 @@ const ProjectSidebar = () => {
 
     const handleProjectClick = (project) => {
         setSelectedProject(project);
-        storeProjectId(project._id);
+        localStorage.setItem("currentProjectId", project._id);
     };
 
     const handleLogout = async () => {
@@ -246,11 +236,11 @@ const ProjectSidebar = () => {
                     initial="initial"
                     animate="animate"
                     exit="exit"
-                    className="flex items-center px-4 py-3 rounded-xl border border-slate-200/60 bg-white"
+                    className="flex items-center px-4 py-3 rounded-xl border border-slate-200/60 bg-white dark:bg-gray-800 dark:border-gray-700"
                 >
-                    <div className="w-5 h-5 bg-slate-200 rounded-lg animate-pulse mr-3"></div>
+                    <div className="w-5 h-5 bg-slate-200 dark:bg-gray-700 rounded-lg animate-pulse mr-3"></div>
                     <div className="flex-1">
-                        <div className="h-4 bg-slate-200 rounded animate-pulse w-3/4"></div>
+                        <div className="h-4 bg-slate-200 dark:bg-gray-700 rounded animate-pulse w-3/4"></div>
                     </div>
                 </motion.div>
             ))}
@@ -262,10 +252,9 @@ const ProjectSidebar = () => {
             <motion.div
                 variants={sidebarVariants}
                 animate={isOpen ? "open" : "closed"}
-                className=" user-select-none h-screen bg-gradient-to-b from-slate-50 to-white text-slate-800 flex flex-col border-r border-slate-200/50 sticky top-0 sidebar-scrollbar"
+                className="user-select-none h-screen bg-gradient-to-b from-slate-50 to-white dark:from-gray-800 dark:to-gray-900 text-slate-800 dark:text-gray-100 flex flex-col border-r border-slate-200/50 dark:border-gray-700 sticky top-0 sidebar-scrollbar"
             >
-                {/* Header */}
-                <div className="flex items-center justify-center p-4 border-b border-slate-200/60 bg-white/80 backdrop-blur-sm">
+                <div className="flex items-center justify-center p-4 border-b border-slate-200/60 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm">
                     <AnimatePresence mode="wait">
                         {isOpen ? (
                             <motion.div
@@ -277,8 +266,8 @@ const ProjectSidebar = () => {
                                 className="flex items-center justify-between w-full"
                             >
                                 <div className="flex items-center">
-                                    <FaCoffee className="text-blue-900 w-7 h-7 mr-4 ml-3" />
-                                    <h2 className="font-semibold text-xl text-slate-700 tracking-tight">
+                                    <FaCoffee className="text-blue-900 dark:text-blue-400 w-7 h-7 mr-4 ml-3" />
+                                    <h2 className="font-semibold text-xl text-slate-700 dark:text-gray-100 tracking-tight">
                                         Projects - {userData ? getFirstWord(userData) : ""}
                                     </h2>
                                 </div>
@@ -286,7 +275,7 @@ const ProjectSidebar = () => {
                                     whileHover={{ scale: 1.1, backgroundColor: "#f1f5f9" }}
                                     whileTap={{ scale: 0.9 }}
                                     onClick={() => setIsOpen(!isOpen)}
-                                    className="p-2 rounded-full text-slate-500 hover:text-slate-700 transition-all duration-200"
+                                    className="p-2 rounded-full text-slate-500 dark:text-gray-400 hover:text-slate-700 dark:hover:text-gray-200 transition-all duration-200"
                                 >
                                     <GoogleArrowLeft />
                                 </motion.button>
@@ -301,7 +290,7 @@ const ProjectSidebar = () => {
                                 whileHover={{ scale: 1.1, backgroundColor: "#f1f5f9" }}
                                 whileTap={{ scale: 0.9 }}
                                 onClick={() => setIsOpen(!isOpen)}
-                                className="p-2 rounded-full text-blue-900 hover:text-slate-950 transition-all duration-200 cursor-pointer"
+                                className="p-2 rounded-full text-blue-900 dark:text-blue-400 hover:text-slate-950 dark:hover:text-white transition-all duration-200 cursor-pointer"
                             >
                                 <FaCoffee className="h-5 w-5" />
                             </motion.button>
@@ -309,8 +298,7 @@ const ProjectSidebar = () => {
                     </AnimatePresence>
                 </div>
 
-                {/* Projects List */}
-                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 scrollbar-track-transparent">
+                <div className="flex-1 overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-gray-600 scrollbar-track-transparent">
                     <AnimatePresence mode="wait">
                         {isLoading ? (
                             <LoadingSkeleton />
@@ -329,8 +317,8 @@ const ProjectSidebar = () => {
                                     onClick={() => handleProjectClick(project)}
                                     onDoubleClick={() => navigateToWorkspace(project)}
                                     className={`mx-2 my-1 rounded-xl border transition-all duration-200 cursor-pointer ${selectedProject?._id === project._id
-                                        ? "border-blue-300 bg-blue-50"
-                                        : "border-transparent hover:border-slate-200/60"
+                                        ? "border-blue-300 bg-blue-50 dark:bg-blue-900/20 dark:border-blue-700"
+                                        : "border-transparent hover:border-slate-200/60 dark:hover:border-gray-600"
                                         }`}
                                 >
                                     {isOpen ? (
@@ -340,15 +328,15 @@ const ProjectSidebar = () => {
                                                     size={18}
                                                     className={
                                                         selectedProject?._id === project._id
-                                                            ? "text-blue-600"
-                                                            : "text-blue-500"
+                                                            ? "text-blue-600 dark:text-blue-400"
+                                                            : "text-blue-500 dark:text-blue-300"
                                                     }
                                                 />
                                             </motion.div>
                                             <span
                                                 className={`font-medium truncate ${selectedProject?._id === project._id
-                                                    ? "text-blue-700"
-                                                    : "text-slate-700"
+                                                    ? "text-blue-700 dark:text-blue-300"
+                                                    : "text-slate-700 dark:text-gray-100"
                                                     }`}
                                             >
                                                 {project.projectName}
@@ -365,8 +353,8 @@ const ProjectSidebar = () => {
                                                     size={20}
                                                     className={
                                                         selectedProject?._id === project._id
-                                                            ? "text-blue-600"
-                                                            : "text-slate-500"
+                                                            ? "text-blue-600 dark:text-blue-400"
+                                                            : "text-slate-500 dark:text-gray-400"
                                                     }
                                                 />
                                             </motion.div>
@@ -380,9 +368,9 @@ const ProjectSidebar = () => {
                                 animate={{ opacity: 1 }}
                                 className="flex flex-col items-center justify-center p-8 text-center"
                             >
-                                <Folder size={48} className="text-slate-300 mb-4" />
-                                <p className="text-slate-500 text-sm">No projects found</p>
-                                <p className="text-slate-400 text-xs mt-1">
+                                <Folder size={48} className="text-slate-300 dark:text-gray-600 mb-4" />
+                                <p className="text-slate-500 dark:text-gray-400 text-sm">No projects found</p>
+                                <p className="text-slate-400 dark:text-gray-500 text-xs mt-1">
                                     Create your first project to get started
                                 </p>
                             </motion.div>
@@ -390,8 +378,7 @@ const ProjectSidebar = () => {
                     </AnimatePresence>
                 </div>
 
-                {/* Profile Footer */}
-                <div className="mt-auto border-t border-slate-200/60 bg-white/80 backdrop-blur-sm sticky bottom-0">
+                <div className="mt-auto border-t border-slate-200/60 dark:border-gray-700 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm sticky bottom-0">
                     <AnimatePresence>
                         {profileDropdownOpen && isOpen && (
                             <motion.div
@@ -399,20 +386,20 @@ const ProjectSidebar = () => {
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: 10 }}
                                 transition={{ duration: 0.2 }}
-                                className="absolute bottom-full left-0 right-0 mx-2 mb-1 bg-white rounded-lg shadow-lg border border-slate-200/60 overflow-hidden z-10"
+                                className="absolute bottom-full left-0 right-0 mx-2 mb-1 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-slate-200/60 dark:border-gray-700 overflow-hidden z-10"
                             >
-                                <div className="p-4 border-b border-slate-200/50">
-                                    <div className="font-medium text-slate-800 truncate">
+                                <div className="p-4 border-b border-slate-200/50 dark:border-gray-700">
+                                    <div className="font-medium text-slate-800 dark:text-gray-100 truncate">
                                         {userData?.name || "User"}
                                     </div>
-                                    <div className="text-sm text-slate-500 flex items-center gap-2 mt-1">
+                                    <div className="text-sm text-slate-500 dark:text-gray-400 flex items-center gap-2 mt-1">
                                         <Mail size={14} />
                                         <span className="truncate">
                                             {userData?.email || "user@example.com"}
                                         </span>
                                     </div>
 
-                                    <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-100">
+                                    <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-100 dark:border-gray-700">
                                         <div className="flex items-center gap-1.5">
                                             <div
                                                 className={`w-2 h-2 rounded-full ${userData?.role === "admin"
@@ -422,7 +409,7 @@ const ProjectSidebar = () => {
                                                         : "bg-gray-500"
                                                     }`}
                                             ></div>
-                                            <span className="text-xs font-medium text-slate-700 capitalize">
+                                            <span className="text-xs font-medium text-slate-700 dark:text-gray-300 capitalize">
                                                 {userData?.role || "user"}
                                             </span>
                                         </div>
@@ -432,7 +419,7 @@ const ProjectSidebar = () => {
                                                 className={`w-2 h-2 rounded-full ${userData?.isActive ? "bg-green-500" : "bg-red-500"
                                                     }`}
                                             ></div>
-                                            <span className="text-xs font-medium text-slate-700">
+                                            <span className="text-xs font-medium text-slate-700 dark:text-gray-300">
                                                 {userData?.isActive ? "Active" : "Inactive"}
                                             </span>
                                         </div>
@@ -444,14 +431,14 @@ const ProjectSidebar = () => {
                                                     : "bg-yellow-500"
                                                     }`}
                                             ></div>
-                                            <span className="text-xs font-medium text-slate-700">
+                                            <span className="text-xs font-medium text-slate-700 dark:text-gray-300">
                                                 {userData?.isVerified ? "Verified" : "Pending"}
                                             </span>
                                         </div>
                                     </div>
 
                                     {userData?.createdAt && (
-                                        <div className="mt-2 text-xs text-slate-400">
+                                        <div className="mt-2 text-xs text-slate-400 dark:text-gray-500">
                                             Member since{" "}
                                             {new Date(userData.createdAt).toLocaleDateString(
                                                 "en-US",
@@ -465,18 +452,18 @@ const ProjectSidebar = () => {
                                     )}
                                 </div>
 
-                                <div className="p-3 bg-slate-50 border-b border-slate-200/50">
+                                <div className="p-3 bg-slate-50 dark:bg-gray-700 border-b border-slate-200/50 dark:border-gray-600">
                                     <div className="grid grid-cols-2 gap-2 text-xs">
-                                        <div className="text-slate-600">User ID:</div>
+                                        <div className="text-slate-600 dark:text-gray-400">User ID:</div>
                                         <div
-                                            className="text-slate-800 font-mono truncate"
+                                            className="text-slate-800 dark:text-gray-200 font-mono truncate"
                                             title={userData?._id}
                                         >
                                             {userData?._id?.substring(0, 8)}...
                                         </div>
 
-                                        <div className="text-slate-600">Last Updated:</div>
-                                        <div className="text-slate-800">
+                                        <div className="text-slate-600 dark:text-gray-400">Last Updated:</div>
+                                        <div className="text-slate-800 dark:text-gray-200">
                                             {userData?.updatedAt
                                                 ? new Date(userData.updatedAt).toLocaleDateString()
                                                 : "N/A"}
@@ -486,7 +473,7 @@ const ProjectSidebar = () => {
 
                                 <button
                                     onClick={handleLogout}
-                                    className="w-full p-4 text-left text-slate-700 hover:bg-slate-100 flex items-center gap-2 transition-colors duration-150"
+                                    className="w-full p-4 text-left text-slate-700 dark:text-gray-200 hover:bg-slate-100 dark:hover:bg-gray-700 flex items-center gap-2 transition-colors duration-150"
                                     tooltip-data="Sign out from your account"
                                     tooltip-placement="top"
                                 >
@@ -499,7 +486,7 @@ const ProjectSidebar = () => {
 
                     <button
                         onClick={() => setProfileDropdownOpen(!profileDropdownOpen)}
-                        className="w-full p-4 flex items-center justify-between hover:bg-slate-100/50 transition-colors duration-150"
+                        className="w-full p-4 flex items-center justify-between hover:bg-slate-100/50 dark:hover:bg-gray-700/50 transition-colors duration-150"
                     >
                         <div className="flex items-center gap-3">
                             <div className="relative">
@@ -508,16 +495,16 @@ const ProjectSidebar = () => {
                                 </div>
 
                                 {userData?.isActive && (
-                                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white"></div>
+                                    <div className="absolute -bottom-0.5 -right-0.5 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-800"></div>
                                 )}
                             </div>
 
                             {isOpen && (
                                 <div className="text-left truncate max-w-[140px]">
-                                    <div className="text-sm font-medium text-slate-800 truncate">
+                                    <div className="text-sm font-medium text-slate-800 dark:text-gray-100 truncate">
                                         {userData?.name || "User"}
                                     </div>
-                                    <div className="text-xs text-slate-500 truncate flex items-center gap-1">
+                                    <div className="text-xs text-slate-500 dark:text-gray-400 truncate flex items-center gap-1">
                                         <span>{userData?.email || "user@example.com"}</span>
                                     </div>
                                 </div>
@@ -529,7 +516,7 @@ const ProjectSidebar = () => {
                                 animate={{ rotate: profileDropdownOpen ? 180 : 0 }}
                                 transition={{ duration: 0.2 }}
                             >
-                                <GoogleArrowUp size={16} className="text-slate-500" />
+                                <GoogleArrowUp size={16} className="text-slate-500 dark:text-gray-400" />
                             </motion.div>
                         )}
                     </button>

@@ -1,42 +1,85 @@
-'use client';
+"use client";
 
-import { createContext, useState, useContext } from "react";
+import React, { createContext, useContext, useState, useEffect } from 'react';
 
 const ProjectContext = createContext();
 
+export const useProject = () => {
+  const context = useContext(ProjectContext);
+  if (!context) {
+    throw new Error('useProject must be used within a ProjectProvider');
+  }
+  return context;
+};
+
 export const ProjectProvider = ({ children }) => {
   const [selectedProject, setSelectedProject] = useState(null);
-  const [isModalOpen, setIsModalOpen] = useState(false);
-  const [modalMode, setModalMode] = useState(null);
+  const [projects, setProjects] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
-  const openEditModal = (project) => {
+  useEffect(() => {
+    const storedProjectId = localStorage.getItem('currentProjectId');
+    if (storedProjectId && !selectedProject) {
+      const fetchProjectDetails = async () => {
+        try {
+          const token = localStorage.getItem('token');
+          if (!token) return;
+
+          const response = await fetch(`http://localhost:5000/api/v1/project/${storedProjectId}`, {
+            headers: {
+              'Authorization': `Bearer ${token}`,
+              'Content-Type': 'application/json'
+            }
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            setSelectedProject(data.project);
+          } else {
+            localStorage.removeItem('currentProjectId');
+          }
+        } catch (error) {
+          console.error('Error fetching project details:', error);
+          localStorage.removeItem('currentProjectId');
+        }
+      };
+
+      fetchProjectDetails();
+    }
+  }, [selectedProject]);
+
+  const updateSelectedProject = (project) => {
     setSelectedProject(project);
-    setModalMode('edit');
-    setIsModalOpen(true);
+    if (project && project._id) {
+      localStorage.setItem('currentProjectId', project._id);
+    }
   };
 
-  const closeModal = () => {
-    setIsModalOpen(false);
+  const clearSelectedProject = () => {
     setSelectedProject(null);
-    setModalMode(null);
+    localStorage.removeItem('currentProjectId');
+  };
+
+  const getProjectById = (projectId) => {
+    return projects.find(project => project._id === projectId) || selectedProject;
+  };
+
+  const value = {
+    selectedProject,
+    setSelectedProject: updateSelectedProject,
+    clearSelectedProject,
+    projects,
+    setProjects,
+    isLoading,
+    setIsLoading,
+    getProjectById
   };
 
   return (
-    <ProjectContext.Provider
-      value={{
-        selectedProject,
-        setSelectedProject,
-        isModalOpen,
-        setIsModalOpen,
-        modalMode,
-        setModalMode,
-        openEditModal,
-        closeModal,
-      }}
-    >
+    <ProjectContext.Provider value={value}>
       {children}
     </ProjectContext.Provider>
   );
 };
 
-export const useProject = () => useContext(ProjectContext);
+export default ProjectContext;
