@@ -1,10 +1,9 @@
-'use client';
-
 import React, { useState } from 'react';
-import { Copy, Check, FileText, Table, Code, ExternalLink, Bug } from 'lucide-react';
+import { Copy, Check, FileText, Table, Code, ExternalLink, Bug, CheckCircle, Beaker, ChevronDown, ChevronUp } from 'lucide-react';
 
 const MessageParser = ({ content = '', role, attachments = [] }) => {
     const [copiedIndex, setCopiedIndex] = useState(null);
+    const [expandedSections, setExpandedSections] = useState({});
 
     const copyToClipboard = async (text, index) => {
         try {
@@ -16,9 +15,12 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
         }
     };
 
+    const toggleSection = (key) => {
+        setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
     const parseContent = (text) => {
         if (!text) return [];
-
         const elements = [];
         let currentIndex = 0;
         const codeBlockPattern = /```(\w+)?\n([\s\S]*?)```/g;
@@ -57,35 +59,18 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
         specialElements.forEach((element, index) => {
             if (currentIndex < element.start) {
                 const textContent = text.substring(currentIndex, element.start);
-                elements.push({
-                    type: 'text',
-                    content: textContent,
-                    key: `text-${index}`
-                });
+                elements.push({ type: 'text', content: textContent, key: `text-${index}` });
             }
-
-            elements.push({
-                ...element,
-                key: `${element.type}-${index}`
-            });
-
+            elements.push({ ...element, key: `${element.type}-${index}` });
             currentIndex = element.end;
         });
 
         if (currentIndex < text.length) {
-            elements.push({
-                type: 'text',
-                content: text.substring(currentIndex),
-                key: `text-final`
-            });
+            elements.push({ type: 'text', content: text.substring(currentIndex), key: `text-final` });
         }
 
         if (elements.length === 0) {
-            elements.push({
-                type: 'text',
-                content: text,
-                key: 'text-only'
-            });
+            elements.push({ type: 'text', content: text, key: 'text-only' });
         }
 
         return elements;
@@ -97,13 +82,10 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
         let lastIndex = 0;
 
         const patterns = [
-            { regex: /```[\s\S]*?```/g, type: 'skip' },
             { regex: /`([^`]+)`/g, type: 'inline-code' },
             { regex: /\*\*(.+?)\*\*/g, type: 'bold' },
             { regex: /\*(.+?)\*/g, type: 'italic' },
-            { regex: /\[([^\]]+)\]\(([^)]+)\)/g, type: 'link' },
-            { regex: /^(#{1,6})\s+(.+)$/gm, type: 'heading' },
-            { regex: /^(\d+\.|-|\*)\s+(.+)$/gm, type: 'list' }
+            { regex: /\[([^\]]+)\]\(([^)]+)\)/g, type: 'link' }
         ];
 
         const allMatches = [];
@@ -136,75 +118,30 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
 
         filteredMatches.forEach((item, index) => {
             if (lastIndex < item.start) {
-                parts.push(
-                    <span key={`text-${index}`}>{text.substring(lastIndex, item.start)}</span>
-                );
+                parts.push(<span key={`text-${index}`}>{text.substring(lastIndex, item.start)}</span>);
             }
 
             switch (item.type) {
                 case 'inline-code':
                     parts.push(
-                        <code
-                            key={`code-${index}`}
-                            className="px-1.5 py-0.5 bg-gray-100 text-red-600 rounded text-sm font-mono"
-                        >
+                        <code key={`code-${index}`} className="px-2 py-0.5 bg-slate-100 text-rose-600 rounded-md text-sm font-mono border border-slate-200">
                             {item.match[1]}
                         </code>
                     );
                     break;
                 case 'bold':
-                    parts.push(
-                        <strong key={`bold-${index}`} className="font-semibold">
-                            {item.match[1]}
-                        </strong>
-                    );
+                    parts.push(<strong key={`bold-${index}`} className="font-bold text-gray-900">{item.match[1]}</strong>);
                     break;
                 case 'italic':
-                    parts.push(
-                        <em key={`italic-${index}`} className="italic">
-                            {item.match[1]}
-                        </em>
-                    );
+                    parts.push(<em key={`italic-${index}`} className="italic text-gray-700">{item.match[1]}</em>);
                     break;
                 case 'link':
                     parts.push(
-                        <a
-                            key={`link-${index}`}
-                            href={item.match[2]}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-blue-500 hover:text-blue-600 underline inline-flex items-center gap-1"
-                        >
+                        <a key={`link-${index}`} href={item.match[2]} target="_blank" rel="noopener noreferrer"
+                            className="text-blue-600 hover:text-blue-700 underline decoration-blue-400 underline-offset-2 inline-flex items-center gap-1 font-medium transition-colors">
                             {item.match[1]}
-                            <ExternalLink className="w-3 h-3" />
+                            <ExternalLink className="w-3.5 h-3.5" />
                         </a>
-                    );
-                    break;
-                case 'heading':
-                    const level = item.match[1].length;
-                    const HeadingTag = `h${level}`;
-                    const headingClasses = {
-                        1: 'text-2xl font-bold mt-4 mb-2',
-                        2: 'text-xl font-bold mt-3 mb-2',
-                        3: 'text-lg font-semibold mt-3 mb-1',
-                        4: 'text-base font-semibold mt-2 mb-1',
-                        5: 'text-sm font-semibold mt-2 mb-1',
-                        6: 'text-xs font-semibold mt-1 mb-1'
-                    };
-                    parts.push(
-                        React.createElement(
-                            HeadingTag,
-                            { key: `heading-${index}`, className: headingClasses[level] },
-                            item.match[2]
-                        )
-                    );
-                    break;
-                case 'list':
-                    parts.push(
-                        <div key={`list-${index}`} className="flex gap-2 my-1">
-                            <span className="text-gray-600">{item.match[1]}</span>
-                            <span>{item.match[2]}</span>
-                        </div>
                     );
                     break;
                 default:
@@ -223,33 +160,37 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
 
     const renderCodeBlock = (code, language, index) => {
         const isCopied = copiedIndex === `code-${index}`;
+        const isExpanded = expandedSections[`code-${index}`] !== false;
+        const lineCount = code.split('\n').length;
 
         return (
-            <div className="my-4 rounded-lg overflow-hidden border border-gray-200 bg-gray-900">
-                <div className="flex items-center justify-between px-4 py-2 bg-gray-800 border-b border-gray-700">
-                    <div className="flex items-center gap-2">
-                        <Code className="w-4 h-4 text-gray-400" />
-                        <span className="text-sm text-gray-300 font-mono">{language}</span>
+            <div className="my-4 rounded-xl overflow-hidden border border-slate-200 shadow-lg bg-gradient-to-br from-slate-900 to-slate-800">
+                <div className="flex items-center justify-between px-5 py-3 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-slate-600">
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-slate-700 rounded-lg">
+                            <Code className="w-4 h-4 text-emerald-400" />
+                        </div>
+                        <div>
+                            <span className="text-sm text-slate-200 font-semibold uppercase tracking-wide">{language}</span>
+                            <span className="text-xs text-slate-400 ml-2">• {lineCount} lines</span>
+                        </div>
                     </div>
-                    <button
-                        onClick={() => copyToClipboard(code, `code-${index}`)}
-                        className="flex items-center gap-2 px-3 py-1 bg-gray-700 hover:bg-gray-600 rounded text-sm text-gray-200 transition-colors"
-                    >
-                        {isCopied ? (
-                            <>
-                                <Check className="w-4 h-4" />
-                                <span>Copied!</span>
-                            </>
-                        ) : (
-                            <>
-                                <Copy className="w-4 h-4" />
-                                <span>Copy</span>
-                            </>
+                    <div className="flex items-center gap-2">
+                        {lineCount > 10 && (
+                            <button onClick={() => toggleSection(`code-${index}`)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs text-slate-200 transition-all">
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                {isExpanded ? 'Collapse' : 'Expand'}
+                            </button>
                         )}
-                    </button>
+                        <button onClick={() => copyToClipboard(code, `code-${index}`)}
+                            className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm text-white font-medium transition-all shadow-md hover:shadow-lg">
+                            {isCopied ? (<><Check className="w-4 h-4" /><span>Copied!</span></>) : (<><Copy className="w-4 h-4" /><span>Copy</span></>)}
+                        </button>
+                    </div>
                 </div>
-                <div className="p-4 overflow-x-auto">
-                    <pre className="text-sm text-gray-100 font-mono leading-relaxed">
+                <div className={`overflow-x-auto transition-all ${!isExpanded && lineCount > 10 ? 'max-h-64' : 'max-h-[600px]'} overflow-y-auto`}>
+                    <pre className="p-5 text-sm text-slate-100 font-mono leading-relaxed">
                         <code>{code}</code>
                     </pre>
                 </div>
@@ -257,82 +198,80 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
         );
     };
 
+    const detectTableType = (headers) => {
+        const headerStr = headers.join(' ').toLowerCase();
+
+        if (headerStr.includes('bug') || headerStr.includes('defect') || headerStr.includes('issue')) {
+            return { type: 'bug', icon: Bug, label: 'Bug Report', color: 'rose' };
+        }
+        if (headerStr.includes('test case') || headerStr.includes('scenario') || headerStr.includes('expected') || headerStr.includes('actual')) {
+            return { type: 'testcase', icon: CheckCircle, label: 'Test Cases', color: 'emerald' };
+        }
+        if (headerStr.includes('test type') || headerStr.includes('framework') || headerStr.includes('automation')) {
+            return { type: 'testtype', icon: Beaker, label: 'Test Types', color: 'blue' };
+        }
+        return { type: 'general', icon: Table, label: 'Data Table', color: 'slate' };
+    };
+
     const renderTable = (tableContent, index) => {
         const lines = tableContent.trim().split('\n');
         if (lines.length < 3) return null;
 
-        const headers = lines[0]
-            .split('|')
-            .filter((cell) => cell.trim())
-            .map((cell) => cell.trim());
+        const headers = lines[0].split('|').filter((cell) => cell.trim()).map((cell) => cell.trim());
+        const alignments = lines[1].split('|').filter((cell) => cell.trim()).map((cell) => {
+            const trimmed = cell.trim();
+            if (trimmed.startsWith(':') && trimmed.endsWith(':')) return 'center';
+            if (trimmed.endsWith(':')) return 'right';
+            return 'left';
+        });
 
-        const alignments = lines[1]
-            .split('|')
-            .filter((cell) => cell.trim())
-            .map((cell) => {
-                const trimmed = cell.trim();
-                if (trimmed.startsWith(':') && trimmed.endsWith(':')) return 'center';
-                if (trimmed.endsWith(':')) return 'right';
-                return 'left';
-            });
-
-        const rows = lines.slice(2).map((line) =>
-            line
-                .split('|')
-                .filter((cell) => cell.trim())
-                .map((cell) => cell.trim())
-        );
+        const rows = lines.slice(2).map((line) => line.split('|').filter((cell) => cell.trim()).map((cell) => cell.trim()));
 
         const isCopied = copiedIndex === `table-${index}`;
+        const isExpanded = expandedSections[`table-${index}`] !== false;
+        const tableType = detectTableType(headers);
+        const IconComponent = tableType.icon;
 
-        // Check if it's a bug table
-        const isBugTable = headers.some(h =>
-            ['serial', 'bug', 'module', 'priority', 'severity', 'status'].some(
-                keyword => h.toLowerCase().includes(keyword)
-            )
-        );
+        const colorClasses = {
+            rose: 'from-rose-50 to-rose-100 border-rose-200 text-rose-700',
+            emerald: 'from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700',
+            blue: 'from-blue-50 to-blue-100 border-blue-200 text-blue-700',
+            slate: 'from-slate-50 to-slate-100 border-slate-200 text-slate-700'
+        };
 
         return (
-            <div className="my-4 rounded-lg overflow-hidden border border-gray-200 shadow-sm">
-                <div className="flex items-center justify-between px-4 py-2 bg-gradient-to-r from-gray-50 to-gray-100 border-b border-gray-200">
-                    <div className="flex items-center gap-2">
-                        {isBugTable ? (
-                            <Bug className="w-4 h-4 text-orange-600" />
-                        ) : (
-                            <Table className="w-4 h-4 text-gray-600" />
-                        )}
-                        <span className="text-sm text-gray-700 font-medium">
-                            {isBugTable ? 'Bug List' : 'Table'}
-                        </span>
-                        <span className="text-xs text-gray-500">({rows.length} rows)</span>
+            <div className="my-4 rounded-xl overflow-hidden border-2 border-slate-200 shadow-xl bg-white">
+                <div className={`flex items-center justify-between px-5 py-3 bg-gradient-to-r ${colorClasses[tableType.color]} border-b-2`}>
+                    <div className="flex items-center gap-3">
+                        <div className="p-2 bg-white rounded-lg shadow-sm">
+                            <IconComponent className="w-5 h-5" />
+                        </div>
+                        <div>
+                            <span className="text-sm font-bold">{tableType.label}</span>
+                            <span className="text-xs ml-2 opacity-75">• {rows.length} {rows.length === 1 ? 'row' : 'rows'}</span>
+                        </div>
                     </div>
-                    <button
-                        onClick={() => copyToClipboard(tableContent, `table-${index}`)}
-                        className="flex items-center gap-2 px-3 py-1 bg-white hover:bg-gray-50 border border-gray-200 rounded text-sm text-gray-700 transition-colors"
-                    >
-                        {isCopied ? (
-                            <>
-                                <Check className="w-4 h-4 text-green-600" />
-                                <span>Copied!</span>
-                            </>
-                        ) : (
-                            <>
-                                <Copy className="w-4 h-4" />
-                                <span>Copy</span>
-                            </>
+                    <div className="flex items-center gap-2">
+                        {rows.length > 5 && (
+                            <button onClick={() => toggleSection(`table-${index}`)}
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium transition-all shadow-sm">
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                {isExpanded ? 'Collapse' : 'Expand'}
+                            </button>
                         )}
-                    </button>
+                        <button onClick={() => copyToClipboard(tableContent, `table-${index}`)}
+                            className="flex items-center gap-2 px-4 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-white font-medium transition-all shadow-md hover:shadow-lg">
+                            {isCopied ? (<><Check className="w-4 h-4" /><span>Copied!</span></>) : (<><Copy className="w-4 h-4" /><span>Copy</span></>)}
+                        </button>
+                    </div>
                 </div>
-                <div className="overflow-x-auto max-h-96 overflow-y-auto">
+                <div className={`overflow-x-auto transition-all ${!isExpanded && rows.length > 5 ? 'max-h-80' : 'max-h-[600px]'} overflow-y-auto`}>
                     <table className="w-full">
-                        <thead className="bg-gray-100 sticky top-0">
+                        <thead className="bg-slate-100 sticky top-0 z-10 shadow-sm">
                             <tr>
                                 {headers.map((header, idx) => (
-                                    <th
-                                        key={idx}
-                                        className="px-4 py-3 text-left text-xs font-semibold text-gray-700 border-b-2 border-gray-300 uppercase tracking-wider"
-                                        style={{ textAlign: alignments[idx] || 'left' }}
-                                    >
+                                    <th key={idx} className="px-4 py-3 text-left text-xs font-bold text-slate-700 border-b-2 border-slate-300 uppercase tracking-wider whitespace-nowrap"
+                                        style={{ textAlign: alignments[idx] || 'left' }}>
                                         {header}
                                     </th>
                                 ))}
@@ -340,40 +279,39 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
                         </thead>
                         <tbody>
                             {rows.map((row, rowIdx) => (
-                                <tr
-                                    key={rowIdx}
-                                    className={`${rowIdx % 2 === 0 ? 'bg-white' : 'bg-gray-50'
-                                        } hover:bg-blue-50 transition-colors`}
-                                >
+                                <tr key={rowIdx} className={`${rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-blue-50 transition-colors border-b border-slate-200`}>
                                     {row.map((cell, cellIdx) => {
-                                        // Add color coding for priority/severity
                                         const cellLower = cell.toLowerCase();
-                                        let cellClass = 'px-4 py-3 text-sm text-gray-600 border-b border-gray-100';
+                                        let cellClass = 'px-4 py-3 text-sm text-slate-700';
+                                        let badge = false;
 
-                                        if (cellLower === 'critical' || cellLower === 'high') {
-                                            cellClass += ' text-red-600 font-semibold';
-                                        } else if (cellLower === 'medium') {
-                                            cellClass += ' text-orange-600 font-medium';
-                                        } else if (cellLower === 'low') {
-                                            cellClass += ' text-green-600';
+                                        if (['critical', 'high', 'medium', 'low', 'new', 'open', 'pending', 'in progress', 'testing', 'fixed', 'closed', 'pass', 'fail', 'failed', 'blocked'].includes(cellLower)) {
+                                            badge = true;
+                                            cellClass = 'px-4 py-3';
                                         }
 
-                                        // Status colors
-                                        if (cellLower === 'new' || cellLower === 'open') {
-                                            cellClass += ' text-blue-600 font-medium';
-                                        } else if (cellLower === 'in progress') {
-                                            cellClass += ' text-yellow-600 font-medium';
-                                        } else if (cellLower === 'fixed' || cellLower === 'closed') {
-                                            cellClass += ' text-green-600 font-medium';
-                                        }
+                                        const getBadgeClass = (value) => {
+                                            const val = value.toLowerCase();
+                                            if (val === 'critical') return 'bg-red-100 text-red-700 border-red-300';
+                                            if (val === 'high') return 'bg-orange-100 text-orange-700 border-orange-300';
+                                            if (val === 'medium') return 'bg-yellow-100 text-yellow-700 border-yellow-300';
+                                            if (val === 'low') return 'bg-green-100 text-green-700 border-green-300';
+                                            if (['new', 'open', 'pending'].includes(val)) return 'bg-blue-100 text-blue-700 border-blue-300';
+                                            if (['in progress', 'testing'].includes(val)) return 'bg-amber-100 text-amber-700 border-amber-300';
+                                            if (['fixed', 'closed', 'pass'].includes(val)) return 'bg-emerald-100 text-emerald-700 border-emerald-300';
+                                            if (['fail', 'failed', 'blocked'].includes(val)) return 'bg-rose-100 text-rose-700 border-rose-300';
+                                            return 'bg-slate-100 text-slate-700 border-slate-300';
+                                        };
 
                                         return (
-                                            <td
-                                                key={cellIdx}
-                                                className={cellClass}
-                                                style={{ textAlign: alignments[cellIdx] || 'left' }}
-                                            >
-                                                {cell}
+                                            <td key={cellIdx} className={cellClass} style={{ textAlign: alignments[cellIdx] || 'left' }}>
+                                                {badge ? (
+                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getBadgeClass(cell)}`}>
+                                                        {cell}
+                                                    </span>
+                                                ) : (
+                                                    <span className="font-medium">{cell}</span>
+                                                )}
                                             </td>
                                         );
                                     })}
@@ -390,31 +328,21 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
         if (!attachments || attachments.length === 0) return null;
 
         return (
-            <div className="mt-3 flex flex-wrap gap-2">
+            <div className="mt-4 mb-3 flex flex-wrap gap-3">
                 {attachments.map((attachment, index) => (
                     <div key={index} className="relative group">
                         {attachment.type === 'image' ? (
-                            <a
-                                href={attachment.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="block"
-                            >
-                                <img
-                                    src={attachment.url}
-                                    alt={attachment.name}
-                                    className="max-w-xs rounded-lg border border-gray-200 hover:border-blue-400 transition-colors cursor-pointer"
-                                />
+                            <a href={attachment.url} target="_blank" rel="noopener noreferrer"
+                                className="block rounded-xl overflow-hidden border-2 border-slate-200 hover:border-blue-400 transition-all shadow-md hover:shadow-xl transform hover:scale-105">
+                                <img src={attachment.url} alt={attachment.name} className="max-w-sm h-auto" />
                             </a>
                         ) : (
-                            <a
-                                href={attachment.url}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                                className="flex items-center gap-2 px-3 py-2 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-                            >
-                                <FileText className="w-4 h-4 text-gray-600" />
-                                <span className="text-sm text-gray-700">{attachment.name}</span>
+                            <a href={attachment.url} target="_blank" rel="noopener noreferrer"
+                                className="flex items-center gap-3 px-4 py-3 bg-slate-100 rounded-xl hover:bg-slate-200 transition-all shadow-sm hover:shadow-md border border-slate-200">
+                                <div className="p-2 bg-white rounded-lg">
+                                    <FileText className="w-5 h-5 text-slate-600" />
+                                </div>
+                                <span className="text-sm font-medium text-slate-700">{attachment.name}</span>
                             </a>
                         )}
                     </div>
@@ -429,23 +357,17 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
         return (
             <div className="space-y-2">
                 {lines.map((line, index) => {
-                    if (!line.trim()) {
-                        return <div key={index} className="h-2" />;
-                    }
+                    if (!line.trim()) return <div key={index} className="h-3" />;
 
                     if (/^(\d+\.|-|\*)\s+/.test(line)) {
                         const match = line.match(/^(\d+\.|-|\*)\s+(.+)$/);
                         if (match) {
                             return (
-                                <div key={index} className="flex gap-2 ml-4">
-                                    <span
-                                        className={
-                                            role === 'user' ? 'text-blue-200' : 'text-gray-600'
-                                        }
-                                    >
+                                <div key={index} className="flex gap-3 ml-4 items-start">
+                                    <span className={role === 'user' ? 'text-blue-300 font-medium' : 'text-slate-600 font-medium mt-0.5'}>
                                         {match[1]}
                                     </span>
-                                    <span>{formatInlineText(match[2])}</span>
+                                    <span className="flex-1">{formatInlineText(match[2])}</span>
                                 </div>
                             );
                         }
@@ -457,26 +379,18 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
                             const level = match[1].length;
                             const HeadingTag = `h${level}`;
                             const headingClasses = {
-                                1: 'text-2xl font-bold mt-4 mb-2',
-                                2: 'text-xl font-bold mt-3 mb-2',
-                                3: 'text-lg font-semibold mt-3 mb-1',
-                                4: 'text-base font-semibold mt-2 mb-1',
-                                5: 'text-sm font-semibold mt-2 mb-1',
-                                6: 'text-xs font-semibold mt-1 mb-1'
+                                1: 'text-3xl font-bold mt-6 mb-3 text-slate-900',
+                                2: 'text-2xl font-bold mt-5 mb-3 text-slate-800',
+                                3: 'text-xl font-semibold mt-4 mb-2 text-slate-800',
+                                4: 'text-lg font-semibold mt-3 mb-2 text-slate-700',
+                                5: 'text-base font-semibold mt-3 mb-1 text-slate-700',
+                                6: 'text-sm font-semibold mt-2 mb-1 text-slate-600'
                             };
-                            return React.createElement(
-                                HeadingTag,
-                                { key: index, className: headingClasses[level] },
-                                formatInlineText(match[2])
-                            );
+                            return React.createElement(HeadingTag, { key: index, className: headingClasses[level] }, formatInlineText(match[2]));
                         }
                     }
 
-                    return (
-                        <p key={index} className="leading-relaxed">
-                            {formatInlineText(line)}
-                        </p>
-                    );
+                    return <p key={index} className="leading-relaxed text-base">{formatInlineText(line)}</p>;
                 })}
             </div>
         );
@@ -485,7 +399,7 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
     const elements = parseContent(content);
 
     return (
-        <div className={`${role === 'user' ? 'text-white' : 'text-gray-800'}`}>
+        <div className={`${role === 'user' ? 'text-white' : 'text-slate-800'} font-sans`}>
             {attachments && attachments.length > 0 && renderAttachments(attachments)}
             {elements.map((element, index) => {
                 switch (element.type) {

@@ -650,7 +650,7 @@ const Chat = () => {
                 <div className="flex-1 overflow-y-auto">
                     {!currentChat ? (
                         <div className="h-full flex items-center justify-center px-4">
-                            <div className="text-center max-w-2xl">
+                            <div className="text-center max-w-4xl">
                                 {!isSidebarOpen && (
                                     <button
                                         onClick={() => setIsSidebarOpen(true)}
@@ -663,26 +663,26 @@ const Chat = () => {
                                     <span className="text-4xl font-bold text-white">L</span>
                                 </div>
                                 <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-3">
-                                    Hello there! 👋
+                                    Hello there!
                                 </h2>
                                 <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
                                     I'm <span className="font-semibold text-sky-600 dark:text-sky-400">Lumen</span>, your intelligent QA testing assistant
                                 </p>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-xl mx-auto">
                                     <div className="p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border border-sky-200 dark:border-sky-800 rounded-xl">
-                                        <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">🐛 Manage Bugs</p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">Manage Bugs</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Track and resolve issues</p>
                                     </div>
                                     <div className="p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border border-sky-200 dark:border-sky-800 rounded-xl">
-                                        <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">✅ Test Cases</p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">Test Cases</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Create and organize tests</p>
                                     </div>
                                     <div className="p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border border-sky-200 dark:border-sky-800 rounded-xl">
-                                        <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">📊 Projects</p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">Projects</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Manage your workspace</p>
                                     </div>
                                     <div className="p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border border-sky-200 dark:border-sky-800 rounded-xl">
-                                        <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">💬 Natural Language</p>
+                                        <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">Natural Language</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Just ask me anything</p>
                                     </div>
                                 </div>
