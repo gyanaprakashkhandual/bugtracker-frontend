@@ -1,17 +1,13 @@
+"use client";
+
 import React, { useState, useRef, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import {
-    Send,
-    Mic,
-    MicOff,
-    X,
-    CheckCircle2,
-    AlertCircle
-} from 'lucide-react';
+import { Send, Mic, MicOff, X, CheckCircle2, AlertCircle, Link } from 'lucide-react';
 import { GoogleArrowDown } from '../utils/Icon';
 import { useAlert } from '@/app/script/Alert.context';
 import { useTestType } from '@/app/script/TestType.context';
 import { useProject } from '@/app/script/Project.context';
+
 export const BUG_EVENTS = {
     CREATED: 'bug:created',
     UPDATED: 'bug:updated',
@@ -54,7 +50,6 @@ const BugSidebar = ({ isOpen, onClose }) => {
         bugDesc: '',
         bugRequirement: '',
         refLink: '',
-        severity: '',
         priority: '',
         status: '',
         image: null
@@ -71,6 +66,8 @@ const BugSidebar = ({ isOpen, onClose }) => {
     const recognitionRef = useRef(null);
 
     const { showAlert } = useAlert();
+    const { selectedProject } = useProject();
+    const { testTypeId } = useTestType();
 
     const BASE_URL = 'http://localhost:5000/api/v1/bug';
     const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
@@ -83,13 +80,11 @@ const BugSidebar = ({ isOpen, onClose }) => {
 
     const dropdownOptions = {
         bugType: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'],
-        severity: ['Critical', 'High', 'Medium', 'Low'],
+        severity: ['High', 'Low', 'Medium', 'Critical'],
         priority: ['High', 'Low', 'Medium', 'Critical'],
         status: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open']
     };
-    const { testTypeId } = useTestType();
 
-    // Initialize speech recognition
     useEffect(() => {
         if (typeof window === 'undefined') return;
 
@@ -116,7 +111,6 @@ const BugSidebar = ({ isOpen, onClose }) => {
             };
 
             recognitionRef.current.onerror = (event) => {
-                console.error('Speech recognition error:', event.error);
                 setIsListening(false);
                 if (event.error !== 'no-speech' && event.error !== 'aborted') {
                     showAlert({
@@ -136,7 +130,6 @@ const BugSidebar = ({ isOpen, onClose }) => {
                 try {
                     recognitionRef.current.stop();
                 } catch (e) {
-                    // Ignore errors on cleanup
                 }
             }
         };
@@ -159,7 +152,6 @@ const BugSidebar = ({ isOpen, onClose }) => {
                 recognitionRef.current.start();
                 setIsListening(true);
             } catch (e) {
-                console.error('Failed to start recognition:', e);
                 setIsListening(false);
             }
         }
@@ -184,7 +176,6 @@ const BugSidebar = ({ isOpen, onClose }) => {
             const data = await response.json();
             return data.secure_url;
         } catch (error) {
-            console.error('Error uploading image:', error);
             showAlert({
                 type: 'error',
                 message: 'Failed to upload image'
@@ -206,10 +197,9 @@ const BugSidebar = ({ isOpen, onClose }) => {
     const createTraditionalBug = async () => {
         try {
             setIsSubmitting(true);
-            const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
-            const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+            const token = localStorage.getItem("token");
 
-            if (!projectId || !testTypeId || !token) {
+            if (!selectedProject?._id || !selectedTestType?._id || !token) {
                 throw new Error('Missing required project or authentication data');
             }
 
@@ -218,7 +208,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                 imageUrl = await uploadImageToCloudinary(formData.image);
             }
 
-            const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs`, {
+            const response = await fetch(`${BASE_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/bugs`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -231,7 +221,6 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     bugRequirement: formData.bugRequirement || 'No Requirement',
                     refLink: formData.refLink || 'No Link Provided',
                     priority: formData.priority || 'Medium',
-                    severity: formData.severity || 'Medium',
                     status: formData.status || 'New',
                     image: imageUrl
                 })
@@ -249,17 +238,14 @@ const BugSidebar = ({ isOpen, onClose }) => {
                 message: 'Bug created successfully'
             });
 
-            // Emit bug created event
             emitBugEvent(BUG_EVENTS.CREATED, data);
 
-            // Reset form but keep sidebar open
             setFormData({
                 bugType: '',
                 moduleName: '',
                 bugDesc: '',
                 bugRequirement: '',
                 refLink: '',
-                severity: '',
                 priority: '',
                 status: '',
                 image: null
@@ -267,7 +253,6 @@ const BugSidebar = ({ isOpen, onClose }) => {
 
             return data;
         } catch (error) {
-            console.error('Error creating bug:', error);
             showAlert({
                 type: 'error',
                 message: error.message || 'Failed to create bug'
@@ -281,15 +266,13 @@ const BugSidebar = ({ isOpen, onClose }) => {
     const createAIBug = async (rawText) => {
         try {
             setIsSubmitting(true);
-            const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
-            const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
-            const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+            const token = localStorage.getItem("token");
 
-            if (!projectId || !testTypeId || !token) {
+            if (!selectedProject?._id || !selectedTestType?._id || !token) {
                 throw new Error('Missing required project or authentication data');
             }
 
-            const response = await fetch(`${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/ai-text`, {
+            const response = await fetch(`${BASE_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/bugs/ai-text`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -312,12 +295,10 @@ const BugSidebar = ({ isOpen, onClose }) => {
                 message: 'Bug created successfully from AI text'
             });
 
-            // Emit bug created event
             emitBugEvent(BUG_EVENTS.CREATED, data);
 
             return data;
         } catch (error) {
-            console.error('Error creating AI bug:', error);
             showAlert({
                 type: 'error',
                 message: error.message || 'Failed to create bug from text'
@@ -341,16 +322,14 @@ const BugSidebar = ({ isOpen, onClose }) => {
             setIsImporting(true);
             setImportStatus(null);
 
-            const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
-            const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
-            const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
+            const token = localStorage.getItem("token");
 
-            if (!projectId || !testTypeId || !token) {
+            if (!selectedProject?._id || !selectedTestType?._id || !token) {
                 throw new Error('Missing required project or authentication data');
             }
 
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/import/google-sheets`,
+                `${BASE_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/bugs/import/google-sheets`,
                 {
                     method: 'POST',
                     headers: {
@@ -380,11 +359,9 @@ const BugSidebar = ({ isOpen, onClose }) => {
                 message: `Successfully imported ${data.importedCount} bugs`
             });
 
-            // Emit bug imported event
             emitBugEvent(BUG_EVENTS.IMPORTED, data);
 
         } catch (error) {
-            console.error('Error importing from Google Sheet:', error);
             setImportStatus({
                 success: false,
                 message: error.message || 'Failed to import bugs',
@@ -412,9 +389,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
             }
 
             await createTraditionalBug();
-            // Sidebar remains open after submission
         } catch (error) {
-            console.error('Submit error:', error);
         }
     };
 
@@ -425,12 +400,10 @@ const BugSidebar = ({ isOpen, onClose }) => {
             bugDesc: '',
             bugRequirement: '',
             refLink: '',
-            severity: '',
             priority: '',
             status: '',
             image: null
         });
-        if (onClose) onClose();
     };
 
     const handlePromptSubmit = async () => {
@@ -445,10 +418,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
         try {
             await createAIBug(prompt);
             setPrompt('');
-
-            if (onClose) onClose();
         } catch (error) {
-            console.error('Prompt submit error:', error);
         }
     };
 
@@ -461,7 +431,6 @@ const BugSidebar = ({ isOpen, onClose }) => {
     const getDropdownPlaceholder = (field) => {
         const placeholders = {
             bugType: 'Type',
-            severity: 'Severity',
             priority: 'Priority',
             status: 'Status'
         };
@@ -476,60 +445,54 @@ const BugSidebar = ({ isOpen, onClose }) => {
             transition={{ duration: 0.3 }}
             className="flex flex-col h-full"
         >
-            <div className="flex-1 p-5 overflow-y-auto">
-                <div className="text-center text-gray-500 mt-[280px]">
+            <div className="flex-1 p-6 overflow-y-auto">
+                <div className="text-center text-gray-400 dark:text-gray-500 mt-20">
                     <p className="text-xs">Start a conversation...</p>
                 </div>
             </div>
 
-            <div className="p-5 border-t bg-white">
+            <div className="p-4 border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                 <div className="relative">
                     <textarea
                         value={prompt}
                         onChange={(e) => setPrompt(e.target.value)}
                         placeholder="Message..."
-                        className="w-full p-2.5 pr-16 border border-gray-200 rounded-xl resize-none bg-gray-50 hover:bg-gray-100 transition-colors text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
-                        rows={1}
+                        className="w-full p-3 pr-20 border border-gray-200 dark:border-gray-700 rounded-xl focus:ring-0.5 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none resize-none bg-gray-50 dark:bg-gray-900 hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
+                        rows="1"
                         style={{ minHeight: '180px', maxHeight: '480px' }}
                         onInput={(e) => {
                             e.target.style.height = 'auto';
-                            e.target.style.height = Math.min(e.target.scrollHeight, 110) + 'px';
+                            e.target.style.height = Math.min(e.target.scrollHeight, 480) + 'px';
                         }}
                         disabled={isSubmitting}
                     />
-                    <div className="absolute right-2.5 top-1/2 transform -translate-y-1/2 flex items-center gap-1">
+                    <div className="absolute right-3 bottom-3 flex items-center gap-2">
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={toggleVoiceRecognition}
                             disabled={isSubmitting}
-                            className={`p-1.5 rounded-full transition-colors ${isListening
-                                ? 'bg-red-600 text-white hover:bg-red-700'
-                                : 'bg-gray-200 text-gray-600 hover:bg-gray-300'
+                            className={`p-2 rounded-lg transition-colors ${isListening
+                                ? 'bg-red-600 dark:bg-red-500 text-white hover:bg-red-700 dark:hover:bg-red-600'
+                                : 'bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-300 dark:hover:bg-gray-600'
                                 } disabled:opacity-50 disabled:cursor-not-allowed`}
-                            title={isListening ? 'Stop recording' : 'Start voice dictation'}
                         >
-                            {isListening ? <MicOff size={12} /> : <Mic size={12} />}
+                            {isListening ? <MicOff size={14} /> : <Mic size={14} />}
                         </motion.button>
                         <motion.button
                             whileHover={{ scale: 1.05 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={handlePromptSubmit}
                             disabled={!prompt.trim() || isSubmitting}
-                            className="p-1.5 bg-blue-600 text-white rounded-full hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                            className="p-2.5 bg-blue-600 dark:bg-blue-500 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
                         >
-                            {isSubmitting ? <LoadingSpinner size="sm" /> : <Send size={12} />}
+                            {isSubmitting ? <LoadingSpinner size="sm" /> : <Send size={16} />}
                         </motion.button>
                     </div>
                 </div>
                 {isListening && (
-                    <div className="text-center text-[10px] text-red-600 mt-1.5 font-medium">
+                    <div className="text-center text-xs text-red-600 dark:text-red-400 mt-2 font-medium">
                         🎤 Listening...
-                    </div>
-                )}
-                {isSubmitting && (
-                    <div className="text-center text-[10px] text-gray-500 mt-1.5">
-                        Processing with AI...
                     </div>
                 )}
             </div>
@@ -541,16 +504,16 @@ const BugSidebar = ({ isOpen, onClose }) => {
             <button
                 onClick={() => toggleDropdown(field)}
                 disabled={isSubmitting}
-                className="w-full p-2 border border-gray-200 rounded-lg text-left flex items-center justify-between hover:border-gray-300 transition-all duration-200 bg-gray-50 hover:bg-gray-100 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+                className="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg text-left flex items-center justify-between hover:border-blue-300 dark:hover:border-blue-600 transition-all duration-200 bg-white dark:bg-gray-900 hover:bg-sky-50 dark:hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed text-xs focus:outline-none"
             >
-                <span className={formData[field] ? 'text-gray-900 font-medium' : 'text-gray-500'}>
+                <span className={formData[field] ? 'text-gray-900 dark:text-gray-100 font-medium' : 'text-gray-500 dark:text-gray-400'}>
                     {formData[field] || getDropdownPlaceholder(field)}
                 </span>
                 <motion.div
                     animate={{ rotate: openDropdowns[field] ? 180 : 0 }}
                     transition={{ duration: 0.2 }}
                 >
-                    <GoogleArrowDown size={12} className="text-gray-400" />
+                    <GoogleArrowDown size={14} className="text-gray-400 dark:text-gray-500" />
                 </motion.div>
             </button>
 
@@ -561,7 +524,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                         animate={{ opacity: 1, y: 0 }}
                         exit={{ opacity: 0, y: -10 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute top-full left-0 right-0 mt-1 bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto"
+                        className="absolute top-full left-0 right-0 mt-1 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-10 max-h-40 overflow-y-auto"
                     >
                         {options.map((option) => (
                             <button
@@ -570,7 +533,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                                     handleInputChange(field, option);
                                     toggleDropdown(field);
                                 }}
-                                className="w-full p-2 text-left hover:bg-gray-50 first:rounded-t-lg last:rounded-b-lg transition-colors font-medium text-gray-700 hover:text-gray-900 text-xs"
+                                className="w-full p-2.5 text-left hover:bg-sky-50 dark:hover:bg-gray-700 first:rounded-t-lg last:rounded-b-lg transition-colors font-medium text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100 text-xs focus:outline-none"
                                 disabled={isSubmitting}
                             >
                                 {option}
@@ -588,14 +551,10 @@ const BugSidebar = ({ isOpen, onClose }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="p-5 space-y-3 max-h-[calc(100vh-12rem)] overflow-y-auto"
+            className="p-4 space-y-3 max-h-[calc(100vh-12rem)] overflow-y-auto"
         >
-            <div className="grid grid-cols-2 gap-2.5">
+            <div className="grid grid-cols-3 gap-2">
                 {renderDropdown('bugType', dropdownOptions.bugType)}
-                {renderDropdown('severity', dropdownOptions.severity)}
-            </div>
-
-            <div className="grid grid-cols-2 gap-2.5">
                 {renderDropdown('priority', dropdownOptions.priority)}
                 {renderDropdown('status', dropdownOptions.status)}
             </div>
@@ -605,7 +564,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     type="text"
                     value={formData.moduleName}
                     onChange={(e) => handleInputChange('moduleName', e.target.value)}
-                    className="w-full p-2 border border-gray-200 rounded-lg bg-gray-50 transition-all duration-200 font-medium text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-0.5 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none bg-white dark:bg-gray-900 dark:hover:bg-gray-800 transition-all duration-200 font-medium text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="Module Name"
                     disabled={isSubmitting}
                 />
@@ -615,7 +574,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                 <textarea
                     value={formData.bugDesc}
                     onChange={(e) => handleInputChange('bugDesc', e.target.value)}
-                    className="w-full p-2 border border-gray-200 rounded-lg h-20 resize-none bg-gray-50 transition-all duration-200 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-0.5 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none h-20 resize-none bg-white dark:bg-gray-900  dark:hover:bg-gray-800 transition-all duration-200 text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="Bug Description"
                     disabled={isSubmitting}
                 />
@@ -625,7 +584,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                 <textarea
                     value={formData.bugRequirement}
                     onChange={(e) => handleInputChange('bugRequirement', e.target.value)}
-                    className="w-full p-2 border border-gray-200 rounded-lg h-20 resize-none bg-gray-50 transition-all duration-200 text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-0.5 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none h-20 resize-none bg-white dark:bg-gray-900  dark:hover:bg-gray-800 transition-all duration-200 text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="Bug Requirement"
                     disabled={isSubmitting}
                 />
@@ -636,7 +595,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     type="text"
                     value={formData.refLink}
                     onChange={(e) => handleInputChange('refLink', e.target.value)}
-                    className="w-full p-2 border border-gray-200 rounded-lg bg-gray-50  transition-all duration-200 font-medium text-xs focus:outline-none focus:ring-1 focus:ring-blue-900"
+                    className="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-0.5 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none bg-white dark:bg-gray-900  dark:hover:bg-gray-800 transition-all duration-200 font-medium text-xs text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                     placeholder="Reference Link"
                     disabled={isSubmitting}
                 />
@@ -644,12 +603,12 @@ const BugSidebar = ({ isOpen, onClose }) => {
 
             <div>
                 <div className="flex items-center justify-center w-full">
-                    <label className={`flex flex-col items-center justify-center w-full h-20 border-2 border-gray-200 border-dashed rounded-lg cursor-pointer bg-gray-50 hover:bg-gray-100 transition-all duration-200 group ${isSubmitting || isUploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
-                        <div className="flex flex-col items-center justify-center pt-3 pb-4">
-                            <p className="mb-1 text-[10px] text-gray-600 font-medium">
-                                <span className="text-blue-600">Click to upload</span> or drag
+                    <label className={`flex flex-col items-center justify-center w-full h-16 border-2 border-gray-200 dark:border-gray-700 border-dashed rounded-lg cursor-pointer bg-white dark:bg-gray-900 hover:bg-sky-50 dark:hover:bg-gray-800 transition-all duration-200 group ${isSubmitting || isUploadingImage ? 'opacity-50 cursor-not-allowed' : ''}`}>
+                        <div className="flex flex-col items-center justify-center">
+                            <p className="mb-1 text-xs text-gray-600 dark:text-gray-400 font-medium">
+                                <span className="text-blue-600 dark:text-blue-400">Click to upload</span> or drag and drop
                             </p>
-                            <p className="text-[9px] text-gray-500">PNG, JPG or GIF (MAX. 10MB)</p>
+                            <p className="text-xs text-gray-500 dark:text-gray-500">PNG, JPG or GIF (MAX. 10MB)</p>
                         </div>
                         <input
                             type="file"
@@ -664,32 +623,27 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     <motion.div
                         initial={{ opacity: 0, y: 10 }}
                         animate={{ opacity: 1, y: 0 }}
-                        className="mt-2 p-2 bg-green-50 border border-green-200 rounded-lg"
+                        className="mt-2 p-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg"
                     >
-                        <p className="text-[10px] text-green-700 font-medium">
-                            ✓ {formData.image.name}
+                        <p className="text-xs text-green-700 dark:text-green-400 font-medium">
+                            {formData.image.name}
                         </p>
                     </motion.div>
                 )}
-                {isUploadingImage && (
-                    <div className="text-center text-[10px] text-gray-500 mt-1.5">
-                        Uploading image...
-                    </div>
-                )}
             </div>
 
-            <div className="flex gap-2.5 pt-2">
+            <div className="flex gap-3 pt-2">
                 <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={handleSubmit}
                     disabled={isSubmitting || isUploadingImage}
-                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-1.5"
+                    className="flex-1 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 text-white px-4 py-2.5 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 dark:hover:from-blue-600 dark:hover:to-blue-700 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-2 focus:outline-none"
                 >
                     {isSubmitting ? (
                         <>
                             <LoadingSpinner size="sm" />
-                            <span>Submitting...</span>
+                            Submitting...
                         </>
                     ) : (
                         'Submit'
@@ -700,9 +654,9 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     whileTap={{ scale: 0.98 }}
                     onClick={handleCancel}
                     disabled={isSubmitting || isUploadingImage}
-                    className="flex-1 bg-gray-100 text-gray-700 px-4 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs"
+                    className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-4 py-2.5 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed text-xs focus:outline-none"
                 >
-                    Cancel
+                    Clear
                 </motion.button>
             </div>
         </motion.div>
@@ -714,11 +668,11 @@ const BugSidebar = ({ isOpen, onClose }) => {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
-            className="p-5 space-y-2.5"
+            className="p-4 space-y-3"
         >
-            <div className="text-center mb-5">
-                <h3 className="text-base font-bold text-gray-800 mb-1">Connect Data Source</h3>
-                <p className="text-[10px] text-gray-600">Import bugs from external sources</p>
+            <div className="text-center mb-4">
+                <h3 className="text-base font-bold text-gray-800 dark:text-gray-100 mb-1">Import Bugs</h3>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Select your import method</p>
             </div>
 
             <div className="space-y-2">
@@ -726,15 +680,13 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => setShowGoogleSheetModal(true)}
-                    className="w-full p-3 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 transition-all duration-200 flex items-center gap-3 group bg-gray-50 hover:shadow-md"
+                    className="w-full p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:border-blue-300 dark:hover:border-blue-600 hover:bg-sky-50 dark:hover:bg-gray-700 transition-all duration-200 flex items-center gap-3 group bg-white dark:bg-gray-800 focus:outline-none"
                 >
-                    <div className="p-2 bg-white rounded-lg group-hover:bg-blue-100 transition-colors shadow-sm">
-                        <svg className="w-4 h-4 text-green-600" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M19.5 2H4.5C3.67 2 3 2.67 3 3.5v17c0 .83.67 1.5 1.5 1.5h15c.83 0 1.5-.67 1.5-1.5v-17c0-.83-.67-1.5-1.5-1.5zm-8 18H5V4h6.5v16zm8 0h-6.5V4h6.5v16z" />
-                        </svg>
+                    <div className="p-2 bg-gray-50 dark:bg-gray-900 rounded-lg group-hover:bg-blue-100 dark:group-hover:bg-blue-900/20 transition-colors">
+                        <Link size={18} className="text-gray-600 dark:text-gray-400 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
                     </div>
-                    <span className="text-gray-700 font-semibold group-hover:text-blue-700 text-xs">
-                        Connect with Google Sheet
+                    <span className="text-xs text-gray-700 dark:text-gray-300 font-semibold group-hover:text-blue-700 dark:group-hover:text-blue-400">
+                        Import from Google Sheet
                     </span>
                 </motion.button>
             </div>
@@ -748,31 +700,34 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     initial={{ opacity: 0 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
-                    className="fixed inset-0 bg-gray-50 bg-opacity-50 flex items-center justify-center z-[60] p-4"
+                    className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50"
                     onClick={closeGoogleSheetModal}
                 >
                     <motion.div
-                        initial={{ scale: 0.9, opacity: 0 }}
-                        animate={{ scale: 1, opacity: 1 }}
-                        exit={{ scale: 0.9, opacity: 0 }}
+                        initial={{ scale: 0.9, y: 20 }}
+                        animate={{ scale: 1, y: 0 }}
+                        exit={{ scale: 0.9, y: 20 }}
                         onClick={(e) => e.stopPropagation()}
-                        className="bg-white rounded-xl shadow-2xl max-w-md w-full"
+                        className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl w-[500px] max-h-[80vh] overflow-y-auto"
                     >
-                        <div className="flex items-center justify-between p-4 border-b">
-                            <h3 className="text-sm font-bold text-gray-800">Google Sheet Import</h3>
+                        <div className="p-4 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                            <div className="flex items-center gap-2">
+                                <Link size={18} className="text-blue-600 dark:text-blue-400" />
+                                <h3 className="text-xs font-bold text-gray-800 dark:text-gray-100">Import from Google Sheets</h3>
+                            </div>
                             <button
                                 onClick={closeGoogleSheetModal}
-                                className="text-gray-400 hover:text-gray-600 transition-colors"
+                                className="p-1 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors focus:outline-none"
                             >
-                                <X size={16} />
+                                <X size={16} className="text-gray-600 dark:text-gray-400" />
                             </button>
                         </div>
 
-                        <div className="p-4">
+                        <div className="p-4 space-y-3">
                             {!importStatus ? (
                                 <>
-                                    <div className="mb-3">
-                                        <label className="block text-xs font-medium text-gray-700 mb-1.5">
+                                    <div>
+                                        <label className="block text-xs font-medium text-gray-700 dark:text-gray-300 mb-1">
                                             Google Sheet URL
                                         </label>
                                         <input
@@ -780,12 +735,9 @@ const BugSidebar = ({ isOpen, onClose }) => {
                                             value={googleSheetUrl}
                                             onChange={(e) => setGoogleSheetUrl(e.target.value)}
                                             placeholder="https://docs.google.com/spreadsheets/d/..."
-                                            className="w-full p-2 border border-gray-200 rounded-lg text-xs focus:outline-none focus:ring-1 focus:ring-blue-900 bg-gray-50"
+                                            className="w-full p-2.5 border border-gray-200 dark:border-gray-700 rounded-lg focus:ring-0.5 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-blue-500 dark:focus:border-blue-400 focus:outline-none text-xs bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
                                             disabled={isImporting}
                                         />
-                                        <p className="text-[10px] text-gray-500 mt-1">
-                                            Enter the URL of your Google Sheet containing bug data
-                                        </p>
                                     </div>
 
                                     <motion.button
@@ -793,12 +745,12 @@ const BugSidebar = ({ isOpen, onClose }) => {
                                         whileTap={{ scale: 0.98 }}
                                         onClick={importFromGoogleSheet}
                                         disabled={isImporting || !googleSheetUrl.trim()}
-                                        className="w-full bg-gradient-to-r from-blue-600 to-blue-700 text-white px-4 py-2 rounded-lg font-semibold hover:from-blue-700 hover:to-blue-800 transition-all duration-200 shadow-lg hover:shadow-xl disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-2"
+                                        className="w-full bg-blue-600 dark:bg-blue-500 text-white px-4 py-2.5 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-2 focus:outline-none"
                                     >
                                         {isImporting ? (
                                             <>
                                                 <LoadingSpinner size="sm" />
-                                                <span>Importing...</span>
+                                                Importing...
                                             </>
                                         ) : (
                                             'Import Bugs'
@@ -808,20 +760,26 @@ const BugSidebar = ({ isOpen, onClose }) => {
                             ) : (
                                 <div className="space-y-3">
                                     <div className={`p-3 rounded-lg border ${importStatus.success
-                                        ? 'bg-green-50 border-green-200'
-                                        : 'bg-red-50 border-red-200'
+                                        ? 'bg-green-50 dark:bg-green-900/20 border-green-200 dark:border-green-800'
+                                        : 'bg-red-50 dark:bg-red-900/20 border-red-200 dark:border-red-800'
                                         }`}>
                                         <div className="flex items-start gap-2">
                                             {importStatus.success ? (
-                                                <CheckCircle2 size={16} className="text-green-600 mt-0.5 flex-shrink-0" />
+                                                <CheckCircle2 size={16} className="text-green-600 dark:text-green-400 mt-0.5 flex-shrink-0" />
                                             ) : (
-                                                <AlertCircle size={16} className="text-red-600 mt-0.5 flex-shrink-0" />
+                                                <AlertCircle size={16} className="text-red-600 dark:text-red-400 mt-0.5 flex-shrink-0" />
                                             )}
                                             <div className="flex-1">
-                                                <p className={`text-xs font-semibold mb-1 ${importStatus.success ? 'text-green-800' : 'text-red-800'}`}>
+                                                <p className={`text-xs font-semibold mb-1 ${importStatus.success
+                                                    ? 'text-green-800 dark:text-green-400'
+                                                    : 'text-red-800 dark:text-red-400'
+                                                    }`}>
                                                     {importStatus.success ? 'Import Successful' : 'Import Failed'}
                                                 </p>
-                                                <p className={`text-[10px] ${importStatus.success ? 'text-green-700' : 'text-red-700'}`}>
+                                                <p className={`text-xs ${importStatus.success
+                                                    ? 'text-green-700 dark:text-green-500'
+                                                    : 'text-red-700 dark:text-red-500'
+                                                    }`}>
                                                     {importStatus.message}
                                                 </p>
                                             </div>
@@ -830,16 +788,16 @@ const BugSidebar = ({ isOpen, onClose }) => {
 
                                     {importStatus.success && (
                                         <div className="grid grid-cols-2 gap-2">
-                                            <div className="p-2.5 bg-blue-50 rounded-lg border border-blue-200">
-                                                <p className="text-[10px] text-blue-600 font-medium">Imported</p>
-                                                <p className="text-lg font-bold text-blue-700">
+                                            <div className="p-2.5 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+                                                <p className="text-xs text-blue-600 dark:text-blue-400 font-medium">Imported</p>
+                                                <p className="text-lg font-bold text-blue-700 dark:text-blue-400">
                                                     {importStatus.importedCount}
                                                 </p>
                                             </div>
                                             {importStatus.errorCount > 0 && (
-                                                <div className="p-2.5 bg-orange-50 rounded-lg border border-orange-200">
-                                                    <p className="text-[10px] text-orange-600 font-medium">Errors</p>
-                                                    <p className="text-lg font-bold text-orange-700">
+                                                <div className="p-2.5 bg-orange-50 dark:bg-orange-900/20 rounded-lg border border-orange-200 dark:border-orange-800">
+                                                    <p className="text-xs text-orange-600 dark:text-orange-400 font-medium">Errors</p>
+                                                    <p className="text-lg font-bold text-orange-700 dark:text-orange-400">
                                                         {importStatus.errorCount}
                                                     </p>
                                                 </div>
@@ -849,10 +807,10 @@ const BugSidebar = ({ isOpen, onClose }) => {
 
                                     {importStatus.errors && importStatus.errors.length > 0 && (
                                         <div className="max-h-32 overflow-y-auto">
-                                            <p className="text-[10px] font-semibold text-gray-700 mb-1.5">Errors:</p>
+                                            <p className="text-xs font-semibold text-gray-700 dark:text-gray-300 mb-1.5">Errors:</p>
                                             <div className="space-y-1">
                                                 {importStatus.errors.map((error, index) => (
-                                                    <div key={index} className="p-1.5 bg-red-50 rounded text-[9px] text-red-600">
+                                                    <div key={index} className="p-1.5 bg-red-50 dark:bg-red-900/20 rounded text-xs text-red-600 dark:text-red-400">
                                                         {error}
                                                     </div>
                                                 ))}
@@ -868,7 +826,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                                                 setImportStatus(null);
                                                 setGoogleSheetUrl('');
                                             }}
-                                            className="flex-1 bg-blue-600 text-white px-3 py-2 rounded-lg font-semibold hover:bg-blue-700 transition-all duration-200 text-xs"
+                                            className="flex-1 bg-blue-600 dark:bg-blue-500 text-white px-3 py-2 rounded-lg font-semibold hover:bg-blue-700 dark:hover:bg-blue-600 transition-all duration-200 text-xs focus:outline-none"
                                         >
                                             Import Another
                                         </motion.button>
@@ -876,7 +834,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                                             whileHover={{ scale: 1.02 }}
                                             whileTap={{ scale: 0.98 }}
                                             onClick={closeGoogleSheetModal}
-                                            className="flex-1 bg-gray-100 text-gray-700 px-3 py-2 rounded-lg font-semibold hover:bg-gray-200 transition-all duration-200 text-xs"
+                                            className="flex-1 bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 px-3 py-2 rounded-lg font-semibold hover:bg-gray-200 dark:hover:bg-gray-600 transition-all duration-200 text-xs focus:outline-none"
                                         >
                                             Close
                                         </motion.button>
@@ -894,21 +852,21 @@ const BugSidebar = ({ isOpen, onClose }) => {
 
     return (
         <>
-            <div className="h-[calc(100vh-4rem)] fixed right-0 sidebar-scrollbar mt-16 bg-gradient-to-b from-white to-gray-50 border-r border-gray-200 w-[28rem] flex flex-col shadow-xl z-50">
-                <div className="border-b border-gray-200 bg-white">
+            <div className="h-[calc(100vh-4rem)] fixed right-0 sidebar-scrollbar mt-16 bg-white dark:bg-gray-800 border-l border-gray-200 dark:border-gray-700 w-[28rem] flex flex-col shadow-xl z-50">
+                <div className="border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <div className="flex">
                         {navItems.map((item) => (
                             <motion.button
                                 key={item.id}
-                                whileHover={{ backgroundColor: '#f8fafc' }}
+                                whileHover={{ backgroundColor: activeTab === item.id ? '' : 'rgb(240 249 255)' }}
                                 whileTap={{ scale: 0.98 }}
                                 onClick={() => setActiveTab(item.id)}
-                                className={`flex-1 p-3 text-center transition-all duration-200 border-r border-gray-200 last:border-r-0 ${activeTab === item.id
-                                    ? 'bg-blue-50 border-b-2 border-blue-600 text-blue-700'
-                                    : 'text-gray-700 hover:text-gray-900'
+                                className={`flex-1 p-3 text-center transition-all duration-200 border-r border-gray-200 dark:border-gray-700 last:border-r-0 focus:outline-none ${activeTab === item.id
+                                    ? 'bg-blue-50 dark:bg-blue-900/20 border-b-2 border-blue-600 dark:border-blue-400 text-blue-700 dark:text-blue-400'
+                                    : 'text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
                                     }`}
                             >
-                                <span className="font-semibold text-[11px]">{item.label}</span>
+                                <span className="font-semibold text-xs">{item.label}</span>
                             </motion.button>
                         ))}
                     </div>
@@ -916,9 +874,9 @@ const BugSidebar = ({ isOpen, onClose }) => {
 
                 <div className="flex-1 overflow-hidden">
                     <AnimatePresence mode="wait">
-                        {activeTab === 'text-prompt' && <div key="text-prompt">{renderTextPrompt()}</div>}
-                        {activeTab === 'fill-bug' && <div key="fill-bug">{renderBugForm()}</div>}
-                        {activeTab === 'cloud-upload' && <div key="cloud-upload">{renderCloudUpload()}</div>}
+                        {activeTab === 'text-prompt' && renderTextPrompt()}
+                        {activeTab === 'fill-bug' && renderBugForm()}
+                        {activeTab === 'cloud-upload' && renderCloudUpload()}
                     </AnimatePresence>
                 </div>
             </div>
