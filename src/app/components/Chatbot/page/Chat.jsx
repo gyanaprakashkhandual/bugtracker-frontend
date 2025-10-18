@@ -16,14 +16,17 @@ import {
     X,
     Loader2,
     ChevronLeft,
-    ChevronRight
+    ChevronRight,
+    StopCircle
 } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context.js';
 import MessageParser from '../lib/message.parser.jsx';
 import CommandDropdown from '../components/Dropdown.jsx';
+import { getUser } from '@/app/utils/Get.user.js';
 
 const Chat = () => {
     const BASE_URL = 'http://localhost:5000/api/v1/chat';
+    const AUDIO_API_URL = 'http://localhost:5000/api/v1/audio';
     const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
     const CLOUDINARY_PRESET = 'test_case_preset';
 
@@ -47,118 +50,17 @@ const Chat = () => {
     const [attachments, setAttachments] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
+    const [user, setUser] = useState([]);
 
     // Refs
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
     const fileInputRef = useRef(null);
     const [isRecording, setIsRecording] = useState(false);
-    const [recordingTime, setRecordingTime] = useState(0);
-    const recognitionRef = useRef(null);
-    const recordingIntervalRef = useRef(null);
+    const mediaRecorderRef = useRef(null);
+    const audioChunksRef = useRef([]);
 
-    // Initialize speech recognition
-    useEffect(() => {
-        if ('webkitSpeechRecognition' in window || 'SpeechRecognition' in window) {
-            const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-            recognitionRef.current = new SpeechRecognition();
-            recognitionRef.current.continuous = true;
-            recognitionRef.current.interimResults = true;
-            recognitionRef.current.lang = 'en-US';
-            recognitionRef.current.maxAlternatives = 1;
 
-            recognitionRef.current.onresult = (event) => {
-                let finalTranscript = '';
-
-                for (let i = event.resultIndex; i < event.results.length; i++) {
-                    const transcript = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) {
-                        finalTranscript += transcript + ' ';
-                    }
-                }
-
-                if (finalTranscript) {
-                    setInputMessage(prev => prev + finalTranscript);
-
-                    if (inputRef.current) {
-                        setTimeout(() => {
-                            inputRef.current.style.height = 'auto';
-                            inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 400)}px`;
-                        }, 0);
-                    }
-                }
-            };
-
-            recognitionRef.current.onerror = (event) => {
-                console.error('Speech recognition error:', event.error);
-                if (event.error === 'not-allowed') {
-                    alert('Microphone access denied. Please allow microphone permissions.');
-                }
-                stopRecording();
-            };
-
-            recognitionRef.current.onend = () => {
-                if (isRecording) {
-                    recognitionRef.current.start();
-                }
-            };
-        }
-
-        return () => {
-            if (recognitionRef.current) {
-                recognitionRef.current.stop();
-            }
-            if (recordingIntervalRef.current) {
-                clearInterval(recordingIntervalRef.current);
-            }
-        };
-    }, [isRecording]);
-
-    const formatTime = (seconds) => {
-        const mins = Math.floor(seconds / 60);
-        const secs = seconds % 60;
-        return `${mins}:${secs.toString().padStart(2, '0')}`;
-    };
-
-    const startRecording = () => {
-        if (!recognitionRef.current) {
-            alert('Speech recognition is not supported in your browser.');
-            return;
-        }
-
-        try {
-            recognitionRef.current.start();
-            setIsRecording(true);
-            setRecordingTime(0);
-
-            recordingIntervalRef.current = setInterval(() => {
-                setRecordingTime(prev => prev + 1);
-            }, 1000);
-        } catch (error) {
-            console.error('Error starting speech recognition:', error);
-        }
-    };
-
-    const stopRecording = () => {
-        if (recognitionRef.current) {
-            recognitionRef.current.stop();
-        }
-
-        if (recordingIntervalRef.current) {
-            clearInterval(recordingIntervalRef.current);
-        }
-
-        setIsRecording(false);
-        setRecordingTime(0);
-    };
-
-    const toggleRecording = () => {
-        if (isRecording) {
-            stopRecording();
-        } else {
-            startRecording();
-        }
-    };
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -236,6 +138,51 @@ const Chat = () => {
 
     const removeAttachment = (index) => {
         setAttachments((prev) => prev.filter((_, i) => i !== index));
+    };
+
+    const fetchUserData = async () => {
+        try {
+            setLoading(true);
+            setError(null);
+
+            const token = getToken();
+
+            if (!token) {
+                setError('No authentication token found. Please login again.');
+                return;
+            }
+
+            const response = await fetch('http://localhost:5000/api/v1/auth/me', {
+                method: 'GET',
+                headers: {
+                    'Authorization': `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+
+            if (!response.ok) {
+                if (response.status === 401) {
+                    localStorage.removeItem('token');
+                    setError('Session expired. Please login again.');
+                    return;
+                }
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            const data = await response.json();
+
+            if (data.user) {
+                setUser(data.user);
+            } else {
+                setError('Invalid response format from server');
+            }
+
+        } catch (err) {
+            console.error('Error fetching user data:', err);
+            setError(err.message || 'Failed to fetch user data');
+        } finally {
+            setLoading(false);
+        }
     };
 
     const fetchChats = async () => {
@@ -404,7 +351,6 @@ const Chat = () => {
                 if (currentChat?._id === chatId) {
                     setCurrentChat(null);
                     setMessages([]);
-                    createNewChat();
                 }
             }
         } catch (error) {
@@ -450,10 +396,78 @@ const Chat = () => {
         }
     };
 
+    const startRecording = async () => {
+        try {
+            const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+            mediaRecorderRef.current = new MediaRecorder(stream);
+            audioChunksRef.current = [];
+
+            mediaRecorderRef.current.ondataavailable = (event) => {
+                audioChunksRef.current.push(event.data);
+            };
+
+            mediaRecorderRef.current.onstop = async () => {
+                const audioBlob = new Blob(audioChunksRef.current, { type: 'audio/webm' });
+                await sendAudioToAPI(audioBlob);
+                stream.getTracks().forEach(track => track.stop());
+            };
+
+            mediaRecorderRef.current.start();
+            setIsRecording(true);
+        } catch (error) {
+            console.error('Error starting recording:', error);
+            alert('Microphone access denied or not available.');
+        }
+    };
+
+    const stopRecording = () => {
+        if (mediaRecorderRef.current && isRecording) {
+            mediaRecorderRef.current.stop();
+            setIsRecording(false);
+        }
+    };
+
+    const sendAudioToAPI = async (audioBlob) => {
+        try {
+            const formData = new FormData();
+            formData.append('audio', audioBlob, 'recording.webm');
+
+            const response = await fetch(AUDIO_API_URL, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`
+                },
+                body: formData
+            });
+
+            const data = await response.json();
+            if (data.text) {
+                setInputMessage(prev => prev + data.text);
+                if (inputRef.current) {
+                    setTimeout(() => {
+                        inputRef.current.style.height = 'auto';
+                        inputRef.current.style.height = `${Math.min(inputRef.current.scrollHeight, 400)}px`;
+                        inputRef.current.focus();
+                    }, 0);
+                }
+            }
+        } catch (error) {
+            console.error('Error processing audio:', error);
+            alert('Failed to process audio.');
+        }
+    };
+
+    const toggleRecording = () => {
+        if (isRecording) {
+            stopRecording();
+        } else {
+            startRecording();
+        }
+    };
+
     useEffect(() => {
         if (testTypeId && projectId && token) {
             fetchChats();
-            createNewChat();
         }
     }, [testTypeId, projectId, token]);
 
@@ -534,8 +548,8 @@ const Chat = () => {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 className={`rounded-xl cursor-pointer transition-all group ${currentChat?._id === chat._id
-                                                        ? 'bg-gradient-to-r from-sky-100 to-blue-100 dark:from-sky-900/30 dark:to-blue-900/30 border-2 border-sky-300 dark:border-sky-600 shadow-sm'
-                                                        : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
+                                                    ? 'bg-gradient-to-r from-sky-100 to-blue-100 dark:from-sky-900/30 dark:to-blue-900/30 border-2 border-sky-300 dark:border-sky-600 shadow-sm'
+                                                    : 'bg-white dark:bg-gray-700 hover:bg-gray-50 dark:hover:bg-gray-600 border border-gray-200 dark:border-gray-600'
                                                     }`}
                                                 onClick={() => loadChat(chat._id)}
                                             >
@@ -601,8 +615,8 @@ const Chat = () => {
                                                                 >
                                                                     <Pin
                                                                         className={`w-3.5 h-3.5 ${chat.isPinned
-                                                                                ? 'fill-sky-500 text-sky-500 dark:fill-sky-400 dark:text-sky-400'
-                                                                                : 'text-gray-500 dark:text-gray-400'
+                                                                            ? 'fill-sky-500 text-sky-500 dark:fill-sky-400 dark:text-sky-400'
+                                                                            : 'text-gray-500 dark:text-gray-400'
                                                                             }`}
                                                                     />
                                                                 </button>
@@ -635,13 +649,6 @@ const Chat = () => {
                 {/* Messages Area */}
                 <div className="flex-1 overflow-y-auto">
                     {!currentChat ? (
-                        <div className="h-full flex items-center justify-center px-4">
-                            <div className="text-center max-w-md">
-                                <Loader2 className="w-16 h-16 mx-auto mb-4 text-sky-500 dark:text-sky-400 animate-spin" />
-                                <p className="text-gray-600 dark:text-gray-300 text-lg">Initializing chat...</p>
-                            </div>
-                        </div>
-                    ) : messages.length === 0 ? (
                         <div className="h-full flex items-center justify-center px-4">
                             <div className="text-center max-w-2xl">
                                 {!isSidebarOpen && (
@@ -708,8 +715,8 @@ const Chat = () => {
                                         )}
                                         <div
                                             className={`max-w-3xl ${message.role === 'user'
-                                                    ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-2xl rounded-tr-md px-5 py-3.5 shadow-lg'
-                                                    : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-md px-5 py-3.5 shadow-sm'
+                                                ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-2xl rounded-tr-md px-5 py-3.5 shadow-lg'
+                                                : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-md px-5 py-3.5 shadow-sm'
                                                 }`}
                                         >
                                             <MessageParser
@@ -720,8 +727,8 @@ const Chat = () => {
                                             <div className="flex items-center gap-2 mt-2">
                                                 <span
                                                     className={`text-xs ${message.role === 'user'
-                                                            ? 'text-sky-100'
-                                                            : 'text-gray-400 dark:text-gray-500'
+                                                        ? 'text-sky-100'
+                                                        : 'text-gray-400 dark:text-gray-500'
                                                         }`}
                                                 >
                                                     {new Date(message.timestamp).toLocaleTimeString([], {
@@ -769,6 +776,9 @@ const Chat = () => {
                                             setSelectedCommand(command);
                                             setShowCommandDropdown(false);
                                             setInputMessage((prev) => prev.replace(/@\s*$/, ''));
+                                            setTimeout(() => {
+                                                inputRef.current?.focus();
+                                            }, 100);
                                         }}
                                         onClose={() => setShowCommandDropdown(false)}
                                     />
@@ -826,17 +836,17 @@ const Chat = () => {
                                 <motion.div
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: 'auto' }}
-                                    className="mb-3 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-xl p-4"
+                                    className="mb-3 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-lg p-2"
                                 >
-                                    <div className="flex items-center gap-3">
-                                        <Loader2 className="w-5 h-5 animate-spin text-sky-500 dark:text-sky-400" />
+                                    <div className="flex items-center gap-2">
+                                        <Loader2 className="w-4 h-4 animate-spin text-sky-500 dark:text-sky-400" />
                                         <div className="flex-1">
-                                            <div className="text-sm text-sky-700 dark:text-sky-300 font-medium mb-2">
-                                                Uploading images... {Math.round(uploadProgress)}%
+                                            <div className="text-xs text-sky-700 dark:text-sky-300 font-medium">
+                                                {Math.round(uploadProgress)}%
                                             </div>
-                                            <div className="w-full bg-sky-200 dark:bg-sky-800 rounded-full h-2 overflow-hidden">
+                                            <div className="w-full bg-sky-200 dark:bg-sky-800 rounded-full h-1 overflow-hidden mt-1">
                                                 <motion.div
-                                                    className="bg-gradient-to-r from-sky-500 to-blue-600 h-2"
+                                                    className="bg-gradient-to-r from-sky-500 to-blue-600 h-1"
                                                     initial={{ width: 0 }}
                                                     animate={{ width: `${uploadProgress}%` }}
                                                     transition={{ duration: 0.3 }}
@@ -850,32 +860,17 @@ const Chat = () => {
                             <div className="w-full space-y-2">
                                 {isRecording && (
                                     <motion.div
-                                        initial={{ opacity: 0, height: 0 }}
-                                        animate={{ opacity: 1, height: 'auto' }}
-                                        className="flex items-center gap-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl p-3"
+                                        initial={{ opacity: 0, scale: 0.95 }}
+                                        animate={{ opacity: 1, scale: 1 }}
+                                        className="flex items-center gap-2 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg px-3 py-2"
                                     >
-                                        <div className="flex items-center gap-2">
-                                            <div className="w-3 h-3 bg-red-500 rounded-full animate-pulse" />
-                                            <span className="text-sm font-semibold text-red-700 dark:text-red-300">
-                                                Recording
-                                            </span>
-                                        </div>
-                                        <span className="text-sm text-red-600 dark:text-red-400 font-mono">
-                                            {formatTime(recordingTime)}
-                                        </span>
-                                        <div className="flex-1 flex items-center gap-2 px-2">
-                                            <div className="flex gap-1">
-                                                <span className="w-1 h-3 bg-red-500 rounded-full animate-pulse" />
-                                                <span className="w-1 h-4 bg-red-500 rounded-full animate-pulse animation-delay-100" />
-                                                <span className="w-1 h-3 bg-red-500 rounded-full animate-pulse animation-delay-200" />
-                                            </div>
-                                            <span className="text-xs text-red-600 dark:text-red-400">Listening...</span>
-                                        </div>
+                                        <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" />
+                                        <span className="text-xs text-red-600 dark:text-red-400 font-medium">Recording...</span>
                                         <button
                                             onClick={stopRecording}
-                                            className="px-4 py-1.5 bg-red-500 hover:bg-red-600 text-white text-sm font-medium rounded-lg transition-colors shadow-sm"
+                                            className="ml-auto p-1 hover:bg-red-100 dark:hover:bg-red-900/30 rounded transition-colors"
                                         >
-                                            Stop
+                                            <StopCircle className="w-4 h-4 text-red-600 dark:text-red-400" />
                                         </button>
                                     </motion.div>
                                 )}
@@ -919,21 +914,6 @@ const Chat = () => {
                                             lineHeight: '24px'
                                         }}
                                     />
-
-                                    <button
-                                        onClick={toggleRecording}
-                                        disabled={isLoading || isUploading}
-                                        className={`p-2.5 rounded-xl transition-all flex-shrink-0 ${isRecording
-                                                ? 'bg-red-500 hover:bg-red-600 shadow-lg'
-                                                : 'hover:bg-gray-200 dark:hover:bg-gray-600'
-                                            }`}
-                                        title={isRecording ? 'Stop recording' : 'Start voice input'}
-                                    >
-                                        <Mic
-                                            className={`w-5 h-5 ${isRecording ? 'text-white' : 'text-gray-600 dark:text-gray-300'
-                                                }`}
-                                        />
-                                    </button>
 
                                     <button
                                         onClick={sendMessage}
