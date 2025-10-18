@@ -10,6 +10,7 @@ import {
 } from 'lucide-react';
 import { GoogleArrowDown } from '../utils/Icon';
 import { useAlert } from '@/app/script/Alert.context';
+import { useTestType } from '@/app/script/TestType.context';
 export const BUG_EVENTS = {
     CREATED: 'bug:created',
     UPDATED: 'bug:updated',
@@ -85,6 +86,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
         priority: ['High', 'Low', 'Medium', 'Critical'],
         status: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open']
     };
+    const { testTypeId } = useTestType();
 
     // Initialize speech recognition
     useEffect(() => {
@@ -204,7 +206,6 @@ const BugSidebar = ({ isOpen, onClose }) => {
         try {
             setIsSubmitting(true);
             const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
-            const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
             const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
             if (!projectId || !testTypeId || !token) {
