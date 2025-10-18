@@ -1200,9 +1200,37 @@ const AccessControlSystem = () => {
 };
 
 // Access List Item Component
+// Add a check at the beginning of AccessListItem component to handle deleted users
 const AccessListItem = ({ access, onRevoke, onUpdate, loading }) => {
   const [showActions, setShowActions] = useState(false);
   const [showAccessLevelDropdown, setShowAccessLevelDropdown] = useState(false);
+
+  // Handle deleted user case
+  if (!access.userId) {
+    return (
+      <motion.div
+        initial={{ opacity: 0, y: 10 }}
+        animate={{ opacity: 1, y: 0 }}
+        className="p-4 bg-red-50 dark:bg-red-900/10 border-l-4 border-red-500"
+      >
+        <div className="flex items-center justify-between">
+          <div className="flex items-center space-x-3">
+            <div className="w-10 h-10 bg-gray-300 dark:bg-gray-600 rounded-full flex items-center justify-center text-white font-semibold">
+              ?
+            </div>
+            <div>
+              <h4 className="font-medium text-gray-900 dark:text-gray-100">
+                Deleted User
+              </h4>
+              <p className="text-sm text-gray-500 dark:text-gray-400">
+                This user has been deleted from the system
+              </p>
+            </div>
+          </div>
+        </div>
+      </motion.div>
+    );
+  }
 
   const getLevelColor = (level) => {
     switch (level) {
@@ -1293,11 +1321,14 @@ const AccessListItem = ({ access, onRevoke, onUpdate, loading }) => {
                     return (
                       <button
                         key={level.value}
+                        // Fix for access level update button - around line 1295
                         onClick={() => {
-                          onUpdate(access.userId._id, level.value);
-                          setShowAccessLevelDropdown(false);
+                          if (access.userId) {
+                            onUpdate(access.userId._id, level.value);
+                            setShowAccessLevelDropdown(false);
+                          }
                         }}
-                        disabled={loading}
+                        disabled={loading || !access.userId}
                         className={`w-full px-3 py-2 text-sm text-left flex items-center space-x-2 hover:bg-gray-50 dark:hover:bg-gray-600 ${access.accessLevel === level.value
                           ? "bg-blue-50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400"
                           : "text-gray-700 dark:text-gray-300"
@@ -1315,12 +1346,13 @@ const AccessListItem = ({ access, onRevoke, onUpdate, loading }) => {
 
           <AnimatePresence>
             {showActions && (
+              // Fix for AccessListItem component - Update the revoke button onClick
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
                 exit={{ opacity: 0, scale: 0.9 }}
-                onClick={() => onRevoke(access.userId._id)}
-                disabled={loading}
+                onClick={() => access.userId && onRevoke(access.userId._id)}
+                disabled={loading || !access.userId}
                 className="ml-2 p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                 title="Revoke Access"
               >

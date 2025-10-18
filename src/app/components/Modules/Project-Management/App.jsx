@@ -3,9 +3,9 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FiPlus, FiEdit, FiTrash2, FiSearch, FiFilter,
-  FiChevronLeft, FiChevronRight, FiEye, FiUser,
-  FiBarChart2, FiFolder, FiHome, FiUsers, FiSettings
+  FiPlus, FiEdit, FiTrash2, FiSearch,
+  FiChevronLeft, FiChevronRight, FiEye,
+  FiFolder
 } from 'react-icons/fi';
 import { useAlert } from '@/app/script/Alert.context';
 import { useConfirm } from '@/app/script/Confirm.context';
@@ -34,7 +34,6 @@ const emitProjectEvent = (eventType, projectData = null) => {
 const ProjectManagement = () => {
   const [projects, setProjects] = useState([]);
   const [myProjects, setMyProjects] = useState([]);
-  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
   const [activeTab, setActiveTab] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
@@ -90,7 +89,6 @@ const ProjectManagement = () => {
 
       return await response.json();
     } catch (error) {
-      console.error('API Error:', error);
       showAlert({
         type: 'error',
         message: error.message
@@ -116,13 +114,6 @@ const ProjectManagement = () => {
       setPagination(result.pagination);
     }
     setLoading(false);
-  };
-
-  const fetchStats = async () => {
-    const result = await apiCall('/admin/stats');
-    if (result) {
-      setStats(result.stats);
-    }
   };
 
   const handleSubmitProject = async (e) => {
@@ -164,7 +155,6 @@ const ProjectManagement = () => {
         setSelectedProject(null);
         setFormData({ projectName: '', projectDesc: '' });
         fetchProjects();
-        fetchStats();
       }
     } finally {
       setSaving(false);
@@ -192,16 +182,13 @@ const ProjectManagement = () => {
         });
 
         emitProjectEvent(PROJECT_EVENTS.DELETED, project);
-
         fetchProjects();
-        fetchStats();
       }
     }
   };
 
   useEffect(() => {
     fetchProjects();
-    fetchStats();
   }, [activeTab]);
 
   useEffect(() => {
@@ -221,7 +208,7 @@ const ProjectManagement = () => {
           <div className="border-b border-gray-200 dark:border-gray-700">
             <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
               <div className="flex space-x-4">
-                {['all', 'my', 'stats'].map((tab) => (
+                {['all', 'my'].map((tab) => (
                   <button
                     key={tab}
                     onClick={() => setActiveTab(tab)}
@@ -232,7 +219,6 @@ const ProjectManagement = () => {
                   >
                     {tab === 'all' && 'All Projects'}
                     {tab === 'my' && 'My Projects'}
-                    {tab === 'stats' && 'Statistics'}
                   </button>
                 ))}
               </div>
@@ -261,25 +247,21 @@ const ProjectManagement = () => {
           </div>
 
           <div className="p-6">
-            {activeTab === 'stats' ? (
-              <StatsView stats={stats} />
-            ) : (
-              <ProjectsView
-                projects={currentProjects}
-                loading={loading}
-                pagination={pagination}
-                onPageChange={fetchProjects}
-                onEdit={(project) => {
-                  setSelectedProject(project);
-                  setFormData({
-                    projectName: project.projectName,
-                    projectDesc: project.projectDesc
-                  });
-                  setShowCreateModal(true);
-                }}
-                onDelete={handleDeleteProject}
-              />
-            )}
+            <ProjectsView
+              projects={currentProjects}
+              loading={loading}
+              pagination={pagination}
+              onPageChange={fetchProjects}
+              onEdit={(project) => {
+                setSelectedProject(project);
+                setFormData({
+                  projectName: project.projectName,
+                  projectDesc: project.projectDesc
+                });
+                setShowCreateModal(true);
+              }}
+              onDelete={handleDeleteProject}
+            />
           </div>
         </div>
       </div>
@@ -479,99 +461,6 @@ const ProjectCard = ({ project, index, onEdit, onDelete }) => {
         </span>
       </div>
     </motion.div>
-  );
-};
-
-const StatsView = ({ stats }) => {
-  if (!stats) {
-    return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-400 mx-auto"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
-      >
-        <div className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 dark:from-blue-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Total Projects</p>
-              <p className="text-4xl font-bold text-gray-900 dark:text-gray-100 mt-3 mb-1">
-                {stats?.totalProjects || 0}
-              </p>
-            </div>
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
-              <FiFolder className="h-7 w-7 text-white dark:text-gray-100" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 dark:from-emerald-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Recent Projects</p>
-              <p className="text-4xl font-bold text-gray-900 dark:text-gray-100 mt-3">
-                {stats?.recentProjectsCount || 0}
-              </p>
-              <p className="text-xs font-medium text-gray-400 dark:text-gray-500 mt-2 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 dark:bg-emerald-400" />
-                Last 30 days
-              </p>
-            </div>
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 dark:from-emerald-600 dark:to-emerald-700 shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
-              <FiBarChart2 className="h-7 w-7 text-white dark:text-gray-100" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group relative bg-white dark:bg-gray-800 rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 dark:border-gray-700 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 dark:from-purple-900/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wide">Top Contributors</p>
-              <p className="text-4xl font-bold text-gray-900 dark:text-gray-100 mt-3 mb-1">
-                {stats?.projectsByUser?.length || 0}
-              </p>
-            </div>
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 dark:from-purple-600 dark:to-purple-700 shadow-purple-500/30 group-hover:scale-110 transition-transform duration-300">
-              <FiUsers className="h-7 w-7 text-white dark:text-gray-100" />
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      <div>
-        <h3 className="text-lg font-semibold text-gray-900 dark:text-gray-100 mb-4">Recent Projects</h3>
-        <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-6">
-          {stats.recentProjects?.map((project, index) => (
-            <motion.div
-              key={project._id}
-              initial={{ opacity: 0, y: 10 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ delay: index * 0.1 }}
-              className="flex items-center justify-between py-3 border-b border-gray-200 dark:border-gray-700 last:border-b-0"
-            >
-              <div>
-                <p className="font-medium text-gray-900 dark:text-gray-100">{project.projectName}</p>
-                <p className="text-sm text-gray-500 dark:text-gray-400">by {project.user?.name}</p>
-              </div>
-              <span className="text-sm text-gray-500 dark:text-gray-400">
-                {new Date(project.createdAt).toLocaleDateString()}
-              </span>
-            </motion.div>
-          ))}
-        </div>
-      </div>
-    </div>
   );
 };
 

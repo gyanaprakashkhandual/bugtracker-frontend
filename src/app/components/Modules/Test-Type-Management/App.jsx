@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
   FiPlus, FiEdit, FiTrash2, FiSearch,
   FiChevronLeft, FiChevronRight, FiEye,
-  FiBarChart2, FiFolder, FiGitBranch, FiChevronDown, FiCheck
+  FiFolder, FiChevronDown, FiCheck
 } from 'react-icons/fi';
 import { useAlert } from '@/app/script/Alert.context';
 import { useConfirm } from '@/app/script/Confirm.context';
@@ -14,10 +14,7 @@ import { useProject } from '@/app/script/Project.context';
 const TestTypeManagement = () => {
   const { selectedProject } = useProject();
   const [testTypes, setTestTypes] = useState([]);
-  const [projectTestTypes, setProjectTestTypes] = useState([]);
-  const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedTestType, setSelectedTestType] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -32,17 +29,12 @@ const TestTypeManagement = () => {
 
   const [formData, setFormData] = useState({
     testTypeName: '',
-    testTypeDesc: '',
-    testFramework: 'Selenium'
+    testTypeDesc: ''
   });
-  const [frameworkDropdownOpen, setFrameworkDropdownOpen] = useState(false);
 
   const { showAlert } = useAlert();
   const { showConfirm } = useConfirm();
 
-  const frameworks = ['Selenium', 'Cypress', 'Playwright', 'Jest', 'Mocha', 'JUnit', 'TestNG', 'PyTest'];
-
-  // Get token from localStorage
   const getToken = () => {
     if (typeof window !== 'undefined') {
       const token = localStorage.getItem('token');
@@ -51,7 +43,6 @@ const TestTypeManagement = () => {
     return null;
   };
 
-  // API call function
   const apiCall = async (endpoint, options = {}) => {
     const token = getToken();
 
@@ -88,10 +79,17 @@ const TestTypeManagement = () => {
     }
   };
 
-  // Fetch all test types (for "All Test Types" tab)
-  const fetchAllTestTypes = async (page = 1, search = '') => {
+  const fetchTestTypes = async (page = 1, search = '') => {
+    if (!selectedProject || !selectedProject._id) {
+      showAlert({
+        type: 'error',
+        message: 'Please select a project first'
+      });
+      return;
+    }
+
     setLoading(true);
-    const endpoint = `/test-types?page=${page}&limit=8&search=${search}`;
+    const endpoint = `/projects/${selectedProject._id}/test-types?page=${page}&limit=8&search=${search}`;
     const result = await apiCall(endpoint);
 
     if (result) {
@@ -107,55 +105,10 @@ const TestTypeManagement = () => {
     setLoading(false);
   };
 
-  // Fetch project-specific test types (for "Project Test Types" tab)
-  const fetchProjectTestTypes = async (page = 1, search = '') => {
-    if (!selectedProject || !selectedProject.id) {
-      showAlert({
-        type: 'error',
-        message: 'Please select a project first'
-      });
-      return;
-    }
-
-    setLoading(true);
-    const endpoint = `/projects/${selectedProject.id}/test-types?page=${page}&limit=8&search=${search}`;
-    const result = await apiCall(endpoint);
-
-    if (result) {
-      setProjectTestTypes(result.testTypes || []);
-      setPagination(result.pagination || {
-        currentPage: 1,
-        totalPages: 1,
-        totalTestTypes: 0,
-        hasNext: false,
-        hasPrev: false
-      });
-    }
-    setLoading(false);
-  };
-
-  // Fetch test types based on active tab
-  const fetchTestTypes = async (page = 1, search = '') => {
-    if (activeTab === 'project') {
-      await fetchProjectTestTypes(page, search);
-    } else {
-      await fetchAllTestTypes(page, search);
-    }
-  };
-
-  // Fetch statistics
-  const fetchStats = async () => {
-    const result = await apiCall('/test-types/stats');
-    if (result) {
-      setStats(result.stats || result);
-    }
-  };
-
-  // Create test type
   const handleCreateTestType = async (e) => {
     e.preventDefault();
 
-    if (!selectedProject || !selectedProject.id) {
+    if (!selectedProject || !selectedProject._id) {
       showAlert({
         type: 'error',
         message: 'Please select a project first'
@@ -166,7 +119,7 @@ const TestTypeManagement = () => {
     setSaving(true);
 
     try {
-      const result = await apiCall(`/projects/${selectedProject.id}/test-types`, {
+      const result = await apiCall(`/projects/${selectedProject._id}/test-types`, {
         method: 'POST',
         body: JSON.stringify(formData)
       });
@@ -177,16 +130,14 @@ const TestTypeManagement = () => {
           message: `"${formData.testTypeName}" created successfully`
         });
         setShowCreateModal(false);
-        setFormData({ testTypeName: '', testTypeDesc: '', testFramework: 'Selenium' });
+        setFormData({ testTypeName: '', testTypeDesc: '' });
         fetchTestTypes();
-        fetchStats();
       }
     } finally {
       setSaving(false);
     }
   };
 
-  // Update test type
   const handleUpdateTestType = async (e) => {
     e.preventDefault();
     setSaving(true);
@@ -204,16 +155,14 @@ const TestTypeManagement = () => {
         });
         setShowCreateModal(false);
         setSelectedTestType(null);
-        setFormData({ testTypeName: '', testTypeDesc: '', testFramework: 'Selenium' });
+        setFormData({ testTypeName: '', testTypeDesc: '' });
         fetchTestTypes();
-        fetchStats();
       }
     } finally {
       setSaving(false);
     }
   };
 
-  // Handle form submission (create or update)
   const handleSubmitTestType = async (e) => {
     if (selectedTestType) {
       await handleUpdateTestType(e);
@@ -222,7 +171,6 @@ const TestTypeManagement = () => {
     }
   };
 
-  // Delete test type permanently
   const handleDeleteTestType = async (testType) => {
     const result = await showConfirm({
       title: `Delete "${testType.testTypeName}"?`,
@@ -243,12 +191,10 @@ const TestTypeManagement = () => {
           message: `"${testType.testTypeName}" deleted successfully`,
         });
         fetchTestTypes();
-        fetchStats();
       }
     }
   };
 
-  // Move to trash
   const handleMoveToTrash = async (testType) => {
     const result = await showConfirm({
       title: `Move "${testType.testTypeName}" to trash?`,
@@ -269,88 +215,66 @@ const TestTypeManagement = () => {
           message: `"${testType.testTypeName}" moved to trash`,
         });
         fetchTestTypes();
-        fetchStats();
       }
     }
   };
-
-  // Initial data fetch
   useEffect(() => {
-    fetchTestTypes();
-    fetchStats();
-  }, [activeTab]);
-
-  // Fetch project test types when selectedProject changes
-  useEffect(() => {
-    if (selectedProject && activeTab === 'project') {
-      fetchProjectTestTypes(1, searchTerm);
+    if (selectedProject && selectedProject._id) {
+      fetchTestTypes();
     }
-  }, [selectedProject]);
+  }, [selectedProject?._id]);
 
-  // Handle search
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
       fetchTestTypes(1, searchTerm);
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm, activeTab]);
+  }, [searchTerm]);
 
-  const currentTestTypes = activeTab === 'project' ? projectTestTypes : testTypes;
-
-  if (!selectedProject || !selectedProject.id) {
+  if (!selectedProject || !selectedProject._id) {
     return (
-      <div className="bg-gray-50 min-h-screen flex items-center justify-center">
+      <div className="bg-gray-50 dark:bg-gray-900 min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <FiFolder className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-          <h3 className="text-lg font-medium text-gray-900 mb-2">No Project Selected</h3>
-          <p className="text-gray-500">Please select a project to manage test types</p>
+          <FiFolder className="h-16 w-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No Project Selected</h3>
+          <p className="text-gray-500 dark:text-gray-400">Please select a project to manage test types</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="bg-gray-50">
+    <div className="bg-gray-50 dark:bg-gray-900">
       <div className="max-w-full mx-auto">
-        {/* Main Content */}
-        <div className="bg-white rounded-sm">
-          {/* Tabs and Search */}
-          <div className="border-b border-gray-200">
+        <div className="bg-white dark:bg-gray-800 rounded-sm">
+          <div className="border-b border-gray-200 dark:border-gray-700">
             <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-              <div className="flex space-x-4">
-                {['all', 'project', 'stats'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === tab
-                      ? 'bg-blue-100 text-blue-700'
-                      : 'text-gray-600 hover:text-gray-900'
-                      }`}
-                  >
-                    {tab === 'all' && 'All Test Types'}
-                    {tab === 'project' && 'Project Test Types'}
-                    {tab === 'stats' && 'Statistics'}
-                  </button>
-                ))}
+              <div className="flex items-center space-x-3">
+                <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                  {selectedProject?.projectName} - Test Types
+                </h2>
+                <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2.5 py-0.5 rounded-full text-sm font-medium">
+                  {pagination.totalTestTypes} test types
+                </span>
               </div>
 
               <div className="flex items-center space-x-4">
                 <div className="relative">
-                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 h-5 w-5" />
+                  <FiSearch className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 h-5 w-5" />
                   <input
                     type="text"
                     placeholder="Search test types..."
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
-                    className="pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 w-64"
+                    className="pl-10 pr-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100 w-64"
                   />
                 </div>
                 <motion.button
                   whileHover={{ scale: 1.05 }}
                   whileTap={{ scale: 0.95 }}
                   onClick={() => setShowCreateModal(true)}
-                  className="bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 transition-colors"
+                  className="bg-blue-600 dark:bg-blue-700 text-white px-4 py-2 rounded-lg flex items-center space-x-2 hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors"
                 >
                   <FiPlus className="h-5 w-5" />
                   <span>New Test Type</span>
@@ -359,34 +283,27 @@ const TestTypeManagement = () => {
             </div>
           </div>
 
-          {/* Content Area */}
           <div className="p-6">
-            {activeTab === 'stats' ? (
-              <StatsView stats={stats} />
-            ) : (
-              <TestTypesView
-                testTypes={currentTestTypes}
-                loading={loading}
-                pagination={pagination}
-                onPageChange={fetchTestTypes}
-                onEdit={(testType) => {
-                  setSelectedTestType(testType);
-                  setFormData({
-                    testTypeName: testType.testTypeName,
-                    testTypeDesc: testType.testTypeDesc,
-                    testFramework: testType.testFramework
-                  });
-                  setShowCreateModal(true);
-                }}
-                onDelete={handleDeleteTestType}
-                onMoveToTrash={handleMoveToTrash}
-              />
-            )}
+            <TestTypesView
+              testTypes={testTypes}
+              loading={loading}
+              pagination={pagination}
+              onPageChange={fetchTestTypes}
+              onEdit={(testType) => {
+                setSelectedTestType(testType);
+                setFormData({
+                  testTypeName: testType.testTypeName,
+                  testTypeDesc: testType.testTypeDesc
+                });
+                setShowCreateModal(true);
+              }}
+              onDelete={handleDeleteTestType}
+              onMoveToTrash={handleMoveToTrash}
+            />
           </div>
         </div>
       </div>
 
-      {/* Create/Edit Test Type Modal */}
       <AnimatePresence>
         {showCreateModal && (
           <Modal
@@ -394,13 +311,12 @@ const TestTypeManagement = () => {
             onClose={() => {
               setShowCreateModal(false);
               setSelectedTestType(null);
-              setFormData({ testTypeName: '', testTypeDesc: '', testFramework: 'Selenium' });
-              setFrameworkDropdownOpen(false);
+              setFormData({ testTypeName: '', testTypeDesc: '' });
             }}
           >
             <form onSubmit={handleSubmitTestType} className="space-y-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Test Type Name
                 </label>
                 <input
@@ -408,71 +324,23 @@ const TestTypeManagement = () => {
                   required
                   value={formData.testTypeName}
                   onChange={(e) => setFormData({ ...formData, testTypeName: e.target.value })}
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  className="w-full px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Enter test type name"
                   disabled={saving}
                 />
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
+                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                   Description
                 </label>
                 <textarea
                   value={formData.testTypeDesc}
                   onChange={(e) => setFormData({ ...formData, testTypeDesc: e.target.value })}
                   rows="4"
-                  className="w-full resize-none px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900"
+                  className="w-full resize-none px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 dark:focus:ring-blue-400 bg-white dark:bg-gray-700 text-gray-900 dark:text-gray-100"
                   placeholder="Enter test type description"
                   disabled={saving}
                 />
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-2">
-                  Test Framework
-                </label>
-                <div className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setFrameworkDropdownOpen(!frameworkDropdownOpen)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-1 focus:ring-blue-900 bg-white text-left flex items-center justify-between hover:bg-gray-50 transition-colors"
-                    disabled={saving}
-                  >
-                    <span className="text-gray-900">{formData.testFramework}</span>
-                    <FiChevronDown className={`h-4 w-4 text-gray-500 transition-transform ${frameworkDropdownOpen ? 'transform rotate-180' : ''}`} />
-                  </button>
-
-                  <AnimatePresence>
-                    {frameworkDropdownOpen && (
-                      <motion.div
-                        initial={{ opacity: 0, y: 10 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: 10 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute z-50 w-full bottom-full mb-1 bg-white border border-gray-300 rounded-lg shadow-lg max-h-60 overflow-auto"
-                      >
-                        {frameworks.map((framework) => (
-                          <button
-                            key={framework}
-                            type="button"
-                            onClick={() => {
-                              setFormData({ ...formData, testFramework: framework });
-                              setFrameworkDropdownOpen(false);
-                            }}
-                            className="w-full px-3 py-2 text-left hover:bg-gray-100 transition-colors flex items-center justify-between group"
-                            disabled={saving}
-                          >
-                            <span className={`text-sm ${formData.testFramework === framework ? 'font-semibold text-gray-900' : 'text-gray-700'}`}>
-                              {framework}
-                            </span>
-                            {formData.testFramework === framework && (
-                              <FiCheck className="h-4 w-4 text-blue-600" />
-                            )}
-                          </button>
-                        ))}
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
-                </div>
               </div>
               <div className="flex justify-end space-x-3 pt-4">
                 <button
@@ -480,10 +348,9 @@ const TestTypeManagement = () => {
                   onClick={() => {
                     setShowCreateModal(false);
                     setSelectedTestType(null);
-                    setFormData({ testTypeName: '', testTypeDesc: '', testFramework: 'Selenium' });
-                    setFrameworkDropdownOpen(false);
+                    setFormData({ testTypeName: '', testTypeDesc: '' });
                   }}
-                  className="px-4 py-2 text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors"
+                  className="px-4 py-2 text-gray-700 dark:text-gray-300 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
                   disabled={saving}
                 >
                   Cancel
@@ -491,7 +358,7 @@ const TestTypeManagement = () => {
                 <button
                   type="submit"
                   disabled={saving}
-                  className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 min-w-[120px] justify-center"
+                  className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center space-x-2 min-w-[120px] justify-center"
                 >
                   {saving ? (
                     <>
@@ -511,13 +378,12 @@ const TestTypeManagement = () => {
   );
 };
 
-// Test Types View Component
 const TestTypesView = ({ testTypes, loading, pagination, onPageChange, onEdit, onDelete, onMoveToTrash }) => {
   if (loading) {
     return (
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {[...Array(6)].map((_, i) => (
-          <div key={i} className="bg-gray-100 rounded-xl h-48 animate-pulse"></div>
+          <div key={i} className="bg-gray-100 dark:bg-gray-700 rounded-xl h-48 animate-pulse"></div>
         ))}
       </div>
     );
@@ -526,9 +392,9 @@ const TestTypesView = ({ testTypes, loading, pagination, onPageChange, onEdit, o
   if (testTypes.length === 0) {
     return (
       <div className="text-center py-12">
-        <FiFolder className="h-16 w-16 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">No test types found</h3>
-        <p className="text-gray-500">Get started by creating your first test type.</p>
+        <FiFolder className="h-16 w-16 text-gray-400 dark:text-gray-600 mx-auto mb-4" />
+        <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">No test types found</h3>
+        <p className="text-gray-500 dark:text-gray-400">Get started by creating your first test type.</p>
       </div>
     );
   }
@@ -548,26 +414,25 @@ const TestTypesView = ({ testTypes, loading, pagination, onPageChange, onEdit, o
         ))}
       </div>
 
-      {/* Pagination */}
       {pagination.totalPages > 1 && (
         <div className="flex justify-center items-center space-x-4 mt-8">
           <button
             onClick={() => onPageChange(pagination.currentPage - 1)}
             disabled={!pagination.hasPrev}
-            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
           >
             <FiChevronLeft className="h-5 w-5" />
             <span>Previous</span>
           </button>
 
-          <span className="text-sm text-gray-600">
+          <span className="text-sm text-gray-600 dark:text-gray-400">
             Page {pagination.currentPage} of {pagination.totalPages}
           </span>
 
           <button
             onClick={() => onPageChange(pagination.currentPage + 1)}
             disabled={!pagination.hasNext}
-            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 transition-colors"
+            className="flex items-center space-x-2 px-4 py-2 border border-gray-300 dark:border-gray-600 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors text-gray-700 dark:text-gray-300"
           >
             <span>Next</span>
             <FiChevronRight className="h-5 w-5" />
@@ -578,7 +443,6 @@ const TestTypesView = ({ testTypes, loading, pagination, onPageChange, onEdit, o
   );
 };
 
-// Test Type Card Component
 const TestTypeCard = ({ testType, index, onEdit, onDelete, onMoveToTrash }) => {
   return (
     <motion.div
@@ -586,14 +450,14 @@ const TestTypeCard = ({ testType, index, onEdit, onDelete, onMoveToTrash }) => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay: index * 0.1 }}
       whileHover={{ y: -4 }}
-      className="bg-white border border-gray-200 rounded-xl p-6 hover:shadow-lg transition-all duration-300"
+      className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-all duration-300"
     >
       <div className="flex justify-between items-start mb-4">
         <div>
-          <h3 className="font-semibold text-gray-900 text-lg mb-1 line-clamp-1">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg mb-1 line-clamp-1">
             {testType.testTypeName}
           </h3>
-          <p className="text-sm text-gray-500 mb-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
             by {testType.user?.name || 'Unknown User'}
           </p>
         </div>
@@ -602,7 +466,7 @@ const TestTypeCard = ({ testType, index, onEdit, onDelete, onMoveToTrash }) => {
             tooltip-data="Edit"
             tooltip-placement="bottom"
             onClick={() => onEdit(testType)}
-            className="p-2 text-gray-400 hover:text-blue-600 transition-colors"
+            className="p-2 text-gray-400 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
           >
             <FiEdit className="h-4 w-4" />
           </button>
@@ -610,181 +474,47 @@ const TestTypeCard = ({ testType, index, onEdit, onDelete, onMoveToTrash }) => {
             tooltip-data="Move to Trash"
             tooltip-placement="bottom"
             onClick={() => onMoveToTrash(testType)}
-            className="p-2 text-gray-400 hover:text-red-600 transition-colors"
+            className="p-2 text-gray-400 hover:text-red-600 dark:hover:text-red-400 transition-colors"
           >
             <FiTrash2 className="h-4 w-4" />
           </button>
         </div>
       </div>
 
-      <p className="text-gray-600 text-sm mb-4 line-clamp-2">
+      <p className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
         {testType.testTypeDesc || 'No description provided'}
       </p>
 
       <div className="flex items-center justify-between">
-        <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-          <FiGitBranch className="h-3 w-3 mr-1" />
-          {testType.testFramework}
-        </span>
-        <span className="text-xs text-gray-500">
-          {new Date(testType.createdAt).toLocaleDateString()}
+        <span className="text-xs text-gray-500 dark:text-gray-400">
+          Created: {new Date(testType.createdAt).toLocaleDateString()}
         </span>
       </div>
     </motion.div>
   );
 };
 
-// Statistics View Component
-const StatsView = ({ stats }) => {
-  if (!stats) {
-    return (
-      <div className="text-center py-12">
-        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-      </div>
-    );
-  }
-
-  return (
-    <div className="space-y-8">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ delay: 0.1 }}
-        className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8"
-      >
-        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-blue-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Total Test Types</p>
-              <p className="text-4xl font-bold text-gray-900 mt-3 mb-1">
-                {stats?.totalTestTypes || 0}
-              </p>
-            </div>
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 shadow-blue-500/30 group-hover:scale-110 transition-transform duration-300">
-              <FiFolder className="h-7 w-7 text-white" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-emerald-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Active Frameworks</p>
-              <p className="text-4xl font-bold text-gray-900 mt-3">
-                {stats?.testTypesByFramework?.length || 0}
-              </p>
-              <p className="text-xs font-medium text-gray-400 mt-2 flex items-center gap-1">
-                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500" />
-                Different frameworks
-              </p>
-            </div>
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-emerald-500 to-emerald-600 shadow-emerald-500/30 group-hover:scale-110 transition-transform duration-300">
-              <FiGitBranch className="h-7 w-7 text-white" />
-            </div>
-          </div>
-        </div>
-
-        <div className="group relative bg-white rounded-2xl shadow-sm hover:shadow-xl transition-all duration-300 p-6 border border-gray-100 overflow-hidden">
-          <div className="absolute inset-0 bg-gradient-to-br from-purple-50/50 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-          <div className="relative flex items-center justify-between">
-            <div className="flex-1">
-              <p className="text-sm font-semibold text-gray-500 uppercase tracking-wide">Recent Test Types</p>
-              <p className="text-4xl font-bold text-gray-900 mt-3 mb-1">
-                {stats?.recentTestTypes?.length || 0}
-              </p>
-            </div>
-            <div className="flex items-center justify-center w-16 h-16 rounded-2xl bg-gradient-to-br from-purple-500 to-purple-600 shadow-purple-500/30 group-hover:scale-110 transition-transform duration-300">
-              <FiBarChart2 className="h-7 w-7 text-white" />
-            </div>
-          </div>
-        </div>
-      </motion.div>
-
-      {/* Framework Distribution */}
-      {stats.testTypesByFramework && stats.testTypesByFramework.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Framework Distribution</h3>
-          <div className="bg-gray-50 rounded-lg p-6">
-            {stats.testTypesByFramework.map((item, index) => (
-              <motion.div
-                key={item._id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="flex items-center justify-between py-3 border-b border-gray-200 last:border-b-0"
-              >
-                <div className="flex items-center">
-                  <FiGitBranch className="h-4 w-4 text-gray-500 mr-3" />
-                  <span className="font-medium text-gray-900">{item._id}</span>
-                </div>
-                <span className="bg-blue-100 text-blue-800 px-2.5 py-0.5 rounded-full text-sm font-medium">
-                  {item.count} test types
-                </span>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
-
-      {/* Recent Test Types */}
-      {stats.recentTestTypes && stats.recentTestTypes.length > 0 && (
-        <div>
-          <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Test Types</h3>
-          <div className="bg-gray-50 rounded-lg p-6">
-            {stats.recentTestTypes.map((testType, index) => (
-              <motion.div
-                key={testType._id}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ delay: index * 0.1 }}
-                className="flex items-center justify-between py-3 border-b border-gray-200 last:border-b-0"
-              >
-                <div>
-                  <p className="font-medium text-gray-900">{testType.testTypeName}</p>
-                  <p className="text-sm text-gray-500">by {testType.user?.name} • {testType.project?.projectName}</p>
-                </div>
-                <div className="flex items-center space-x-4">
-                  <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                    <FiGitBranch className="h-3 w-3 mr-1" />
-                    {testType.testFramework}
-                  </span>
-                  <span className="text-sm text-gray-500">
-                    {new Date(testType.createdAt).toLocaleDateString()}
-                  </span>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      )}
-    </div>
-  );
-};
-
-// Modal Component
 const Modal = ({ title, children, onClose }) => {
   return (
     <motion.div
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-gray-100 bg-opacity-50 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-gray-100 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-50 flex items-center justify-center p-4 z-50"
       onClick={onClose}
     >
       <motion.div
         initial={{ opacity: 0, scale: 0.9 }}
         animate={{ opacity: 1, scale: 1 }}
         exit={{ opacity: 0, scale: 0.9 }}
-        className="bg-white rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
+        className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-xl font-semibold text-gray-900">{title}</h2>
+        <div className="flex justify-between items-center p-6 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">{title}</h2>
           <button
             onClick={onClose}
-            className="text-gray-400 hover:text-gray-600 transition-colors"
+            className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
             <FiEye className="h-6 w-6" />
           </button>
