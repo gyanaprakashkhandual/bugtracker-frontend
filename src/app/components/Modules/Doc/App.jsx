@@ -59,10 +59,10 @@ export default function DocumentManagement() {
         setDocuments(data);
         setFilteredDocs(data);
       } else {
-        showAlert({ type: 'error', message: 'Failed to fetch documents' });
+        showAlert('Failed to fetch documents', 'error');
       }
     } catch (error) {
-      showAlert({ type: 'error', message: 'Error fetching documents' });
+      showAlert('Error fetching documents', 'error');
     } finally {
       setLoading(false);
     }
@@ -83,7 +83,7 @@ export default function DocumentManagement() {
 
   const handleCreateDocument = async () => {
     if (!formData.title.trim()) {
-      showAlert({ type: 'error', message: 'Please enter a title' });
+      showAlert('Please enter a title', 'error');
       return;
     }
 
@@ -103,21 +103,21 @@ export default function DocumentManagement() {
       });
 
       if (response.ok) {
-        showAlert({ type: 'success', message: 'Document created successfully' });
+        showAlert('Document created successfully', 'success');
         setIsCreateModalOpen(false);
         setFormData({ title: '', content: '', project: projectId, testType: testTypeId });
         fetchDocuments();
       } else {
-        showAlert({ type: 'error', message: 'Failed to create document' });
+        showAlert('Failed to create document', 'error');
       }
     } catch (error) {
-      showAlert({ type: 'error', message: 'Error creating document' });
+      showAlert('Error creating document', 'error');
     }
   };
 
   const handleUpdateDocument = async () => {
     if (!formData.title.trim()) {
-      showAlert({ type: 'error', message: 'Please enter a title' });
+      showAlert('Please enter a title', 'error');
       return;
     }
 
@@ -137,16 +137,16 @@ export default function DocumentManagement() {
       });
 
       if (response.ok) {
-        showAlert({ type: 'success', message: 'Document updated successfully' });
+        showAlert('Document updated successfully', 'success');
         setIsEditModalOpen(false);
         setCurrentDoc(null);
         setFormData({ title: '', content: '', project: projectId, testType: testTypeId });
         fetchDocuments();
       } else {
-        showAlert({ type: 'error', message: 'Failed to update document' });
+        showAlert('Failed to update document', 'error');
       }
     } catch (error) {
-      showAlert({ type: 'error', message: 'Error updating document' });
+      showAlert('Error updating document', 'error');
     }
   };
 
@@ -164,13 +164,13 @@ export default function DocumentManagement() {
       });
 
       if (response.ok) {
-        showAlert({ type: 'success', message: 'Document deleted successfully' });
+        showAlert('Document deleted successfully', 'success');
         fetchDocuments();
       } else {
-        showAlert({ type: 'error', message: 'Failed to delete document' });
+        showAlert('Failed to delete document', 'error');
       }
     } catch (error) {
-      showAlert({ type: 'error', message: 'Error deleting document' });
+      showAlert('Error deleting document', 'error');
     }
   };
 
@@ -186,10 +186,22 @@ export default function DocumentManagement() {
   };
 
   const handleOpenDocument = (doc) => {
-    // Set the selected document in context
+    console.log('🚀 Opening document:', doc);
+
+    // Set the selected document in context FIRST
     setSelectedDoc(doc._id, doc.title);
-    // Use project slug from URL params and document slug
-    router.push(`/app/projects/${slug}/doc/${doc.slug}`);
+
+    console.log('✅ Document context set with:', {
+      docId: doc._id,
+      docName: doc.title,
+      slug: doc.slug
+    });
+
+    // Small delay to ensure context is updated before navigation
+    setTimeout(() => {
+      // Use project slug from URL params and document slug
+      router.push(`/app/projects/${slug}/doc/${doc.slug}`);
+    }, 100);
   };
 
   return (
