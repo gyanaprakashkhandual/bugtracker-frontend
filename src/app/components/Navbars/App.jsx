@@ -15,6 +15,7 @@ import {
     Sun,
     Moon
 } from 'lucide-react';
+import { useTheme } from '@/app/script/Theme.context';
 import { useProject } from '@/app/script/Project.context';
 import { GoogleArrowDown } from '@/app/components/utils/Icon';
 import UserManagementDashboard from '../Modules/User-Management/App';
@@ -41,6 +42,8 @@ const AppNavbar = () => {
     const [isComponentLoading, setIsComponentLoading] = useState(false);
     const { selectedProject } = useProject();
     const router = useRouter();
+
+    const { theme, toggleTheme } = useTheme();
 
     const getToken = () => {
         if (typeof window !== 'undefined') {
@@ -274,13 +277,14 @@ const AppNavbar = () => {
                         <div className="flex items-center space-x-1 sm:space-x-1.5 md:space-x-2 flex-shrink-0">
                             {/* Theme Toggle Button */}
                             <motion.button
-                                onClick={() => setIsDarkMode(!isDarkMode)}
+                                onClick={toggleTheme} // ✅ Uses Theme Context
                                 className="p-2 rounded-lg transition-all bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >
+                                {/* Animated Icon Switch */}
                                 <AnimatePresence mode="wait">
-                                    {isDarkMode ? (
+                                    {theme === 'dark' ? ( // ✅ Use `theme` from context
                                         <motion.div
                                             key="moon"
                                             initial={{ rotate: -90, opacity: 0 }}
