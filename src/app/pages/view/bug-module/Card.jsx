@@ -56,6 +56,9 @@ const BugCardView = () => {
     const [currentPage, setCurrentPage] = useState(1);
     const [totalPages, setTotalPages] = useState(1);
     const [totalBugs, setTotalBugs] = useState(0);
+    const [originalBugs, setOriginalBugs] = useState([]);
+    const [filteredBug, setFilteredBugs] = useState([]);
+    const [isFiltered, setIsFiltered] = useState(false);
     const itemsPerPage = 12;
     const fileInputRef = useRef(null);
     const { showAlert } = useAlert();
@@ -148,6 +151,44 @@ const BugCardView = () => {
         };
     }, []);
 
+    useEffect(() => {
+        const handleFiltersApplied = (event) => {
+            const { data, reportType } = event.detail;
+
+            if (reportType === 'bug') {
+                setFilteredBugs(data.bugs || data || []);
+                setIsFiltered(true);
+                setCurrentPage(1);
+                setTotalPages(data.pagination?.totalPages || 1);
+                setTotalBugs(data.pagination?.totalBugs || data.length || 0);
+
+                console.log('Filtered bugs received:', data);
+            }
+        };
+
+        const handleFiltersReset = (event) => {
+            const { reportType } = event.detail;
+
+            if (reportType === 'bug') {
+                setFilteredBugs([]);
+                setIsFiltered(false);
+                setCurrentPage(1);
+                // Refetch original data
+                fetchBugs();
+
+                console.log('Filters reset - showing all bugs');
+            }
+        };
+
+        window.addEventListener('filtersApplied', handleFiltersApplied);
+        window.addEventListener('filtersReset', handleFiltersReset);
+
+        return () => {
+            window.removeEventListener('filtersApplied', handleFiltersApplied);
+            window.removeEventListener('filtersReset', handleFiltersReset);
+        };
+    }, [projectId, testTypeId, token]);
+
     const fetchBugs = useCallback(async () => {
         if (!projectId || !testTypeId || !token) {
             setLoading(false);
@@ -165,7 +206,7 @@ const BugCardView = () => {
             );
             if (!response.ok) throw new Error('Failed to fetch bugs');
             const data = await response.json();
-            setBugs(data.bugs || []);
+            setOriginalBugs(data.bugs || []);
             setTotalPages(data.pagination?.totalPages || 1);
             setTotalBugs(data.pagination?.totalBugs || 0);
         } catch (error) {
@@ -177,6 +218,18 @@ const BugCardView = () => {
             setLoading(false);
         }
     }, [projectId, testTypeId, token, currentPage]);
+
+    // Fetch bugs when component mounts or page changes
+    useEffect(() => {
+        if (!isFiltered) {
+            fetchBugs();
+        }
+    }, [fetchBugs, isFiltered, currentPage]);
+
+    // Use filtered data when filters are applied, otherwise use original data
+    const displayBugs = isFiltered ? filteredBugs : originalBugs;
+
+
 
     const fetchComments = async (bugId) => {
         if (!token || !bugId) return;
