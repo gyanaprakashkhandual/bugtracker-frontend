@@ -35,6 +35,8 @@
     "@tiptap/extension-underline": "^3.7.2",
     "@tiptap/react": "^3.7.2",
     "@tiptap/starter-kit": "^3.7.2",
+    "ag-grid-community": "^34.2.0",
+    "ag-grid-react": "^34.2.0",
     "axios": "^1.12.2",
     "chart.js": "^4.5.0",
     "framer-motion": "^12.23.12",

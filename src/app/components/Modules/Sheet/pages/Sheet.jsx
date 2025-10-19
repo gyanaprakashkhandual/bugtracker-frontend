@@ -288,7 +288,7 @@ const SheetComponent = () => {
 
     let isMounted = true;
 
-    // Load CSS from unpkg (more reliable)
+    // Load CSS from CDN
     const cssLink = document.createElement('link');
     cssLink.rel = 'stylesheet';
     cssLink.href = 'https://cdn.jsdelivr.net/npm/luckysheet@latest/dist/plugins/css/pluginsCss.css';
@@ -418,22 +418,24 @@ const SheetComponent = () => {
   };
 
   return (
-    <div className={`${isFullscreen ? 'fixed inset-0 z-50' : 'relative'} flex flex-col h-full bg-gray-900`}>
+    <div className={`${isFullscreen ? 'fixed inset-0 z-50' : 'relative'} flex flex-col h-full bg-slate-50`}>
       {/* Header Toolbar */}
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between px-4 py-3 bg-gray-800 border-b border-gray-700 shadow-lg"
+        className="flex items-center justify-between px-6 py-3 bg-white border-b border-slate-200 shadow-sm"
       >
         <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <FileSpreadsheet className="w-6 h-6 text-emerald-400" />
+          <div className="flex items-center space-x-3">
+            <div className="p-2 bg-gradient-to-br from-emerald-500 to-teal-600 rounded-lg">
+              <FileSpreadsheet className="w-5 h-5 text-white" />
+            </div>
             <div>
-              <h1 className="text-lg font-semibold text-white">
-                {sheetData?.title || 'Loading...'}
+              <h1 className="text-lg font-semibold text-slate-900">
+                {sheetData?.title || sheetName || 'Loading...'}
               </h1>
-              <div className="flex items-center space-x-2 text-xs text-gray-400">
-                <span>{testTypeName}</span>
+              <div className="flex items-center space-x-2 text-xs text-slate-500">
+                <span className="font-medium">{testTypeName}</span>
                 <span>•</span>
                 <span>{sheetName}</span>
               </div>
@@ -443,76 +445,76 @@ const SheetComponent = () => {
 
         <div className="flex items-center space-x-4">
           {/* Save Status */}
-          <div className="flex items-center space-x-2 text-sm">
+          <div className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200">
             {isSaving ? (
               <>
-                <Loader2 className="w-4 h-4 text-blue-400 animate-spin" />
-                <span className="text-gray-300">Saving...</span>
+                <Loader2 className="w-4 h-4 text-blue-600 animate-spin" />
+                <span className="text-sm font-medium text-slate-700">Saving...</span>
               </>
             ) : hasUnsavedChanges ? (
               <>
-                <AlertCircle className="w-4 h-4 text-yellow-400" />
-                <span className="text-gray-300">Unsaved changes</span>
+                <AlertCircle className="w-4 h-4 text-amber-500" />
+                <span className="text-sm font-medium text-slate-700">Unsaved changes</span>
               </>
             ) : (
               <>
-                <CheckCircle className="w-4 h-4 text-emerald-400" />
-                <span className="text-gray-400">Saved {formatLastSaved()}</span>
+                <CheckCircle className="w-4 h-4 text-emerald-500" />
+                <span className="text-sm text-slate-600">Saved {formatLastSaved()}</span>
               </>
             )}
           </div>
 
           {/* Auto-save Toggle */}
-          <label className="flex items-center space-x-2 cursor-pointer">
+          <label className="flex items-center space-x-2 px-3 py-1.5 rounded-lg bg-slate-50 border border-slate-200 cursor-pointer hover:bg-slate-100 transition-colors">
             <input
               type="checkbox"
               checked={autoSaveEnabled}
               onChange={(e) => setAutoSaveEnabled(e.target.checked)}
-              className="w-4 h-4 text-emerald-500 bg-gray-700 border-gray-600 rounded focus:ring-emerald-500 focus:ring-2"
+              className="w-4 h-4 text-emerald-600 bg-white border-slate-300 rounded focus:ring-2 focus:ring-emerald-500 focus:ring-offset-0"
             />
-            <span className="text-sm text-gray-300">Auto-save</span>
+            <span className="text-sm font-medium text-slate-700">Auto-save</span>
           </label>
 
           {/* Action Buttons */}
           <div className="flex items-center space-x-2">
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleRefresh}
               disabled={isLoading}
-              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               <RefreshCw className={`w-4 h-4 ${isLoading ? 'animate-spin' : ''}`} />
               <span>Refresh</span>
             </motion.button>
 
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleManualSave}
               disabled={isSaving || !hasUnsavedChanges}
-              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-white bg-emerald-600 rounded-lg hover:bg-emerald-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-emerald-600 to-teal-600 rounded-lg hover:from-emerald-700 hover:to-teal-700 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               <Save className="w-4 h-4" />
               <span>Save</span>
             </motion.button>
 
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={handleExport}
               disabled={isLoading}
-              className="flex items-center space-x-2 px-3 py-2 text-sm font-medium text-gray-300 bg-gray-700 rounded-lg hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              className="flex items-center space-x-2 px-4 py-2 text-sm font-medium text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:border-slate-400 disabled:opacity-50 disabled:cursor-not-allowed transition-all shadow-sm"
             >
               <Download className="w-4 h-4" />
               <span>Export</span>
             </motion.button>
 
             <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
+              whileHover={{ scale: 1.02 }}
+              whileTap={{ scale: 0.98 }}
               onClick={toggleFullscreen}
-              className="p-2 text-gray-300 bg-gray-700 rounded-lg hover:bg-gray-600 transition-colors"
+              className="p-2 text-slate-700 bg-white border border-slate-300 rounded-lg hover:bg-slate-50 hover:border-slate-400 transition-all shadow-sm"
             >
               {isFullscreen ? <Minimize2 className="w-4 h-4" /> : <Maximize2 className="w-4 h-4" />}
             </motion.button>
@@ -521,18 +523,21 @@ const SheetComponent = () => {
       </motion.div>
 
       {/* Luckysheet Container */}
-      <div className="flex-1 relative overflow-hidden bg-gray-900">
+      <div className="flex-1 relative overflow-hidden bg-white">
         <AnimatePresence>
           {isLoading && (
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
-              className="absolute inset-0 flex items-center justify-center bg-gray-900 z-50"
+              className="absolute inset-0 flex items-center justify-center bg-white z-50"
             >
               <div className="text-center">
-                <Loader2 className="w-12 h-12 text-emerald-400 animate-spin mx-auto mb-4" />
-                <p className="text-gray-400">Loading sheet...</p>
+                <div className="relative">
+                  <div className="w-16 h-16 border-4 border-slate-200 rounded-full"></div>
+                  <div className="w-16 h-16 border-4 border-emerald-600 rounded-full animate-spin border-t-transparent absolute top-0 left-0"></div>
+                </div>
+                <p className="mt-4 text-slate-600 font-medium">Loading sheet...</p>
               </div>
             </motion.div>
           )}
@@ -558,128 +563,432 @@ const SheetComponent = () => {
       <motion.div
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="flex items-center justify-between px-4 py-2 bg-gray-800 border-t border-gray-700 text-xs text-gray-400"
+        className="flex items-center justify-between px-6 py-2.5 bg-white border-t border-slate-200 text-xs"
       >
-        <div className="flex items-center space-x-4">
-          <span>Project: {selectedProject?.name || 'N/A'}</span>
-          <span>•</span>
-          <span>Version: {sheetData?.version || 1}</span>
+        <div className="flex items-center space-x-4 text-slate-600">
+          <div className="flex items-center space-x-2">
+            <span className="font-semibold text-slate-700">Project:</span>
+            <span className="px-2 py-0.5 bg-slate-100 rounded text-slate-700 font-medium">{selectedProject?.name || 'N/A'}</span>
+          </div>
+          <span className="text-slate-300">•</span>
+          <div className="flex items-center space-x-2">
+            <span className="font-semibold text-slate-700">Version:</span>
+            <span className="text-slate-700 font-medium">{sheetData?.version || 1}</span>
+          </div>
         </div>
-        <div className="flex items-center space-x-4">
-          <span>Created by: {sheetData?.createdBy?.name || 'Unknown'}</span>
+        <div className="flex items-center space-x-4 text-slate-600">
+          <span>Created by: <span className="font-medium text-slate-700">{sheetData?.createdBy?.name || 'Unknown'}</span></span>
           {sheetData?.createdAt && (
             <>
-              <span>•</span>
-              <span>Created: {new Date(sheetData.createdAt).toLocaleDateString()}</span>
+              <span className="text-slate-300">•</span>
+              <span>Created: <span className="font-medium text-slate-700">{new Date(sheetData.createdAt).toLocaleDateString()}</span></span>
             </>
           )}
         </div>
       </motion.div>
 
-      {/* Custom Styles for Dark Theme */}
+      {/* Enhanced Luckysheet Styling */}
       <style jsx global>{`
-        #luckysheet {
-          background: #111827 !important;
+        /* Fix cell input visibility - CRITICAL */
+        .luckysheet-cell-input,
+        .luckysheet-rich-text-editor,
+        .luckysheet-cell-input div,
+        .luckysheet-cell-input span {
+          background: #ffffff !important;
+          color: #000000 !important;
+          font-size: 13px !important;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif !important;
+          border: 2px solid #3b82f6 !important;
+          box-shadow: 0 2px 8px rgba(59, 130, 246, 0.15) !important;
+          z-index: 1000 !important;
         }
-        
-        .luckysheet-cell-input {
-          background: #1f2937 !important;
-          color: #f3f4f6 !important;
-          border-color: #374151 !important;
+
+        /* Formula bar styling */
+        .luckysheet-wa-editor {
+          background: #f8fafc !important;
+          border-bottom: 1px solid #e2e8f0 !important;
         }
-        
-        .luckysheet-grid-window {
-          background: #111827 !important;
+
+        .luckysheet-input-box,
+        .luckysheet-input-box input {
+          background: #ffffff !important;
+          color: #1e293b !important;
+          border: 1px solid #cbd5e1 !important;
+          font-size: 13px !important;
+          padding: 6px 10px !important;
+          border-radius: 6px !important;
         }
-        
-        .luckysheet-cell {
-          color: #f3f4f6 !important;
-          border-color: #374151 !important;
+
+        .luckysheet-input-box:focus-within {
+          border-color: #3b82f6 !important;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
         }
-        
-        .luckysheet-grid-window-1 {
-          background: #1f2937 !important;
-        }
-        
+
+        /* Toolbar styling */
         .luckysheet-toolbar {
-          background: #1f2937 !important;
-          border-color: #374151 !important;
+          background: #f8fafc !important;
+          border-bottom: 1px solid #e2e8f0 !important;
+          padding: 6px 12px !important;
         }
-        
-        .luckysheet-toolbar-button {
-          color: #d1d5db !important;
+
+        .luckysheet-toolbar-button,
+        .luckysheet-toolbar-button-split-left,
+        .luckysheet-toolbar-button-split-right {
+          color: #475569 !important;
+          border-radius: 6px !important;
+          transition: all 0.15s ease !important;
         }
-        
-        .luckysheet-toolbar-button:hover {
-          background: #374151 !important;
+
+        .luckysheet-toolbar-button:hover,
+        .luckysheet-toolbar-button-split-left:hover,
+        .luckysheet-toolbar-button-split-right:hover {
+          background: #e2e8f0 !important;
+          color: #1e293b !important;
         }
-        
-        .luckysheet-toolbar-menu-button {
-          color: #d1d5db !important;
+
+        .luckysheet-toolbar-button-active {
+          background: #dbeafe !important;
+          color: #1e40af !important;
         }
-        
-        .luckysheet-cols-rows-shift {
-          background: #1f2937 !important;
-        }
-        
-        .luckysheet-cols-rows-shift-size {
-          background: #374151 !important;
-        }
-        
-        .luckysheet-cols-menu {
-          background: #1f2937 !important;
-          border-color: #374151 !important;
-        }
-        
+
+        /* Tooltip styling - CRITICAL FIX */
+        .luckysheet-tooltip,
+        .luckysheet-tooltip-text,
+        .luckysheet-cols-menu,
         .luckysheet-rightclick-menu {
-          background: #1f2937 !important;
-          border-color: #374151 !important;
-          color: #f3f4f6 !important;
+          background: #1e293b !important;
+          color: #f1f5f9 !important;
+          border: 1px solid #334155 !important;
+          border-radius: 8px !important;
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.2) !important;
+          font-size: 12px !important;
+          padding: 8px !important;
+          z-index: 10000 !important;
         }
-        
+
+        /* Menu items */
+        .luckysheet-cols-menu-item,
+        .luckysheet-rightclick-menu-item {
+          color: #f1f5f9 !important;
+          padding: 8px 12px !important;
+          border-radius: 6px !important;
+          transition: all 0.15s ease !important;
+        }
+
         .luckysheet-cols-menu-item:hover,
         .luckysheet-rightclick-menu-item:hover {
-          background: #374151 !important;
+          background: #334155 !important;
+          color: #ffffff !important;
         }
-        
-        .luckysheet-sheet-container-menu-item {
-          color: #d1d5db !important;
+
+        /* Grid styling */
+        .luckysheet-grid-window {
+          background: #ffffff !important;
         }
-        
-        .luckysheet-sheet-container-menu-item:hover {
-          background: #374151 !important;
+
+        .luckysheet-cell {
+          color: #1e293b !important;
+          font-size: 13px !important;
+          font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important;
         }
-        
+
+        /* Selection styling */
+        .luckysheet-cell-selected {
+          border: 2px solid #3b82f6 !important;
+          background: rgba(59, 130, 246, 0.05) !important;
+        }
+
+        .luckysheet-cell-selected-highlight {
+          border: 2px solid #3b82f6 !important;
+          background: rgba(59, 130, 246, 0.1) !important;
+        }
+
+        /* Row/Column headers */
+        .luckysheet-cols-rows-shift,
+        .luckysheet-cols-rows-shift-size {
+          background: #f8fafc !important;
+          color: #64748b !important;
+          border-color: #e2e8f0 !important;
+          font-size: 12px !important;
+          font-weight: 500 !important;
+        }
+
+        .luckysheet-cols-rows-shift:hover {
+          background: #f1f5f9 !important;
+        }
+
+        /* Sheet tabs */
+        .luckysheet-sheet-container {
+          background: #f8fafc !important;
+          border-top: 1px solid #e2e8f0 !important;
+        }
+
+        .luckysheet-sheet-item {
+          background: #ffffff !important;
+          color: #475569 !important;
+          border: 1px solid #e2e8f0 !important;
+          border-radius: 6px 6px 0 0 !important;
+          padding: 6px 16px !important;
+          margin: 4px 2px 0 2px !important;
+          transition: all 0.15s ease !important;
+        }
+
+        .luckysheet-sheet-item:hover {
+          background: #f1f5f9 !important;
+        }
+
+        .luckysheet-sheet-item-active {
+          background: #ffffff !important;
+          color: #10b981 !important;
+          border-bottom: 2px solid #10b981 !important;
+          font-weight: 600 !important;
+        }
+
+        /* Status bar */
         .luckysheet-stat-area {
-          background: #1f2937 !important;
-          color: #d1d5db !important;
+          background: #f8fafc !important;
+          color: #64748b !important;
+          border-top: 1px solid #e2e8f0 !important;
+          font-size: 12px !important;
         }
-        
-        .luckysheet-scrollbar-ltr {
-          background: #1f2937 !important;
+
+        /* Scrollbars */
+        .luckysheet-scrollbar-ltr::-webkit-scrollbar {
+          width: 12px !important;
+          height: 12px !important;
         }
-        
-        .luckysheet-scrollbar-ltr::-webkit-scrollbar-thumb {
-          background: #4b5563 !important;
-        }
-        
+
         .luckysheet-scrollbar-ltr::-webkit-scrollbar-track {
-          background: #1f2937 !important;
+          background: #f8fafc !important;
         }
-        
-        .luckysheet-input-box {
-          background: #1f2937 !important;
-          color: #f3f4f6 !important;
-          border-color: #374151 !important;
+
+        .luckysheet-scrollbar-ltr::-webkit-scrollbar-thumb {
+          background: #cbd5e1 !important;
+          border-radius: 6px !important;
+          border: 2px solid #f8fafc !important;
         }
-        
+
+        .luckysheet-scrollbar-ltr::-webkit-scrollbar-thumb:hover {
+          background: #94a3b8 !important;
+        }
+
+        /* Modal dialogs */
+        .luckysheet-modal-dialog,
+        .luckysheet-modal-dialog-content {
+          background: #ffffff !important;
+          border: 1px solid #e2e8f0 !important;
+          border-radius: 12px !important;
+          box-shadow: 0 20px 40px rgba(0, 0, 0, 0.15) !important;
+        }
+
+        .luckysheet-modal-dialog-title {
+          background: #f8fafc !important;
+          color: #1e293b !important;
+          border-bottom: 1px solid #e2e8f0 !important;
+          padding: 16px 20px !important;
+          font-weight: 600 !important;
+        }
+
+        .luckysheet-modal-dialog-content {
+          padding: 20px !important;
+        }
+
+        .luckysheet-modal-dialog-button {
+          padding: 8px 16px !important;
+          border-radius: 6px !important;
+          font-weight: 500 !important;
+          transition: all 0.15s ease !important;
+        }
+
+        .luckysheet-modal-dialog-button-cancel {
+          background: #f1f5f9 !important;
+          color: #475569 !important;
+          border: 1px solid #cbd5e1 !important;
+        }
+
+        .luckysheet-modal-dialog-button-cancel:hover {
+          background: #e2e8f0 !important;
+        }
+
+        .luckysheet-modal-dialog-button-confirm {
+          background: linear-gradient(to right, #10b981, #059669) !important;
+          color: #ffffff !important;
+          border: none !important;
+        }
+
+        .luckysheet-modal-dialog-button-confirm:hover {
+          background: linear-gradient(to right, #059669, #047857) !important;
+        }
+
+        /* Input elements in modals */
+        .luckysheet-modal-dialog input,
+        .luckysheet-modal-dialog select,
+        .luckysheet-modal-dialog textarea {
+          background: #ffffff !important;
+          color: #1e293b !important;
+          border: 1px solid #cbd5e1 !important;
+          border-radius: 6px !important;
+          padding: 8px 12px !important;
+          font-size: 13px !important;
+        }
+
+        .luckysheet-modal-dialog input:focus,
+        .luckysheet-modal-dialog select:focus,
+        .luckysheet-modal-dialog textarea:focus {
+          border-color: #3b82f6 !important;
+          outline: none !important;
+          box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.1) !important;
+        }
+
+        /* Formula search dropdown */
+        .luckysheet-formula-search-c {
+          background: #ffffff !important;
+          border: 1px solid #e2e8f0 !important;
+          border-radius: 8px !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+        }
+
         .luckysheet-formula-search-item {
-          background: #1f2937 !important;
-          color: #f3f4f6 !important;
+          background: #ffffff !important;
+          color: #1e293b !important;
+          padding: 8px 12px !important;
+          transition: all 0.15s ease !important;
         }
-        
+
         .luckysheet-formula-search-item:hover {
-          background: #374151 !important;
+          background: #f1f5f9 !important;
+          color: #10b981 !important;
+        }
+
+        .luckysheet-formula-search-item-active {
+          background: #dbeafe !important;
+          color: #1e40af !important;
+        }
+
+        /* Context menu styling */
+        .luckysheet-menuButton {
+          color: #475569 !important;
+          transition: all 0.15s ease !important;
+        }
+
+        .luckysheet-menuButton:hover {
+          color: #10b981 !important;
+        }
+
+        /* Color picker */
+        .luckysheet-color-menu {
+          background: #ffffff !important;
+          border: 1px solid #e2e8f0 !important;
+          border-radius: 8px !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+          padding: 12px !important;
+        }
+
+        /* Borders and grid lines */
+        .luckysheet-cell-flow-border {
+          border-color: #e2e8f0 !important;
+        }
+
+        /* Selection box */
+        .luckysheet-selection-copy {
+          border: 2px dashed #10b981 !important;
+        }
+
+        /* Cell comment indicator */
+        .luckysheet-cell-comment-marker {
+          border-color: #f59e0b transparent transparent #f59e0b !important;
+        }
+
+        /* Loading indicator */
+        .luckysheet-loading {
+          background: rgba(248, 250, 252, 0.95) !important;
+        }
+
+        .luckysheet-loading-content {
+          color: #1e293b !important;
+          font-weight: 500 !important;
+        }
+
+        /* Right-click menu separator */
+        .luckysheet-menuseparator {
+          background: #e2e8f0 !important;
+          height: 1px !important;
+          margin: 4px 8px !important;
+        }
+
+        /* Freeze pane indicator */
+        .luckysheet-freezebar-horizontal,
+        .luckysheet-freezebar-vertical {
+          background: #10b981 !important;
+          opacity: 0.3 !important;
+        }
+
+        /* Chart elements */
+        .luckysheet-chart-title {
+          color: #1e293b !important;
+          font-weight: 600 !important;
+        }
+
+        /* Data validation */
+        .luckysheet-datavisual-selection {
+          border: 2px solid #8b5cf6 !important;
+        }
+
+        /* Print area */
+        .luckysheet-print-area {
+          border: 2px dashed #6366f1 !important;
+        }
+
+        /* Alternating colors */
+        .luckysheet-alternateformat-item {
+          background: #f8fafc !important;
+          border: 1px solid #e2e8f0 !important;
+          border-radius: 6px !important;
+          transition: all 0.15s ease !important;
+        }
+
+        .luckysheet-alternateformat-item:hover {
+          border-color: #10b981 !important;
+          transform: translateY(-2px) !important;
+          box-shadow: 0 4px 8px rgba(16, 185, 129, 0.15) !important;
+        }
+
+        /* Font size dropdown */
+        .luckysheet-toolbar-menu-button-dropdown {
+          background: #ffffff !important;
+          border: 1px solid #e2e8f0 !important;
+          border-radius: 8px !important;
+          box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+          padding: 4px !important;
+        }
+
+        .luckysheet-toolbar-menu-button-dropdown-item {
+          color: #1e293b !important;
+          padding: 6px 12px !important;
+          border-radius: 6px !important;
+          transition: all 0.15s ease !important;
+        }
+
+        .luckysheet-toolbar-menu-button-dropdown-item:hover {
+          background: #f1f5f9 !important;
+          color: #10b981 !important;
+        }
+
+        /* Ensure high z-index for dropdowns and tooltips */
+        .luckysheet-tooltip,
+        .luckysheet-cols-menu,
+        .luckysheet-rightclick-menu,
+        .luckysheet-modal-dialog,
+        .luckysheet-color-menu,
+        .luckysheet-formula-search-c,
+        .luckysheet-toolbar-menu-button-dropdown {
+          z-index: 10000 !important;
+        }
+
+        /* Make sure cell editing is always on top */
+        .luckysheet-cell-input,
+        .luckysheet-rich-text-editor {
+          z-index: 10001 !important;
         }
       `}</style>
     </div>
