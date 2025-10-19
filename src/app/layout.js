@@ -12,6 +12,7 @@ import { TooltipProvider } from "./script/Tooltip.context";
 import { ContentProvider } from "./script/Content.context";
 import { ThemeProvider } from "./script/Theme.context";
 import { DocProvider } from "./script/Doc.context";
+import { SheetProvider } from "./script/Sheet.context";
 
 // 🧰 Utility Components
 import Tooltip from "./components/utils/Tooltip";
@@ -64,6 +65,7 @@ export default function RootLayout({ children }) {
             <ContentProvider>
               <ProjectProvider>
                 <TestTypeProvider>
+                  <SheetProvider>
                   <DocProvider>
                     <AlertProvider>
                       <ConfirmProvider>
@@ -76,6 +78,7 @@ export default function RootLayout({ children }) {
                       </ConfirmProvider>
                     </AlertProvider>
                   </DocProvider>
+                  </SheetProvider>
                 </TestTypeProvider>
               </ProjectProvider>
             </ContentProvider>

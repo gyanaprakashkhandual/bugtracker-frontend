@@ -1,8 +1,11 @@
+import SheetComponent from '@/app/components/Modules/Sheet/pages/Sheet'
 import React from 'react'
 
 function page() {
   return (
-    <div>page</div>
+    <div>
+      <SheetComponent/>
+    </div>
   )
 }
 

@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
 import { useProject } from '@/app/script/Project.context';
+import { useSheet } from '@/app/script/Sheet.context';
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
 
@@ -14,6 +15,7 @@ export default function SheetManagement() {
   const { selectedProject } = useProject();
   const projectId = selectedProject?._id;
   const { testTypeId, testTypeName } = useTestType();
+  const { setSelectedSheet } = useSheet();
   const router = useRouter();
   const params = useParams();
   const slug = params.slug;
@@ -57,10 +59,10 @@ export default function SheetManagement() {
         setSheets(data);
         setFilteredSheets(data);
       } else {
-        showAlert({ type: 'error', message: 'Failed to fetch sheets' });
+        showAlert('Failed to fetch sheets', 'error');
       }
     } catch (error) {
-      showAlert({ type: 'error', message: 'Error fetching sheets' });
+      showAlert('Error fetching sheets', 'error');
     } finally {
       setLoading(false);
     }
@@ -81,7 +83,7 @@ export default function SheetManagement() {
 
   const handleCreateSheet = async () => {
     if (!formData.title.trim()) {
-      showAlert({ type: 'error', message: 'Please enter a title' });
+      showAlert('Please enter a title', 'error');
       return;
     }
 
@@ -101,21 +103,21 @@ export default function SheetManagement() {
       });
 
       if (response.ok) {
-        showAlert({ type: 'success', message: 'Sheet created successfully' });
+        showAlert('Sheet created successfully', 'success');
         setIsCreateModalOpen(false);
         setFormData({ title: '', content: '', project: projectId, testType: testTypeId });
         fetchSheets();
       } else {
-        showAlert({ type: 'error', message: 'Failed to create sheet' });
+        showAlert('Failed to create sheet', 'error');
       }
     } catch (error) {
-      showAlert({ type: 'error', message: 'Error creating sheet' });
+      showAlert('Error creating sheet', 'error');
     }
   };
 
   const handleUpdateSheet = async () => {
     if (!formData.title.trim()) {
-      showAlert({ type: 'error', message: 'Please enter a title' });
+      showAlert('Please enter a title', 'error');
       return;
     }
 
@@ -135,16 +137,16 @@ export default function SheetManagement() {
       });
 
       if (response.ok) {
-        showAlert({ type: 'success', message: 'Sheet updated successfully' });
+        showAlert('Sheet updated successfully', 'success');
         setIsEditModalOpen(false);
         setCurrentSheet(null);
         setFormData({ title: '', content: '', project: projectId, testType: testTypeId });
         fetchSheets();
       } else {
-        showAlert({ type: 'error', message: 'Failed to update sheet' });
+        showAlert('Failed to update sheet', 'error');
       }
     } catch (error) {
-      showAlert({ type: 'error', message: 'Error updating sheet' });
+      showAlert('Error updating sheet', 'error');
     }
   };
 
@@ -162,13 +164,13 @@ export default function SheetManagement() {
       });
 
       if (response.ok) {
-        showAlert({ type: 'success', message: 'Sheet deleted successfully' });
+        showAlert('Sheet deleted successfully', 'success');
         fetchSheets();
       } else {
-        showAlert({ type: 'error', message: 'Failed to delete sheet' });
+        showAlert('Failed to delete sheet', 'error');
       }
     } catch (error) {
-      showAlert({ type: 'error', message: 'Error deleting sheet' });
+      showAlert('Error deleting sheet', 'error');
     }
   };
 
@@ -184,7 +186,22 @@ export default function SheetManagement() {
   };
 
   const handleOpenSheet = (sheet) => {
-    router.push(`/app/projects/${slug}/sheet/${sheet.slug}`);
+    console.log('🚀 Opening sheet:', sheet);
+    
+    // Set the selected sheet in context FIRST
+    setSelectedSheet(sheet._id, sheet.title);
+    
+    console.log('✅ Sheet context set with:', {
+      sheetId: sheet._id,
+      sheetName: sheet.title,
+      slug: sheet.slug
+    });
+    
+    // Small delay to ensure context is updated before navigation
+    setTimeout(() => {
+      // Use project slug from URL params and sheet slug
+      router.push(`/app/projects/${slug}/sheet/${sheet.slug}`);
+    }, 100);
   };
 
   return (
