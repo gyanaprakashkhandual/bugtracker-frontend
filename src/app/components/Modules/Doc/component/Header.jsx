@@ -9,6 +9,7 @@ import {
   Check
 } from 'lucide-react';
 import { useRouter } from 'next/navigation';
+import { useProject } from '@/app/script/Project.context';
 
 const DocumentHeader = ({
   title,
@@ -19,14 +20,14 @@ const DocumentHeader = ({
   handleManualSave
 }) => {
   const router = useRouter();
-
+  const { selectedProject } = useProject();
   return (
     <motion.header
       initial={{ y: -20, opacity: 0 }}
       animate={{ y: 0, opacity: 1 }}
       className="bg-white dark:bg-gray-900 border-b border-gray-200 dark:border-gray-800 sticky top-0 z-50"
     >
-      <div className="px-6 py-4 flex items-center justify-between">
+      <div className="px-6 py-2 flex items-center justify-between">
         <div className="flex items-center gap-4">
           <button
             onClick={() => router.back()}
@@ -35,18 +36,13 @@ const DocumentHeader = ({
             <ArrowLeft className="w-5 h-5" />
           </button>
           <div>
-            <input
-              type="text"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-              className="text-xl font-semibold bg-transparent border-none outline-none text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500"
-              placeholder="Document Title"
-            />
-            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400 mt-1">
+            <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
               <FileText className="w-4 h-4" />
               <span>{docName || 'Untitled Document'}</span>
               <span>•</span>
               <span>{testTypeName}</span>
+              <span>•</span>
+              <span>{selectedProject?.projectName || 'Unknown Project'}</span>
             </div>
           </div>
         </div>
@@ -58,10 +54,9 @@ const DocumentHeader = ({
           </div>
           <button
             onClick={handleManualSave}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 rounded-lg transition-colors text-white"
+            className="flex items-center gap-2 px-4 py-1 bg-blue-600 dark:bg-blue-600 hover:bg-blue-700 dark:hover:bg-blue-700 rounded-lg transition-colors text-white"
           >
-            <Save className="w-4 h-4" />
-            Save
+            <span className='text-xs'>Save</span>
           </button>
         </div>
       </div>
