@@ -5,7 +5,6 @@ import { useProject } from '@/app/utils/Get.project';
 import { useParams } from 'next/navigation';
 import TestCaseSidebar from '../Sidebars/TestCase';
 import BugSidebar from '../Sidebars/Bug';
-import TestDataSidebar from '../Sidebars/Data';
 import FilterSidebar from '../Sidebars/Filter';
 import { useRouter } from 'next/navigation';
 import {
@@ -569,13 +568,6 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
         }}
       />
 
-      <TestDataSidebar
-        isOpen={testDataSidebarOpen}
-        onClose={() => {
-          setTestDataSidebarOpen(false);
-          setSelectedManual(null);
-        }}
-      />
 
       <FilterSidebar
         isOpen={filterSidebarOpen}
