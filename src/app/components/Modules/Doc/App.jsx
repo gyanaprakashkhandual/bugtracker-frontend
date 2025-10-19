@@ -9,6 +9,7 @@ import { useProject } from '@/app/script/Project.context';
 import { useDoc } from '@/app/script/Doc.context';
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
+import { FaCoffee } from 'react-icons/fa';
 
 export default function DocumentManagement() {
   const { showAlert } = useAlert();
@@ -206,14 +207,14 @@ export default function DocumentManagement() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
-      <nav className="bg-white dark:bg-slate-800 shadow-md border-b border-slate-200 dark:border-slate-700">
+      <nav className="bg-white dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Coffee className="w-6 h-6 text-amber-600 dark:text-amber-500" />
+              <FaCoffee className="w-6 h-6 text-blue-900 dark:text-blue-500" />
               <div className="flex items-center gap-3">
                 <span className="text-lg font-semibold text-slate-800 dark:text-slate-200">
-                  {selectedProject?.name || 'Project'}
+                  {selectedProject?.projectName || 'Project'}
                 </span>
                 <span className="text-slate-400 dark:text-slate-500">/</span>
                 <span className="text-lg font-medium text-slate-600 dark:text-slate-300">
@@ -262,42 +263,36 @@ export default function DocumentManagement() {
                 key={doc._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6 hover:shadow-md transition-shadow"
+                className="bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700 p-6 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
                     <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-1">
                       {doc.title}
                     </h3>
-                    <p className="text-sm text-slate-500 dark:text-slate-400">
-                      Created by: {doc.createdBy?.name || 'Unknown'} • Version: {doc.version || 1}
-                    </p>
-                    {doc.slug && (
-                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
-                        Slug: {doc.slug}
-                      </p>
-                    )}
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button
                       onClick={() => handleOpenDocument(doc)}
                       className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                      title="Open Document"
+                      tooltip-data="Open Document"
                     >
-                      <ExternalLink className="w-5 h-5" />
+                      <div>
+                        <ExternalLink className="w-5 h-5" />
+                      </div>
                     </button>
                     <button
                       onClick={() => openEditModal(doc)}
                       className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                      title="Edit Document"
+                      tooltip-data="Edit Document"
                     >
                       <Edit2 className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleDeleteDocument(doc._id)}
                       className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                      title="Delete Document"
+                      tooltip-data="Delete Document"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>

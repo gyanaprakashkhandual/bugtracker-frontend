@@ -82,7 +82,7 @@ const DocumentEditor = () => {
             Link.configure({
                 openOnClick: false,
                 HTMLAttributes: {
-                    class: 'text-blue-400 underline cursor-pointer',
+                    class: 'text-blue-600 dark:text-blue-400 underline cursor-pointer',
                 },
             }),
             Image.configure({
@@ -99,12 +99,12 @@ const DocumentEditor = () => {
             TableRow,
             TableCell.configure({
                 HTMLAttributes: {
-                    class: 'border border-gray-600 p-2 min-w-[100px]',
+                    class: 'border border-gray-300 dark:border-gray-600 p-2 min-w-[100px]',
                 },
             }),
             TableHeader.configure({
                 HTMLAttributes: {
-                    class: 'border border-gray-600 p-2 bg-gray-800 font-bold',
+                    class: 'border border-gray-300 dark:border-gray-600 p-2 bg-gray-100 dark:bg-gray-800 font-bold',
                 },
             }),
             TaskList.configure({
@@ -127,17 +127,17 @@ const DocumentEditor = () => {
             }),
             CodeBlock.configure({
                 HTMLAttributes: {
-                    class: 'bg-gray-800 text-gray-100 p-4 rounded-lg font-mono text-sm',
+                    class: 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4 rounded-lg font-mono text-sm',
                 },
             }),
             Blockquote.configure({
                 HTMLAttributes: {
-                    class: 'border-l-4 border-blue-500 pl-4 italic text-gray-300',
+                    class: 'border-l-4 border-blue-500 dark:border-blue-500 pl-4 italic text-gray-700 dark:text-gray-300',
                 },
             }),
             HorizontalRule.configure({
                 HTMLAttributes: {
-                    class: 'my-4 border-gray-700',
+                    class: 'my-4 border-gray-300 dark:border-gray-700',
                 },
             }),
             Dropcursor,
@@ -146,7 +146,7 @@ const DocumentEditor = () => {
         content: '',
         editorProps: {
             attributes: {
-                class: 'prose prose-invert prose-lg max-w-none focus:outline-none min-h-[600px] p-8',
+                class: 'prose dark:prose-invert prose-lg max-w-none focus:outline-none min-h-[600px] p-8',
             },
         },
         onUpdate: ({ editor }) => {
@@ -359,13 +359,13 @@ const DocumentEditor = () => {
     if (isLoading || !editor) {
         console.log('⏳ Showing loading spinner...');
         return (
-            <div className="min-h-screen bg-gray-950 flex items-center justify-center">
+            <div className="min-h-screen bg-white dark:bg-gray-950 flex items-center justify-center">
                 <div className="text-center">
-                    <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto" />
-                    <p className="text-gray-400 mt-4">
+                    <Loader2 className="w-12 h-12 animate-spin text-blue-600 dark:text-blue-500 mx-auto" />
+                    <p className="text-gray-600 dark:text-gray-400 mt-4">
                         {!editor ? 'Initializing editor...' : 'Loading document...'}
                     </p>
-                    <p className="text-gray-600 text-sm mt-2">Doc ID: {docId || 'N/A'}</p>
+                    <p className="text-gray-400 dark:text-gray-600 text-sm mt-2">Doc ID: {docId || 'N/A'}</p>
                 </div>
             </div>
         );
@@ -374,7 +374,7 @@ const DocumentEditor = () => {
     console.log('✅ Rendering main editor component');
 
     return (
-        <div className="min-h-screen bg-gray-950 text-gray-100">
+        <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
             <DocumentHeader
                 title={title}
                 setTitle={setTitle}
