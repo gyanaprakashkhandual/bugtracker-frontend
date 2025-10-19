@@ -1,4 +1,3 @@
-// Updated TestCaseCardView with dark mode classes (dark:bg-gray-800 for bg classes, dark:bg-gray-100 for text classes)
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -22,6 +21,7 @@ import {
     Image as ImageIcon
 } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context';
+import { useProject } from '@/app/script/Project.context';
 import { useAlert } from '@/app/script/Alert.context';
 import { BUG_EVENTS } from '@/app/components/Sidebars/Bug';
 import { BugCardSkeletonGrid } from '@/app/components/assets/Card.loader';
@@ -44,8 +44,8 @@ const TestCaseCardView = () => {
     const fileInputRef = useRef(null);
     const { showAlert } = useAlert();
     const { testTypeId, testTypeName } = useTestType();
-
-    const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
+    const { selectedProject } = useProject();
+    const projectId = selectedProject?._id;
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
     const BASE_URL = 'http://localhost:5000/api/v1/test-case';
@@ -307,7 +307,7 @@ const TestCaseCardView = () => {
             <div className={`relative inline-block ${className}`} ref={dropdownRef}>
                 <button
                     type="button"
-                    className="inline-flex items-center justify-between w-full px-3 py-1.5 text-sm font-medium text-gray-700 dark:bg-gray-100 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="inline-flex items-center justify-between w-full px-3 py-1.5 text-sm font-medium text-gray-700 dark:bg-gray-100 bg-white border border-gray-300 rounded-lg hover:bg-gray-50  focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     onClick={() => setIsOpen(!isOpen)}
                 >
                     <span className="truncate">{value}</span>
@@ -556,7 +556,7 @@ const TestCaseCardView = () => {
                                     tooltip-placement="top"
                                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                     disabled={currentPage === 1}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:bg-gray-100 bg-white dark:bg-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:bg-gray-100 bg-white  border border-gray-300 rounded-lg hover:bg-gray-50  disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <ChevronLeft size={16} />
                                 </button>
@@ -565,7 +565,7 @@ const TestCaseCardView = () => {
                                     tooltip-placement="top"
                                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                     disabled={currentPage === totalPages}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:bg-gray-100 bg-white dark:bg-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:bg-gray-100 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <ChevronRight size={16} />
                                 </button>
@@ -619,7 +619,7 @@ const TestCaseCardView = () => {
                                     />
                                 </div>
                                 <div className="flex items-center gap-2 flex-shrink-0">
-                                    <span className="text-sm text-gray-600 dark:bg-gray-100 font-medium bg-gray-200 dark:bg-gray-800 p-1 px-5 rounded-sm">
+                                    <span className="text-sm text-gray-600 dark:bg-gray-100 font-medium bg-gray-200  p-1 px-5 rounded-sm">
                                         {filteredTestCases.findIndex(tc => tc._id === selectedTestCase._id) + 1} / {filteredTestCases.length}
                                     </span>
                                     {!isEditing ? (
@@ -845,8 +845,8 @@ const TestCaseCardView = () => {
                                                 <div>
                                                     {selectedTestCase.image ? (
                                                         <motion.div
-    initial={{ opacity: 0, scale: 0.9 }}
-    animate={{ opacity: 1, scale: 1 }}
+                                                            initial={{ opacity: 0, scale: 0.9 }}
+                                                            animate={{ opacity: 1, scale: 1 }}
                                                         >
                                                             <img
                                                                 src={selectedTestCase.image}
@@ -859,7 +859,7 @@ const TestCaseCardView = () => {
                                                                     href={selectedTestCase.image}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors inline-block"
+                                                                    className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:bg-gray-100  transition-colors inline-block"
                                                                 >
                                                                     <ExternalLink size={14} />
                                                                 </a>

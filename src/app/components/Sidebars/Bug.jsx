@@ -200,7 +200,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
             setIsSubmitting(true);
             const token = localStorage.getItem("token");
 
-            if (!selectedProject?._id || !selectedTestType?._id || !token) {
+            if (!selectedProject?._id || !testTypeId || !token) {
                 throw new Error('Missing required project or authentication data');
             }
 
@@ -221,6 +221,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
                     bugDesc: formData.bugDesc || 'No Bug Description',
                     bugRequirement: formData.bugRequirement || 'No Requirement',
                     refLink: formData.refLink || 'No Link Provided',
+                    severity: formData.severity || 'Medium',
                     priority: formData.priority || 'Medium',
                     status: formData.status || 'New',
                     image: imageUrl
@@ -269,7 +270,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
             setIsSubmitting(true);
             const token = localStorage.getItem("token");
 
-            if (!selectedProject?._id || !selectedTestType?._id || !token) {
+            if (!selectedProject?._id || !testTypeId || !token) {
                 throw new Error('Missing required project or authentication data');
             }
 
@@ -325,7 +326,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
 
             const token = localStorage.getItem("token");
 
-            if (!selectedProject?._id || !selectedTestType?._id || !token) {
+            if (!selectedProject?._id || !testTypeId || !token) {
                 throw new Error('Missing required project or authentication data');
             }
 
@@ -401,6 +402,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
             bugDesc: '',
             bugRequirement: '',
             refLink: '',
+            severity: '',
             priority: '',
             status: '',
             image: null
@@ -432,6 +434,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
     const getDropdownPlaceholder = (field) => {
         const placeholders = {
             bugType: 'Type',
+            severity: 'Severity',
             priority: 'Priority',
             status: 'Status'
         };
@@ -554,11 +557,12 @@ const BugSidebar = ({ isOpen, onClose }) => {
             transition={{ duration: 0.3 }}
             className="p-4 space-y-3 max-h-[calc(100vh-12rem)] overflow-y-auto"
         >
-            <div className="grid grid-cols-3 gap-2">
-                {renderDropdown('bugType', dropdownOptions.bugType)}
-                {renderDropdown('priority', dropdownOptions.priority)}
-                {renderDropdown('status', dropdownOptions.status)}
-            </div>
+            <div className="grid grid-cols-4 gap-2">
+    {renderDropdown('bugType', dropdownOptions.bugType)}
+    {renderDropdown('severity', dropdownOptions.severity)}
+    {renderDropdown('priority', dropdownOptions.priority)}
+    {renderDropdown('status', dropdownOptions.status)}
+</div>
 
             <div>
                 <input

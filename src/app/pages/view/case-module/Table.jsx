@@ -1,9 +1,9 @@
 'use client'
-/* Updated TestCaseSpreadsheet component with dark:bg-gray-800 for bg classes and dark:bg-gray-100 for text classes */
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Image as ImageIcon, Save, Ban, LinkIcon, Copy, ZoomIn, Plus } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context';
+import { useProject } from '@/app/script/Project.context';
 import { useAlert } from '@/app/script/Alert.context';
 import TableSkeletonLoader from '@/app/components/assets/Table.loader';
 
@@ -49,8 +49,8 @@ const TestCaseSpreadsheet = () => {
 
     const { testTypeId, testTypeName } = useTestType();
     const { showAlert } = useAlert();
-
-    const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
+    const { selectedProject } = useProject();
+    const projectId = selectedProject?._id;
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
     const BASE_URL = 'http://localhost:5000/api/v1/test-case';

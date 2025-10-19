@@ -94,75 +94,75 @@ const BugSplitView = () => {
             });
     };
 
-    
+
     const token =
         typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
     const BASE_URL = "http://localhost:5000/api/v1/bug";
     const COMMENT_URL = "http://localhost:5000/api/v1/comment";
 
-// Search bugs API
-const searchBugs = useCallback(
-    async (searchQuery) => {
-        if (!selectedProject?._id || !testTypeId || !token) {
-            console.log('Missing required parameters:', { 
-                selectedProjectId: selectedProject?._id, 
-                testTypeId, 
-                token: !!token 
-            });
-            return;
-        }
-
-        try {
-            setLoading(true);
-            const url = `${BASE_URL}/projects/${selectedProject?._id}/test-types/${testTypeId}/search?search=${encodeURIComponent(searchQuery)}&page=1&limit=100`;
-            console.log('Search API URL:', url);
-            console.log('Search query:', searchQuery);
-
-            const response = await fetch(url, {
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                },
-            });
-
-            console.log('Response status:', response.status);
-            console.log('Response ok:', response.ok);
-
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.log('Error response body:', errorText);
-
-                if (response.status === 403) {
-                    throw new Error("Access denied to this project or test type");
-                }
-                if (response.status === 404) {
-                    throw new Error("API endpoint not found");
-                }
-                if (response.status === 500) {
-                    throw new Error("Server error occurred");
-                }
-                throw new Error(`Failed to search bugs: ${response.status} ${errorText}`);
+    // Search bugs API
+    const searchBugs = useCallback(
+        async (searchQuery) => {
+            if (!selectedProject?._id || !testTypeId || !token) {
+                console.log('Missing required parameters:', {
+                    selectedProjectId: selectedProject?._id,
+                    testTypeId,
+                    token: !!token
+                });
+                return;
             }
 
-            const data = await response.json();
-            console.log('Search API response data:', data);
+            try {
+                setLoading(true);
+                const url = `${BASE_URL}/projects/${selectedProject?._id}/test-types/${testTypeId}/search?search=${encodeURIComponent(searchQuery)}&page=1&limit=100`;
+                console.log('Search API URL:', url);
+                console.log('Search query:', searchQuery);
 
-        } catch (error) {
-            console.error("Error searching bugs:", error);
-            console.error("Error details:", {
-                message: error.message,
-                stack: error.stack
-            });
-            showAlert({
-                type: "error",
-                message: error.message || "Failed to search bugs"
-            });
-        } finally {
-            setLoading(false);
-        }
-    },
-    [selectedProject?._id, testTypeId, token, showAlert]
-);
+                const response = await fetch(url, {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                    },
+                });
+
+                console.log('Response status:', response.status);
+                console.log('Response ok:', response.ok);
+
+                if (!response.ok) {
+                    const errorText = await response.text();
+                    console.log('Error response body:', errorText);
+
+                    if (response.status === 403) {
+                        throw new Error("Access denied to this project or test type");
+                    }
+                    if (response.status === 404) {
+                        throw new Error("API endpoint not found");
+                    }
+                    if (response.status === 500) {
+                        throw new Error("Server error occurred");
+                    }
+                    throw new Error(`Failed to search bugs: ${response.status} ${errorText}`);
+                }
+
+                const data = await response.json();
+                console.log('Search API response data:', data);
+
+            } catch (error) {
+                console.error("Error searching bugs:", error);
+                console.error("Error details:", {
+                    message: error.message,
+                    stack: error.stack
+                });
+                showAlert({
+                    type: "error",
+                    message: error.message || "Failed to search bugs"
+                });
+            } finally {
+                setLoading(false);
+            }
+        },
+        [selectedProject?._id, testTypeId, token, showAlert]
+    );
     // Filter bugs by date API
     const filterBugsByDate = useCallback(
         async (fromDate, toDate) => {
@@ -897,7 +897,7 @@ const searchBugs = useCallback(
             if ((label = "Severity")) return getSeverityColor(value);
             if (label === "Status") return getStatusColor(value);
             if (label === "Bug Type") return getBugTypeColor(value);
-            return "bg-white text-gray-900 border-gray-200";
+            return "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100  border-gray-200";
         };
 
         return (
@@ -923,7 +923,7 @@ const searchBugs = useCallback(
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: -8 }}
                             transition={{ duration: 0.12 }}
-                            className="origin-top-right absolute right-0 mt-2 w-full rounded-md shadow-xl bg-white ring-1 ring-gray-200 z-20 overflow-hidden"
+                            className="origin-top-right absolute right-0 mt-2 w-full rounded-md shadow-xl bg-white dark:bg-gray-800 ring-1 ring-gray-200 z-20 overflow-hidden"
                         >
                             <div className="py-1" role="menu">
                                 {options.map((option) => (
@@ -932,7 +932,7 @@ const searchBugs = useCallback(
                                         whileHover={{ backgroundColor: "rgba(59, 130, 246, 0.08)" }}
                                         className={`block w-full text-left px-2.5 py-1.5 text-xs transition-colors font-medium ${value === option
                                             ? "bg-blue-50 text-blue-600 border-l-2 border-blue-500"
-                                            : "text-gray-700 hover:text-gray-900"
+                                            : "text-gray-700 hover:text-gray-900 dark:text-gray-100 "
                                             }`}
                                         onClick={() => handleSelect(option)}
                                         role="menuitem"
@@ -966,7 +966,7 @@ const searchBugs = useCallback(
                     duration: 0.3,
                     ease: [0.4, 0.0, 0.2, 1],
                 }}
-                className="bg-white border-r border-gray-200 flex flex-col user-select-none sidebar-scrollbar sticky top-0 h-full"
+                className="bg-white dark:bg-gray-800 border-r border-gray-200 flex flex-col user-select-none sidebar-scrollbar sticky top-0 h-full"
                 style={{
                     minWidth: isSidebarOpen ? sidebarWidth : 0,
                     overflow: "hidden",
@@ -987,7 +987,7 @@ const searchBugs = useCallback(
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => setIsSidebarOpen(false)}
-                        className="p-1.5 hover:bg-white rounded-lg transition-colors"
+                        className="p-1.5 hover:bg-white dark:bg-gray-800 rounded-lg transition-colors"
                     >
                         <GoogleArrowRight size={16} className="text-gray-600" />
                     </motion.button>
@@ -1025,7 +1025,7 @@ const searchBugs = useCallback(
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="absolute right-0 mt-2 p-3 bg-white border border-gray-200 rounded-lg shadow-lg z-50"
+                                className="absolute right-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 rounded-lg shadow-lg z-50"
                             >
                                 <div className="space-y-2">
                                     <div>
@@ -1108,7 +1108,7 @@ const searchBugs = useCallback(
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: index * 0.05 }}
-                                    className="bg-white rounded-xl border border-gray-200 p-3"
+                                    className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 p-3"
                                 >
                                     {/* Header Skeleton */}
                                     <div className="flex items-center justify-between gap-2 mb-2">
@@ -1263,7 +1263,7 @@ const searchBugs = useCallback(
                                         y: -2,
                                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                                     }}
-                                    className={`bg-white rounded-xl border-1 p-3 cursor-pointer transition-all duration-200 ${selectedBug?._id === bug._id
+                                    className={`bg-white dark:bg-gray-800 rounded-xl border-1 p-3 cursor-pointer transition-all duration-200 ${selectedBug?._id === bug._id
                                         ? "border-blue-500 bg-blue-50 shadow-md"
                                         : "border-gray-200 hover:border-blue-300"
                                         }`}
@@ -1424,7 +1424,7 @@ const searchBugs = useCallback(
                                             initial={{ opacity: 0, y: -10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
-                                            className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] w-64 overflow-y-auto"
+                                            className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] w-64 overflow-y-auto"
                                         >
                                             {selectedBug.images.map((image, index) => (
                                                 <a
@@ -1464,7 +1464,7 @@ const searchBugs = useCallback(
                                                 initial={{ opacity: 0, y: -10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: -10 }}
-                                                className="absolute top-full left-0 mt-2 bg-white border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] w-64 overflow-y-auto"
+                                                className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] w-64 overflow-y-auto"
                                             >
                                                 {Array.isArray(selectedBug.refLinks) ? (
                                                     selectedBug.refLinks.map((link, index) => (
@@ -1770,7 +1770,7 @@ const searchBugs = useCallback(
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.1 }}
-                                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
                                     >
                                         <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
                                             MODULE
@@ -1800,7 +1800,7 @@ const searchBugs = useCallback(
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.15 }}
-                                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
                                     >
                                         <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
                                             DESCRIPTION
@@ -1830,7 +1830,7 @@ const searchBugs = useCallback(
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.2 }}
-                                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
                                     >
                                         <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
                                             REQUIREMENT
@@ -1861,7 +1861,7 @@ const searchBugs = useCallback(
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.25 }}
-                                        className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
                                     >
                                         <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
                                             REFERENCE LINK
@@ -1973,7 +1973,7 @@ const searchBugs = useCallback(
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: 0.3 }}
-                                                className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+                                                className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
                                             >
                                                 <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
                                                     BUG IMAGES
@@ -2086,7 +2086,7 @@ const searchBugs = useCallback(
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: 0.3 }}
-                                                className="bg-white p-4 rounded-xl shadow-sm border border-gray-200"
+                                                className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
                                             >
                                                 <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">
                                                     ADD BUG IMAGES
@@ -2148,7 +2148,7 @@ const searchBugs = useCallback(
                                         transition={{ delay: 0.35 }}
                                         className="grid grid-cols-2 gap-4 pt-2"
                                     >
-                                        <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200">
                                             <label className="text-xs font-bold text-gray-600 mb-1.5 tracking-wide flex items-center gap-1.5">
                                                 <Calendar size={12} />
                                                 CREATED AT
@@ -2158,7 +2158,7 @@ const searchBugs = useCallback(
                                             </p>
                                         </div>
                                         {selectedBug.updatedAt && (
-                                            <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200">
+                                            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200">
                                                 <label className="text-xs font-bold text-gray-600 mb-1.5 block tracking-wide  items-center gap-1.5">
                                                     <Clock size={12} />
                                                     UPDATED AT
@@ -2178,7 +2178,7 @@ const searchBugs = useCallback(
                                     transition={{ delay: 0.2 }}
                                     className="lg:col-span-1"
                                 >
-                                    <div className="bg-white p-4 rounded-xl shadow-sm border border-gray-200 top-1">
+                                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 top-1">
                                         <h3 className="user-select-none text-sm font-bold text-gray-800 mb-4 flex items-center gap-2 tracking-wide">
                                             <MessageSquare size={16} className="text-blue-600" />
                                             COMMENTS
@@ -2227,7 +2227,7 @@ const searchBugs = useCallback(
                                                 <div className="text-center py-8 text-gray-500 text-xs">
                                                     <MessageSquare
                                                         size={32}
-                                                        className="mx-auto mb-2 text-gray-300"
+                                                        className="mx-auto mb-2 text-gray-300 dark:text-gray-800 "
                                                     />
                                                     <p className="font-medium">No comments yet</p>
                                                 </div>

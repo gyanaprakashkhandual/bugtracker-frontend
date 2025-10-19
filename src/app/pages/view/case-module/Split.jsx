@@ -1,3 +1,4 @@
+
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -21,6 +22,7 @@ import {
 } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
+import { useProject } from '@/app/script/Project.context';
 
 const TestCaseSplitView = () => {
     const [testCases, setTestCases] = useState([]);
@@ -49,7 +51,8 @@ const TestCaseSplitView = () => {
 
     const { showAlert } = useAlert();
     const { testTypeId, testTypeName } = useTestType();
-    const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
+    const { selectedProject } = useProject();
+     const projectId = selectedProject?._id;
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
     const BASE_URL = 'http://localhost:5000/api/v1/test-case';

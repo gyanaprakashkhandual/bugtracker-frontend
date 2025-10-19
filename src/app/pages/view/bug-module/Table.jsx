@@ -54,7 +54,7 @@ const BugSpreadsheet = () => {
     const linksButtonRefs = useRef({});
     const imagesButtonRefs = useRef({});
     const fileInputRef = useRef(null);
-    const { testTypeId } = useTestType();
+    const { testTypeId, testTypeName } = useTestType();
     const { selectedProject } = useProject();
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
     const BASE_URL = 'http://localhost:5000/api/v1/bug';
@@ -1222,26 +1222,6 @@ const BugSpreadsheet = () => {
     return (
         <div className="w-full bg-gradient-to-br from-gray-50 dark:bg-gray-800 to-gray-100 dark:bg-gray-800 flex flex-col">
             <AnimatePresence>
-                {alert && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -50 }}
-                        className="fixed top-4 right-4 z-50"
-                    >
-                        <div className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${alert.type === 'success' ? 'bg-green-500 dark:bg-gray-800 text-white dark:bg-gray-100' : 'bg-red-500 dark:bg-gray-800 text-white dark:bg-gray-100'
-                            }`}>
-                            {alert.type === 'success' ? (
-                                <div className="w-5 h-5 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-green-500 dark:bg-gray-100 rounded-full"></div>
-                                </div>
-                            ) : (
-                                <AlertCircle size={20} />
-                            )}
-                            <span className="text-sm font-medium">{alert.message}</span>
-                        </div>
-                    </motion.div>
-                )}
             </AnimatePresence>
             <AnimatePresence>
                 {imagePreviewModal && (
@@ -1367,7 +1347,7 @@ const BugSpreadsheet = () => {
                 <div className="flex flex-col sm:flex-row items-center gap-2 text-xs text-gray-700 dark:bg-gray-100">
                     <div>
                         <span className="font-medium text-gray-600 dark:bg-gray-100">Test Type:</span>{' '}
-                        <span>{selectedTestType?.testTypeName || selectedTestType || 'Not selected'}</span>
+                        <span>{testTypeName || selectedTestType || 'Not selected'}</span>
                     </div>
                     <div className="hidden sm:block h-3 w-px bg-gray-300 dark:bg-gray-800 mx-2" />
                     <div>

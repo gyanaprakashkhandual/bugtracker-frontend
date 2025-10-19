@@ -55,6 +55,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
 
     const { showAlert } = useAlert();
     const { selectedProject } = useProject();
+    const { testTypeId } = useTestType();
 
     const BASE_URL = 'http://localhost:5000/api/v1/test-case';
 
@@ -107,8 +108,6 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
             setIsSubmitting(true);
 
             const token = localStorage.getItem("token");
-            const { testTypeId } = useTestType();
-
             if (!token || !selectedProject?._id || !testTypeId) {
                 showAlert({
                     type: "error",

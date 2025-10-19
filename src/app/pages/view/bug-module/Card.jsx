@@ -6,7 +6,7 @@ import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
 import { useProject } from '@/app/script/Project.context';
 import { BUG_EVENTS } from '@/app/components/Sidebars/Bug';
-import { BugCardSkeleton, BugCardSkeletonGrid } from '@/app/components/assets/Card.loader';
+import { BugCardSkeletonGrid } from '@/app/components/assets/Card.loader';
 
 const BUG_EVENTS_CARD = {
     CREATED: 'bug:created',
@@ -60,6 +60,7 @@ const BugCardView = () => {
     const fileInputRef = useRef(null);
     const { showAlert } = useAlert();
     const { selectedProject } = useProject();
+    const projectId = selectedProject?._id;
     const { testTypeId, testTypeName } = useTestType();
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
     const BASE_URL = 'http://localhost:5000/api/v1/bug';
@@ -148,14 +149,14 @@ const BugCardView = () => {
     }, []);
 
     const fetchBugs = useCallback(async () => {
-        if (!selectedProject._Id || !testTypeId || !token) {
+        if (!projectId || !testTypeId || !token) {
             setLoading(false);
             return;
         }
         try {
             setLoading(true);
             const response = await fetch(
-                `${BASE_URL}/projects/${selectedProject._Id}/test-types/${testTypeId}/bugs?page=${currentPage}&limit=${itemsPerPage}`,
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs?page=${currentPage}&limit=${itemsPerPage}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -175,14 +176,14 @@ const BugCardView = () => {
         } finally {
             setLoading(false);
         }
-    }, [selectedProject._Id, testTypeId, token, currentPage]);
+    }, [projectId, testTypeId, token, currentPage]);
 
     const fetchComments = async (bugId) => {
         if (!token || !bugId) return;
         setLoadingComments(true);
         try {
             const response = await fetch(
-                `${COMMENT_BASE_URL}/projects/${selectedProject._Id}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                `${COMMENT_BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -207,7 +208,7 @@ const BugCardView = () => {
         setSubmittingComment(true);
         try {
             const response = await fetch(
-                `${COMMENT_BASE_URL}/projects/${selectedProject._Id}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                `${COMMENT_BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
                 {
                     method: 'POST',
                     headers: {
@@ -313,7 +314,7 @@ const BugCardView = () => {
     const moveBugToTrash = async (bugId) => {
         try {
             const response = await fetch(
-                `${BASE_URL}/projects/${selectedProject._Id}/test-types/${testTypeId}/bugs/${bugId}/trash`,
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/trash`,
                 {
                     method: 'PATCH',
                     headers: {
@@ -344,7 +345,7 @@ const BugCardView = () => {
     const deleteBugPermanently = async (bugId) => {
         try {
             const response = await fetch(
-                `${BASE_URL}/projects/${selectedProject._Id}/test-types/${testTypeId}/bugs/${bugId}/permanent`,
+                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/permanent`,
                 {
                     method: 'DELETE',
                     headers: {

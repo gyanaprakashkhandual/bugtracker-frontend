@@ -24,6 +24,7 @@ const BugKanbanView = () => {
     const [openDropdown, setOpenDropdown] = useState(null);
     const dropdownRefs = useRef({});
 
+    const { showAlert } = useAlert();
     const { selectedProject } = useProject();
     const { testTypeId } = useTestType();
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
@@ -408,7 +409,7 @@ const BugKanbanView = () => {
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                         exit={{ opacity: 0, scale: 0.95, y: -10 }}
                         transition={{ duration: 0.2 }}
-                        className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg z-50 py-1 max-h-64 overflow-y-auto"
+                        className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md   z-50 py-1 max-h-64 overflow-y-auto"
                     >
                         <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700">
                             {label}
@@ -455,7 +456,7 @@ const BugKanbanView = () => {
                             initial="initial"
                             animate="animate"
                             whileHover="hover"
-                            className={`flex-shrink-0 w-[243px] min-h-[calc(100vh-80px)] ${statusColors[status]} border rounded-lg p-3 transition-all duration-300 ${dragOverColumn === status ? 'ring-2 ring-blue-400 dark:ring-blue-600 ring-offset-2 shadow-lg scale-[1.02]' : ''}`}
+                            className={`flex-shrink-0 w-[243px] min-h-[calc(100vh-80px)] ${statusColors[status]} border rounded-lg p-3 transition-all duration-300 ${dragOverColumn === status ? 'ring-2 ring-blue-400 dark:ring-blue-600 ring-offset-2   scale-[1.02]' : ''}`}
                             onDragOver={handleDragOver}
                             onDragEnter={() => handleDragEnter(status)}
                             onDragLeave={handleDragLeave}
@@ -728,7 +729,7 @@ const BugKanbanView = () => {
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-br from-white via-sky-50/30 to-white dark:from-gray-900 dark:via-sky-950/30 dark:to-gray-900">
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5 shadow-lg">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5  ">
                                         <h3 className="text-xs font-semibold text-sky-600 dark:text-sky-100 uppercase tracking-wider mb-3">MODULE</h3>
                                         {isEditMode ? (
                                             <input
@@ -742,7 +743,7 @@ const BugKanbanView = () => {
                                         )}
                                     </div>
 
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5 shadow-lg">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5  ">
                                         <h3 className="text-xs font-semibold text-sky-600 dark:text-sky-100 uppercase tracking-wider mb-3">DESCRIPTION</h3>
                                         {isEditMode ? (
                                             <textarea
@@ -756,7 +757,7 @@ const BugKanbanView = () => {
                                         )}
                                     </div>
 
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5 shadow-lg">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5  ">
                                         <h3 className="text-xs font-semibold text-sky-600 dark:text-sky-100 uppercase tracking-wider mb-3">REQUIREMENT</h3>
                                         {isEditMode ? (
                                             <textarea
@@ -770,7 +771,7 @@ const BugKanbanView = () => {
                                         )}
                                     </div>
 
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5 shadow-lg">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5  ">
                                         <h3 className="text-xs font-semibold text-sky-600 dark:text-sky-100 uppercase tracking-wider mb-3 flex items-center gap-2">
                                             <Link className="w-3.5 h-3.5" />
                                             REFERENCE LINKS
@@ -778,7 +779,7 @@ const BugKanbanView = () => {
                                         <p className="text-sm text-gray-400 dark:text-gray-100 text-center py-8">No reference links</p>
                                     </div>
 
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5 shadow-lg">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5  ">
                                         <h3 className="text-xs font-semibold text-sky-600 dark:text-sky-100 uppercase tracking-wider mb-3 flex items-center gap-2">
                                             <ImageIcon className="w-3.5 h-3.5" />
                                             IMAGES
@@ -789,14 +790,14 @@ const BugKanbanView = () => {
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950 dark:to-blue-950 backdrop-blur-xl border border-sky-200 dark:border-sky-800 rounded-lg p-4 shadow-lg">
+                                        <div className="bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950 dark:to-blue-950 backdrop-blur-xl border border-sky-200 dark:border-sky-800 rounded-lg p-4  ">
                                             <div className="flex items-center gap-2 text-sky-700 dark:text-sky-100 mb-1">
                                                 <Calendar className="w-4 h-4" />
                                                 <span className="text-xs font-semibold uppercase tracking-wider">CREATED AT</span>
                                             </div>
                                             <p className="text-sm font-medium text-sky-900 dark:text-sky-100">{formatDate(selectedBug.createdAt)}</p>
                                         </div>
-                                        <div className="bg-gradient-to-br from-purple-50 to-sky-50 dark:from-purple-950 dark:to-sky-950 backdrop-blur-xl border border-purple-200 dark:border-purple-800 rounded-lg p-4 shadow-lg">
+                                        <div className="bg-gradient-to-br from-purple-50 to-sky-50 dark:from-purple-950 dark:to-sky-950 backdrop-blur-xl border border-purple-200 dark:border-purple-800 rounded-lg p-4  ">
                                             <div className="flex items-center gap-2 text-purple-700 dark:text-purple-100 mb-1">
                                                 <Clock className="w-4 h-4" />
                                                 <span className="text-xs font-semibold uppercase tracking-wider">UPDATED AT</span>
@@ -857,7 +858,7 @@ const BugKanbanView = () => {
                                     <button
                                         onClick={handlePostComment}
                                         disabled={loading || !newComment.trim()}
-                                        className="w-full px-4 py-2.5 bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-700 dark:to-blue-700 text-white dark:text-gray-100 text-sm font-medium rounded-lg hover:from-sky-700 hover:to-blue-700 dark:hover:from-sky-600 dark:hover:to-blue-600 transition-all shadow-lg disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        className="w-full px-4 py-2.5 bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-700 dark:to-blue-700 text-white dark:text-gray-100 text-sm font-medium rounded-lg hover:from-sky-700 hover:to-blue-700 dark:hover:from-sky-600 dark:hover:to-blue-600 transition-all   disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     >
                                         <Send className="w-4 h-4" />
                                         Post Comment
