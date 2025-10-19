@@ -1,90 +1,57 @@
-'use client';
+// pages/documents/[id].jsx
+import { useState, useEffect } from 'react';
+import { useRouter } from 'next/router';
+import TiptapEditor from '../component/Editor';
 
-import { useState } from 'react';
-import CommentComponent from '../components/Comment';
-import VersionControlComponent from '../components/Version';
-import CollaborationComponent from '../components/Collaborate';
-import SuggestionComponent from '../components/Suggestions';
-import MediaComponent from '../components/Media';
-import PreviewComponent from '../components/Preview';
-import Editor from '../components/Editor';
-import Setting from '../components/Setting';
-import Navbar from '../components/Navbar';
-import StatusBar from '../components/Statusbar';
-import LeftSidebar from '../components/LeftSidebar';
-import RightSidebar from '../components/RightSidebar';
+export default function DocumentPage() {
+  const router = useRouter();
+  const { id } = router.query;
+  const [document, setDocument] = useState(null);
+  const [loading, setLoading] = useState(true);
 
-// Main Document Editor Component
-const DocumentEditor = () => {
-    const [leftSidebarOpen, setLeftSidebarOpen] = useState(true);
-    const [rightSidebarOpen, setRightSidebarOpen] = useState(true);
-    const [activeTab, setActiveTab] = useState('editor');
-    const [toolbarCollapsed, setToolbarCollapsed] = useState(false);
+  useEffect(() => {
+    if (id) {
+      fetchDocument();
+    }
+  }, [id]);
 
-    const renderContent = () => {
-        switch (activeTab) {
-            case 'editor':
-                return <Editor />;
-            case 'preview':
-                return <PreviewComponent />;
-            case 'comments':
-                return <CommentComponent />;
-            case 'suggestions':
-                return <SuggestionComponent />;
-            case 'history':
-                return <VersionControlComponent />;
-            case 'collaborators':
-                return <CollaborationComponent />;
-            case 'media':
-                return <MediaComponent />;
-            case 'settings':
-                return <Setting />;
-            default:
-                return <Editor />;
-        }
-    };
+  const fetchDocument = async () => {
+    try {
+      const res = await fetch(`/api/documents/${id}`);
+      const data = await res.json();
+      setDocument(data);
+    } catch (error) {
+      console.error('Error fetching document:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    return (
-        <div className="h-screen flex flex-col bg-slate-50 sidebar-scrollbar">
-            {/* Navbar */}
-            <div className="sticky top-0 z-50">
-                <Navbar
-                    leftSidebarOpen={leftSidebarOpen}
-                    setLeftSidebarOpen={setLeftSidebarOpen}
-                    toolbarCollapsed={toolbarCollapsed}
-                    setToolbarCollapsed={setToolbarCollapsed}
-                />
-            </div>
+  const handleSave = async (documentData) => {
+    try {
+      const res = await fetch(`/api/documents/${id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(documentData),
+      });
+      
+      if (res.ok) {
+        const updatedDoc = await res.json();
+        setDocument(updatedDoc);
+        alert('Document saved successfully!');
+      }
+    } catch (error) {
+      console.error('Error saving document:', error);
+      alert('Error saving document');
+    }
+  };
 
-            {/* Main Content */}
-            <div className="flex-1 flex overflow-hidden">
-                {/* Left Sidebar */}
-                <div className="sticky top-0 self-start">
-                    <LeftSidebar
-                        leftSidebarOpen={leftSidebarOpen}
-                        activeTab={activeTab}
-                        setActiveTab={setActiveTab}
-                    />
-                </div>
+  if (loading) return <div>Loading...</div>;
+  if (!document) return <div>Document not found</div>;
 
-                {/* Main Editor Area */}
-                <main className="flex-1 overflow-auto">
-                    {renderContent()}
-                </main>
-
-                {/* Right Sidebar */}
-                <div className="sticky top-0 self-start">
-                    <RightSidebar
-                        rightSidebarOpen={rightSidebarOpen}
-                        setRightSidebarOpen={setRightSidebarOpen}
-                    />
-                </div>
-            </div>
-
-            {/* Status Bar */}
-            <StatusBar />
-        </div>
-    );
-};
-
-export default DocumentEditor;
+  return (
+    <div className="container mx-auto p-6">
+      <TiptapEditor document={document} onSave={handleSave} />
+    </div>
+  );
+}
