@@ -7,6 +7,7 @@ import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
 import { useProject } from '@/app/script/Project.context';
 import { useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 
 export default function DocumentManagement() {
   const { showAlert } = useAlert();
@@ -14,6 +15,8 @@ export default function DocumentManagement() {
   const projectId = selectedProject?._id;
   const { testTypeId, testTypeName } = useTestType();
   const router = useRouter();
+  const params = useParams();
+  const slug = params.slug;
 
   const [documents, setDocuments] = useState([]);
   const [filteredDocs, setFilteredDocs] = useState([]);
@@ -180,23 +183,24 @@ export default function DocumentManagement() {
     setIsEditModalOpen(true);
   };
 
-  const handleOpenDocument = (docId) => {
-    router.push(`/`);
+  const handleOpenDocument = (doc) => {
+    // Use project slug from URL params and document slug
+    router.push(`/app/projects/${slug}/doc/${doc.slug}`);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100">
-      <nav className="bg-white shadow-md border-b border-slate-200">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 to-slate-100 dark:from-slate-900 dark:to-slate-800">
+      <nav className="bg-white dark:bg-slate-800 shadow-md border-b border-slate-200 dark:border-slate-700">
         <div className="max-w-7xl mx-auto px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <Coffee className="w-6 h-6 text-amber-600" />
+              <Coffee className="w-6 h-6 text-amber-600 dark:text-amber-500" />
               <div className="flex items-center gap-3">
-                <span className="text-lg font-semibold text-slate-800">
+                <span className="text-lg font-semibold text-slate-800 dark:text-slate-200">
                   {selectedProject?.name || 'Project'}
                 </span>
-                <span className="text-slate-400">/</span>
-                <span className="text-lg font-medium text-slate-600">
+                <span className="text-slate-400 dark:text-slate-500">/</span>
+                <span className="text-lg font-medium text-slate-600 dark:text-slate-300">
                   {testTypeName || 'Test Type'}
                 </span>
               </div>
@@ -204,13 +208,13 @@ export default function DocumentManagement() {
 
             <div className="flex items-center gap-4">
               <div className="relative">
-                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400" />
+                <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-400 dark:text-slate-500" />
                 <input
                   type="text"
                   placeholder="Search documents..."
                   value={searchQuery}
                   onChange={(e) => setSearchQuery(e.target.value)}
-                  className="pl-10 pr-4 py-2 w-64 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="pl-10 pr-4 py-2 w-64 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100 placeholder-slate-500 dark:placeholder-slate-400"
                 />
               </div>
 
@@ -229,11 +233,11 @@ export default function DocumentManagement() {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {loading ? (
           <div className="flex items-center justify-center py-20">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
+            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 dark:border-blue-500"></div>
           </div>
         ) : filteredDocs.length === 0 ? (
           <div className="text-center py-20">
-            <p className="text-slate-500 text-lg">No documents found</p>
+            <p className="text-slate-500 dark:text-slate-400 text-lg">No documents found</p>
           </div>
         ) : (
           <div className="grid gap-4">
@@ -242,36 +246,41 @@ export default function DocumentManagement() {
                 key={doc._id}
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
-                className="bg-white rounded-lg shadow-sm border border-slate-200 p-6 hover:shadow-md transition-shadow"
+                className="bg-white dark:bg-slate-800 rounded-lg shadow-sm border border-slate-200 dark:border-slate-700 p-6 hover:shadow-md transition-shadow"
               >
                 <div className="flex items-center justify-between">
                   <div className="flex-1">
-                    <h3 className="text-lg font-semibold text-slate-800 mb-1">
+                    <h3 className="text-lg font-semibold text-slate-800 dark:text-slate-200 mb-1">
                       {doc.title}
                     </h3>
-                    <p className="text-sm text-slate-500">
+                    <p className="text-sm text-slate-500 dark:text-slate-400">
                       Created by: {doc.createdBy?.name || 'Unknown'} • Version: {doc.version || 1}
                     </p>
+                    {doc.slug && (
+                      <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">
+                        Slug: {doc.slug}
+                      </p>
+                    )}
                   </div>
 
                   <div className="flex items-center gap-2">
                     <button
-                      onClick={() => handleOpenDocument(doc._id)}
-                      className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+                      onClick={() => handleOpenDocument(doc)}
+                      className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
                       title="Open Document"
                     >
                       <ExternalLink className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => openEditModal(doc)}
-                      className="p-2 text-green-600 hover:bg-green-50 rounded-lg transition-colors"
+                      className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
                       title="Edit Document"
                     >
                       <Edit2 className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleDeleteDocument(doc._id)}
-                      className="p-2 text-red-600 hover:bg-red-50 rounded-lg transition-colors"
+                      className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                       title="Delete Document"
                     >
                       <Trash2 className="w-5 h-5" />
@@ -297,41 +306,41 @@ export default function DocumentManagement() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6"
+              className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full p-6"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-slate-800">Create New Document</h2>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Create New Document</h2>
                 <button
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                 >
-                  <X className="w-5 h-5 text-slate-500" />
+                  <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                 </button>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Document Title
                   </label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Content
                   </label>
                   <textarea
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     rows={6}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                     placeholder="Enter document content..."
                   />
                 </div>
@@ -341,7 +350,7 @@ export default function DocumentManagement() {
                 <button
                   type="button"
                   onClick={() => setIsCreateModalOpen(false)}
-                  className="px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                  className="px-4 py-2 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
@@ -371,41 +380,41 @@ export default function DocumentManagement() {
               initial={{ scale: 0.95, opacity: 0 }}
               animate={{ scale: 1, opacity: 1 }}
               exit={{ scale: 0.95, opacity: 0 }}
-              className="bg-white rounded-lg shadow-xl max-w-2xl w-full p-6"
+              className="bg-white dark:bg-slate-800 rounded-lg shadow-xl max-w-2xl w-full p-6"
               onClick={(e) => e.stopPropagation()}
             >
               <div className="flex items-center justify-between mb-6">
-                <h2 className="text-2xl font-bold text-slate-800">Edit Document</h2>
+                <h2 className="text-2xl font-bold text-slate-800 dark:text-slate-200">Edit Document</h2>
                 <button
                   onClick={() => setIsEditModalOpen(false)}
-                  className="p-2 hover:bg-slate-100 rounded-lg transition-colors"
+                  className="p-2 hover:bg-slate-100 dark:hover:bg-slate-700 rounded-lg transition-colors"
                 >
-                  <X className="w-5 h-5 text-slate-500" />
+                  <X className="w-5 h-5 text-slate-500 dark:text-slate-400" />
                 </button>
               </div>
 
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Document Title
                   </label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                   />
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium text-slate-700 mb-2">
+                  <label className="block text-sm font-medium text-slate-700 dark:text-slate-300 mb-2">
                     Content
                   </label>
                   <textarea
                     value={formData.content}
                     onChange={(e) => setFormData({ ...formData, content: e.target.value })}
                     rows={6}
-                    className="w-full px-4 py-2 border border-slate-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="w-full px-4 py-2 border border-slate-300 dark:border-slate-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-700 text-slate-900 dark:text-slate-100"
                     placeholder="Enter document content..."
                   />
                 </div>
@@ -415,7 +424,7 @@ export default function DocumentManagement() {
                 <button
                   type="button"
                   onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 text-slate-700 bg-slate-100 hover:bg-slate-200 rounded-lg transition-colors"
+                  className="px-4 py-2 text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-700 hover:bg-slate-200 dark:hover:bg-slate-600 rounded-lg transition-colors"
                 >
                   Cancel
                 </button>
