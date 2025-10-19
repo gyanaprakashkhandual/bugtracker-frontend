@@ -384,7 +384,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                 tooltip-placement="bottom"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => router.push(`/app/projects/${project?.slug}/test-data`)}
+                onClick={() => router.push(`/app/projects/${project?.slug}/doc`)}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-sky-100 dark:bg-slate-800 text-sky-700 dark:text-sky-300 transition-all duration-200 rounded-lg hover:bg-sky-200 dark:hover:bg-slate-700"
               >
                 <DockIcon size={14} />
@@ -396,6 +396,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                 tooltip-placement="bottom"
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
+                onClick={() => router.push(`/app/projects/${project?.slug}/sheet`)}
                 className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-white dark:bg-slate-800 text-sky-700 dark:text-sky-300 transition-all duration-200 rounded-lg hover:bg-sky-50 dark:hover:bg-slate-700 border border-sky-200 dark:border-slate-700"
               >
                 <Sheet size={14} />
