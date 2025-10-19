@@ -4,9 +4,10 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Eye, Calendar, Clock, Edit, Save, Image as ImageIcon, Link as LinkIcon, Copy, Plus, Trash, Upload, CheckCircle } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
+import { useProject } from '@/app/script/Project.context';
 import { BUG_EVENTS } from '@/app/components/Sidebars/Bug';
 import { BugCardSkeleton, BugCardSkeletonGrid } from '@/app/components/assets/Card.loader';
-// Bug Events
+
 const BUG_EVENTS_CARD = {
     CREATED: 'bug:created',
     UPDATED: 'bug:updated',
@@ -15,6 +16,7 @@ const BUG_EVENTS_CARD = {
     RESTORED: 'bug:restored',
     CHANGED: 'bug:changed',
 };
+
 const emitBugEvent = (eventType, bugData = null) => {
     if (typeof window !== 'undefined') {
         const event = new CustomEvent(eventType, {
@@ -27,6 +29,7 @@ const emitBugEvent = (eventType, bugData = null) => {
         window.dispatchEvent(changeEvent);
     }
 };
+
 const BugCardView = () => {
     const [bugs, setBugs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -56,13 +59,14 @@ const BugCardView = () => {
     const itemsPerPage = 12;
     const fileInputRef = useRef(null);
     const { showAlert } = useAlert();
-    const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
+    const { selectedProject } = useProject();
     const { testTypeId, testTypeName } = useTestType();
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
     const BASE_URL = 'http://localhost:5000/api/v1/bug';
     const COMMENT_BASE_URL = 'http://localhost:5000/api/v1/comment';
     const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
     const CLOUDINARY_PRESET = 'test_case_preset';
+
     const copyText = (text) => {
         navigator.clipboard.writeText(text).then(() => {
             showAlert({
@@ -70,9 +74,13 @@ const BugCardView = () => {
                 message: "Text Copied"
             })
         }).catch(() => {
-            alert('Failed to copy!');
+            showAlert({
+                type: "error",
+                message: "Failed to copy text"
+            })
         });
     };
+
     const uploadImageToCloudinary = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -89,6 +97,7 @@ const BugCardView = () => {
             throw error;
         }
     };
+
     const handleImageUpload = async (e) => {
         const file = e.target.files?.[0];
         if (!file) return;
@@ -99,8 +108,15 @@ const BugCardView = () => {
                 ...prev,
                 images: [...prev.images, imageUrl]
             }));
+            showAlert({
+                type: "success",
+                message: "Image uploaded successfully"
+            })
         } catch (error) {
-            alert('Failed to upload image');
+            showAlert({
+                type: "error",
+                message: "Failed to upload image"
+            })
         } finally {
             setUploadingImage(false);
             if (fileInputRef.current) {
@@ -108,18 +124,19 @@ const BugCardView = () => {
             }
         }
     };
+
     useEffect(() => {
         const handleBugChange = (event) => {
-            fetchBugs(); // This will refresh your bugs list
+            fetchBugs();
         };
-        // Listen to all relevant bug events
+
         window.addEventListener(BUG_EVENTS.CHANGED, handleBugChange);
         window.addEventListener(BUG_EVENTS.CREATED, handleBugChange);
         window.addEventListener(BUG_EVENTS.UPDATED, handleBugChange);
         window.addEventListener(BUG_EVENTS.DELETED, handleBugChange);
         window.addEventListener(BUG_EVENTS.TRASHED, handleBugChange);
         window.addEventListener(BUG_EVENTS.RESTORED, handleBugChange);
-        // Cleanup event listeners on component unmount
+
         return () => {
             window.removeEventListener(BUG_EVENTS.CHANGED, handleBugChange);
             window.removeEventListener(BUG_EVENTS.CREATED, handleBugChange);
@@ -128,16 +145,17 @@ const BugCardView = () => {
             window.removeEventListener(BUG_EVENTS.TRASHED, handleBugChange);
             window.removeEventListener(BUG_EVENTS.RESTORED, handleBugChange);
         };
-    }, []); // Empty dependency array means this runs once on mount
+    }, []);
+
     const fetchBugs = useCallback(async () => {
-        if (!projectId || !testTypeId || !token) {
+        if (!selectedProject._Id || !testTypeId || !token) {
             setLoading(false);
             return;
         }
         try {
             setLoading(true);
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs?page=${currentPage}&limit=${itemsPerPage}`,
+                `${BASE_URL}/projects/${selectedProject._Id}/test-types/${testTypeId}/bugs?page=${currentPage}&limit=${itemsPerPage}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -150,16 +168,21 @@ const BugCardView = () => {
             setTotalPages(data.pagination?.totalPages || 1);
             setTotalBugs(data.pagination?.totalBugs || 0);
         } catch (error) {
+            showAlert({
+                type: "error",
+                message: "Failed to fetch bugs"
+            })
         } finally {
             setLoading(false);
         }
-    }, [projectId, testTypeId, token, currentPage]);
+    }, [selectedProject._Id, testTypeId, token, currentPage]);
+
     const fetchComments = async (bugId) => {
         if (!token || !bugId) return;
         setLoadingComments(true);
         try {
             const response = await fetch(
-                `${COMMENT_BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                `${COMMENT_BASE_URL}/projects/${selectedProject._Id}/test-types/${testTypeId}/bugs/${bugId}/comments`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -170,16 +193,21 @@ const BugCardView = () => {
             const data = await response.json();
             setComments(data.comments || []);
         } catch (error) {
+            showAlert({
+                type: "error",
+                message: "Failed to fetch comments"
+            })
         } finally {
             setLoadingComments(false);
         }
     };
+
     const submitComment = async (bugId) => {
         if (!newComment.trim() || submittingComment) return;
         setSubmittingComment(true);
         try {
             const response = await fetch(
-                `${COMMENT_BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                `${COMMENT_BASE_URL}/projects/${selectedProject._Id}/test-types/${testTypeId}/bugs/${bugId}/comments`,
                 {
                     method: 'POST',
                     headers: {
@@ -196,11 +224,20 @@ const BugCardView = () => {
             const data = await response.json();
             setComments(prev => [data.comment, ...prev]);
             setNewComment('');
+            showAlert({
+                type: "success",
+                message: "Comment added successfully"
+            })
         } catch (error) {
+            showAlert({
+                type: "error",
+                message: "Failed to submit comment"
+            })
         } finally {
             setSubmittingComment(false);
         }
     };
+
     const updateBugField = async (bugId, field, value) => {
         try {
             const response = await fetch(
@@ -229,9 +266,14 @@ const BugCardView = () => {
             });
             return true;
         } catch (error) {
+            showAlert({
+                type: "error",
+                message: "Failed to update bug"
+            })
             return false;
         }
     };
+
     const updateBugFields = async (bugId, fields) => {
         try {
             const response = await fetch(
@@ -260,13 +302,18 @@ const BugCardView = () => {
             });
             return true;
         } catch (error) {
+            showAlert({
+                type: "error",
+                message: "Failed to update bug fields"
+            })
             return false;
         }
     };
+
     const moveBugToTrash = async (bugId) => {
         try {
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/trash`,
+                `${BASE_URL}/projects/${selectedProject._Id}/test-types/${testTypeId}/bugs/${bugId}/trash`,
                 {
                     method: 'PATCH',
                     headers: {
@@ -287,12 +334,17 @@ const BugCardView = () => {
                 message: "Bug moved to trash successfully!"
             });
         } catch (error) {
+            showAlert({
+                type: "error",
+                message: "Failed to move bug to trash"
+            })
         }
     };
+
     const deleteBugPermanently = async (bugId) => {
         try {
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/permanent`,
+                `${BASE_URL}/projects/${selectedProject._Id}/test-types/${testTypeId}/bugs/${bugId}/permanent`,
                 {
                     method: 'DELETE',
                     headers: {
@@ -312,8 +364,13 @@ const BugCardView = () => {
                 message: "Bug deleted permanently!"
             });
         } catch (error) {
+            showAlert({
+                type: "error",
+                message: "Failed to delete bug"
+            })
         }
     };
+
     const handleEditClick = () => {
         setIsEditing(true);
         setEditFormData({
@@ -328,15 +385,18 @@ const BugCardView = () => {
             status: selectedBug.status || 'New'
         });
     };
+
     const handleSaveClick = async () => {
         const success = await updateBugFields(selectedBug._id, editFormData);
         if (success) {
             setIsEditing(false);
         }
     };
+
     const handleCancelClick = () => {
         setIsEditing(false);
     };
+
     const addRefLink = () => {
         if (newRefLink.trim()) {
             setEditFormData(prev => ({
@@ -346,18 +406,21 @@ const BugCardView = () => {
             setNewRefLink('');
         }
     };
+
     const removeRefLink = (index) => {
         setEditFormData(prev => ({
             ...prev,
             refLinks: prev.refLinks.filter((_, i) => i !== index)
         }));
     };
+
     const removeImage = (index) => {
         setEditFormData(prev => ({
             ...prev,
             images: prev.images.filter((_, i) => i !== index)
         }));
     };
+
     const goToNextBug = () => {
         const currentIndex = filteredBugs.findIndex(bug => bug._id === selectedBug._id);
         if (currentIndex < filteredBugs.length - 1) {
@@ -367,6 +430,7 @@ const BugCardView = () => {
             setIsEditing(false);
         }
     };
+
     const goToPreviousBug = () => {
         const currentIndex = filteredBugs.findIndex(bug => bug._id === selectedBug._id);
         if (currentIndex > 0) {
@@ -376,14 +440,17 @@ const BugCardView = () => {
             setIsEditing(false);
         }
     };
+
     useEffect(() => {
         fetchBugs();
     }, [fetchBugs]);
+
     const filteredBugs = bugs.filter(bug =>
         Object.values(bug).some(value =>
             value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
         )
     );
+
     const getBugTypeColor = (type) => {
         const colors = {
             'Functional': 'bg-blue-500 dark:bg-blue-600',
@@ -394,6 +461,7 @@ const BugCardView = () => {
         };
         return colors[type] || 'bg-gray-500 dark:bg-gray-600';
     };
+
     const getStatusColor = (status) => {
         const colors = {
             'New': 'bg-blue-500 dark:bg-blue-600',
@@ -405,9 +473,11 @@ const BugCardView = () => {
         };
         return colors[status] || 'bg-gray-500 dark:bg-gray-600';
     };
+
     const ModernDropdown = ({ value, options, onChange, className = "" }) => {
         const [isOpen, setIsOpen] = useState(false);
         const dropdownRef = useRef(null);
+
         useEffect(() => {
             const handleClickOutside = (event) => {
                 if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -417,10 +487,12 @@ const BugCardView = () => {
             document.addEventListener('mousedown', handleClickOutside);
             return () => document.removeEventListener('mousedown', handleClickOutside);
         }, []);
+
         const handleSelect = (option) => {
             onChange(option);
             setIsOpen(false);
         };
+
         return (
             <div className={`relative inline-block ${className}`} ref={dropdownRef}>
                 <button
@@ -462,6 +534,7 @@ const BugCardView = () => {
             </div>
         );
     };
+
     if (loading) {
         return (
             <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:bg-gray-800">
@@ -469,6 +542,7 @@ const BugCardView = () => {
             </div>
         );
     }
+
     return (
         <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:bg-gray-800 p-2">
             <div className="max-w-full mx-auto">
@@ -543,7 +617,6 @@ const BugCardView = () => {
                                 </motion.div>
                             ))}
                         </div>
-                        {/* Pagination */}
                         <div className="flex items-center user-select-none justify-between bg-white dark:bg-gray-800 border border-gray-200 px-6 py-3 rounded-md shadow-sm">
                             <div className="text-sm text-gray-600 dark:text-gray-100">
                                 Page <span className="font-bold text-gray-900 dark:text-gray-100">{currentPage}</span> of <span className="font-bold text-gray-900 dark:text-gray-100">{totalPages}</span>
@@ -575,7 +648,6 @@ const BugCardView = () => {
                     </>
                 )}
             </div>
-            {/* Full Screen Modal */}
             <AnimatePresence>
                 {selectedBug && (
                     <motion.div
@@ -593,7 +665,6 @@ const BugCardView = () => {
                             onClick={(e) => e.stopPropagation()}
                             className="bg-white dark:bg-gray-800 w-full max-w-full h-full sidebar-scrollbar overflow-hidden flex flex-col"
                         >
-                            {/* Modal Header */}
                             <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 dark:bg-gray-800 flex-shrink-0">
                                 <div className="flex items-center gap-3 flex-wrap">
                                     <h2
@@ -705,12 +776,9 @@ const BugCardView = () => {
                                     </button>
                                 </div>
                             </div>
-                            {/* Modal Content */}
                             <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-800">
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
-                                    {/* Left Column - Bug Details */}
                                     <div className="lg:col-span-2 space-y-4">
-                                        {/* Module Name */}
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
@@ -731,7 +799,6 @@ const BugCardView = () => {
                                                 </div>
                                             )}
                                         </motion.div>
-                                        {/* Description */}
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
@@ -753,7 +820,6 @@ const BugCardView = () => {
                                                 </div>
                                             )}
                                         </motion.div>
-                                        {/* Requirement */}
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
@@ -775,7 +841,6 @@ const BugCardView = () => {
                                                 </div>
                                             )}
                                         </motion.div>
-                                        {/* Reference Links */}
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
@@ -875,7 +940,6 @@ const BugCardView = () => {
                                                 </div>
                                             )}
                                         </motion.div>
-                                        {/* Images */}
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
@@ -975,7 +1039,6 @@ const BugCardView = () => {
                                                 </div>
                                             )}
                                         </motion.div>
-                                        {/* Timestamps */}
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
@@ -1004,7 +1067,6 @@ const BugCardView = () => {
                                             )}
                                         </motion.div>
                                     </div>
-                                    {/* Right Column - Comments */}
                                     <motion.div
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
@@ -1016,7 +1078,6 @@ const BugCardView = () => {
                                                 <MessageSquare size={16} />
                                                 Comments ({comments.length})
                                             </h3>
-                                            {/* Add Comment */}
                                             <div className="mb-4">
                                                 <textarea
                                                     value={newComment}
@@ -1043,7 +1104,6 @@ const BugCardView = () => {
                                                     )}
                                                 </button>
                                             </div>
-                                            {/* Comments List */}
                                             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                                                 {loadingComments ? (
                                                     <div className="flex items-center justify-center py-8">

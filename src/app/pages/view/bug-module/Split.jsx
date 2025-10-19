@@ -27,6 +27,7 @@ import {
 import { useAlert } from "@/app/script/Alert.context";
 import { useTestType } from "@/app/script/TestType.context";
 import { useConfirm } from "@/app/script/Confirm.context";
+import { useProject } from "@/app/script/Project.context";
 import { GoogleArrowDown, GoogleArrowRight } from "@/app/components/utils/Icon";
 import { copyToClipboard } from "@/app/utils/Copy.text";
 import SplitSkeletonLoader from "@/app/components/assets/Split.loader";
@@ -65,6 +66,7 @@ const BugSplitView = () => {
     const { showAlert } = useAlert();
     const { showConfirm } = useConfirm();
     const { testTypeId, testTypeName } = useTestType();
+    const { selectedProject } = useProject();
 
     const handleCopy = (text) => {
         copyToClipboard(text, showAlert);
@@ -92,83 +94,83 @@ const BugSplitView = () => {
             });
     };
 
-    const projectId =
-        typeof window !== "undefined"
-            ? localStorage.getItem("currentProjectId")
-            : null;
+    
     const token =
         typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
     const BASE_URL = "http://localhost:5000/api/v1/bug";
     const COMMENT_URL = "http://localhost:5000/api/v1/comment";
 
-    // Search bugs API
-    const searchBugs = useCallback(
-        async (searchQuery) => {
-            if (!projectId || !testTypeId || !token) {
-                console.log('Missing required parameters:', { projectId, testTypeId, token: !!token });
-                return;
-            }
+// Search bugs API
+const searchBugs = useCallback(
+    async (searchQuery) => {
+        if (!selectedProject?._id || !testTypeId || !token) {
+            console.log('Missing required parameters:', { 
+                selectedProjectId: selectedProject?._id, 
+                testTypeId, 
+                token: !!token 
+            });
+            return;
+        }
 
-            try {
-                setLoading(true);
-                const url = `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/search?search=${encodeURIComponent(searchQuery)}&page=1&limit=100`;
-                console.log('Search API URL:', url);
-                console.log('Search query:', searchQuery);
+        try {
+            setLoading(true);
+            const url = `${BASE_URL}/projects/${selectedProject?._id}/test-types/${testTypeId}/search?search=${encodeURIComponent(searchQuery)}&page=1&limit=100`;
+            console.log('Search API URL:', url);
+            console.log('Search query:', searchQuery);
 
-                const response = await fetch(url, {
-                    headers: {
-                        Authorization: `Bearer ${token}`,
-                    },
-                });
+            const response = await fetch(url, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                },
+            });
 
-                console.log('Response status:', response.status);
-                console.log('Response ok:', response.ok);
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
 
-                if (!response.ok) {
-                    const errorText = await response.text();
-                    console.log('Error response body:', errorText);
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.log('Error response body:', errorText);
 
-                    if (response.status === 403) {
-                        throw new Error("Access denied to this project or test type");
-                    }
-                    if (response.status === 404) {
-                        throw new Error("API endpoint not found");
-                    }
-                    if (response.status === 500) {
-                        throw new Error("Server error occurred");
-                    }
-                    throw new Error(`Failed to search bugs: ${response.status} ${errorText}`);
+                if (response.status === 403) {
+                    throw new Error("Access denied to this project or test type");
                 }
-
-                const data = await response.json();
-                console.log('Search API response data:', data);
-
-
-            } catch (error) {
-                console.error("Error searching bugs:", error);
-                console.error("Error details:", {
-                    message: error.message,
-                    stack: error.stack
-                });
-                showAlert({
-                    type: "error",
-                    message: error.message || "Failed to search bugs"
-                });
-            } finally {
-                setLoading(false);
+                if (response.status === 404) {
+                    throw new Error("API endpoint not found");
+                }
+                if (response.status === 500) {
+                    throw new Error("Server error occurred");
+                }
+                throw new Error(`Failed to search bugs: ${response.status} ${errorText}`);
             }
-        },
-        [projectId, testTypeId, token, showAlert]
-    );
+
+            const data = await response.json();
+            console.log('Search API response data:', data);
+
+        } catch (error) {
+            console.error("Error searching bugs:", error);
+            console.error("Error details:", {
+                message: error.message,
+                stack: error.stack
+            });
+            showAlert({
+                type: "error",
+                message: error.message || "Failed to search bugs"
+            });
+        } finally {
+            setLoading(false);
+        }
+    },
+    [selectedProject?._id, testTypeId, token, showAlert]
+);
     // Filter bugs by date API
     const filterBugsByDate = useCallback(
         async (fromDate, toDate) => {
-            if (!projectId || !testTypeId || !token) return;
+            if (!selectedProject?._id || !testTypeId || !token) return;
 
             try {
                 setLoading(true);
-                let url = `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/filter/date?page=1&limit=1000000`;
+                let url = `${BASE_URL}/projects/${selectedProject?._id}/test-types/${testTypeId}/bugs/filter/date?page=1&limit=1000000`;
 
                 if (fromDate) url += `&fromDate=${fromDate}`;
                 if (toDate) url += `&toDate=${toDate}`;
@@ -190,7 +192,7 @@ const BugSplitView = () => {
                 setLoading(false);
             }
         },
-        [projectId, testTypeId, token]
+        [selectedProject?._id, testTypeId, token]
     );
     useEffect(() => {
         const handleBugChange = (event) => {
@@ -218,7 +220,7 @@ const BugSplitView = () => {
     }, []);
     // Get all bugs API
     const fetchBugs = useCallback(async () => {
-        if (!projectId || !testTypeId || !token) {
+        if (!selectedProject?._id || !testTypeId || !token) {
             setLoading(false);
             return;
         }
@@ -226,7 +228,7 @@ const BugSplitView = () => {
         try {
             setLoading(true);
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs?page=1&limit=1000000`,
+                `${BASE_URL}/projects/${selectedProject?._id}/test-types/${testTypeId}/bugs?page=1&limit=1000000`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -244,7 +246,7 @@ const BugSplitView = () => {
         } finally {
             setLoading(false);
         }
-    }, [projectId, testTypeId, token]);
+    }, [selectedProject?._id, testTypeId, token]);
 
     // Get All the comments
     const fetchComments = async (bugId) => {
@@ -254,7 +256,7 @@ const BugSplitView = () => {
 
         try {
             const response = await fetch(
-                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                `${COMMENT_URL}/projects/${selectedProject?._id}/test-types/${testTypeId}/bugs/${bugId}/comments`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -281,7 +283,7 @@ const BugSplitView = () => {
 
         try {
             const response = await fetch(
-                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                `${COMMENT_URL}/projects/${selectedProject?._id}/test-types/${testTypeId}/bugs/${bugId}/comments`,
                 {
                     method: "POST",
                     headers: {
@@ -394,12 +396,12 @@ const BugSplitView = () => {
     // Load selected bug from localStorage on component mount
     useEffect(() => {
         if (typeof window !== 'undefined') {
-            const savedBugId = localStorage.getItem(`selectedBug_${projectId}_${testTypeId}`);
+            const savedBugId = localStorage.getItem(`selectedBug_${selectedProject?._id}_${testTypeId}`);
             if (savedBugId) {
                 setLastSelectedBugId(savedBugId);
             }
         }
-    }, [projectId, testTypeId]);
+    }, [selectedProject?._id, testTypeId]);
 
     // Auto-select bug when bugs are loaded
     useEffect(() => {
@@ -422,16 +424,16 @@ const BugSplitView = () => {
     // Save selected bug to localStorage whenever it changes
     useEffect(() => {
         if (selectedBug && typeof window !== 'undefined') {
-            localStorage.setItem(`selectedBug_${projectId}_${testTypeId}`, selectedBug._id);
+            localStorage.setItem(`selectedBug_${selectedProject?._id}_${testTypeId}`, selectedBug._id);
             setLastSelectedBugId(selectedBug._id);
         }
-    }, [selectedBug, projectId, testTypeId]);
+    }, [selectedBug, selectedProject?._id, testTypeId]);
 
     // Enhanced delete function with auto-navigation
     const deleteBugPermanently = async (bugId) => {
         try {
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/permanent`,
+                `${BASE_URL}/projects/${selectedProject?._id}/test-types/${testTypeId}/bugs/${bugId}/permanent`,
                 {
                     method: "DELETE",
                     headers: {
@@ -459,7 +461,7 @@ const BugSplitView = () => {
                 if (remainingBugs.length === 0) {
                     // No bugs left
                     setSelectedBug(null);
-                    localStorage.removeItem(`selectedBug_${projectId}_${testTypeId}`);
+                    localStorage.removeItem(`selectedBug_${selectedProject?._id}_${testTypeId}`);
                 } else {
                     // Select next bug, or previous if last bug was deleted
                     let nextBug;
@@ -471,7 +473,7 @@ const BugSplitView = () => {
 
                     setSelectedBug(nextBug);
                     fetchComments(nextBug._id);
-                    localStorage.setItem(`selectedBug_${projectId}_${testTypeId}`, nextBug._id);
+                    localStorage.setItem(`selectedBug_${selectedProject?._id}_${testTypeId}`, nextBug._id);
                 }
             }
 
@@ -489,7 +491,7 @@ const BugSplitView = () => {
     const moveBugToTrash = async (bugId) => {
         try {
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/trash`,
+                `${BASE_URL}/projects/${selectedProject?._id}/test-types/${testTypeId}/bugs/${bugId}/trash`,
                 {
                     method: "PATCH",
                     headers: {
@@ -517,7 +519,7 @@ const BugSplitView = () => {
                 if (remainingBugs.length === 0) {
                     // No bugs left
                     setSelectedBug(null);
-                    localStorage.removeItem(`selectedBug_${projectId}_${testTypeId}`);
+                    localStorage.removeItem(`selectedBug_${selectedProject?._id}_${testTypeId}`);
                 } else {
                     // Select next bug, or previous if last bug was deleted
                     let nextBug;
@@ -529,7 +531,7 @@ const BugSplitView = () => {
 
                     setSelectedBug(nextBug);
                     fetchComments(nextBug._id);
-                    localStorage.setItem(`selectedBug_${projectId}_${testTypeId}`, nextBug._id);
+                    localStorage.setItem(`selectedBug_${selectedProject?._id}_${testTypeId}`, nextBug._id);
                 }
             }
 
@@ -560,7 +562,7 @@ const BugSplitView = () => {
             if (!result) return; // User canceled
 
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/trash-all`,
+                `${BASE_URL}/projects/${selectedProject?._id}/test-types/${testTypeId}/bugs/trash-all`,
                 {
                     method: "PATCH",
                     headers: {
@@ -604,7 +606,7 @@ const BugSplitView = () => {
             if (!result) return; // User canceled
 
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/delete-all`,
+                `${BASE_URL}/projects/${selectedProject?._id}/test-types/${testTypeId}/bugs/delete-all`,
                 {
                     method: "DELETE",
                     headers: {

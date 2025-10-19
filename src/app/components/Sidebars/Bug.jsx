@@ -50,6 +50,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
         bugDesc: '',
         bugRequirement: '',
         refLink: '',
+        severity: '',
         priority: '',
         status: '',
         image: null

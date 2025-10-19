@@ -1,3 +1,4 @@
+// Updated TestCaseCardView with dark mode classes (dark:bg-gray-800 for bg classes, dark:bg-gray-100 for text classes)
 import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -17,14 +18,11 @@ import {
     Loader2,
     Upload,
     ExternalLink,
-    Copy,
-    Plus,
-    Image as ImageIcon,
-    Link as LinkIcon
+    CheckCircle,
+    Image as ImageIcon
 } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
-import { CheckCircle } from 'lucide-react';
 import { BUG_EVENTS } from '@/app/components/Sidebars/Bug';
 import { BugCardSkeletonGrid } from '@/app/components/assets/Card.loader';
 
@@ -34,7 +32,6 @@ const TestCaseCardView = () => {
     const [selectedTestCase, setSelectedTestCase] = useState(null);
     const [isEditing, setIsEditing] = useState(false);
     const [editFormData, setEditFormData] = useState({});
-    const [newRefLink, setNewRefLink] = useState('');
     const [uploadingImage, setUploadingImage] = useState(false);
     const [comments, setComments] = useState([]);
     const [newComment, setNewComment] = useState('');
@@ -51,25 +48,21 @@ const TestCaseCardView = () => {
     const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
-    // API Configuration
     const BASE_URL = 'http://localhost:5000/api/v1/test-case';
     const COMMENT_BASE_URL = 'http://localhost:5000/api/v1/comment';
     const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
     const CLOUDINARY_PRESET = 'test_case_preset';
 
-    // Headers for API calls
     const headers = {
         'Authorization': `Bearer ${token}`,
         'Content-Type': 'application/json'
     };
 
     useEffect(() => {
-        const handleBugChange = (event) => {
-            console.log('Bug changed, refreshing data:', event.detail);
-            fetchBugs(); // This will refresh your bugs list
+        const handleBugChange = () => {
+            fetchTestCases();
         };
 
-        // Listen to all relevant bug events
         window.addEventListener(BUG_EVENTS.CHANGED, handleBugChange);
         window.addEventListener(BUG_EVENTS.CREATED, handleBugChange);
         window.addEventListener(BUG_EVENTS.UPDATED, handleBugChange);
@@ -77,7 +70,6 @@ const TestCaseCardView = () => {
         window.addEventListener(BUG_EVENTS.TRASHED, handleBugChange);
         window.addEventListener(BUG_EVENTS.RESTORED, handleBugChange);
 
-        // Cleanup event listeners on component unmount
         return () => {
             window.removeEventListener(BUG_EVENTS.CHANGED, handleBugChange);
             window.removeEventListener(BUG_EVENTS.CREATED, handleBugChange);
@@ -88,7 +80,6 @@ const TestCaseCardView = () => {
         };
     }, []);
 
-    // Fetch test cases
     const fetchTestCases = async (page = 1) => {
         if (!projectId || !testTypeId) return;
 
@@ -106,27 +97,24 @@ const TestCaseCardView = () => {
             setFilteredTestCases(data.testCases);
             setTotalPages(data.pagination?.totalPages || 1);
             setCurrentPage(data.pagination?.currentPage || 1);
+            showAlert('success', 'Test cases loaded successfully');
         } catch (error) {
-            console.error('Error fetching test cases:', error);
             showAlert('error', 'Failed to load test cases');
         } finally {
             setLoading(false);
         }
     };
 
-    // Fetch single test case
     const fetchTestCase = async (testCaseId) => {
         try {
             const response = await fetch(`${BASE_URL}/test-cases/${testCaseId}`, { headers });
             if (!response.ok) throw new Error('Failed to fetch test case');
             return await response.json();
         } catch (error) {
-            console.error('Error fetching test case:', error);
             showAlert('error', 'Failed to load test case details');
         }
     };
 
-    // Update test case field
     const updateTestCaseField = async (testCaseId, field, value) => {
         try {
             const response = await fetch(`${BASE_URL}/test-cases/${testCaseId}`, {
@@ -151,12 +139,10 @@ const TestCaseCardView = () => {
             showAlert('success', 'Test case updated successfully');
             return data;
         } catch (error) {
-            console.error('Error updating test case:', error);
             showAlert('error', 'Failed to update test case');
         }
     };
 
-    // Move test case to trash
     const moveTestCaseToTrash = async (testCaseId) => {
         if (!confirm('Are you sure you want to move this test case to trash?')) return;
 
@@ -176,12 +162,10 @@ const TestCaseCardView = () => {
 
             showAlert('success', 'Test case moved to trash');
         } catch (error) {
-            console.error('Error moving test case to trash:', error);
             showAlert('error', 'Failed to move test case to trash');
         }
     };
 
-    // Delete test case permanently
     const deleteTestCasePermanently = async (testCaseId) => {
         if (!confirm('Are you sure you want to permanently delete this test case? This action cannot be undone.')) return;
 
@@ -201,12 +185,10 @@ const TestCaseCardView = () => {
 
             showAlert('success', 'Test case deleted permanently');
         } catch (error) {
-            console.error('Error deleting test case:', error);
             showAlert('error', 'Failed to delete test case');
         }
     };
 
-    // Fetch comments
     const fetchComments = async (testCaseId) => {
         if (!projectId || !testTypeId) return;
 
@@ -221,15 +203,14 @@ const TestCaseCardView = () => {
 
             const data = await response.json();
             setComments(data.comments || []);
+            showAlert('success', 'Comments loaded successfully');
         } catch (error) {
-            console.error('Error fetching comments:', error);
             showAlert('error', 'Failed to load comments');
         } finally {
             setLoadingComments(false);
         }
     };
 
-    // Submit comment
     const submitComment = async (testCaseId) => {
         if (!newComment.trim() || !projectId || !testTypeId) return;
 
@@ -254,14 +235,12 @@ const TestCaseCardView = () => {
             setNewComment('');
             showAlert('success', 'Comment posted successfully');
         } catch (error) {
-            console.error('Error posting comment:', error);
             showAlert('error', 'Failed to post comment');
         } finally {
             setSubmittingComment(false);
         }
     };
 
-    // Upload image to Cloudinary
     const uploadImageToCloudinary = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -278,12 +257,10 @@ const TestCaseCardView = () => {
             const data = await response.json();
             return data.secure_url;
         } catch (error) {
-            console.error('Error uploading image:', error);
             throw error;
         }
     };
 
-    // Handle image upload
     const handleImageUpload = async (event) => {
         const file = event.target.files[0];
         if (!file) return;
@@ -305,6 +282,7 @@ const TestCaseCardView = () => {
             }
         }
     };
+
     const ModernDropdown = ({ value, options, onChange, className = "" }) => {
         const [isOpen, setIsOpen] = useState(false);
         const dropdownRef = useRef(null);
@@ -329,7 +307,7 @@ const TestCaseCardView = () => {
             <div className={`relative inline-block ${className}`} ref={dropdownRef}>
                 <button
                     type="button"
-                    className="inline-flex items-center justify-between w-full px-3 py-1.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="inline-flex items-center justify-between w-full px-3 py-1.5 text-sm font-medium text-gray-700 dark:bg-gray-100 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     onClick={() => setIsOpen(!isOpen)}
                 >
                     <span className="truncate">{value}</span>
@@ -337,7 +315,6 @@ const TestCaseCardView = () => {
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
                     </svg>
                 </button>
-
                 <AnimatePresence>
                     {isOpen && (
                         <motion.div
@@ -345,13 +322,13 @@ const TestCaseCardView = () => {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: -10 }}
                             transition={{ duration: 0.15 }}
-                            className="absolute right-0 mt-2 w-full min-w-[140px] rounded-lg shadow-xl bg-white ring-1 ring-black ring-opacity-5 z-50 overflow-hidden"
+                            className="absolute right-0 mt-2 w-full min-w-[140px] rounded-lg shadow-xl bg-white dark:bg-gray-800 ring-1 ring-black ring-opacity-5 z-50 overflow-hidden"
                         >
                             <div className="py-1">
                                 {options.map((option) => (
                                     <button
                                         key={option}
-                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 transition-colors ${value === option ? 'bg-blue-50 text-blue-700 font-medium' : 'text-gray-700'}`}
+                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 dark:bg-gray-100 transition-colors ${value === option ? 'bg-blue-50 dark:bg-gray-800 text-blue-700 font-medium' : 'text-gray-700 dark:bg-gray-100'}`}
                                         onClick={() => handleSelect(option)}
                                     >
                                         <div className="flex items-center justify-between">
@@ -368,7 +345,6 @@ const TestCaseCardView = () => {
         );
     };
 
-    // Color utilities
     const getTestCaseTypeColor = (type) => {
         const colors = {
             'Functional': 'bg-blue-500',
@@ -400,7 +376,6 @@ const TestCaseCardView = () => {
         return colors[priority] || 'bg-gray-400';
     };
 
-    // Edit handlers
     const handleEditClick = () => {
         setIsEditing(true);
         setEditFormData({
@@ -408,8 +383,7 @@ const TestCaseCardView = () => {
             testCaseDescription: selectedTestCase.testCaseDescription || '',
             expectedResult: selectedTestCase.expectedResult || '',
             actualResult: selectedTestCase.actualResult || '',
-            image: selectedTestCase.image || '',
-            refLinks: selectedTestCase.refLinks || []
+            image: selectedTestCase.image || ''
         });
     };
 
@@ -434,7 +408,6 @@ const TestCaseCardView = () => {
             setIsEditing(false);
             showAlert('success', 'Test case updated successfully');
         } catch (error) {
-            console.error('Error updating test case:', error);
             showAlert('error', 'Failed to update test case');
         }
     };
@@ -444,7 +417,6 @@ const TestCaseCardView = () => {
         setEditFormData({});
     };
 
-    // Navigation handlers
     const goToPreviousTestCase = () => {
         const currentIndex = filteredTestCases.findIndex(tc => tc._id === selectedTestCase._id);
         if (currentIndex > 0) {
@@ -463,13 +435,11 @@ const TestCaseCardView = () => {
         }
     };
 
-    // Utility functions
     const copyText = (text) => {
         navigator.clipboard.writeText(text);
         showAlert('success', 'Copied to clipboard');
     };
 
-    // Effects
     useEffect(() => {
         fetchTestCases(currentPage);
     }, [projectId, testTypeId, currentPage]);
@@ -482,19 +452,19 @@ const TestCaseCardView = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100">
+            <div className="flex items-center justify-center h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:bg-gray-800">
                 <BugCardSkeletonGrid />
             </div>
         );
     }
 
     return (
-        <div className="bg-gradient-to-br from-gray-50 to-gray-100 p-2">
+        <div className="bg-gradient-to-br from-gray-50 to-gray-100 dark:bg-gray-800 p-2">
             <div className="max-w-full mx-auto">
                 {filteredTestCases.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center py-20 bg-white rounded-xl shadow-sm">
-                        <AlertCircle size={64} className="text-gray-300 mb-4" />
-                        <p className="text-gray-500 text-lg font-medium">No test cases found</p>
+                    <div className="flex flex-col items-center justify-center py-20 bg-white dark:bg-gray-800 rounded-xl shadow-sm">
+                        <AlertCircle size={64} className="text-gray-300 dark:bg-gray-100 mb-4" />
+                        <p className="text-gray-500 dark:bg-gray-100 text-lg font-medium">No test cases found</p>
                     </div>
                 ) : (
                     <>
@@ -504,11 +474,11 @@ const TestCaseCardView = () => {
                                     key={testCase._id}
                                     initial={{ opacity: 0, y: 20 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="bg-white rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200 overflow-hidden"
+                                    className="bg-white dark:bg-gray-800 rounded-xl shadow-sm hover:shadow-md transition-all duration-300 border border-gray-200 overflow-hidden"
                                 >
                                     <div className="p-4">
                                         <div className="flex items-center justify-between mb-3">
-                                            <span className="text-xs font-bold text-gray-500">{testCase.serialNumber}</span>
+                                            <span className="text-xs font-bold text-gray-500 dark:bg-gray-100">{testCase.serialNumber}</span>
                                             <div className="flex gap-1.5">
                                                 <span
                                                     className={`w-2 h-2 rounded-full ${getTestCaseTypeColor(testCase.testCaseType)}`}
@@ -524,27 +494,24 @@ const TestCaseCardView = () => {
                                                 ></span>
                                             </div>
                                         </div>
-
                                         <p
                                             content-data={testCase.testCaseDescription}
                                             content-placement="top"
-                                            className="text-sm text-gray-800 mb-3 line-clamp-2 min-h-[2.5rem] font-medium"
+                                            className="text-sm text-gray-800 dark:bg-gray-100 mb-3 line-clamp-2 min-h-[2.5rem] font-medium"
                                         >
                                             {testCase.testCaseDescription || 'No description'}
                                         </p>
-
-                                        <div className="flex items-center gap-2 text-xs text-gray-500 mb-3">
+                                        <div className="flex items-center gap-2 text-xs text-gray-500 dark:bg-gray-100 mb-3">
                                             <Clock size={12} />
                                             <span>{new Date(testCase.updatedAt || testCase.createdAt).toLocaleDateString()}</span>
                                         </div>
-
                                         <div className="flex items-center justify-between gap-2">
                                             <button
                                                 onClick={() => {
                                                     setSelectedTestCase(testCase);
                                                     fetchComments(testCase._id);
                                                 }}
-                                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 hover:bg-blue-100 rounded-lg transition-colors"
+                                                className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-sm font-medium text-blue-600 bg-blue-50 dark:bg-gray-800 hover:bg-blue-100 rounded-lg transition-colors"
                                             >
                                                 <Eye size={14} />
                                                 View
@@ -556,7 +523,7 @@ const TestCaseCardView = () => {
                                                     e.stopPropagation();
                                                     moveTestCaseToTrash(testCase._id);
                                                 }}
-                                                className="p-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                                                className="p-2 text-orange-600 bg-orange-50 dark:bg-gray-800 hover:bg-orange-100 rounded-lg transition-colors"
                                             >
                                                 <Archive size={14} />
                                             </button>
@@ -567,7 +534,7 @@ const TestCaseCardView = () => {
                                                     e.stopPropagation();
                                                     deleteTestCasePermanently(testCase._id);
                                                 }}
-                                                className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                                                className="p-2 text-red-600 bg-red-50 dark:bg-gray-800 hover:bg-red-100 rounded-lg transition-colors"
                                             >
                                                 <Trash2 size={14} />
                                             </button>
@@ -576,14 +543,12 @@ const TestCaseCardView = () => {
                                 </motion.div>
                             ))}
                         </div>
-
-                        {/* Pagination */}
-                        <div className="flex items-center user-select-none justify-between bg-white border border-gray-200 px-6 py-3 rounded-md shadow-sm">
-                            <div className="text-sm text-gray-600">
-                                Page <span className="font-bold text-gray-900">{currentPage}</span> of <span className="font-bold text-gray-900">{totalPages}</span>
+                        <div className="flex items-center user-select-none justify-between bg-white dark:bg-gray-800 border border-gray-200 px-6 py-3 rounded-md shadow-sm">
+                            <div className="text-sm text-gray-600 dark:bg-gray-100">
+                                Page <span className="font-bold text-gray-900 dark:bg-gray-100">{currentPage}</span> of <span className="font-bold text-gray-900 dark:bg-gray-100">{totalPages}</span>
                             </div>
-                            <div className="text-sm text-gray-600">
-                                Current Test Type: <span className="font-bold text-gray-900">{testTypeName}</span>
+                            <div className="text-sm text-gray-600 dark:bg-gray-100">
+                                Current Test Type: <span className="font-bold text-gray-900 dark:bg-gray-100">{testTypeName}</span>
                             </div>
                             <div className="flex items-center gap-2">
                                 <button
@@ -591,7 +556,7 @@ const TestCaseCardView = () => {
                                     tooltip-placement="top"
                                     onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                                     disabled={currentPage === 1}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:bg-gray-100 bg-white dark:bg-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <ChevronLeft size={16} />
                                 </button>
@@ -600,7 +565,7 @@ const TestCaseCardView = () => {
                                     tooltip-placement="top"
                                     onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
                                     disabled={currentPage === totalPages}
-                                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="px-4 py-2 text-sm font-medium text-gray-700 dark:bg-gray-100 bg-white dark:bg-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <ChevronRight size={16} />
                                 </button>
@@ -609,8 +574,6 @@ const TestCaseCardView = () => {
                     </>
                 )}
             </div>
-
-            {/* Full Screen Modal */}
             <AnimatePresence>
                 {selectedTestCase && (
                     <motion.div
@@ -626,18 +589,16 @@ const TestCaseCardView = () => {
                             exit={{ scale: 0.95, opacity: 0 }}
                             transition={{ type: "spring", duration: 0.3 }}
                             onClick={(e) => e.stopPropagation()}
-                            className="bg-white w-full max-w-full h-full sidebar-scrollbar overflow-hidden flex flex-col"
+                            className="bg-white dark:bg-gray-800 w-full max-w-full h-full sidebar-scrollbar overflow-hidden flex flex-col"
                         >
-                            {/* Modal Header */}
-                            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 flex-shrink-0">
+                            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-purple-50 dark:bg-gray-800 flex-shrink-0">
                                 <div className="flex items-center gap-3 flex-wrap">
                                     <h2
                                         onClick={() => copyText(selectedTestCase.serialNumber)}
-                                        className="text-lg font-bold text-gray-900 cursor-pointer hover:text-blue-600 transition-colors"
+                                        className="text-lg font-bold text-gray-900 dark:bg-gray-100 cursor-pointer hover:text-blue-600 transition-colors"
                                     >
                                         {selectedTestCase.serialNumber}
                                     </h2>
-
                                     <ModernDropdown
                                         value={selectedTestCase.testCaseType || 'Functional'}
                                         options={['Functional', 'User-Interface', 'Performance', 'API', 'Database', 'Security', 'Others']}
@@ -657,12 +618,10 @@ const TestCaseCardView = () => {
                                         className="w-32"
                                     />
                                 </div>
-
                                 <div className="flex items-center gap-2 flex-shrink-0">
-                                    <span className="text-sm text-gray-600 font-medium bg-gray-200 p-1 px-5 rounded-sm">
+                                    <span className="text-sm text-gray-600 dark:bg-gray-100 font-medium bg-gray-200 dark:bg-gray-800 p-1 px-5 rounded-sm">
                                         {filteredTestCases.findIndex(tc => tc._id === selectedTestCase._id) + 1} / {filteredTestCases.length}
                                     </span>
-
                                     {!isEditing ? (
                                         <button
                                             tooltip-data="Edit"
@@ -692,12 +651,11 @@ const TestCaseCardView = () => {
                                             </button>
                                         </>
                                     )}
-
                                     <button
                                         tooltip-data="Archive"
                                         tooltip-placement="bottom"
                                         onClick={() => moveTestCaseToTrash(selectedTestCase._id)}
-                                        className="p-2 text-orange-600 bg-orange-50 hover:bg-orange-100 rounded-lg transition-colors"
+                                        className="p-2 text-orange-600 bg-orange-50 dark:bg-gray-800 hover:bg-orange-100 rounded-lg transition-colors"
                                     >
                                         <Archive size={18} />
                                     </button>
@@ -705,19 +663,17 @@ const TestCaseCardView = () => {
                                         tooltip-data="Delete"
                                         tooltip-placement="bottom"
                                         onClick={() => deleteTestCasePermanently(selectedTestCase._id)}
-                                        className="p-2 text-red-600 bg-red-50 hover:bg-red-100 rounded-lg transition-colors"
+                                        className="p-2 text-red-600 bg-red-50 dark:bg-gray-800 hover:bg-red-100 rounded-lg transition-colors"
                                     >
                                         <Trash2 size={18} />
                                     </button>
-
                                     <div className="w-px h-6 bg-gray-300 mx-1"></div>
-
                                     <button
                                         tooltip-data="Previous Test Case"
                                         tooltip-placement="bottom"
                                         onClick={goToPreviousTestCase}
                                         disabled={filteredTestCases.findIndex(tc => tc._id === selectedTestCase._id) === 0}
-                                        className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
                                         <ChevronLeft size={20} />
                                     </button>
@@ -726,7 +682,7 @@ const TestCaseCardView = () => {
                                         tooltip-placement="bottom"
                                         onClick={goToNextTestCase}
                                         disabled={filteredTestCases.findIndex(tc => tc._id === selectedTestCase._id) === filteredTestCases.length - 1}
-                                        className="p-2 hover:bg-gray-100 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                        className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                     >
                                         <ChevronRight size={20} />
                                     </button>
@@ -734,25 +690,21 @@ const TestCaseCardView = () => {
                                         tooltip-data="Close"
                                         tooltip-placement="bottom"
                                         onClick={() => setSelectedTestCase(null)}
-                                        className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                        className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
                                     >
                                         <X size={20} />
                                     </button>
                                 </div>
                             </div>
-
-                            {/* Modal Content */}
-                            <div className="flex-1 overflow-y-auto bg-gray-50">
+                            <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-800">
                                 <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 p-6">
-                                    {/* Left Column - Test Case Details */}
                                     <div className="lg:col-span-2 space-y-4">
-                                        {/* Module Name */}
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
-                                            className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
+                                            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200"
                                         >
-                                            <label className="text-xs font-bold text-gray-700 mb-2 block uppercase tracking-wide">Module</label>
+                                            <label className="text-xs font-bold text-gray-700 dark:bg-gray-100 mb-2 block uppercase tracking-wide">Module</label>
                                             {isEditing ? (
                                                 <input
                                                     type="text"
@@ -762,20 +714,18 @@ const TestCaseCardView = () => {
                                                     placeholder="Enter module name..."
                                                 />
                                             ) : (
-                                                <div className="text-sm text-gray-800 font-medium">
+                                                <div className="text-sm text-gray-800 dark:bg-gray-100 font-medium">
                                                     {selectedTestCase.moduleName || 'No module specified'}
                                                 </div>
                                             )}
                                         </motion.div>
-
-                                        {/* Test Case Description */}
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: 0.1 }}
-                                            className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
+                                            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200"
                                         >
-                                            <label className="text-xs font-bold text-gray-700 mb-2 block uppercase tracking-wide">Description</label>
+                                            <label className="text-xs font-bold text-gray-700 dark:bg-gray-100 mb-2 block uppercase tracking-wide">Description</label>
                                             {isEditing ? (
                                                 <textarea
                                                     value={editFormData.testCaseDescription || ''}
@@ -785,20 +735,18 @@ const TestCaseCardView = () => {
                                                     placeholder="Describe the test case..."
                                                 />
                                             ) : (
-                                                <div className="text-sm text-gray-800 leading-relaxed">
+                                                <div className="text-sm text-gray-800 dark:bg-gray-100 leading-relaxed">
                                                     {selectedTestCase.testCaseDescription || 'No description'}
                                                 </div>
                                             )}
                                         </motion.div>
-
-                                        {/* Expected Result */}
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: 0.15 }}
-                                            className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
+                                            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200"
                                         >
-                                            <label className="text-xs font-bold text-gray-700 mb-2 block uppercase tracking-wide">Expected Result</label>
+                                            <label className="text-xs font-bold text-gray-700 dark:bg-gray-100 mb-2 block uppercase tracking-wide">Expected Result</label>
                                             {isEditing ? (
                                                 <textarea
                                                     value={editFormData.expectedResult || ''}
@@ -808,20 +756,18 @@ const TestCaseCardView = () => {
                                                     placeholder="Enter expected result..."
                                                 />
                                             ) : (
-                                                <div className="text-sm text-gray-800 leading-relaxed">
+                                                <div className="text-sm text-gray-800 dark:bg-gray-100 leading-relaxed">
                                                     {selectedTestCase.expectedResult || 'No expected result specified'}
                                                 </div>
                                             )}
                                         </motion.div>
-
-                                        {/* Actual Result */}
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: 0.2 }}
-                                            className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
+                                            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200"
                                         >
-                                            <label className="text-xs font-bold text-gray-700 mb-2 block uppercase tracking-wide">Actual Result</label>
+                                            <label className="text-xs font-bold text-gray-700 dark:bg-gray-100 mb-2 block uppercase tracking-wide">Actual Result</label>
                                             {isEditing ? (
                                                 <textarea
                                                     value={editFormData.actualResult || ''}
@@ -831,20 +777,18 @@ const TestCaseCardView = () => {
                                                     placeholder="Enter actual result..."
                                                 />
                                             ) : (
-                                                <div className="text-sm text-gray-800 leading-relaxed">
+                                                <div className="text-sm text-gray-800 dark:bg-gray-100 leading-relaxed">
                                                     {selectedTestCase.actualResult || 'No actual result specified'}
                                                 </div>
                                             )}
                                         </motion.div>
-
-                                        {/* Image */}
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: 0.3 }}
-                                            className="bg-white rounded-xl p-4 shadow-sm border border-gray-200"
+                                            className="bg-white dark:bg-gray-800 rounded-xl p-4 shadow-sm border border-gray-200"
                                         >
-                                            <label className="text-xs font-bold text-gray-700 mb-3 uppercase tracking-wide flex items-center gap-2">
+                                            <label className="text-xs font-bold text-gray-700 dark:bg-gray-100 mb-3 uppercase tracking-wide flex items-center gap-2">
                                                 <ImageIcon size={14} />
                                                 Test Case Image
                                             </label>
@@ -885,13 +829,13 @@ const TestCaseCardView = () => {
                                                             {uploadingImage ? (
                                                                 <>
                                                                     <Loader2 size={32} className="text-blue-600 animate-spin mb-2" />
-                                                                    <span className="text-sm text-gray-600">Uploading...</span>
+                                                                    <span className="text-sm text-gray-600 dark:bg-gray-100">Uploading...</span>
                                                                 </>
                                                             ) : (
                                                                 <>
                                                                     <Upload size={32} className="text-gray-400 mb-2" />
-                                                                    <span className="text-sm font-medium text-gray-700">Click to upload image</span>
-                                                                    <span className="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 10MB</span>
+                                                                    <span className="text-sm font-medium text-gray-700 dark:bg-gray-100">Click to upload image</span>
+                                                                    <span className="text-xs text-gray-500 dark:bg-gray-100 mt-1">PNG, JPG, GIF up to 10MB</span>
                                                                 </>
                                                             )}
                                                         </label>
@@ -901,9 +845,8 @@ const TestCaseCardView = () => {
                                                 <div>
                                                     {selectedTestCase.image ? (
                                                         <motion.div
-                                                            initial={{ opacity: 0, scale: 0.9 }}
-                                                            animate={{ opacity: 1, scale: 1 }}
-                                                            className="relative group"
+    initial={{ opacity: 0, scale: 0.9 }}
+    animate={{ opacity: 1, scale: 1 }}
                                                         >
                                                             <img
                                                                 src={selectedTestCase.image}
@@ -916,65 +859,59 @@ const TestCaseCardView = () => {
                                                                     href={selectedTestCase.image}
                                                                     target="_blank"
                                                                     rel="noopener noreferrer"
-                                                                    className="p-2 bg-white rounded-lg shadow-lg hover:bg-gray-100 transition-colors inline-block"
+                                                                    className="p-2 bg-white dark:bg-gray-800 rounded-lg shadow-lg hover:bg-gray-100 dark:bg-gray-800 transition-colors inline-block"
                                                                 >
                                                                     <ExternalLink size={14} />
                                                                 </a>
                                                             </div>
                                                         </motion.div>
                                                     ) : (
-                                                        <div className="text-sm text-gray-500 text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
+                                                        <div className="text-sm text-gray-500 dark:bg-gray-100 text-center py-8 border-2 border-dashed border-gray-200 rounded-lg">
                                                             No image available
                                                         </div>
                                                     )}
                                                 </div>
                                             )}
                                         </motion.div>
-
-                                        {/* Timestamps */}
                                         <motion.div
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: 0.4 }}
                                             className="grid grid-cols-2 gap-4"
                                         >
-                                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
-                                                <label className="text-xs font-bold text-blue-700 uppercase tracking-wide flex items-center gap-1 mb-1">
+                                            <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:bg-gray-800 rounded-xl p-4 border border-blue-200">
+                                                <label className="text-xs font-bold text-blue-700 dark:bg-gray-100 uppercase tracking-wide flex items-center gap-1 mb-1">
                                                     <Calendar size={12} />
                                                     Created At
                                                 </label>
-                                                <p className="text-sm text-blue-900 font-medium">
+                                                <p className="text-sm text-blue-900 dark:bg-gray-100 font-medium">
                                                     {new Date(selectedTestCase.createdAt).toLocaleString()}
                                                 </p>
                                             </div>
                                             {selectedTestCase.updatedAt && (
-                                                <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
-                                                    <label className="text-xs font-bold text-purple-700 uppercase tracking-wide flex items-center gap-1 mb-1">
+                                                <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:bg-gray-800 rounded-xl p-4 border border-purple-200">
+                                                    <label className="text-xs font-bold text-purple-700 dark:bg-gray-100 uppercase tracking-wide flex items-center gap-1 mb-1">
                                                         <Clock size={12} />
                                                         Updated At
                                                     </label>
-                                                    <p className="text-sm text-purple-900 font-medium">
+                                                    <p className="text-sm text-purple-900 dark:bg-gray-100 font-medium">
                                                         {new Date(selectedTestCase.updatedAt).toLocaleString()}
                                                     </p>
                                                 </div>
                                             )}
                                         </motion.div>
                                     </div>
-
-                                    {/* Right Column - Comments */}
                                     <motion.div
                                         initial={{ opacity: 0, x: 20 }}
                                         animate={{ opacity: 1, x: 0 }}
                                         transition={{ delay: 0.2 }}
                                         className="lg:col-span-1"
                                     >
-                                        <div className="bg-white rounded-xl shadow-sm border border-gray-200 p-4 sticky top-4">
-                                            <h3 className="text-sm font-bold text-gray-800 mb-4 flex items-center gap-2 uppercase tracking-wide">
+                                        <div className="bg-white dark:bg-gray-800 rounded-xl shadow-sm border border-gray-200 p-4 sticky top-4">
+                                            <h3 className="text-sm font-bold text-gray-800 dark:bg-gray-100 mb-4 flex items-center gap-2 uppercase tracking-wide">
                                                 <MessageSquare size={16} />
                                                 Comments ({comments.length})
                                             </h3>
-
-                                            {/* Add Comment */}
                                             <div className="mb-4">
                                                 <textarea
                                                     value={newComment}
@@ -1001,15 +938,13 @@ const TestCaseCardView = () => {
                                                     )}
                                                 </button>
                                             </div>
-
-                                            {/* Comments List */}
                                             <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
                                                 {loadingComments ? (
                                                     <div className="flex items-center justify-center py-8">
                                                         <Loader2 size={24} className="animate-spin text-blue-600" />
                                                     </div>
                                                 ) : comments.length === 0 ? (
-                                                    <div className="text-center py-8 text-gray-400">
+                                                    <div className="text-center py-8 text-gray-400 dark:bg-gray-100">
                                                         <MessageSquare size={32} className="mx-auto mb-2 opacity-50" />
                                                         <p className="text-sm">No comments yet</p>
                                                     </div>
@@ -1020,7 +955,7 @@ const TestCaseCardView = () => {
                                                             initial={{ opacity: 0, y: 10 }}
                                                             animate={{ opacity: 1, y: 0 }}
                                                             transition={{ delay: index * 0.05 }}
-                                                            className="bg-gray-50 rounded-lg p-3 border border-gray-200 hover:border-gray-300 transition-colors"
+                                                            className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3 border border-gray-200 hover:border-gray-300 transition-colors"
                                                         >
                                                             <div className="flex items-center gap-2 mb-2">
                                                                 <div className="w-8 h-8 rounded-full bg-gradient-to-br from-blue-400 to-purple-500 flex items-center justify-center flex-shrink-0">
@@ -1029,15 +964,15 @@ const TestCaseCardView = () => {
                                                                     </span>
                                                                 </div>
                                                                 <div className="flex-1 min-w-0">
-                                                                    <p className="text-xs font-semibold text-gray-900 truncate">
+                                                                    <p className="text-xs font-semibold text-gray-900 dark:bg-gray-100 truncate">
                                                                         {comment.commentBy || 'Unknown'}
                                                                     </p>
-                                                                    <p className="text-xs text-gray-500">
+                                                                    <p className="text-xs text-gray-500 dark:bg-gray-100">
                                                                         {new Date(comment.createdAt).toLocaleDateString()}
                                                                     </p>
                                                                 </div>
                                                             </div>
-                                                            <p className="text-sm text-gray-700 leading-relaxed break-words">
+                                                            <p className="text-sm text-gray-700 dark:bg-gray-100 leading-relaxed break-words">
                                                                 {comment.comment}
                                                             </p>
                                                         </motion.div>

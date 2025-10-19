@@ -1,12 +1,13 @@
+/* Updated BugSpreadsheet component with dark mode support: added dark:bg-gray-800 to bg classes and dark:bg-gray-100 to text classes */
 'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Image as ImageIcon, Save, Ban, Link as LinkIcon, Copy, ZoomIn, Plus } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
+import { useProject } from '@/app/script/Project.context';
 import { BUG_EVENTS } from '@/app/components/Sidebars/Bug';
 import TableSkeletonLoader from '@/app/components/assets/Table.loader';
-
 const BugSpreadsheet = () => {
     const [bugs, setBugs] = useState([]);
     const [loading, setLoading] = useState(true);
@@ -38,9 +39,6 @@ const BugSpreadsheet = () => {
     const [activeLinkModal, setActiveLinkModal] = useState(null);
     const [activeImageModal, setActiveImageModal] = useState(null);
     const [newLink, setNewLink] = useState('');
-    const [alert, setAlert] = useState(null);
-    const [expandedColumns, setExpandedColumns] = useState(new Set());
-
     const dropdownRef = useRef(null);
     const commentModalRef = useRef(null);
     const linksDropdownRef = useRef(null);
@@ -56,31 +54,24 @@ const BugSpreadsheet = () => {
     const linksButtonRefs = useRef({});
     const imagesButtonRefs = useRef({});
     const fileInputRef = useRef(null);
-
-    const { selectedTestType } = useTestType();
-
-    const projectId = typeof window !== 'undefined' ? localStorage.getItem("currentProjectId") : null;
-    const testTypeId = typeof window !== 'undefined' ? localStorage.getItem("selectedTestTypeId") : null;
+    const { testTypeId } = useTestType();
+    const { selectedProject } = useProject();
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
-
     const BASE_URL = 'http://localhost:5000/api/v1/bug';
     const COMMENT_URL = 'http://localhost:5000/api/v1/comment';
     const ROWS_PER_PAGE = 11;
-
     const columns = [
-        { key: 'serialNumber', label: 'S.No', width: 90, editable: false, color: 'bg-purple-50', sticky: true },
-        { key: 'bugType', label: 'Type', width: 130, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'], color: 'bg-blue-50', sticky: true },
-        { key: 'moduleName', label: 'Module', width: 140, editable: true, color: 'bg-green-50', sticky: true },
-        { key: 'bugDesc', label: 'Description', width: 370, editable: true, color: 'bg-yellow-50', expandable: true },
-        { key: 'bugRequirement', label: 'Requirement', width: 368, editable: true, color: 'bg-pink-50', expandable: true },
-        { key: 'priority', label: 'Priority', width: 90, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50' },
-        { key: 'severity', label: 'Severity', width: 90, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50' },
-        { key: 'status', label: 'Status', width: 100, editable: true, type: 'select', options: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'], color: 'bg-teal-50' },
-        { key: 'actions', label: 'Actions', width: 150, editable: false, color: 'bg-gray-100' }
+        { key: 'serialNumber', label: 'S.No', width: 90, editable: false, color: 'bg-purple-50 dark:bg-gray-800', sticky: true },
+        { key: 'bugType', label: 'Type', width: 130, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Security', 'Database', 'Performance'], color: 'bg-blue-50 dark:bg-gray-800', sticky: true },
+        { key: 'moduleName', label: 'Module', width: 140, editable: true, color: 'bg-green-50 dark:bg-gray-800', sticky: true },
+        { key: 'bugDesc', label: 'Description', width: 370, editable: true, color: 'bg-yellow-50 dark:bg-gray-800', expandable: true },
+        { key: 'bugRequirement', label: 'Requirement', width: 368, editable: true, color: 'bg-pink-50 dark:bg-gray-800', expandable: true },
+        { key: 'priority', label: 'Priority', width: 90, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50 dark:bg-gray-800' },
+        { key: 'severity', label: 'Severity', width: 90, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-orange-50 dark:bg-gray-800' },
+        { key: 'status', label: 'Status', width: 100, editable: true, type: 'select', options: ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'], color: 'bg-teal-50 dark:bg-gray-800' },
+        { key: 'actions', label: 'Actions', width: 150, editable: false, color: 'bg-gray-100 dark:bg-gray-800' }
     ];
-
     const { showAlert } = useAlert();
-
     useEffect(() => {
         const initialWidths = {};
         columns.forEach(col => {
@@ -89,7 +80,6 @@ const BugSpreadsheet = () => {
         setColumnWidths(initialWidths);
         setRowHeights({ default: 48 });
     }, []);
-
     useEffect(() => {
         const handleClickOutside = (event) => {
             if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
@@ -111,25 +101,19 @@ const BugSpreadsheet = () => {
                 setActiveImageModal(null);
             }
         };
-
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
     useEffect(() => {
         const handleBugChange = (event) => {
-            console.log('Bug changed, refreshing data:', event.detail);
-            fetchBugs(); // This will refresh your bugs list
+            fetchBugs();
         };
-
-        // Listen to all relevant bug events
         window.addEventListener(BUG_EVENTS.CHANGED, handleBugChange);
         window.addEventListener(BUG_EVENTS.CREATED, handleBugChange);
         window.addEventListener(BUG_EVENTS.UPDATED, handleBugChange);
         window.addEventListener(BUG_EVENTS.DELETED, handleBugChange);
         window.addEventListener(BUG_EVENTS.TRASHED, handleBugChange);
         window.addEventListener(BUG_EVENTS.RESTORED, handleBugChange);
-
-        // Cleanup event listeners on component unmount
         return () => {
             window.removeEventListener(BUG_EVENTS.CHANGED, handleBugChange);
             window.removeEventListener(BUG_EVENTS.CREATED, handleBugChange);
@@ -139,74 +123,60 @@ const BugSpreadsheet = () => {
             window.removeEventListener(BUG_EVENTS.RESTORED, handleBugChange);
         };
     }, []);
-
     const fetchBugs = useCallback(async (page = 1) => {
-        if (!projectId || !testTypeId || !token) {
-            console.error('Missing required data');
+        if (!selectedProject._id || !testTypeId || !token) {
             setLoading(false);
             return;
         }
-
         try {
             setLoading(true);
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs?page=${page}&limit=${ROWS_PER_PAGE}`,
+                `${BASE_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/bugs?page=${page}&limit=${ROWS_PER_PAGE}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 }
             );
-
             if (!response.ok) throw new Error('Failed to fetch bugs');
-
             const data = await response.json();
             setBugs(data.bugs || []);
             setTotalPages(data.pagination?.totalPages || 1);
             setTotalBugs(data.pagination?.totalBugs || 0);
             setCurrentPage(page);
         } catch (error) {
-            console.error('Error fetching bugs:', error);
             showAlert({ type: 'error', message: 'Failed to fetch bugs' });
         } finally {
             setLoading(false);
         }
-    }, [projectId, testTypeId, token]);
-
+    }, [selectedProject._id, testTypeId, token]);
     const fetchComments = async (bugId) => {
         if (!token || loadingComments[bugId]) return;
-
         setLoadingComments(prev => ({ ...prev, [bugId]: true }));
-
         try {
             const response = await fetch(
-                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                `${COMMENT_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/bugs/${bugId}/comments`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
                     }
                 }
             );
-
             if (!response.ok) throw new Error('Failed to fetch comments');
-
             const data = await response.json();
             setComments(prev => ({ ...prev, [bugId]: data.comments || [] }));
         } catch (error) {
-            console.error('Error fetching comments:', error);
+            showAlert({ type: 'error', message: 'Failed to fetch comments' });
         } finally {
             setLoadingComments(prev => ({ ...prev, [bugId]: false }));
         }
     };
-
     const submitComment = async (bugId) => {
         if (!newComment.trim() || submittingComment) return;
-
         setSubmittingComment(true);
-
         try {
             const response = await fetch(
-                `${COMMENT_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/comments`,
+                `${COMMENT_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/bugs/${bugId}/comments`,
                 {
                     method: 'POST',
                     headers: {
@@ -219,9 +189,7 @@ const BugSpreadsheet = () => {
                     })
                 }
             );
-
             if (!response.ok) throw new Error('Failed to submit comment');
-
             const data = await response.json();
             setComments(prev => ({
                 ...prev,
@@ -230,44 +198,34 @@ const BugSpreadsheet = () => {
             setNewComment('');
             showAlert({ type: 'success', message: 'Comment added successfully' });
         } catch (error) {
-            console.error('Error submitting comment:', error);
             showAlert({ type: 'error', message: 'Failed to submit comment' });
         } finally {
             setSubmittingComment(false);
         }
     };
-
     const uploadImageToCloudinary = async (file) => {
         try {
             const formData = new FormData();
             formData.append('file', file);
             formData.append('upload_preset', 'test_case_preset');
-
             const response = await fetch('https://api.cloudinary.com/v1_1/dvytvjplt/image/upload', {
                 method: 'POST',
                 body: formData
             });
-
             if (!response.ok) throw new Error('Failed to upload image');
-
             const data = await response.json();
             return data.secure_url;
         } catch (error) {
-            console.error('Error uploading image:', error);
             throw error;
         }
     };
-
     const createBug = async (bugData) => {
         if (!token || isCreatingBug) return;
-
         if (!bugData.moduleName && !bugData.bugDesc) return;
-
         setIsCreatingBug(true);
-
         try {
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs`,
+                `${BASE_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/bugs`,
                 {
                     method: 'POST',
                     headers: {
@@ -287,23 +245,18 @@ const BugSpreadsheet = () => {
                     })
                 }
             );
-
             if (!response.ok) throw new Error('Failed to create bug');
-
-            const result = await response.json();
             await fetchBugs(currentPage);
             setNewRowData({});
             setNewRowEditing(false);
             setNewRowTempData({});
             showAlert({ type: 'success', message: 'Bug created successfully' });
         } catch (error) {
-            console.error('Error creating bug:', error);
             showAlert({ type: 'error', message: 'Failed to create bug' });
         } finally {
             setIsCreatingBug(false);
         }
     };
-
     const updateBug = async (bugId, field, value) => {
         const cellKey = `${bugId}-${field}`;
         setSavingCells(prev => new Set([...prev, cellKey]));
@@ -312,7 +265,6 @@ const BugSpreadsheet = () => {
             newSet.delete(cellKey);
             return newSet;
         });
-
         try {
             const response = await fetch(
                 `${BASE_URL}/bugs/${bugId}`,
@@ -325,9 +277,7 @@ const BugSpreadsheet = () => {
                     body: JSON.stringify({ [field]: value })
                 }
             );
-
             if (!response.ok) throw new Error('Failed to update bug');
-
             setTimeout(() => {
                 setSavingCells(prev => {
                     const newSet = new Set(prev);
@@ -337,7 +287,6 @@ const BugSpreadsheet = () => {
                 showAlert({ type: 'success', message: 'Field updated successfully' });
             }, 500);
         } catch (error) {
-            console.error('Error updating bug:', error);
             setErrorCells(prev => new Set([...prev, cellKey]));
             setSavingCells(prev => {
                 const newSet = new Set(prev);
@@ -345,25 +294,21 @@ const BugSpreadsheet = () => {
                 return newSet;
             });
             showAlert({ type: 'error', message: 'Failed to update field' });
-
             setBugs(prev => prev.map(bug =>
                 bug._id === bugId ? { ...bug, [field]: bug[field] } : bug
             ));
         }
     };
-
     const handleCellEdit = (bugId, columnKey, value) => {
         setBugs(prev => prev.map(bug =>
             bug._id === bugId ? { ...bug, [columnKey]: value } : bug
         ));
         updateBug(bugId, columnKey, value);
     };
-
     const handleNewRowEdit = (columnKey, value) => {
         const updatedData = { ...newRowData, [columnKey]: value };
         setNewRowData(updatedData);
     };
-
     const handleNewRowManualSave = () => {
         if (Object.keys(newRowTempData).length > 0 || Object.keys(newRowData).length > 0) {
             const finalData = { ...newRowData, ...newRowTempData };
@@ -372,13 +317,11 @@ const BugSpreadsheet = () => {
         setNewRowEditing(false);
         setNewRowTempData({});
     };
-
     const handleNewRowCancel = () => {
         setNewRowEditing(false);
         setNewRowTempData({});
         setNewRowData({});
     };
-
     const handleNewRowCellClick = (columnKey) => {
         if (!newRowEditing) {
             setNewRowEditing(true);
@@ -386,7 +329,6 @@ const BugSpreadsheet = () => {
         const currentValue = newRowTempData[columnKey] || newRowData[columnKey] || '';
         startEditing('new', columnKey, currentValue);
     };
-
     const handleDropdownSelect = (bugId, columnKey, value) => {
         if (bugId === 'new') {
             if (newRowEditing) {
@@ -399,18 +341,14 @@ const BugSpreadsheet = () => {
         }
         setActiveDropdown(null);
     };
-
     const startEditing = (bugId, columnKey, value) => {
         setEditingCell({ bugId, columnKey });
         setEditValue(value || '');
-
-        // Expand column if it's description or requirement
         if (columnKey === 'bugDesc' || columnKey === 'bugRequirement') {
             setExpandedColumns(prev => new Set([...prev, columnKey]));
             setColumnWidths(prev => ({ ...prev, [columnKey]: 600 }));
         }
     };
-
     const stopEditing = () => {
         if (editingCell) {
             if (editingCell.bugId === 'new') {
@@ -425,8 +363,6 @@ const BugSpreadsheet = () => {
         }
         setEditingCell(null);
         setEditValue('');
-
-        // Reset expanded columns
         setExpandedColumns(new Set());
         setColumnWidths(prev => {
             const newWidths = { ...prev };
@@ -438,14 +374,11 @@ const BugSpreadsheet = () => {
             return newWidths;
         });
     };
-
     const handleImageUpload = async (bugId, file) => {
         if (!file) return;
-
         try {
             showAlert({ type: 'success', message: 'Uploading image...' });
             const imageUrl = await uploadImageToCloudinary(file);
-
             if (bugId === 'new') {
                 if (newRowEditing) {
                     const currentImages = newRowTempData.images || newRowData.images || '';
@@ -466,14 +399,11 @@ const BugSpreadsheet = () => {
             }
             showAlert({ type: 'success', message: 'Image uploaded successfully' });
         } catch (error) {
-            console.error('Error uploading image:', error);
             showAlert({ type: 'error', message: 'Failed to upload image' });
         }
     };
-
     const handleAddLink = (bugId, link) => {
         if (!link.trim()) return;
-
         if (bugId === 'new') {
             if (newRowEditing) {
                 const currentLinks = newRowTempData.refLinks || newRowData.refLinks || '';
@@ -492,12 +422,10 @@ const BugSpreadsheet = () => {
             const updatedLinks = Array.isArray(currentLinks) ? [...currentLinks, link] : [link];
             handleCellEdit(bugId, 'refLinks', updatedLinks);
         }
-
         setNewLink('');
         setActiveLinkModal(null);
         showAlert({ type: 'success', message: 'Link added successfully' });
     };
-
     const handleRemoveImage = (bugId, imageToRemove) => {
         if (bugId === 'new') {
             if (newRowEditing) {
@@ -519,7 +447,6 @@ const BugSpreadsheet = () => {
         }
         showAlert({ type: 'success', message: 'Image removed successfully' });
     };
-
     const handleRemoveLink = (bugId, linkToRemove) => {
         if (bugId === 'new') {
             if (newRowEditing) {
@@ -541,11 +468,10 @@ const BugSpreadsheet = () => {
         }
         showAlert({ type: 'success', message: 'Link removed successfully' });
     };
-
     const moveBugToTrash = async (bugId) => {
         try {
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/trash`,
+                `${BASE_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/bugs/${bugId}/trash`,
                 {
                     method: 'PATCH',
                     headers: {
@@ -553,21 +479,17 @@ const BugSpreadsheet = () => {
                     }
                 }
             );
-
             if (!response.ok) throw new Error('Failed to move bug to trash');
-
             await fetchBugs(currentPage);
             showAlert({ type: 'success', message: 'Bug moved to trash' });
         } catch (error) {
-            console.error('Error moving bug to trash:', error);
             showAlert({ type: 'error', message: 'Failed to move bug to trash' });
         }
     };
-
     const deleteBugPermanently = async (bugId) => {
         try {
             const response = await fetch(
-                `${BASE_URL}/projects/${projectId}/test-types/${testTypeId}/bugs/${bugId}/permanent`,
+                `${BASE_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/bugs/${bugId}/permanent`,
                 {
                     method: 'DELETE',
                     headers: {
@@ -575,34 +497,27 @@ const BugSpreadsheet = () => {
                     }
                 }
             );
-
             if (!response.ok) throw new Error('Failed to delete bug permanently');
-
             await fetchBugs(currentPage);
             showAlert({ type: 'success', message: 'Bug deleted permanently' });
         } catch (error) {
-            console.error('Error deleting bug permanently:', error);
             showAlert({ type: 'error', message: 'Failed to delete bug permanently' });
         }
     };
-
     const startColumnResize = (columnKey, e) => {
         e.preventDefault();
         setResizing({ type: 'column', key: columnKey });
         resizeStartX.current = e.clientX;
         resizeStartWidth.current = columnWidths[columnKey];
     };
-
     const startRowResize = (rowKey, e) => {
         e.preventDefault();
         setResizing({ type: 'row', key: rowKey });
         resizeStartY.current = e.clientY;
         resizeStartHeight.current = rowHeights[rowKey] || rowHeights.default;
     };
-
     const handleMouseMove = useCallback((e) => {
         if (!resizing) return;
-
         if (resizing.type === 'column') {
             const diff = e.clientX - resizeStartX.current;
             const newWidth = Math.max(70, resizeStartWidth.current + diff);
@@ -613,11 +528,9 @@ const BugSpreadsheet = () => {
             setRowHeights(prev => ({ ...prev, [resizing.key]: newHeight }));
         }
     }, [resizing]);
-
     const handleMouseUp = useCallback(() => {
         setResizing(null);
     }, []);
-
     useEffect(() => {
         if (resizing) {
             document.addEventListener('mousemove', handleMouseMove);
@@ -628,57 +541,49 @@ const BugSpreadsheet = () => {
             };
         }
     }, [resizing, handleMouseMove, handleMouseUp]);
-
     const filteredBugs = bugs.filter(bug =>
         Object.values(bug).some(value =>
             value?.toString().toLowerCase().includes(searchTerm.toLowerCase())
         )
     );
-
     const getPriorityColor = (priority) => {
         const colors = {
-            'Critical': 'bg-red-100 text-red-800 border-red-300',
-            'High': 'bg-orange-100 text-orange-800 border-orange-300',
-            'Medium': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-            'Low': 'bg-green-100 text-green-800 border-green-300'
+            'Critical': 'bg-red-100 dark:bg-gray-800 text-red-800 dark:bg-gray-100 border-red-300 dark:bg-gray-800',
+            'High': 'bg-orange-100 dark:bg-gray-800 text-orange-800 dark:bg-gray-100 border-orange-300 dark:bg-gray-800',
+            'Medium': 'bg-yellow-100 dark:bg-gray-800 text-yellow-800 dark:bg-gray-100 border-yellow-300 dark:bg-gray-800',
+            'Low': 'bg-green-100 dark:bg-gray-800 text-green-800 dark:bg-gray-100 border-green-300 dark:bg-gray-800'
         };
-        return colors[priority] || 'bg-gray-100 text-gray-800 border-gray-300';
+        return colors[priority] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-100 border-gray-300 dark:bg-gray-800';
     };
-
     const getStatusColor = (status) => {
         const colors = {
-            'New': 'bg-blue-100 text-blue-800 border-blue-300',
-            'Open': 'bg-purple-100 text-purple-800 border-purple-300',
-            'In Progress': 'bg-yellow-100 text-yellow-800 border-yellow-300',
-            'In Review': 'bg-orange-100 text-orange-800 border-orange-300',
-            'Closed': 'bg-green-100 text-green-800 border-green-300',
-            'Re Open': 'bg-red-100 text-red-800 border-red-300'
+            'New': 'bg-blue-100 dark:bg-gray-800 text-blue-800 dark:bg-gray-100 border-blue-300 dark:bg-gray-800',
+            'Open': 'bg-purple-100 dark:bg-gray-800 text-purple-800 dark:bg-gray-100 border-purple-300 dark:bg-gray-800',
+            'In Progress': 'bg-yellow-100 dark:bg-gray-800 text-yellow-800 dark:bg-gray-100 border-yellow-300 dark:bg-gray-800',
+            'In Review': 'bg-orange-100 dark:bg-gray-800 text-orange-800 dark:bg-gray-100 border-orange-300 dark:bg-gray-800',
+            'Closed': 'bg-green-100 dark:bg-gray-800 text-green-800 dark:bg-gray-100 border-green-300 dark:bg-gray-800',
+            'Re Open': 'bg-red-100 dark:bg-gray-800 text-red-800 dark:bg-gray-100 border-red-300 dark:bg-gray-800'
         };
-        return colors[status] || 'bg-gray-100 text-gray-800 border-gray-300';
+        return colors[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-100 border-gray-300 dark:bg-gray-800';
     };
-
     const getBugTypeColor = (type) => {
         const colors = {
-            'Functional': 'bg-blue-100 text-blue-800 border-blue-300',
-            'User-Interface': 'bg-purple-100 text-purple-800 border-purple-300',
-            'Security': 'bg-red-100 text-red-800 border-red-300',
-            'Database': 'bg-green-100 text-green-800 border-green-300',
-            'Performance': 'bg-orange-100 text-orange-800 border-orange-300'
+            'Functional': 'bg-blue-100 dark:bg-gray-800 text-blue-800 dark:bg-gray-100 border-blue-300 dark:bg-gray-800',
+            'User-Interface': 'bg-purple-100 dark:bg-gray-800 text-purple-800 dark:bg-gray-100 border-purple-300 dark:bg-gray-800',
+            'Security': 'bg-red-100 dark:bg-gray-800 text-red-800 dark:bg-gray-100 border-red-300 dark:bg-gray-800',
+            'Database': 'bg-green-100 dark:bg-gray-800 text-green-800 dark:bg-gray-100 border-green-300 dark:bg-gray-800',
+            'Performance': 'bg-orange-100 dark:bg-gray-800 text-orange-800 dark:bg-gray-100 border-orange-300 dark:bg-gray-800'
         };
-        return colors[type] || 'bg-gray-100 text-gray-800 border-gray-300';
+        return colors[type] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-100 border-gray-300 dark:bg-gray-800';
     };
-
     const calculateDropdownPosition = (cellKey) => {
         const buttonElement = dropdownButtonRefs.current[cellKey];
         if (!buttonElement) return false;
-
         const rect = buttonElement.getBoundingClientRect();
         const spaceBelow = window.innerHeight - rect.bottom;
         const spaceAbove = rect.top;
-
         return spaceBelow < 300 && spaceAbove > spaceBelow;
     };
-
     const handleDropdownClick = (cellKey) => {
         if (activeDropdown === cellKey) {
             setActiveDropdown(null);
@@ -688,17 +593,14 @@ const BugSpreadsheet = () => {
             setActiveDropdown(cellKey);
         }
     };
-
     const copyToClipboard = (text) => {
         navigator.clipboard.writeText(text);
         showAlert({ type: 'success', message: 'Copied to clipboard' });
     };
-
     const renderDropdown = (bugId, column, value) => {
         const cellKey = `${bugId}-${column.key}`;
         const isActive = activeDropdown === cellKey;
         const openUpward = dropdownOpenUpward[cellKey] || false;
-
         let badgeClass = '';
         if (column.key === 'priority' || column.key === 'severity') {
             badgeClass = getPriorityColor(value);
@@ -707,7 +609,6 @@ const BugSpreadsheet = () => {
         } else if (column.key === 'bugType') {
             badgeClass = getBugTypeColor(value);
         }
-
         return (
             <div className="relative w-full h-full" ref={isActive ? dropdownRef : null}>
                 <button
@@ -715,13 +616,12 @@ const BugSpreadsheet = () => {
                         if (el) dropdownButtonRefs.current[cellKey] = el;
                     }}
                     onClick={() => handleDropdownClick(cellKey)}
-                    className="w-full h-full px-2 py-1.5 flex items-center justify-between hover:bg-gray-50 transition-colors group"
+                    className="w-full h-full px-2 py-1.5 flex items-center justify-between hover:bg-gray-50 dark:bg-gray-800 transition-colors group"
                 >
                     <span className={`px-2 py-1 w-full rounded text-xs font-medium border ${badgeClass}`}>
                         {value || 'Select'}
                     </span>
                 </button>
-
                 <AnimatePresence>
                     {isActive && (
                         <motion.div
@@ -729,7 +629,7 @@ const BugSpreadsheet = () => {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className={`absolute ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-48 bg-white border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden`}
+                            className={`absolute ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:bg-gray-800 rounded-lg shadow-xl z-50 overflow-hidden`}
                         >
                             <div className="py-1 max-h-64 overflow-y-auto">
                                 {column.options.map((option) => {
@@ -741,18 +641,17 @@ const BugSpreadsheet = () => {
                                     } else if (column.key === 'bugType') {
                                         optionBadgeClass = getBugTypeColor(option);
                                     }
-
                                     return (
                                         <button
                                             key={option}
                                             onClick={() => handleDropdownSelect(bugId, column.key, option)}
-                                            className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50' : ''}`}
+                                            className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 dark:bg-gray-800 transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50 dark:bg-gray-800' : ''}`}
                                         >
                                             <span className={`px-2 py-1 rounded text-xs font-medium border ${optionBadgeClass}`}>
                                                 {option}
                                             </span>
                                             {value === option && (
-                                                <div className="w-1.5 h-1.5 bg-blue-600 rounded-full"></div>
+                                                <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-gray-100 rounded-full"></div>
                                             )}
                                         </button>
                                     );
@@ -764,18 +663,15 @@ const BugSpreadsheet = () => {
             </div>
         );
     };
-
     const renderLinksDropdown = (bugId, refLinks) => {
         const cellKey = `links-${bugId}`;
         const isActive = activeLinksDropdown === cellKey;
         const links = Array.isArray(refLinks) ? refLinks : (refLinks ? [refLinks] : []);
         const validLinks = links.filter(link => link && link !== 'No Link Provided');
-
         const buttonRef = linksButtonRefs.current[cellKey];
         const rect = buttonRef?.getBoundingClientRect();
         const spaceBelow = window.innerHeight - (rect?.bottom || 0);
         const openUpward = spaceBelow < 300;
-
         return (
             <>
                 <button
@@ -783,11 +679,10 @@ const BugSpreadsheet = () => {
                         if (el) linksButtonRefs.current[cellKey] = el;
                     }}
                     onClick={() => setActiveLinksDropdown(isActive ? null : cellKey)}
-                    className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors relative"
+                    className="p-1.5 text-blue-600 dark:bg-gray-100 hover:bg-blue-50 dark:bg-gray-800 rounded transition-colors relative"
                 >
                     <LinkIcon size={14} />
                 </button>
-
                 <AnimatePresence>
                     {isActive && (
                         <motion.div
@@ -796,24 +691,24 @@ const BugSpreadsheet = () => {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50`}
+                            className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:bg-gray-800 rounded-lg shadow-xl z-50`}
                         >
-                            <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
+                            <div className="px-3 py-2 border-b border-gray-200 dark:bg-gray-800 flex items-center justify-between">
                                 <div className="flex items-center gap-1.5">
-                                    <LinkIcon size={16} className="text-gray-600" />
-                                    <h3 className="font-semibold text-gray-800 text-sm">Links</h3>
+                                    <LinkIcon size={16} className="text-gray-600 dark:bg-gray-100" />
+                                    <h3 className="font-semibold text-gray-800 dark:bg-gray-100 text-sm">Links</h3>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <button
                                         onClick={() => setActiveLinkModal(bugId)}
-                                        className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                        className="p-1 text-green-600 dark:bg-gray-100 hover:bg-green-50 dark:bg-gray-800 rounded transition-colors"
                                         title="Add new link"
                                     >
                                         <Plus size={14} />
                                     </button>
                                     <button
                                         onClick={() => setActiveLinksDropdown(null)}
-                                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                        className="p-1 text-gray-400 dark:bg-gray-100 hover:text-gray-600 dark:bg-gray-100 transition-colors"
                                     >
                                         <X size={16} />
                                     </button>
@@ -821,32 +716,32 @@ const BugSpreadsheet = () => {
                             </div>
                             <div className="max-h-64 overflow-y-auto">
                                 {validLinks.length === 0 ? (
-                                    <div className="px-3 py-4 text-center text-gray-500 text-xs">
+                                    <div className="px-3 py-4 text-center text-gray-500 dark:bg-gray-100 text-xs">
                                         No links added yet
                                     </div>
                                 ) : (
                                     validLinks.map((link, index) => (
-                                        <div key={index} className="px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                                        <div key={index} className="px-3 py-2 border-b border-gray-100 dark:bg-gray-800 last:border-b-0 hover:bg-gray-50 dark:bg-gray-800">
                                             <div className="flex items-center justify-between gap-2">
                                                 <a
                                                     href={link}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="flex-1 text-xs text-blue-600 hover:text-blue-800 truncate"
+                                                    className="flex-1 text-xs text-blue-600 dark:bg-gray-100 hover:text-blue-800 dark:bg-gray-100 truncate"
                                                 >
                                                     {link}
                                                 </a>
                                                 <div className="flex items-center gap-1">
                                                     <button
                                                         onClick={() => copyToClipboard(link)}
-                                                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                                        className="p-1 text-gray-400 dark:bg-gray-100 hover:text-gray-600 dark:bg-gray-100 hover:bg-gray-100 dark:bg-gray-800 rounded transition-colors"
                                                         title="Copy link"
                                                     >
                                                         <Copy size={12} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleRemoveLink(bugId, link)}
-                                                        className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                        className="p-1 text-red-400 dark:bg-gray-100 hover:text-red-600 dark:bg-gray-100 hover:bg-red-50 dark:bg-gray-800 rounded transition-colors"
                                                         title="Remove link"
                                                     >
                                                         <X size={12} />
@@ -863,18 +758,15 @@ const BugSpreadsheet = () => {
             </>
         );
     };
-
     const renderImagesDropdown = (bugId, images) => {
         const cellKey = `images-${bugId}`;
         const isActive = activeImagesDropdown === cellKey;
         const imageArray = Array.isArray(images) ? images : (images ? [images] : []);
         const validImages = imageArray.filter(img => img && img !== 'No Image Provided' && img !== 'No Image provided');
-
         const buttonRef = imagesButtonRefs.current[cellKey];
         const rect = buttonRef?.getBoundingClientRect();
         const spaceBelow = window.innerHeight - (rect?.bottom || 0);
         const openUpward = spaceBelow < 300;
-
         return (
             <>
                 <button
@@ -882,11 +774,10 @@ const BugSpreadsheet = () => {
                         if (el) imagesButtonRefs.current[cellKey] = el;
                     }}
                     onClick={() => setActiveImagesDropdown(isActive ? null : cellKey)}
-                    className="p-1.5 text-purple-600 hover:bg-purple-50 rounded transition-colors relative"
+                    className="p-1.5 text-purple-600 dark:bg-gray-100 hover:bg-purple-50 dark:bg-gray-800 rounded transition-colors relative"
                 >
                     <ImageIcon size={14} />
                 </button>
-
                 <AnimatePresence>
                     {isActive && (
                         <motion.div
@@ -895,24 +786,24 @@ const BugSpreadsheet = () => {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50`}
+                            className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:bg-gray-800 rounded-lg shadow-xl z-50`}
                         >
-                            <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
+                            <div className="px-3 py-2 border-b border-gray-200 dark:bg-gray-800 flex items-center justify-between">
                                 <div className="flex items-center gap-1.5">
-                                    <ImageIcon size={16} className="text-gray-600" />
-                                    <h3 className="font-semibold text-gray-800 text-sm">Images</h3>
+                                    <ImageIcon size={16} className="text-gray-600 dark:bg-gray-100" />
+                                    <h3 className="font-semibold text-gray-800 dark:bg-gray-100 text-sm">Images</h3>
                                 </div>
                                 <div className="flex items-center gap-1">
                                     <button
                                         onClick={() => setActiveImageModal(bugId)}
-                                        className="p-1 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                        className="p-1 text-green-600 dark:bg-gray-100 hover:bg-green-50 dark:bg-gray-800 rounded transition-colors"
                                         title="Upload new image"
                                     >
                                         <Plus size={14} />
                                     </button>
                                     <button
                                         onClick={() => setActiveImagesDropdown(null)}
-                                        className="p-1 text-gray-400 hover:text-gray-600 transition-colors"
+                                        className="p-1 text-gray-400 dark:bg-gray-100 hover:text-gray-600 dark:bg-gray-100 transition-colors"
                                     >
                                         <X size={16} />
                                     </button>
@@ -920,32 +811,32 @@ const BugSpreadsheet = () => {
                             </div>
                             <div className="max-h-64 overflow-y-auto">
                                 {validImages.length === 0 ? (
-                                    <div className="px-3 py-4 text-center text-gray-500 text-xs">
+                                    <div className="px-3 py-4 text-center text-gray-500 dark:bg-gray-100 text-xs">
                                         No images added yet
                                     </div>
                                 ) : (
                                     validImages.map((image, index) => (
-                                        <div key={index} className="px-3 py-2 border-b border-gray-100 last:border-b-0 hover:bg-gray-50">
+                                        <div key={index} className="px-3 py-2 border-b border-gray-100 dark:bg-gray-800 last:border-b-0 hover:bg-gray-50 dark:bg-gray-800">
                                             <div className="flex items-center justify-between gap-2">
                                                 <div className="flex items-center gap-2 flex-1">
                                                     <img
                                                         src={image}
                                                         alt={`Image ${index + 1}`}
-                                                        className="w-10 h-10 object-cover rounded border border-gray-200"
+                                                        className="w-10 h-10 object-cover rounded border border-gray-200 dark:bg-gray-800"
                                                     />
-                                                    <span className="text-xs text-gray-700">Image {index + 1}</span>
+                                                    <span className="text-xs text-gray-700 dark:bg-gray-100">Image {index + 1}</span>
                                                 </div>
                                                 <div className="flex items-center gap-1">
                                                     <button
                                                         onClick={() => setImagePreviewModal(image)}
-                                                        className="p-1 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded transition-colors"
+                                                        className="p-1 text-gray-400 dark:bg-gray-100 hover:text-gray-600 dark:bg-gray-100 hover:bg-gray-100 dark:bg-gray-800 rounded transition-colors"
                                                         title="View full size"
                                                     >
                                                         <ZoomIn size={12} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleRemoveImage(bugId, image)}
-                                                        className="p-1 text-red-400 hover:text-red-600 hover:bg-red-50 rounded transition-colors"
+                                                        className="p-1 text-red-400 dark:bg-gray-100 hover:text-red-600 dark:bg-gray-100 hover:bg-red-50 dark:bg-gray-800 rounded transition-colors"
                                                         title="Remove image"
                                                     >
                                                         <X size={12} />
@@ -962,16 +853,13 @@ const BugSpreadsheet = () => {
             </>
         );
     };
-
     const renderLinkModal = (bugId) => {
         const isActive = activeLinkModal === bugId;
         if (!isActive) return null;
-
         const buttonRef = linksButtonRefs.current[`links-${bugId}`];
         const rect = buttonRef?.getBoundingClientRect();
         const spaceBelow = window.innerHeight - (rect?.bottom || 0);
         const openUpward = spaceBelow < 200;
-
         return (
             <motion.div
                 ref={linkModalRef}
@@ -979,13 +867,13 @@ const BugSpreadsheet = () => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50`}
+                className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:bg-gray-800 rounded-lg shadow-xl z-50`}
             >
-                <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-800 text-sm">Add Link</h3>
+                <div className="px-3 py-2 border-b border-gray-200 dark:bg-gray-800 flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-800 dark:bg-gray-100 text-sm">Add Link</h3>
                     <button
                         onClick={() => setActiveLinkModal(null)}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className="text-gray-400 dark:bg-gray-100 hover:text-gray-600 dark:bg-gray-100 transition-colors"
                     >
                         <X size={16} />
                     </button>
@@ -996,19 +884,19 @@ const BugSpreadsheet = () => {
                         value={newLink}
                         onChange={(e) => setNewLink(e.target.value)}
                         placeholder="Enter link URL..."
-                        className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
+                        className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:bg-gray-800 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 mb-2"
                     />
                     <div className="flex gap-2">
                         <button
                             onClick={() => setActiveLinkModal(null)}
-                            className="flex-1 px-2 py-1.5 text-xs bg-gray-200 text-gray-700 rounded hover:bg-gray-300 transition-colors"
+                            className="flex-1 px-2 py-1.5 text-xs bg-gray-200 dark:bg-gray-800 text-gray-700 dark:bg-gray-100 rounded hover:bg-gray-300 dark:bg-gray-800 transition-colors"
                         >
                             Cancel
                         </button>
                         <button
                             onClick={() => handleAddLink(bugId, newLink)}
                             disabled={!newLink.trim()}
-                            className="flex-1 px-2 py-1.5 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 transition-colors"
+                            className="flex-1 px-2 py-1.5 text-xs bg-blue-600 dark:bg-gray-800 text-white dark:bg-gray-100 rounded hover:bg-blue-700 dark:bg-gray-800 disabled:opacity-50 transition-colors"
                         >
                             Add Link
                         </button>
@@ -1017,16 +905,13 @@ const BugSpreadsheet = () => {
             </motion.div>
         );
     };
-
     const renderImageModal = (bugId) => {
         const isActive = activeImageModal === bugId;
         if (!isActive) return null;
-
         const buttonRef = imagesButtonRefs.current[`images-${bugId}`];
         const rect = buttonRef?.getBoundingClientRect();
         const spaceBelow = window.innerHeight - (rect?.bottom || 0);
         const openUpward = spaceBelow < 200;
-
         return (
             <motion.div
                 ref={imageModalRef}
@@ -1034,13 +919,13 @@ const BugSpreadsheet = () => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                 transition={{ duration: 0.15 }}
-                className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-64 bg-white border border-gray-200 rounded-lg shadow-xl z-50`}
+                className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:bg-gray-800 rounded-lg shadow-xl z-50`}
             >
-                <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
-                    <h3 className="font-semibold text-gray-800 text-sm">Upload Image</h3>
+                <div className="px-3 py-2 border-b border-gray-200 dark:bg-gray-800 flex items-center justify-between">
+                    <h3 className="font-semibold text-gray-800 dark:bg-gray-100 text-sm">Upload Image</h3>
                     <button
                         onClick={() => setActiveImageModal(null)}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className="text-gray-400 dark:bg-gray-100 hover:text-gray-600 dark:bg-gray-100 transition-colors"
                     >
                         <X size={16} />
                     </button>
@@ -1061,7 +946,7 @@ const BugSpreadsheet = () => {
                     />
                     <button
                         onClick={() => fileInputRef.current?.click()}
-                        className="w-full px-2 py-1.5 text-xs bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors flex items-center justify-center gap-1"
+                        className="w-full px-2 py-1.5 text-xs bg-purple-600 dark:bg-gray-800 text-white dark:bg-gray-100 rounded hover:bg-purple-700 dark:bg-gray-800 transition-colors flex items-center justify-center gap-1"
                     >
                         <ImageIcon size={14} />
                         Choose Image
@@ -1070,18 +955,14 @@ const BugSpreadsheet = () => {
             </motion.div>
         );
     };
-
     const renderCommentModal = (bugId, buttonRef) => {
         const isActive = activeCommentModal === bugId;
         const bugComments = comments[bugId] || [];
         const isLoading = loadingComments[bugId];
-
         if (!isActive) return null;
-
         const rect = buttonRef?.getBoundingClientRect();
         const spaceBelow = window.innerHeight - (rect?.bottom || 0);
         const openUpward = spaceBelow < 400;
-
         return (
             <motion.div
                 ref={commentModalRef}
@@ -1089,23 +970,22 @@ const BugSpreadsheet = () => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-80 bg-white border border-gray-200 rounded-lg shadow-xl z-50`}
+                className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:bg-gray-800 rounded-lg shadow-xl z-50`}
                 style={{ maxHeight: '360px' }}
             >
-                <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:bg-gray-800">
                     <div className="flex items-center gap-1.5">
-                        <MessageSquare size={16} className="text-gray-600" />
-                        <h3 className="font-semibold text-gray-800 text-sm">Comments</h3>
+                        <MessageSquare size={16} className="text-gray-600 dark:bg-gray-100" />
+                        <h3 className="font-semibold text-gray-800 dark:bg-gray-100 text-sm">Comments</h3>
                     </div>
                     <button
                         onClick={() => setActiveCommentModal(null)}
-                        className="text-gray-400 hover:text-gray-600 transition-colors"
+                        className="text-gray-400 dark:bg-gray-100 hover:text-gray-600 dark:bg-gray-100 transition-colors"
                     >
                         <X size={16} />
                     </button>
                 </div>
-
-                <div className="px-3 py-2 border-b border-gray-200">
+                <div className="px-3 py-2 border-b border-gray-200 dark:bg-gray-800">
                     <div className="flex gap-1.5">
                         <input
                             type="text"
@@ -1118,48 +998,47 @@ const BugSpreadsheet = () => {
                                 }
                             }}
                             placeholder="Add a comment..."
-                            className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="flex-1 px-2 py-1.5 text-xs border border-gray-300 dark:bg-gray-800 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
                             disabled={submittingComment}
                         />
                         <button
                             onClick={() => submitComment(bugId)}
                             disabled={!newComment.trim() || submittingComment}
-                            className="px-2 py-1.5 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-2 py-1.5 bg-blue-600 dark:bg-gray-800 text-white dark:bg-gray-100 rounded hover:bg-blue-700 dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             {submittingComment ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                         </button>
                     </div>
                 </div>
-
                 <div className="overflow-y-auto" style={{ maxHeight: '220px' }}>
                     {isLoading ? (
                         <div className="flex items-center justify-center py-6">
-                            <Loader2 size={20} className="animate-spin text-blue-600" />
+                            <Loader2 size={20} className="animate-spin text-blue-600 dark:bg-gray-100" />
                         </div>
                     ) : bugComments.length === 0 ? (
-                        <div className="text-center py-6 text-gray-500 text-xs">
+                        <div className="text-center py-6 text-gray-500 dark:bg-gray-100 text-xs">
                             No comments yet. Be the first to comment!
                         </div>
                     ) : (
-                        <div className="divide-y divide-gray-100">
+                        <div className="divide-y divide-gray-100 dark:bg-gray-800">
                             {bugComments.map((comment, index) => (
                                 <div key={index} className="px-3 py-2">
                                     <div className="flex items-start gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-blue-100 flex items-center justify-center flex-shrink-0">
-                                            <span className="text-xs font-semibold text-blue-600">
+                                        <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
+                                            <span className="text-xs font-semibold text-blue-600 dark:bg-gray-100">
                                                 {comment.commentBy?.charAt(0).toUpperCase() || 'U'}
                                             </span>
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-1.5 mb-0.5">
-                                                <span className="text-xs font-semibold text-gray-800">
+                                                <span className="text-xs font-semibold text-gray-800 dark:bg-gray-100">
                                                     {comment.commentBy || 'Unknown User'}
                                                 </span>
-                                                <span className="text-xs text-gray-500">
+                                                <span className="text-xs text-gray-500 dark:bg-gray-100">
                                                     {new Date(comment.createdAt).toLocaleDateString()}
                                                 </span>
                                             </div>
-                                            <p className="text-xs text-gray-700 break-words">{comment.comment}</p>
+                                            <p className="text-xs text-gray-700 dark:bg-gray-100 break-words">{comment.comment}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -1170,7 +1049,6 @@ const BugSpreadsheet = () => {
             </motion.div>
         );
     };
-
     const renderCellContent = (bug, column, isNewRow = false) => {
         const bugId = isNewRow ? 'new' : bug?._id;
         const value = isNewRow ? (newRowTempData[column.key] || newRowData[column.key]) : bug?.[column.key];
@@ -1178,7 +1056,6 @@ const BugSpreadsheet = () => {
         const isSaving = savingCells.has(cellKey);
         const hasError = errorCells.has(cellKey);
         const rowHeight = rowHeights[bugId] || rowHeights.default;
-
         if (column.key === 'actions') {
             if (isNewRow) {
                 return (
@@ -1189,7 +1066,7 @@ const BugSpreadsheet = () => {
                             <>
                                 <button
                                     onClick={handleNewRowManualSave}
-                                    className="p-1.5 text-green-600 hover:bg-green-50 rounded transition-colors"
+                                    className="p-1.5 text-green-600 dark:bg-gray-100 hover:bg-green-50 dark:bg-gray-800 rounded transition-colors"
                                     disabled={isCreatingBug}
                                     title="Save"
                                 >
@@ -1197,20 +1074,19 @@ const BugSpreadsheet = () => {
                                 </button>
                                 <button
                                     onClick={handleNewRowCancel}
-                                    className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                                    className="p-1.5 text-red-600 dark:bg-gray-100 hover:bg-red-50 dark:bg-gray-800 rounded transition-colors"
                                     title="Cancel"
                                 >
                                     <Ban size={14} />
                                 </button>
                             </>
                         )}
-                        {isCreatingBug && <Loader2 size={14} className="animate-spin text-blue-500" />}
+                        {isCreatingBug && <Loader2 size={14} className="animate-spin text-blue-500 dark:bg-gray-100" />}
                         {renderLinkModal('new')}
                         {renderImageModal('new')}
                     </div>
                 );
             }
-
             return (
                 <div className="flex items-center justify-center h-full space-x-0.5 relative">
                     {renderLinksDropdown(bug._id, bug.refLinks)}
@@ -1228,21 +1104,21 @@ const BugSpreadsheet = () => {
                                 fetchComments(bug._id);
                             }
                         }}
-                        className="p-1.5 text-blue-600 hover:bg-blue-50 rounded transition-colors"
+                        className="p-1.5 text-blue-600 dark:bg-gray-100 hover:bg-blue-50 dark:bg-gray-800 rounded transition-colors"
                         title="Comments"
                     >
                         <MessageSquare size={14} />
                     </button>
                     <button
                         onClick={() => moveBugToTrash(bug._id)}
-                        className="p-1.5 text-orange-600 hover:bg-orange-50 rounded transition-colors"
+                        className="p-1.5 text-orange-600 dark:bg-gray-100 hover:bg-orange-50 dark:bg-gray-800 rounded transition-colors"
                         title="Move to trash"
                     >
                         <Archive size={14} />
                     </button>
                     <button
                         onClick={() => deleteBugPermanently(bug._id)}
-                        className="p-1.5 text-red-600 hover:bg-red-50 rounded transition-colors"
+                        className="p-1.5 text-red-600 dark:bg-gray-100 hover:bg-red-50 dark:bg-gray-800 rounded transition-colors"
                         title="Delete permanently"
                     >
                         <Trash2 size={14} />
@@ -1253,19 +1129,16 @@ const BugSpreadsheet = () => {
                 </div>
             );
         }
-
         if (column.key === 'serialNumber' && !isNewRow) {
             return (
-                <div className="flex items-center justify-center h-full px-2 font-medium text-gray-700 text-xs">
+                <div className="flex items-center justify-center h-full px-2 font-medium text-gray-700 dark:bg-gray-100 text-xs">
                     {value}
                 </div>
             );
         }
-
         if (column.type === 'select') {
             return renderDropdown(bugId, column, value);
         }
-
         if (editingCell?.bugId === bugId && editingCell?.columnKey === column.key) {
             return (
                 <textarea
@@ -1282,18 +1155,16 @@ const BugSpreadsheet = () => {
                             setEditValue('');
                         }
                     }}
-                    className="w-full h-full border-2 border-blue-500 outline-none bg-white px-2 py-1.5 text-xs resize-none"
+                    className="w-full h-full border-2 border-blue-500 outline-none bg-white dark:bg-gray-800 px-2 py-1.5 text-xs resize-none"
                     autoFocus
                     style={{ minHeight: rowHeight }}
                 />
             );
         }
-
         const displayValue = value || '';
-
         return (
             <div
-                className={`w-full h-full px-2 py-1.5 flex items-center text-xs relative ${column.editable ? 'cursor-pointer hover:bg-gray-50' : ''}`}
+                className={`w-full h-full px-2 py-1.5 flex items-center text-xs relative ${column.editable ? 'cursor-pointer hover:bg-gray-50 dark:bg-gray-800' : ''}`}
                 onDoubleClick={() => column.editable && (isNewRow ? handleNewRowCellClick(column.key) : startEditing(bugId, column.key, value))}
                 style={{
                     minHeight: rowHeight,
@@ -1304,7 +1175,7 @@ const BugSpreadsheet = () => {
                 content-placement="top"
             >
                 <span
-                    className={`flex-1 ${!value && isNewRow ? 'text-gray-400 italic' : ''}`}
+                    className={`flex-1 ${!value && isNewRow ? 'text-gray-400 dark:bg-gray-100 italic' : ''}`}
                     style={{
                         lineHeight: '1.4',
                         maxHeight: rowHeight - 12,
@@ -1316,16 +1187,14 @@ const BugSpreadsheet = () => {
                 >
                     {value ? displayValue : (isNewRow ? 'Double-click to edit' : '')}
                 </span>
-                {isSaving && <Loader2 size={12} className="ml-1 animate-spin text-blue-500 flex-shrink-0" />}
-                {hasError && <AlertCircle size={12} className="ml-1 text-red-500 flex-shrink-0" />}
+                {isSaving && <Loader2 size={12} className="ml-1 animate-spin text-blue-500 dark:bg-gray-100 flex-shrink-0" />}
+                {hasError && <AlertCircle size={12} className="ml-1 text-red-500 dark:bg-gray-100 flex-shrink-0" />}
             </div>
         );
     };
-
     useEffect(() => {
         fetchBugs(1);
     }, [fetchBugs]);
-
     const getStickyLeftPosition = (columnKey) => {
         let position = 0;
         for (const col of columns) {
@@ -1336,7 +1205,6 @@ const BugSpreadsheet = () => {
         }
         return position;
     };
-
     const goToFirstPage = () => fetchBugs(1);
     const goToLastPage = () => fetchBugs(totalPages);
     const goToPage = (page) => {
@@ -1344,18 +1212,15 @@ const BugSpreadsheet = () => {
             fetchBugs(page);
         }
     };
-
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen mt-15 bg-gradient-to-br from-gray-50 to-gray-100">
+            <div className="flex items-center justify-center h-screen mt-15 bg-gradient-to-br from-gray-50 dark:bg-gray-800 to-gray-100 dark:bg-gray-800">
                 <TableSkeletonLoader />
             </div>
         );
     }
-
     return (
-        <div className="w-full bg-gradient-to-br from-gray-50 to-gray-100 flex flex-col">
-            {/* Alert Toast */}
+        <div className="w-full bg-gradient-to-br from-gray-50 dark:bg-gray-800 to-gray-100 dark:bg-gray-800 flex flex-col">
             <AnimatePresence>
                 {alert && (
                     <motion.div
@@ -1364,11 +1229,11 @@ const BugSpreadsheet = () => {
                         exit={{ opacity: 0, y: -50 }}
                         className="fixed top-4 right-4 z-50"
                     >
-                        <div className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${alert.type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'
+                        <div className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${alert.type === 'success' ? 'bg-green-500 dark:bg-gray-800 text-white dark:bg-gray-100' : 'bg-red-500 dark:bg-gray-800 text-white dark:bg-gray-100'
                             }`}>
                             {alert.type === 'success' ? (
-                                <div className="w-5 h-5 rounded-full bg-white flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                                <div className="w-5 h-5 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
+                                    <div className="w-2 h-2 bg-green-500 dark:bg-gray-100 rounded-full"></div>
                                 </div>
                             ) : (
                                 <AlertCircle size={20} />
@@ -1378,15 +1243,13 @@ const BugSpreadsheet = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* Image Preview Modal */}
             <AnimatePresence>
                 {imagePreviewModal && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black bg-opacity-75 z-50 flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-black dark:bg-gray-800 bg-opacity-75 dark:bg-gray-800 z-50 flex items-center justify-center p-4"
                         onClick={() => setImagePreviewModal(null)}
                     >
                         <motion.div
@@ -1398,7 +1261,7 @@ const BugSpreadsheet = () => {
                         >
                             <button
                                 onClick={() => setImagePreviewModal(null)}
-                                className="absolute -top-10 right-0 text-white hover:text-gray-300 transition-colors"
+                                className="absolute -top-10 right-0 text-white dark:bg-gray-100 hover:text-gray-300 dark:bg-gray-100 transition-colors"
                             >
                                 <X size={32} />
                             </button>
@@ -1411,18 +1274,15 @@ const BugSpreadsheet = () => {
                     </motion.div>
                 )}
             </AnimatePresence>
-
-            {/* Spreadsheet */}
             <div className="flex-1 overflow-auto relative">
-                <div className="bg-white border border-gray-200 overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:bg-gray-800 overflow-hidden">
                     <div className="overflow-x-auto overflow-y-auto">
                         <div className="inline-block min-w-full">
-                            {/* Header */}
-                            <div className="flex sticky top-0 z-30 border-b border-gray-300 bg-gradient-to-r from-gray-50 to-gray-100">
+                            <div className="flex sticky top-0 z-30 border-b border-gray-300 dark:bg-gray-800 bg-gradient-to-r from-gray-50 dark:bg-gray-800 to-gray-100 dark:bg-gray-800">
                                 {columns.map((column) => (
                                     <div
                                         key={column.key}
-                                        className={`px-3 py-2.5 font-semibold text-gray-700 text-xs border-r border-gray-300 relative group ${column.sticky ? 'sticky z-40' : ''}`}
+                                        className={`px-3 py-2.5 font-semibold text-gray-700 dark:bg-gray-100 text-xs border-r border-gray-300 dark:bg-gray-800 relative group ${column.sticky ? 'sticky z-40' : ''}`}
                                         style={{
                                             width: columnWidths[column.key],
                                             minWidth: columnWidths[column.key],
@@ -1431,28 +1291,26 @@ const BugSpreadsheet = () => {
                                         }}
                                     >
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-semibold text-gray-700 tracking-wide uppercase">
+                                            <span className="text-xs font-semibold text-gray-700 dark:bg-gray-100 tracking-wide uppercase">
                                                 {column.label}
                                             </span>
                                             <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <GripVertical size={10} className="text-gray-400" />
+                                                <GripVertical size={10} className="text-gray-400 dark:bg-gray-100" />
                                             </div>
                                         </div>
                                         <div
-                                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 group-hover:bg-blue-300 transition-colors"
+                                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 dark:bg-gray-800 group-hover:bg-blue-300 dark:bg-gray-800 transition-colors"
                                             onMouseDown={(e) => startColumnResize(column.key, e)}
                                         />
                                     </div>
                                 ))}
-                                <div className="flex-1 border-b border-gray-300 bg-gradient-to-r from-gray-100 to-gray-50"></div>
+                                <div className="flex-1 border-b border-gray-300 dark:bg-gray-800 bg-gradient-to-r from-gray-100 dark:bg-gray-800 to-gray-50 dark:bg-gray-800"></div>
                             </div>
-
-                            {/* New Row */}
-                            <div className="flex border-b border-blue-200 bg-blue-50/50 relative group">
+                            <div className="flex border-b border-blue-200 dark:bg-gray-800 bg-blue-50/50 dark:bg-gray-800 relative group">
                                 {columns.map((column) => (
                                     <div
                                         key={`new-${column.key}`}
-                                        className={`border-r border-gray-200 ${column.sticky ? 'sticky z-20 bg-blue-50/50' : ''}`}
+                                        className={`border-r border-gray-200 dark:bg-gray-800 ${column.sticky ? 'sticky z-20 bg-blue-50/50 dark:bg-gray-800' : ''}`}
                                         style={{
                                             width: columnWidths[column.key],
                                             minWidth: columnWidths[column.key],
@@ -1463,20 +1321,18 @@ const BugSpreadsheet = () => {
                                         {renderCellContent(null, column, true)}
                                     </div>
                                 ))}
-                                <div className="flex-1 bg-blue-50/50 border-b border-blue-200"></div>
+                                <div className="flex-1 bg-blue-50/50 dark:bg-gray-800 border-b border-blue-200 dark:bg-gray-800"></div>
                                 <div
-                                    className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 dark:bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
                                     onMouseDown={(e) => startRowResize('new', e)}
                                 />
                             </div>
-
-                            {/* Data Rows */}
                             {filteredBugs.map((bug) => (
-                                <div key={bug._id} className="flex border-b border-gray-200 hover:bg-gray-50 transition-colors relative group">
+                                <div key={bug._id} className="flex border-b border-gray-200 dark:bg-gray-800 hover:bg-gray-50 dark:bg-gray-800 transition-colors relative group">
                                     {columns.map((column) => (
                                         <div
                                             key={`${bug._id}-${column.key}`}
-                                            className={`border-r border-gray-200 relative ${column.sticky ? 'sticky z-20 bg-white group-hover:bg-gray-50' : ''}`}
+                                            className={`border-r border-gray-200 dark:bg-gray-800 relative ${column.sticky ? 'sticky z-20 bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:bg-gray-800' : ''}`}
                                             style={{
                                                 width: columnWidths[column.key],
                                                 minWidth: columnWidths[column.key],
@@ -1487,18 +1343,17 @@ const BugSpreadsheet = () => {
                                             {renderCellContent(bug, column)}
                                         </div>
                                     ))}
-                                    <div className="flex-1 border-b border-gray-200 group-hover:bg-gray-50"></div>
+                                    <div className="flex-1 border-b border-gray-200 dark:bg-gray-800 group-hover:bg-gray-50 dark:bg-gray-800"></div>
                                     <div
-                                        className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 dark:bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
                                         onMouseDown={(e) => startRowResize(bug._id, e)}
                                     />
                                 </div>
                             ))}
-
                             {filteredBugs.length === 0 && (
-                                <div className="flex justify-center items-center py-12 text-gray-500">
+                                <div className="flex justify-center items-center py-12 text-gray-500 dark:bg-gray-100">
                                     <div className="text-center">
-                                        <AlertCircle size={32} className="mx-auto mb-2 text-gray-400" />
+                                        <AlertCircle size={32} className="mx-auto mb-2 text-gray-400 dark:bg-gray-100" />
                                         <p className="text-sm font-medium">No bugs found</p>
                                         <p className="text-xs mt-1">Start typing in the blank row above to create your first bug</p>
                                     </div>
@@ -1508,29 +1363,24 @@ const BugSpreadsheet = () => {
                     </div>
                 </div>
             </div>
-
-            {/* Pagination Bar */}
-            <div className="border-t border-gray-200 bg-white px-4 py-1 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 sm:px-6">
-                {/* Left Side: Info */}
-                <div className="flex flex-col sm:flex-row items-center gap-2 text-xs text-gray-700">
+            <div className="border-t border-gray-200 dark:bg-gray-800 bg-white dark:bg-gray-800 px-4 py-1 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 sm:px-6">
+                <div className="flex flex-col sm:flex-row items-center gap-2 text-xs text-gray-700 dark:bg-gray-100">
                     <div>
-                        <span className="font-medium text-gray-600">Test Type:</span>{' '}
+                        <span className="font-medium text-gray-600 dark:bg-gray-100">Test Type:</span>{' '}
                         <span>{selectedTestType?.testTypeName || selectedTestType || 'Not selected'}</span>
                     </div>
-                    <div className="hidden sm:block h-3 w-px bg-gray-300 mx-2" />
+                    <div className="hidden sm:block h-3 w-px bg-gray-300 dark:bg-gray-800 mx-2" />
                     <div>
                         Showing <span className="font-medium">{(currentPage - 1) * ROWS_PER_PAGE + 1}</span> to{' '}
                         <span className="font-medium">{Math.min(currentPage * ROWS_PER_PAGE, totalBugs)}</span> of{' '}
                         <span className="font-medium">{totalBugs}</span> results
                     </div>
                 </div>
-
-                {/* Right Side: Pagination Controls */}
                 <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
                     <button
                         onClick={goToFirstPage}
                         disabled={currentPage === 1}
-                        className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 dark:bg-gray-100 ring-1 ring-inset ring-gray-300 dark:bg-gray-800 hover:bg-gray-50 dark:bg-gray-800 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         aria-label="First page"
                     >
                         <span className="text-xs font-medium">&lt;&lt;</span>
@@ -1538,18 +1388,18 @@ const BugSpreadsheet = () => {
                     <button
                         onClick={() => goToPage(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="relative inline-flex items-center px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="relative inline-flex items-center px-2 py-2 text-gray-400 dark:bg-gray-100 ring-1 ring-inset ring-gray-300 dark:bg-gray-800 hover:bg-gray-50 dark:bg-gray-800 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         aria-label="Previous page"
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </button>
-                    <div className="relative inline-flex items-center px-4 py-2 text-xs font-semibold text-gray-900 ring-1 ring-inset ring-gray-300">
+                    <div className="relative inline-flex items-center px-4 py-2 text-xs font-semibold text-gray-900 dark:bg-gray-100 ring-1 ring-inset ring-gray-300 dark:bg-gray-800">
                         Page {currentPage} of {totalPages}
                     </div>
                     <button
                         onClick={() => goToPage(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="relative inline-flex items-center px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="relative inline-flex items-center px-2 py-2 text-gray-400 dark:bg-gray-100 ring-1 ring-inset ring-gray-300 dark:bg-gray-800 hover:bg-gray-50 dark:bg-gray-800 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         aria-label="Next page"
                     >
                         <ChevronRight className="h-4 w-4" />
@@ -1557,7 +1407,7 @@ const BugSpreadsheet = () => {
                     <button
                         onClick={goToLastPage}
                         disabled={currentPage === totalPages}
-                        className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 dark:bg-gray-100 ring-1 ring-inset ring-gray-300 dark:bg-gray-800 hover:bg-gray-50 dark:bg-gray-800 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         aria-label="Last page"
                     >
                         <span className="text-xs font-medium">&gt;&gt;</span>
@@ -1567,5 +1417,4 @@ const BugSpreadsheet = () => {
         </div>
     );
 };
-
 export default BugSpreadsheet;
