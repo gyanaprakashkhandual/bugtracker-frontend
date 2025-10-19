@@ -1,4 +1,3 @@
-
 'use client';
 
 import React, { useState, useEffect, useCallback, useRef } from 'react';
@@ -62,6 +61,7 @@ const DocumentEditor = () => {
     const [isLoading, setIsLoading] = useState(true);
 
     const saveTimeoutRef = useRef(null);
+    const isLoadingRef = useRef(false);
 
     // Initialize Tiptap Editor with additional extensions
     const editor = useEditor({
@@ -150,8 +150,11 @@ const DocumentEditor = () => {
             },
         },
         onUpdate: ({ editor }) => {
-            const html = editor.getHTML();
-            handleContentChange(html);
+            // Don't trigger auto-save while loading document
+            if (!isLoadingRef.current) {
+                const html = editor.getHTML();
+                handleContentChange(html);
+            }
         },
     });
 
@@ -167,24 +170,18 @@ const DocumentEditor = () => {
         return null;
     };
 
-    // Load existing document
-    useEffect(() => {
-        console.log('🔄 useEffect triggered - docId:', docId);
-        if (docId) {
-            console.log('✅ docId exists, calling loadDocument...');
-            loadDocument();
-        } else {
-            console.log('❌ docId is missing!');
-            setIsLoading(false);
-        }
-    }, [docId]);
-
     // Load document from API
-    const loadDocument = async () => {
+    const loadDocument = useCallback(async () => {
+        if (!docId || !editor) {
+            console.log('⚠️ Cannot load - docId or editor missing:', { docId: !!docId, editor: !!editor });
+            return;
+        }
+
         console.log('📥 loadDocument function called');
         console.log('🔗 API URL:', `http://localhost:5000/api/v1/doc/${docId}`);
 
         setIsLoading(true);
+        isLoadingRef.current = true;
 
         try {
             const token = getToken();
@@ -193,6 +190,7 @@ const DocumentEditor = () => {
                 console.error('❌ No token available!');
                 showAlert('Authentication required', 'error');
                 setIsLoading(false);
+                isLoadingRef.current = false;
                 return;
             }
 
@@ -216,16 +214,19 @@ const DocumentEditor = () => {
                 setDocument(doc);
                 setTitle(doc.title || 'Untitled Document');
 
-                // Set editor content
-                if (editor && doc.content?.html) {
+                // Set editor content - with a small delay to ensure editor is ready
+                if (doc.content?.html) {
                     console.log('✏️ Setting editor content...');
-                    editor.commands.setContent(doc.content.html);
-                    console.log('✅ Editor content set');
+                    console.log('📝 Content HTML length:', doc.content.html.length);
+
+                    // Use setTimeout to ensure editor is fully mounted
+                    setTimeout(() => {
+                        editor.commands.setContent(doc.content.html);
+                        console.log('✅ Editor content set');
+                    }, 50);
                 } else {
-                    console.warn('⚠️ Editor not ready or no content:', {
-                        editorExists: !!editor,
-                        hasContent: !!doc.content?.html
-                    });
+                    console.warn('⚠️ No content to load');
+                    editor.commands.setContent('');
                 }
             } else {
                 const errorData = await response.text();
@@ -241,9 +242,27 @@ const DocumentEditor = () => {
             showAlert('Failed to load document', 'error');
         } finally {
             console.log('🏁 loadDocument finished, setting isLoading to false');
-            setIsLoading(false);
+            // Delay setting loading to false to ensure content is rendered
+            setTimeout(() => {
+                setIsLoading(false);
+                isLoadingRef.current = false;
+            }, 100);
         }
-    };
+    }, [docId, editor, showAlert]);
+
+    // Load existing document when docId or editor changes
+    useEffect(() => {
+        console.log('🔄 useEffect triggered - docId:', docId, 'editor:', !!editor);
+        if (docId && editor) {
+            console.log('✅ Both docId and editor exist, calling loadDocument...');
+            loadDocument();
+        } else {
+            console.log('❌ Missing requirements:', { docId: !!docId, editor: !!editor });
+            if (!docId) {
+                setIsLoading(false);
+            }
+        }
+    }, [docId, editor, loadDocument]);
 
     // Auto-save functionality
     const autoSave = useCallback(async (contentToSave) => {
@@ -264,7 +283,7 @@ const DocumentEditor = () => {
                 version: (document?.version || 1) + 1
             };
 
-            console.log('📦 Save payload:', payload);
+            console.log('📦 Save payload (title & version):', { title: payload.title, version: payload.version });
 
             const response = await fetch(`http://localhost:5000/api/v1/doc/${docId}`, {
                 method: 'PUT',
@@ -337,26 +356,16 @@ const DocumentEditor = () => {
         title
     });
 
-    if (isLoading) {
+    if (isLoading || !editor) {
         console.log('⏳ Showing loading spinner...');
         return (
             <div className="min-h-screen bg-gray-950 flex items-center justify-center">
                 <div className="text-center">
                     <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto" />
-                    <p className="text-gray-400 mt-4">Loading document...</p>
+                    <p className="text-gray-400 mt-4">
+                        {!editor ? 'Initializing editor...' : 'Loading document...'}
+                    </p>
                     <p className="text-gray-600 text-sm mt-2">Doc ID: {docId || 'N/A'}</p>
-                </div>
-            </div>
-        );
-    }
-
-    if (!editor) {
-        console.log('⏳ Editor not ready yet...');
-        return (
-            <div className="min-h-screen bg-gray-950 flex items-center justify-center">
-                <div className="text-center">
-                    <Loader2 className="w-12 h-12 animate-spin text-blue-500 mx-auto" />
-                    <p className="text-gray-400 mt-4">Initializing editor...</p>
                 </div>
             </div>
         );
