@@ -1,194 +1,142 @@
-// components/TiptapEditor.jsx
-import { useEditor, EditorContent } from '@tiptap/react';
-import StarterKit from '@tiptap/starter-kit';
-import Underline from '@tiptap/extension-underline';
-import TextAlign from '@tiptap/extension-text-align';
-import Color from '@tiptap/extension-color';
-import TextStyle from '@tiptap/extension-text-style';
-import Highlight from '@tiptap/extension-highlight';
-import Link from '@tiptap/extension-link';
-import Image from '@tiptap/extension-image';
-import Table from '@tiptap/extension-table';
-import TableRow from '@tiptap/extension-table-row';
-import TableHeader from '@tiptap/extension-table-header';
-import TableCell from '@tiptap/extension-table-cell';
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
-import { lowlight } from 'lowlight';
-import { useState, useEffect } from 'react';
+'use client';
 
-export default function TiptapEditor({ document, onSave }) {
-  const [title, setTitle] = useState(document?.title || '');
-  const [isSaving, setIsSaving] = useState(false);
+import React, { useState } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import { EditorContent } from '@tiptap/react';
+import { Check } from 'lucide-react';
 
-  const editor = useEditor({
-    extensions: [
-      StarterKit,
-      Underline,
-      TextAlign.configure({ types: ['heading', 'paragraph'] }),
-      TextStyle,
-      Color,
-      Highlight.configure({ multicolor: true }),
-      Link.configure({ openOnClick: false }),
-      Image,
-      Table.configure({ resizable: true }),
-      TableRow,
-      TableHeader,
-      TableCell,
-      CodeBlockLowlight.configure({ lowlight }),
-    ],
-    content: document?.content || '',
-  });
+const EditorContentArea = ({ 
+  editor, 
+  showLinkDialog, 
+  setShowLinkDialog, 
+  showImageDialog, 
+  setShowImageDialog 
+}) => {
+  const [linkUrl, setLinkUrl] = useState('');
+  const [imageUrl, setImageUrl] = useState('');
 
-  const handleSave = async () => {
-    if (!editor) return;
-    
-    setIsSaving(true);
-    try {
-      await onSave({
-        title,
-        content: editor.getJSON(),
-        version: document ? document.version + 1 : 1
-      });
-    } finally {
-      setIsSaving(false);
+  const insertLink = () => {
+    if (linkUrl && editor) {
+      editor.chain().focus().setLink({ href: linkUrl }).run();
+      setShowLinkDialog(false);
+      setLinkUrl('');
     }
   };
 
-  if (!editor) return null;
+  const insertImage = () => {
+    if (imageUrl && editor) {
+      editor.chain().focus().setImage({ src: imageUrl }).run();
+      setShowImageDialog(false);
+      setImageUrl('');
+    }
+  };
 
   return (
-    <div className="border rounded-lg bg-white">
-      {/* Title Input */}
-      <div className="p-4 border-b">
-        <input
-          type="text"
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="Document Title"
-          className="w-full text-2xl font-bold outline-none"
-        />
-      </div>
+    <>
+      <motion.main
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ delay: 0.1 }}
+        className="max-w-5xl mx-auto px-6 py-8"
+      >
+        <div className="bg-gray-900 rounded-xl shadow-2xl border border-gray-800 min-h-[600px]">
+          <EditorContent editor={editor} className="text-gray-100" />
+        </div>
+      </motion.main>
 
-      {/* Toolbar */}
-      <div className="border-b p-2 flex flex-wrap gap-1">
-        {/* Text Formatting */}
-        <button
-          onClick={() => editor.chain().focus().toggleBold().run()}
-          className={`p-2 rounded ${editor.isActive('bold') ? 'bg-gray-200' : ''}`}
-        >
-          <strong>B</strong>
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleItalic().run()}
-          className={`p-2 rounded ${editor.isActive('italic') ? 'bg-gray-200' : ''}`}
-        >
-          <em>I</em>
-        </button>
-        <button
-          onClick={() => editor.chain().focus().toggleUnderline().run()}
-          className={`p-2 rounded ${editor.isActive('underline') ? 'bg-gray-200' : ''}`}
-        >
-          <u>U</u>
-        </button>
+      {/* Link Dialog */}
+      <AnimatePresence>
+        {showLinkDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowLinkDialog(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gray-900 rounded-xl p-6 w-full max-w-md border border-gray-800"
+            >
+              <h3 className="text-xl font-semibold mb-4">Insert Link</h3>
+              <input
+                type="url"
+                value={linkUrl}
+                onChange={(e) => setLinkUrl(e.target.value)}
+                placeholder="https://example.com"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg outline-none focus:border-blue-500 transition-colors mb-4"
+                autoFocus
+              />
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowLinkDialog(false)}
+                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={insertLink}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  Insert
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
 
-        {/* Text Alignment */}
-        <button
-          onClick={() => editor.chain().focus().setTextAlign('left').run()}
-          className={`p-2 rounded ${editor.isActive({ textAlign: 'left' }) ? 'bg-gray-200' : ''}`}
-        >
-          Left
-        </button>
-        <button
-          onClick={() => editor.chain().focus().setTextAlign('center').run()}
-          className={`p-2 rounded ${editor.isActive({ textAlign: 'center' }) ? 'bg-gray-200' : ''}`}
-        >
-          Center
-        </button>
-
-        {/* Color Picker */}
-        <input
-          type="color"
-          onChange={event => editor.chain().focus().setColor(event.target.value).run()}
-          className="w-8 h-8"
-        />
-
-        {/* Headings */}
-        <select
-          onChange={event => {
-            const level = parseInt(event.target.value);
-            if (level === 0) {
-              editor.chain().focus().setParagraph().run();
-            } else {
-              editor.chain().focus().toggleHeading({ level }).run();
-            }
-          }}
-          className="p-2 border rounded"
-        >
-          <option value="0">Paragraph</option>
-          <option value="1">Heading 1</option>
-          <option value="2">Heading 2</option>
-          <option value="3">Heading 3</option>
-        </select>
-
-        {/* Lists */}
-        <button
-          onClick={() => editor.chain().focus().toggleBulletList().run()}
-          className={`p-2 rounded ${editor.isActive('bulletList') ? 'bg-gray-200' : ''}`}
-        >
-          • List
-        </button>
-
-        {/* Table */}
-        <button
-          onClick={() => editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run()}
-          className="p-2 rounded"
-        >
-          Table
-        </button>
-
-        {/* Code Block */}
-        <button
-          onClick={() => editor.chain().focus().toggleCodeBlock().run()}
-          className={`p-2 rounded ${editor.isActive('codeBlock') ? 'bg-gray-200' : ''}`}
-        >
-          Code
-        </button>
-
-        {/* Image Upload */}
-        <input
-          type="file"
-          accept="image/*"
-          onChange={async (event) => {
-            const file = event.target.files[0];
-            if (file) {
-              // Implement your image upload logic here
-              const imageUrl = await uploadImage(file);
-              editor.chain().focus().setImage({ src: imageUrl }).run();
-            }
-          }}
-          className="hidden"
-          id="image-upload"
-        />
-        <label htmlFor="image-upload" className="p-2 rounded cursor-pointer">
-          Image
-        </label>
-      </div>
-
-      {/* Editor Content */}
-      <div className="p-6 min-h-[500px]">
-        <EditorContent editor={editor} />
-      </div>
-
-      {/* Save Button */}
-      <div className="p-4 border-t">
-        <button
-          onClick={handleSave}
-          disabled={isSaving}
-          className="bg-green-500 text-white px-6 py-2 rounded-lg hover:bg-green-600 disabled:opacity-50"
-        >
-          {isSaving ? 'Saving...' : 'Save Document'}
-        </button>
-      </div>
-    </div>
+      {/* Image Dialog */}
+      <AnimatePresence>
+        {showImageDialog && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4"
+            onClick={() => setShowImageDialog(false)}
+          >
+            <motion.div
+              initial={{ scale: 0.9, opacity: 0 }}
+              animate={{ scale: 1, opacity: 1 }}
+              exit={{ scale: 0.9, opacity: 0 }}
+              onClick={(e) => e.stopPropagation()}
+              className="bg-gray-900 rounded-xl p-6 w-full max-w-md border border-gray-800"
+            >
+              <h3 className="text-xl font-semibold mb-4">Insert Image</h3>
+              <input
+                type="url"
+                value={imageUrl}
+                onChange={(e) => setImageUrl(e.target.value)}
+                placeholder="https://example.com/image.jpg"
+                className="w-full px-4 py-3 bg-gray-800 border border-gray-700 rounded-lg outline-none focus:border-blue-500 transition-colors mb-4"
+                autoFocus
+              />
+              <div className="flex gap-3 justify-end">
+                <button
+                  onClick={() => setShowImageDialog(false)}
+                  className="px-4 py-2 bg-gray-800 hover:bg-gray-700 rounded-lg transition-colors"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={insertImage}
+                  className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors flex items-center gap-2"
+                >
+                  <Check className="w-4 h-4" />
+                  Insert
+                </button>
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+    </>
   );
-}
+};
+
+export default EditorContentArea;

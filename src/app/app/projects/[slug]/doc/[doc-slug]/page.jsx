@@ -1,4 +1,5 @@
-import DocumentEditor from '@/app/components/Modules/Doc/pages/Doc'
+
+import DocumentEditor from '@/app/components/Modules/Doc/pages/Main'
 import React from 'react'
 
 function page() {

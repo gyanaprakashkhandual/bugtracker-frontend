@@ -27,6 +27,7 @@ import Gapcursor from '@tiptap/extension-gapcursor';
 import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
 import { useProject } from '@/app/script/Project.context';
+import { useDoc } from '@/app/script/Doc.context';
 import {
   Save,
   ArrowLeft,
@@ -66,6 +67,7 @@ const DocumentEditor = () => {
   const { selectedProject } = useProject();
   const projectId = selectedProject?._id;
   const { testTypeId, testTypeName } = useTestType();
+  const { docId, docName } = useDoc();
 
   const [document, setDocument] = useState(null);
   const [title, setTitle] = useState('Untitled Document');
@@ -217,7 +219,7 @@ const DocumentEditor = () => {
 
     try {
       const token = getToken();
-      const response = await fetch(`http://localhost:5000/api/v1/doc/${document._id}`, {
+      const response = await fetch(`http://localhost:5000/api/v1/doc/${docId}`, {
         method: 'PUT',
         headers: {
           'Content-Type': 'application/json',

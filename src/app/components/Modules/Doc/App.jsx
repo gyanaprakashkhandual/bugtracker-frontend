@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
 import { useProject } from '@/app/script/Project.context';
+import { useDoc } from '@/app/script/Doc.context';
 import { useRouter } from 'next/navigation';
 import { useParams } from 'next/navigation';
 
@@ -14,6 +15,7 @@ export default function DocumentManagement() {
   const { selectedProject } = useProject();
   const projectId = selectedProject?._id;
   const { testTypeId, testTypeName } = useTestType();
+  const { setSelectedDoc } = useDoc();
   const router = useRouter();
   const params = useParams();
   const slug = params.slug;
@@ -184,6 +186,8 @@ export default function DocumentManagement() {
   };
 
   const handleOpenDocument = (doc) => {
+    // Set the selected document in context
+    setSelectedDoc(doc._id, doc.title);
     // Use project slug from URL params and document slug
     router.push(`/app/projects/${slug}/doc/${doc.slug}`);
   };
