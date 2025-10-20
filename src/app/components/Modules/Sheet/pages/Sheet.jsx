@@ -1,11 +1,4 @@
-/**
- * Excel Sheet Editor Component
- * A React component for editing Excel sheets using LuckySheet library
- * Features: Auto-save after 1 second of inactivity, formatting toolbar, dark mode support
- */
-
 'use client';
-
 import React, { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import {
@@ -23,9 +16,14 @@ import {
   Type
 } from 'lucide-react';
 import { useSheet } from '@/app/script/Sheet.context';
+import { useProject } from '@/app/script/Project.context';
+import { useTestType } from '@/app/script/TestType.context';
+
 
 const ExcelSheetEditor = () => {
   const { sheetId, sheetName } = useSheet();
+  const { selectedProject } = useProject();
+  const { testTypeName } = useTestType();
   const luckysheetRef = useRef(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -267,6 +265,7 @@ const ExcelSheetEditor = () => {
 
       const customStyle = document.createElement('style');
       customStyle.innerHTML = `
+        /* Fix for cell input visibility */
         #luckysheet-input-box {
           z-index: 1000 !important;
           background: white !important;
@@ -323,14 +322,20 @@ const ExcelSheetEditor = () => {
       <motion.header
         initial={{ y: -20, opacity: 0 }}
         animate={{ y: 0, opacity: 1 }}
-        className="bg-white dark:bg-gray-800 shadow-lg border-b border-gray-200 dark:border-gray-700 relative z-10"
+        className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 relative z-10"
       >
-        <div className="px-6 py-4">
-          <div className="flex items-center justify-between mb-4">
+        <div className="px-6 py-1">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
-              <h1 className="text-2xl font-bold text-gray-800 dark:text-gray-100">
+              <h6 className="text-md font-bold text-gray-800 dark:text-gray-100">
+                {selectedProject?.projectName || 'Project'}
+              </h6>
+              <h6 className="text-md font-bold text-gray-800 dark:text-gray-100">
+                {testTypeName || 'Test Type'}
+              </h6>
+              <h6 className="text-md font-bold text-gray-800 dark:text-gray-100">
                 {sheetName || 'Excel Sheet'}
-              </h1>
+              </h6>
               {sheetData && (
                 <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
                   v{sheetData.version}
@@ -343,104 +348,25 @@ const ExcelSheetEditor = () => {
               whileTap={{ scale: 0.95 }}
               onClick={handleSave}
               disabled={saving || loading}
-              className="flex items-center gap-2 px-6 py-2.5 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 text-white rounded-lg shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
+              className="flex items-center gap-2 px-6 py-1 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 text-white rounded-lg shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
             >
               {saving ? (
                 <>
-                  <Loader2 className="w-4 h-4 animate-spin" />
+                  <Loader2 className="w-2 h-2 animate-spin" />
                   <span>Saving...</span>
                 </>
               ) : (
                 <>
-                  <Save className="w-4 h-4" />
+                  <Save className="w-2 h-2" />
                   <span>Save</span>
                 </>
               )}
             </motion.button>
           </div>
-
-          <div className="flex items-center gap-3 flex-wrap border-t border-gray-200 dark:border-gray-700 pt-4">
-            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 shadow-sm">
-              <button
-                onClick={() => applyFormat('bold')}
-                className="p-2.5 hover:bg-white dark:hover:bg-gray-600 rounded transition-colors group"
-                title="Bold (Ctrl+B)"
-              >
-                <Bold className="w-4 h-4 text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-              </button>
-              <button
-                onClick={() => applyFormat('italic')}
-                className="p-2.5 hover:bg-white dark:hover:bg-gray-600 rounded transition-colors group"
-                title="Italic (Ctrl+I)"
-              >
-                <Italic className="w-4 h-4 text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-              </button>
-              <button
-                onClick={() => applyFormat('underline')}
-                className="p-2.5 hover:bg-white dark:hover:bg-gray-600 rounded transition-colors group"
-                title="Underline (Ctrl+U)"
-              >
-                <Underline className="w-4 h-4 text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 shadow-sm">
-              <button
-                onClick={() => applyFormat('alignLeft')}
-                className="p-2.5 hover:bg-white dark:hover:bg-gray-600 rounded transition-colors group"
-                title="Align Left"
-              >
-                <AlignLeft className="w-4 h-4 text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-              </button>
-              <button
-                onClick={() => applyFormat('alignCenter')}
-                className="p-2.5 hover:bg-white dark:hover:bg-gray-600 rounded transition-colors group"
-                title="Align Center"
-              >
-                <AlignCenter className="w-4 h-4 text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-              </button>
-              <button
-                onClick={() => applyFormat('alignRight')}
-                className="p-2.5 hover:bg-white dark:hover:bg-gray-600 rounded transition-colors group"
-                title="Align Right"
-              >
-                <AlignRight className="w-4 h-4 text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-              </button>
-            </div>
-
-            <div className="flex items-center gap-1 bg-gray-100 dark:bg-gray-700 rounded-lg p-1 shadow-sm">
-              <button
-                onClick={() => applyFormat('decreaseFontSize')}
-                className="p-2.5 hover:bg-white dark:hover:bg-gray-600 rounded transition-colors group"
-                title="Decrease Font Size"
-              >
-                <Minus className="w-4 h-4 text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-              </button>
-              <div className="px-2 text-sm font-medium text-gray-700 dark:text-gray-200">
-                <Type className="w-4 h-4" />
-              </div>
-              <button
-                onClick={() => applyFormat('increaseFontSize')}
-                className="p-2.5 hover:bg-white dark:hover:bg-gray-600 rounded transition-colors group"
-                title="Increase Font Size"
-              >
-                <Plus className="w-4 h-4 text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-              </button>
-            </div>
-
-            <button
-              onClick={() => applyFormat('merge')}
-              className="flex items-center gap-2 px-4 py-2.5 bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-lg transition-colors shadow-sm group"
-              title="Merge Cells"
-            >
-              <Merge className="w-4 h-4 text-gray-700 dark:text-gray-200 group-hover:text-blue-600 dark:group-hover:text-blue-400" />
-              <span className="text-sm font-medium text-gray-700 dark:text-gray-200">Merge</span>
-            </button>
-          </div>
         </div>
       </motion.header>
 
-      <div className="p-6">
+      <div className="">
         {loading ? (
           <motion.div
             initial={{ opacity: 0 }}
@@ -462,7 +388,7 @@ const ExcelSheetEditor = () => {
               id="luckysheet-container"
               ref={luckysheetRef}
               className="w-full"
-              style={{ height: 'calc(100vh - 280px)', minHeight: '500px' }}
+              style={{ height: 'calc(100vh - 65px)', minHeight: '500px' }}
             />
           </motion.div>
         )}
