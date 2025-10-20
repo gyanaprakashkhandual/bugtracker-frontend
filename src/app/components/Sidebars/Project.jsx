@@ -23,6 +23,24 @@ const ProjectSidebar = () => {
     const [userData, setUserData] = useState(null);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    // Initialize from localStorage
+    useState(() => {
+        if (typeof window !== "undefined") {
+            const saved = localStorage.getItem("sidebarOpen");
+            return saved !== null ? JSON.parse(saved) : true;
+        }
+        return true;
+    });
+    useEffect(() => {
+        if (typeof window !== 'undefined') {
+            localStorage.setItem("sidebarOpen", JSON.stringify(isOpen));
+            
+            const event = new CustomEvent('sidebarStateChanged', {
+                detail: { isOpen }
+            });
+            window.dispatchEvent(event);
+        }
+    }, [isOpen]);
 
     const { showAlert } = useAlert();
     const { showConfirm } = useConfirm();

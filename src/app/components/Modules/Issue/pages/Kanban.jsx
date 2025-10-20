@@ -79,19 +79,26 @@ const KanbanBoard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
-  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+  // Initialize from localStorage to get the correct initial state
+const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+    if (typeof window !== "undefined") {
+        const saved = localStorage.getItem("sidebarOpen");
+        return saved !== null ? JSON.parse(saved) : true;
+    }
+    return true;
+});
 
-  useEffect(() => {
+useEffect(() => {
     const handleSidebarChange = (event) => {
-      const { isOpen } = event.detail;
-      console.log('Sidebar is now:', isOpen ? 'open' : 'closed');
-      setIsSidebarOpen(isOpen);
+        const { isOpen } = event.detail;
+        console.log('Sidebar is now:', isOpen ? 'open' : 'closed');
+        setIsSidebarOpen(isOpen);
     };
     window.addEventListener('sidebarStateChanged', handleSidebarChange);
     return () => {
-      window.removeEventListener('sidebarStateChanged', handleSidebarChange);
+        window.removeEventListener('sidebarStateChanged', handleSidebarChange);
     };
-  }, []);
+}, []);
 
   const statuses = ['Open', 'On Going', 'In Review', 'Closed'];
   const issueTypeOptions = ['Bug', 'Feature', 'Task', 'Improvement'];

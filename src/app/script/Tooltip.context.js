@@ -75,12 +75,23 @@ export const TooltipProvider = ({ children }) => {
       hideTooltip();
     };
 
+    // Add click handler to hide tooltip when element is clicked
+    const handleClick = (e) => {
+      const target = e.target.closest("[tooltip-data]");
+      if (!target) return;
+
+      // Immediately hide tooltip on click
+      hideTooltip();
+    };
+
     document.addEventListener("mouseover", handleMouseOver);
     document.addEventListener("mouseout", handleMouseOut);
+    document.addEventListener("click", handleClick, true); // Use capture phase to catch clicks early
 
     return () => {
       document.removeEventListener("mouseover", handleMouseOver);
       document.removeEventListener("mouseout", handleMouseOut);
+      document.removeEventListener("click", handleClick, true);
       if (hoverTimeout) {
         clearTimeout(hoverTimeout);
       }
