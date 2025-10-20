@@ -13,7 +13,10 @@ import {
     UserCog,
     Lock,
     Sun,
-    Moon
+    Moon,
+    Table,
+    Kanban,
+    AlertCircle
 } from 'lucide-react';
 import { useTheme } from '@/app/script/Theme.context';
 import { useProject } from '@/app/script/Project.context';
@@ -26,19 +29,21 @@ import { useRouter } from 'next/navigation';
 import Messaging from '../Modules/Messaging/App';
 import AccessControlSystem from '../Modules/Access-Management/App';
 import Dashboard from '../Modules/Dashboard/App';
-import NotificationCenter from '../Modules/Notification/App';
 import NotificationPanel from '../Modules/Notification/App';
+import IssueKanban from '../Modules/Issue/pages/Kanban';
+import IssueList from '../Modules/Issue/pages/List';
 
 
 const AppNavbar = () => {
     const [activeComponent, setActiveComponent] = useState('Dashboard');
     const [user, setUser] = useState(null);
-    const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false)
-    const [selectedDropdownOption, setSelectedDropdownOption] = useState('Set Configuration')
-    const [projectName] = useState('My Project')
+    const [isProjectDropdownOpen, setIsProjectDropdownOpen] = useState(false);
+    const [isIssueDropdownOpen, setIsIssueDropdownOpen] = useState(false);
+    const [selectedDropdownOption, setSelectedDropdownOption] = useState('Set Configuration');
+    const [selectedIssueOption, setSelectedIssueOption] = useState('Issue Management');
+    const [projectName] = useState('My Project');
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
-    const [isDarkMode, setIsDarkMode] = useState(false);
     const [isComponentLoading, setIsComponentLoading] = useState(false);
     const { selectedProject } = useProject();
     const router = useRouter();
@@ -109,14 +114,18 @@ const AppNavbar = () => {
         }
     }, [])
 
-    const handleComponentChange = (component, optionName = null) => {
+    const handleComponentChange = (component, optionName = null, dropdownType = null) => {
         setIsComponentLoading(true);
         setActiveComponent(component)
         localStorage.setItem('activeComponent', component)
-        if (optionName) {
+        if (optionName && dropdownType === 'project') {
             setSelectedDropdownOption(optionName)
         }
+        if (optionName && dropdownType === 'issue') {
+            setSelectedIssueOption(optionName)
+        }
         setIsProjectDropdownOpen(false)
+        setIsIssueDropdownOpen(false)
         setTimeout(() => {
             setIsComponentLoading(false);
         }, 300);
@@ -126,6 +135,11 @@ const AppNavbar = () => {
         { name: 'Project Configuration', icon: Settings, component: 'ProjectConfiguration' },
         { name: 'Test Type Configuration', icon: FileText, component: 'TestTypeConfiguration' },
         { name: 'User Management', icon: UserCog, component: 'UserManagement' }
+    ]
+
+    const issueOptions = [
+        { name: 'Issue List', icon: Table, component: 'IssueList' },
+        { name: 'Issue Kanban', icon: Kanban, component: 'IssueKanban' }
     ]
 
     const renderComponent = () => {
@@ -162,6 +176,10 @@ const AppNavbar = () => {
                 return <UserProfileInterface />
             case 'Access Control':
                 return <AccessControlSystem />
+            case 'IssueList':
+                return <IssueList />
+            case 'IssueKanban':
+                return <IssueKanban />
             default:
                 return <Dashboard />
         }
@@ -181,7 +199,7 @@ const AppNavbar = () => {
                                     <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
                                 ) : (
                                     <h1 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                        {`${selectedProject.projectName} - ${selectedProject.projectDesc}`}
+                                        {`${selectedProject.projectName}`}
                                     </h1>
                                 )}
                             </div>
@@ -245,7 +263,61 @@ const AppNavbar = () => {
                                                 {projectDropdownOptions.map((option) => (
                                                     <button
                                                         key={option.component}
-                                                        onClick={() => handleComponentChange(option.component, option.name)}
+                                                        onClick={() => handleComponentChange(option.component, option.name, 'project')}
+                                                        className={`w-full flex items-center space-x-3 px-4 py-2.5 text-xs sm:text-sm transition-colors ${activeComponent === option.component
+                                                            ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
+                                                            : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
+                                                            }`}
+                                                    >
+                                                        <option.icon className="w-4 h-4" />
+                                                        <span>{option.name}</span>
+                                                    </button>
+                                                ))}
+                                            </motion.div>
+                                        </>
+                                    )}
+                                </AnimatePresence>
+                            </div>
+
+                            {/* Issue Dropdown */}
+                            <div className="relative">
+                                <motion.button
+                                    onClick={() => setIsIssueDropdownOpen(!isIssueDropdownOpen)}
+                                    className="user-select-none cursor-pointer flex items-center space-x-1.5 md:space-x-2 px-2 md:px-3 py-1.5 rounded-lg text-xs md:text-sm font-medium text-gray-700 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-800 transition-all border border-gray-200 dark:border-gray-700"
+                                    whileHover={{ scale: 1.02 }}
+                                    whileTap={{ scale: 0.98 }}
+                                >
+                                    <AlertCircle className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                    <span className="hidden sm:inline truncate max-w-[100px] md:max-w-[150px]">{selectedIssueOption}</span>
+                                    <motion.div
+                                        animate={{ rotate: isIssueDropdownOpen ? 180 : 0 }}
+                                        transition={{ duration: 0.2 }}
+                                    >
+                                        <GoogleArrowDown className="w-3.5 h-3.5 md:w-4 md:h-4" />
+                                    </motion.div>
+                                </motion.button>
+
+                                <AnimatePresence>
+                                    {isIssueDropdownOpen && (
+                                        <>
+                                            <motion.div
+                                                initial={{ opacity: 0 }}
+                                                animate={{ opacity: 1 }}
+                                                exit={{ opacity: 0 }}
+                                                className="fixed inset-0 z-10"
+                                                onClick={() => setIsIssueDropdownOpen(false)}
+                                            />
+                                            <motion.div
+                                                initial={{ opacity: 0, y: -10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: -10 }}
+                                                transition={{ duration: 0.2 }}
+                                                className="absolute top-full left-0 mt-2 w-48 sm:w-56 bg-white dark:bg-gray-800 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700 py-1 z-20"
+                                            >
+                                                {issueOptions.map((option) => (
+                                                    <button
+                                                        key={option.component}
+                                                        onClick={() => handleComponentChange(option.component, option.name, 'issue')}
                                                         className={`w-full flex items-center space-x-3 px-4 py-2.5 text-xs sm:text-sm transition-colors ${activeComponent === option.component
                                                             ? 'bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400'
                                                             : 'text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-gray-700'
@@ -269,7 +341,7 @@ const AppNavbar = () => {
                                 onClick={() => router.push(`/app/projects/${selectedProject?.slug}`)}
                             >
                                 <ExternalLink className="w-4 h-4" />
-                                <span>Open Workspace</span>
+                                <span>Workspace</span>
                             </motion.button>
                         </div>
 
@@ -277,14 +349,14 @@ const AppNavbar = () => {
                         <div className="flex items-center space-x-1 sm:space-x-1.5 md:space-x-2 flex-shrink-0">
                             {/* Theme Toggle Button */}
                             <motion.button
-                                onClick={toggleTheme} // ✅ Uses Theme Context
+                                onClick={toggleTheme}
                                 className="p-2 rounded-lg transition-all bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-700"
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                             >
                                 {/* Animated Icon Switch */}
                                 <AnimatePresence mode="wait">
-                                    {theme === 'dark' ? ( // ✅ Use `theme` from context
+                                    {theme === 'dark' ? (
                                         <motion.div
                                             key="moon"
                                             initial={{ rotate: -90, opacity: 0 }}
