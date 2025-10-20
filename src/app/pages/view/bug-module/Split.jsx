@@ -897,7 +897,7 @@ const BugSplitView = () => {
             if ((label = "Severity")) return getSeverityColor(value);
             if (label === "Status") return getStatusColor(value);
             if (label === "Bug Type") return getBugTypeColor(value);
-            return "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100  border-gray-200";
+            return "bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 border-gray-200 dark:border-gray-700";
         };
 
         return (
@@ -923,7 +923,7 @@ const BugSplitView = () => {
                             animate={{ opacity: 1, scale: 1, y: 0 }}
                             exit={{ opacity: 0, scale: 0.95, y: -8 }}
                             transition={{ duration: 0.12 }}
-                            className="origin-top-right absolute right-0 mt-2 w-full rounded-md shadow-xl bg-white dark:bg-gray-800 ring-1 ring-gray-200 z-20 overflow-hidden"
+                            className="origin-top-right absolute right-0 mt-2 w-full rounded-md shadow-xl bg-white dark:bg-gray-800 ring-1 ring-gray-200 dark:ring-gray-700 z-20 overflow-hidden"
                         >
                             <div className="py-1" role="menu">
                                 {options.map((option) => (
@@ -931,8 +931,8 @@ const BugSplitView = () => {
                                         key={option}
                                         whileHover={{ backgroundColor: "rgba(59, 130, 246, 0.08)" }}
                                         className={`block w-full text-left px-2.5 py-1.5 text-xs transition-colors font-medium ${value === option
-                                            ? "bg-blue-50 text-blue-600 border-l-2 border-blue-500"
-                                            : "text-gray-700 hover:text-gray-900 dark:text-gray-100 "
+                                            ? "bg-blue-50 dark:bg-blue-900 text-blue-600 dark:text-blue-300 border-l-2 border-blue-500 dark:border-blue-400"
+                                            : "text-gray-700 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100"
                                             }`}
                                         onClick={() => handleSelect(option)}
                                         role="menuitem"
@@ -953,7 +953,7 @@ const BugSplitView = () => {
     }
 
     return (
-        <div className="flex h-[calc(100vh-4rem)] w-screen bg-gradient-to-br from-gray-50 to-gray-100 overflow-hidden">
+        <div className="flex h-[calc(100vh-4rem)] w-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 overflow-hidden">
             {/* Sidebar */}
             <motion.div
                 ref={sidebarRef}
@@ -966,17 +966,17 @@ const BugSplitView = () => {
                     duration: 0.3,
                     ease: [0.4, 0.0, 0.2, 1],
                 }}
-                className="bg-white dark:bg-gray-800 border-r border-gray-200 flex flex-col user-select-none sidebar-scrollbar sticky top-0 h-full"
+                className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col user-select-none sidebar-scrollbar sticky top-0 h-full"
                 style={{
                     minWidth: isSidebarOpen ? sidebarWidth : 0,
                     overflow: "hidden",
                 }}
             >
                 {/* Sidebar Header */}
-                <div className="flex items-center justify-between p-[14px] border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50">
+                <div className="flex items-center justify-between p-[14px] border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-700">
                     <h2
                         onClick={() => copyToClipboard(testTypeName, showAlert)}
-                        className="text-sm font-bold text-gray-800 tracking-wide"
+                        className="text-sm font-bold text-gray-800 dark:text-gray-100 tracking-wide"
                     >
                         {testTypeName || 'Select Test Type'}
                     </h2>
@@ -987,31 +987,31 @@ const BugSplitView = () => {
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => setIsSidebarOpen(false)}
-                        className="p-1.5 hover:bg-white dark:bg-gray-800 rounded-lg transition-colors"
+                        className="p-1.5 hover:bg-white dark:hover:bg-gray-700 dark:bg-gray-800 rounded-lg transition-colors"
                     >
-                        <GoogleArrowRight size={16} className="text-gray-600" />
+                        <GoogleArrowRight size={16} className="text-gray-600 dark:text-gray-300" />
                     </motion.button>
                 </div>
 
                 {/* Search Bar with Date Filter */}
-                <div className="p-4 border-b border-gray-200 bg-white">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <div className="relative">
                         <Search
                             size={16}
-                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"
                         />
                         <input
                             type="text"
                             placeholder="Search bugs..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-10 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                            className="w-full pl-10 pr-10 py-2 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
                         />
                         <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={() => setShowDatePicker(!showDatePicker)}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-blue-600"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400"
                         >
                             <Calendar size={16} />
                         </motion.button>
@@ -1025,11 +1025,11 @@ const BugSplitView = () => {
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="absolute right-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 rounded-lg shadow-lg z-50"
+                                className="absolute right-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50"
                             >
                                 <div className="space-y-2">
                                     <div>
-                                        <label className="text-xs font-medium text-gray-600 block mb-1">
+                                        <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">
                                             Start Date
                                         </label>
                                         <input
@@ -1041,11 +1041,11 @@ const BugSplitView = () => {
                                                     start: e.target.value,
                                                 }))
                                             }
-                                            className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-medium text-gray-600 block mb-1">
+                                        <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">
                                             End Date
                                         </label>
                                         <input
@@ -1057,7 +1057,7 @@ const BugSplitView = () => {
                                                     end: e.target.value,
                                                 }))
                                             }
-                                            className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                     </div>
                                     <motion.button
@@ -1067,7 +1067,7 @@ const BugSplitView = () => {
                                             setDateFilter({ start: "", end: "" });
                                             fetchBugs();
                                         }}
-                                        className="w-full px-3 py-1.5 text-xs bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition-colors font-medium"
+                                        className="w-full px-3 py-1.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium"
                                     >
                                         Clear Filter
                                     </motion.button>
@@ -1082,7 +1082,7 @@ const BugSplitView = () => {
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={moveAllBugsToTrash}
-                            className="flex-1 px-3 py-1.5 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors font-medium"
+                            className="flex-1 px-3 py-1.5 text-xs bg-orange-600 dark:bg-orange-700 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors font-medium"
                         >
                             Trash All
                         </motion.button>
@@ -1090,7 +1090,7 @@ const BugSplitView = () => {
                             whileHover={{ scale: 1.02 }}
                             whileTap={{ scale: 0.98 }}
                             onClick={deleteAllBugsPermanently}
-                            className="flex-1 px-3 py-1.5 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors font-medium"
+                            className="flex-1 px-3 py-1.5 text-xs bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors font-medium"
                         >
                             Delete All
                         </motion.button>
@@ -1098,7 +1098,7 @@ const BugSplitView = () => {
                 </div>
 
                 {/* Bugs List */}
-                <div className="flex-1 overflow-y-auto bg-gray-50">
+                <div className="flex-1 overflow-y-auto bg-gray-50 dark:bg-gray-900">
                     {loading ? (
                         // Skeleton Loader
                         <div className="space-y-2 p-3">
@@ -1108,25 +1108,25 @@ const BugSplitView = () => {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: index * 0.05 }}
-                                    className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 p-3"
+                                    className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 dark:border-gray-700 p-3"
                                 >
                                     {/* Header Skeleton */}
                                     <div className="flex items-center justify-between gap-2 mb-2">
                                         <motion.div
                                             animate={{ opacity: [0.5, 1, 0.5] }}
                                             transition={{ duration: 1.5, repeat: Infinity }}
-                                            className="h-6 w-20 bg-gray-200 rounded-md"
+                                            className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-md"
                                         />
                                         <div className="flex items-center gap-1.5">
                                             <motion.div
                                                 animate={{ opacity: [0.5, 1, 0.5] }}
                                                 transition={{ duration: 1.5, repeat: Infinity, delay: 0.1 }}
-                                                className="h-5 w-16 bg-gray-200 rounded-md"
+                                                className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-md"
                                             />
                                             <motion.div
                                                 animate={{ opacity: [0.5, 1, 0.5] }}
                                                 transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
-                                                className="h-5 w-16 bg-gray-200 rounded-md"
+                                                className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-md"
                                             />
                                         </div>
                                     </div>
@@ -1136,12 +1136,12 @@ const BugSplitView = () => {
                                         <motion.div
                                             animate={{ opacity: [0.5, 1, 0.5] }}
                                             transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
-                                            className="h-3 bg-gray-200 rounded w-full"
+                                            className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"
                                         />
                                         <motion.div
                                             animate={{ opacity: [0.5, 1, 0.5] }}
                                             transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
-                                            className="h-3 bg-gray-200 rounded w-3/4"
+                                            className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"
                                         />
                                     </div>
 
@@ -1149,7 +1149,7 @@ const BugSplitView = () => {
                                     <motion.div
                                         animate={{ opacity: [0.5, 1, 0.5] }}
                                         transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
-                                        className="h-3 w-32 bg-gray-200 rounded"
+                                        className="h-3 w-32 bg-gray-200 dark:bg-gray-700 rounded"
                                     />
                                 </motion.div>
                             ))}
@@ -1171,12 +1171,12 @@ const BugSplitView = () => {
                                 <motion.div
                                     animate={{ rotate: 360 }}
                                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                                    className="absolute inset-0 rounded-full bg-gradient-to-tr from-emerald-100 via-teal-50 to-blue-100 blur-xl opacity-60"
+                                    className="absolute inset-0 rounded-full bg-gradient-to-tr from-emerald-100 via-teal-50 to-blue-100 dark:from-emerald-900 dark:via-teal-900 dark:to-blue-900 blur-xl opacity-60"
                                     style={{ width: '120px', height: '120px', left: '-10px', top: '-10px' }}
                                 />
 
                                 {/* Main Circle */}
-                                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-50 to-teal-50 border-2 border-emerald-200 flex items-center justify-center">
+                                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900 dark:to-teal-900 border-2 border-emerald-200 dark:border-emerald-700 flex items-center justify-center">
                                     {/* Checkmark SVG */}
                                     <motion.svg
                                         initial={{ pathLength: 0 }}
@@ -1205,7 +1205,7 @@ const BugSplitView = () => {
                                 {[...Array(3)].map((_, i) => (
                                     <motion.div
                                         key={i}
-                                        className="absolute w-2 h-2 rounded-full bg-emerald-300"
+                                        className="absolute w-2 h-2 rounded-full bg-emerald-300 dark:bg-emerald-600"
                                         style={{
                                             top: `${20 + i * 25}%`,
                                             left: `${-10 + i * 50}%`,
@@ -1231,10 +1231,10 @@ const BugSplitView = () => {
                                 transition={{ delay: 0.6 }}
                                 className="text-center"
                             >
-                                <h3 className="text-lg font-semibold text-gray-800 mb-1">
+                                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-1">
                                     All Clear!
                                 </h3>
-                                <p className="text-sm text-gray-500 max-w-xs">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
                                     No bugs found. Your system is running smoothly.
                                 </p>
                             </motion.div>
@@ -1246,9 +1246,9 @@ const BugSplitView = () => {
                                 transition={{ delay: 0.8 }}
                                 className="mt-6 flex gap-2"
                             >
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400" />
-                                <div className="w-1.5 h-1.5 rounded-full bg-teal-400" />
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-400" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-emerald-600" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-teal-400 dark:bg-teal-600" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-600" />
                             </motion.div>
                         </motion.div>
                     ) : (
@@ -1264,8 +1264,8 @@ const BugSplitView = () => {
                                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                                     }}
                                     className={`bg-white dark:bg-gray-800 rounded-xl border-1 p-3 cursor-pointer transition-all duration-200 ${selectedBug?._id === bug._id
-                                        ? "border-blue-500 bg-blue-50 shadow-md"
-                                        : "border-gray-200 hover:border-blue-300"
+                                        ? "border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900 shadow-md"
+                                        : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600"
                                         }`}
                                     onClick={() => {
                                         setSelectedBug(bug);
@@ -1274,7 +1274,7 @@ const BugSplitView = () => {
                                 >
                                     {/* Header */}
                                     <div className="flex items-center justify-between gap-2 mb-2">
-                                        <span className="text-xs font-bold text-gray-600 bg-gray-100 px-2 py-1 rounded-md">
+                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded-md">
                                             {bug.serialNumber}
                                         </span>
                                         <div className="flex items-center gap-1.5">
@@ -1296,13 +1296,13 @@ const BugSplitView = () => {
                                     </div>
 
                                     {/* Description */}
-                                    <p className="text-xs text-gray-700 mb-2 line-clamp-2 min-h-[2rem] leading-relaxed">
+                                    <p className="text-xs text-gray-700 dark:text-gray-300 mb-2 line-clamp-2 min-h-[2rem] leading-relaxed">
                                         {bug.bugDesc || "No description"}
                                     </p>
 
                                     {/* Date */}
-                                    <div className="flex items-center gap-1.5 text-xs text-gray-500 mb-2">
-                                        <Clock size={12} className="text-gray-400" />
+                                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                        <Clock size={12} className="text-gray-400 dark:text-gray-500" />
                                         <span>
                                             {bug.updatedAt
                                                 ? `Updated: ${new Date(
@@ -1324,7 +1324,7 @@ const BugSplitView = () => {
             {isSidebarOpen && (
                 <motion.div
                     whileHover={{ backgroundColor: "rgb(59, 130, 246)" }}
-                    className="w-[1px] bg-gray-200 cursor-col-resize transition-colors"
+                    className="w-[1px] bg-gray-200 dark:bg-gray-700 cursor-col-resize transition-colors"
                     onMouseDown={startResizing}
                 />
             )}
@@ -1332,7 +1332,7 @@ const BugSplitView = () => {
             {/* Main Content Area */}
             <div className="flex-1 flex flex-col overflow-hidden sidebar-scrollbar">
                 {/* Top Bar */}
-                <div className="flex items-center user-select-none justify-between p-3 border-b border-gray-200 bg-white">
+                <div className="flex items-center user-select-none justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800">
                     <div className="flex items-center gap-3">
                         {!isSidebarOpen && (
                             <motion.button
@@ -1341,9 +1341,9 @@ const BugSplitView = () => {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => setIsSidebarOpen(true)}
-                                className="p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                             >
-                                <Menu size={18} className="text-gray-700" />
+                                <Menu size={18} className="text-gray-700 dark:text-gray-300" />
                             </motion.button>
                         )}
                         {/* Header with Serial Number and Dropdowns */}
@@ -1352,7 +1352,7 @@ const BugSplitView = () => {
                                 <motion.h2
                                     whileHover={{ scale: 1.02 }}
                                     onClick={() => copyText(selectedBug.serialNumber)}
-                                    className="text-sm font-bold text-gray-800 cursor-pointer bg-gray-100 px-3 py-2 rounded-lg"
+                                    className="text-sm font-bold text-gray-800 dark:text-gray-100 cursor-pointer bg-gray-100 dark:bg-gray-700 px-3 py-2 rounded-lg"
                                 >
                                     {selectedBug.serialNumber}
                                 </motion.h2>
@@ -1412,7 +1412,7 @@ const BugSplitView = () => {
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
                                         onClick={() => setImageDropdownOpen(!imageDropdownOpen)}
-                                        className="flex items-center gap-1.5 px-4 py-2 text-xs bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors shadow-sm font-medium"
+                                        className="flex items-center gap-1.5 px-4 py-2 text-xs bg-purple-600 dark:bg-purple-700 text-white rounded-lg hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors shadow-sm font-medium"
                                     >
                                         <ImageIcon size={13} />
                                         <span>{selectedBug.images.length}</span>
@@ -1424,7 +1424,7 @@ const BugSplitView = () => {
                                             initial={{ opacity: 0, y: -10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
-                                            className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] w-64 overflow-y-auto"
+                                            className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-[200px] w-64 overflow-y-auto"
                                         >
                                             {selectedBug.images.map((image, index) => (
                                                 <a
@@ -1433,7 +1433,7 @@ const BugSplitView = () => {
                                                     target="_blank"
                                                     rel="noopener noreferrer"
                                                     onClick={() => setImageDropdownOpen(false)}
-                                                    className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-purple-100 hover:text-purple-700 transition-colors border-b border-gray-100 last:border-b-0 truncate"
+                                                    className="block px-4 py-2.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0 truncate"
                                                 >
                                                     {image}
                                                 </a>
@@ -1453,7 +1453,7 @@ const BugSplitView = () => {
                                             whileHover={{ scale: 1.05 }}
                                             whileTap={{ scale: 0.95 }}
                                             onClick={() => setRefLinkDropdownOpen(!refLinkDropdownOpen)}
-                                            className="flex items-center gap-1.5 px-4 py-2 text-xs bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors shadow-sm font-medium"
+                                            className="flex items-center gap-1.5 px-4 py-2 text-xs bg-indigo-600 dark:bg-indigo-700 text-white rounded-lg hover:bg-indigo-700 dark:hover:bg-indigo-600 transition-colors shadow-sm font-medium"
                                         >
                                             <Link2 size={13} />
                                         </motion.button>
@@ -1464,7 +1464,7 @@ const BugSplitView = () => {
                                                 initial={{ opacity: 0, y: -10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 exit={{ opacity: 0, y: -10 }}
-                                                className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] w-64 overflow-y-auto"
+                                                className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-[200px] w-64 overflow-y-auto"
                                             >
                                                 {Array.isArray(selectedBug.refLinks) ? (
                                                     selectedBug.refLinks.map((link, index) => (
@@ -1474,7 +1474,7 @@ const BugSplitView = () => {
                                                             target="_blank"
                                                             rel="noopener noreferrer"
                                                             onClick={() => setRefLinkDropdownOpen(false)}
-                                                            className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-colors border-b border-gray-100 last:border-b-0 truncate"
+                                                            className="block px-4 py-2.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0 truncate"
                                                         >
                                                             {link}
                                                         </a>
@@ -1485,7 +1485,7 @@ const BugSplitView = () => {
                                                         target="_blank"
                                                         rel="noopener noreferrer"
                                                         onClick={() => setRefLinkDropdownOpen(false)}
-                                                        className="block px-4 py-2.5 text-xs text-gray-700 hover:bg-indigo-100 hover:text-indigo-700 transition-colors truncate"
+                                                        className="block px-4 py-2.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-indigo-100 dark:hover:bg-indigo-900 hover:text-indigo-700 dark:hover:text-indigo-300 transition-colors truncate"
                                                     >
                                                         {selectedBug.refLinks}
                                                     </a>
@@ -1495,7 +1495,7 @@ const BugSplitView = () => {
                                     </div>
                                 )}
                             {/* Bug counter */}
-                            <div className="text-xs text-gray-600 font-medium bg-gray-100 px-3 py-1.5 rounded-lg">
+                            <div className="text-xs text-gray-600 dark:text-gray-300 font-medium bg-gray-100 dark:bg-gray-700 px-3 py-1.5 rounded-lg">
                                 Bug{" "}
                                 {filteredBugs.findIndex((b) => b._id === selectedBug._id) + 1}{" "}
                                 of {filteredBugs.length}
@@ -1512,9 +1512,9 @@ const BugSplitView = () => {
                                         filteredBugs.findIndex((b) => b._id === selectedBug._id) ===
                                         0
                                     }
-                                    className="p-2 hover:bg-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
-                                    <ChevronLeft size={18} />
+                                    <ChevronLeft size={18} className="dark:text-gray-300" />
                                 </motion.button>
                                 <motion.button
                                     tooltip-data="Next"
@@ -1525,9 +1525,9 @@ const BugSplitView = () => {
                                         filteredBugs.findIndex((b) => b._id === selectedBug._id) ===
                                         filteredBugs.length - 1
                                     }
-                                    className="p-2 hover:bg-gray-200 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
-                                    <ChevronRight size={18} />
+                                    <ChevronRight size={18} className="dark:text-gray-300" />
                                 </motion.button>
                             </div>
 
@@ -1539,7 +1539,7 @@ const BugSplitView = () => {
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={handleEditClick}
-                                    className="flex items-center gap-1.5 px-4 py-2 text-xs bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm font-medium"
+                                    className="flex items-center gap-1.5 px-4 py-2 text-xs bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors shadow-sm font-medium"
                                 >
                                     <Edit size={13} />
                                 </motion.button>
@@ -1551,7 +1551,7 @@ const BugSplitView = () => {
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
                                         onClick={handleSaveClick}
-                                        className="flex items-center gap-1.5 px-4 py-2 text-xs bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors shadow-sm font-medium"
+                                        className="flex items-center gap-1.5 px-4 py-2 text-xs bg-green-600 dark:bg-green-700 text-white rounded-lg hover:bg-green-700 dark:hover:bg-green-600 transition-colors shadow-sm font-medium"
                                     >
                                         <Save size={13} />
                                     </motion.button>
@@ -1561,7 +1561,7 @@ const BugSplitView = () => {
                                         whileHover={{ scale: 1.05 }}
                                         whileTap={{ scale: 0.95 }}
                                         onClick={handleCancelClick}
-                                        className="flex items-center gap-1.5 px-4 py-2 text-xs bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors shadow-sm font-medium"
+                                        className="flex items-center gap-1.5 px-4 py-2 text-xs bg-gray-600 dark:bg-gray-700 text-white rounded-lg hover:bg-gray-700 dark:hover:bg-gray-600 transition-colors shadow-sm font-medium"
                                     >
                                         <X size={13} />
                                     </motion.button>
@@ -1575,7 +1575,7 @@ const BugSplitView = () => {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => moveBugToTrash(selectedBug._id)}
-                                className="flex items-center gap-1.5 px-4 py-2 text-xs bg-orange-600 text-white rounded-lg hover:bg-orange-700 transition-colors shadow-sm font-medium"
+                                className="flex items-center gap-1.5 px-4 py-2 text-xs bg-orange-600 dark:bg-orange-700 text-white rounded-lg hover:bg-orange-700 dark:hover:bg-orange-600 transition-colors shadow-sm font-medium"
                             >
                                 <Archive size={13} />
                             </motion.button>
@@ -1585,7 +1585,7 @@ const BugSplitView = () => {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => deleteBugPermanently(selectedBug._id)}
-                                className="flex items-center gap-1.5 px-4 py-2 text-xs bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors shadow-sm font-medium"
+                                className="flex items-center gap-1.5 px-4 py-2 text-xs bg-red-600 dark:bg-red-700 text-white rounded-lg hover:bg-red-700 dark:hover:bg-red-600 transition-colors shadow-sm font-medium"
                             >
                                 <Trash2 size={13} />
                             </motion.button>
@@ -1599,7 +1599,7 @@ const BugSplitView = () => {
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="flex flex-col items-center justify-center h-full text-gray-500 px-8"
+                            className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 px-8"
                         >
                             {/* Animated Icon Container */}
                             <motion.div
@@ -1619,7 +1619,7 @@ const BugSplitView = () => {
                                     transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
                                     className="absolute inset-0 w-32 h-32 -left-4 -top-4"
                                 >
-                                    <div className="absolute inset-0 rounded-full border-2 border-dashed border-blue-200 opacity-40" />
+                                    <div className="absolute inset-0 rounded-full border-2 border-dashed border-blue-200 dark:border-blue-700 opacity-40" />
                                 </motion.div>
 
                                 <motion.div
@@ -1627,13 +1627,13 @@ const BugSplitView = () => {
                                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                                     className="absolute inset-0 w-40 h-40 -left-8 -top-8"
                                 >
-                                    <div className="absolute inset-0 rounded-full border-2 border-dotted border-purple-200 opacity-30" />
+                                    <div className="absolute inset-0 rounded-full border-2 border-dotted border-purple-200 dark:border-purple-700 opacity-30" />
                                 </motion.div>
 
                                 {/* Main Circle Background */}
-                                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 border-2 border-blue-200 flex items-center justify-center shadow-xl">
+                                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900 dark:via-indigo-900 dark:to-purple-900 border-2 border-blue-200 dark:border-blue-700 flex items-center justify-center shadow-xl">
                                     {/* Inner Glow */}
-                                    <div className="absolute inset-2 rounded-full bg-gradient-to-br from-blue-100/50 to-purple-100/50 blur-md" />
+                                    <div className="absolute inset-2 rounded-full bg-gradient-to-br from-blue-100/50 to-purple-100/50 dark:from-blue-800/50 dark:to-purple-800/50 blur-md" />
 
                                     {/* Icon */}
                                     <motion.div
@@ -1654,7 +1654,7 @@ const BugSplitView = () => {
                                             viewBox="0 0 24 24"
                                             fill="none"
                                             xmlns="http://www.w3.org/2000/svg"
-                                            className="text-blue-500"
+                                            className="text-blue-500 dark:text-blue-400"
                                         >
                                             <motion.path
                                                 initial={{ pathLength: 0 }}
@@ -1674,7 +1674,7 @@ const BugSplitView = () => {
                                 {[...Array(4)].map((_, i) => (
                                     <motion.div
                                         key={i}
-                                        className="absolute w-2 h-2 rounded-full bg-gradient-to-br from-blue-400 to-purple-400"
+                                        className="absolute w-2 h-2 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 dark:from-blue-600 dark:to-purple-600"
                                         style={{
                                             top: `${[10, 50, 90, 50][i]}%`,
                                             left: `${[50, 90, 50, 10][i]}%`,
@@ -1700,10 +1700,10 @@ const BugSplitView = () => {
                                 transition={{ delay: 0.6 }}
                                 className="text-center max-w-sm"
                             >
-                                <h3 className="text-lg font-semibold text-gray-700 mb-2">
+                                <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">
                                     No Bug Selected
                                 </h3>
-                                <p className="text-sm text-gray-500 leading-relaxed mb-4">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
                                     Choose a bug from the list to view its details, comments, and tracking information
                                 </p>
 
@@ -1715,10 +1715,10 @@ const BugSplitView = () => {
                                         repeat: Infinity,
                                         ease: "easeInOut"
                                     }}
-                                    className="flex items-center justify-center gap-2 text-xs text-gray-400"
+                                    className="flex items-center justify-center gap-2 text-xs text-gray-400 dark:text-gray-500"
                                 >
                                     <span>Click a bug card</span>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-400">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-400 dark:text-blue-500">
                                         <path
                                             d="M19 12H5M5 12L12 5M5 12L12 19"
                                             stroke="currentColor"
@@ -1741,7 +1741,7 @@ const BugSplitView = () => {
                                 {[...Array(5)].map((_, i) => (
                                     <motion.div
                                         key={i}
-                                        className="w-1 h-1 rounded-full bg-gradient-to-r from-blue-400 to-purple-400"
+                                        className="w-1 h-1 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 dark:from-blue-600 dark:to-purple-600"
                                         animate={{
                                             scale: [1, 1.5, 1],
                                             opacity: [0.3, 0.7, 0.3],
@@ -1770,9 +1770,9 @@ const BugSplitView = () => {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.1 }}
-                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
+                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
                                     >
-                                        <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
+                                        <label className="user-select-none text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 block tracking-wide">
                                             MODULE
                                         </label>
                                         {isEditing ? (
@@ -1785,11 +1785,11 @@ const BugSplitView = () => {
                                                         moduleName: e.target.value,
                                                     }))
                                                 }
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                                 placeholder="Enter module name..."
                                             />
                                         ) : (
-                                            <p className="text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200">
+                                            <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600">
                                                 {selectedBug.moduleName || "No module specified"}
                                             </p>
                                         )}
@@ -1800,9 +1800,9 @@ const BugSplitView = () => {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.15 }}
-                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
+                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
                                     >
-                                        <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
+                                        <label className="user-select-none text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 block tracking-wide">
                                             DESCRIPTION
                                         </label>
                                         {isEditing ? (
@@ -1815,11 +1815,11 @@ const BugSplitView = () => {
                                                     }))
                                                 }
                                                 rows={4}
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                                                 placeholder="Enter bug description..."
                                             />
                                         ) : (
-                                            <p className="text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 min-h-[100px] leading-relaxed">
+                                            <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 min-h-[100px] leading-relaxed">
                                                 {selectedBug.bugDesc || "No description"}
                                             </p>
                                         )}
@@ -1830,9 +1830,9 @@ const BugSplitView = () => {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.2 }}
-                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
+                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
                                     >
-                                        <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
+                                        <label className="user-select-none text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 block tracking-wide">
                                             REQUIREMENT
                                         </label>
                                         {isEditing ? (
@@ -1845,11 +1845,11 @@ const BugSplitView = () => {
                                                     }))
                                                 }
                                                 rows={3}
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                                                 placeholder="Enter bug requirement..."
                                             />
                                         ) : (
-                                            <p className="text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 min-h-[80px] leading-relaxed">
+                                            <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 min-h-[80px] leading-relaxed">
                                                 {selectedBug.bugRequirement ||
                                                     "No requirement specified"}
                                             </p>
@@ -1861,9 +1861,9 @@ const BugSplitView = () => {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.25 }}
-                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
+                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
                                     >
-                                        <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
+                                        <label className="user-select-none text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 block tracking-wide">
                                             REFERENCE LINK
                                         </label>
 
@@ -1873,7 +1873,7 @@ const BugSplitView = () => {
                                                     editFormData.refLinks.map((link, index) => (
                                                         <div
                                                             key={index}
-                                                            className="flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200"
+                                                            className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600"
                                                         >
                                                             <input
                                                                 type="text"
@@ -1886,7 +1886,7 @@ const BugSplitView = () => {
                                                                         refLinks: newLinks,
                                                                     }));
                                                                 }}
-                                                                className="flex-1 bg-transparent text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-2 py-1"
+                                                                className="flex-1 bg-transparent text-sm text-gray-700 dark:text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 rounded-md px-2 py-1"
                                                                 placeholder="https://..."
                                                             />
                                                             <button
@@ -1897,7 +1897,7 @@ const BugSplitView = () => {
                                                                         refLinks: newLinks,
                                                                     }));
                                                                 }}
-                                                                className="text-red-500 hover:text-red-700 transition"
+                                                                className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition"
                                                                 title="Remove link"
                                                             >
                                                                 ✕
@@ -1905,7 +1905,7 @@ const BugSplitView = () => {
                                                         </div>
                                                     ))
                                                 ) : (
-                                                    <p className="flex-1 text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 truncate">
+                                                    <p className="flex-1 text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 truncate">
                                                         No reference link
                                                     </p>
                                                 )}
@@ -1918,7 +1918,7 @@ const BugSplitView = () => {
                                                             refLinks: [...(prev.refLinks || []), ""],
                                                         }))
                                                     }
-                                                    className="text-sm text-blue-600 hover:underline self-start mt-2"
+                                                    className="text-sm text-blue-600 dark:text-blue-400 hover:underline self-start mt-2"
                                                 >
                                                     + Add another link
                                                 </button>
@@ -1929,13 +1929,13 @@ const BugSplitView = () => {
                                                     selectedBug.refLinks.map((link, index) => (
                                                         <div
                                                             key={index}
-                                                            className="flex items-center gap-2 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 truncate"
+                                                            className="flex items-center gap-2 bg-gray-50 dark:bg-gray-700 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 truncate"
                                                         >
                                                             <a
                                                                 href={link}
                                                                 target="_blank"
                                                                 rel="noopener noreferrer"
-                                                                className="flex-1 text-sm text-blue-600 hover:underline truncate"
+                                                                className="flex-1 text-sm text-blue-600 dark:text-blue-400 hover:underline truncate"
                                                             >
                                                                 {link}
                                                             </a>
@@ -1945,11 +1945,11 @@ const BugSplitView = () => {
                                                                     setCopiedIndex(index);
                                                                     setTimeout(() => setCopiedIndex(null), 2000);
                                                                 }}
-                                                                className="text-gray-500 hover:text-blue-500 transition"
+                                                                className="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition"
                                                                 title="Copy link"
                                                             >
                                                                 {copiedIndex === index ? (
-                                                                    <Check size={18} className="text-green-500" />
+                                                                    <Check size={18} className="text-green-500 dark:text-green-400" />
                                                                 ) : (
                                                                     <Copy size={18} />
                                                                 )}
@@ -1957,7 +1957,7 @@ const BugSplitView = () => {
                                                         </div>
                                                     ))
                                                 ) : (
-                                                    <p className="flex-1 text-sm text-gray-700 bg-gray-50 px-4 py-2.5 rounded-lg border border-gray-200 truncate">
+                                                    <p className="flex-1 text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-700 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-600 truncate">
                                                         No reference link
                                                     </p>
                                                 )}
@@ -1973,9 +1973,9 @@ const BugSplitView = () => {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: 0.3 }}
-                                                className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
+                                                className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
                                             >
-                                                <label className="user-select-none text-xs font-bold text-gray-600 mb-2 block tracking-wide">
+                                                <label className="user-select-none text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 block tracking-wide">
                                                     BUG IMAGES
                                                 </label>
                                                 {isEditing ? (
@@ -1986,13 +1986,13 @@ const BugSplitView = () => {
                                                                     <img
                                                                         src={image}
                                                                         alt={`Bug screenshot ${index + 1}`}
-                                                                        className="w-24 h-24 object-cover rounded-lg border border-gray-200"
+                                                                        className="w-24 h-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
                                                                     />
                                                                     <motion.button
                                                                         whileHover={{ scale: 1.1 }}
                                                                         whileTap={{ scale: 0.9 }}
                                                                         onClick={() => removeImage(index)}
-                                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                        className="absolute -top-2 -right-2 bg-red-500 dark:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                                     >
                                                                         <X size={12} />
                                                                     </motion.button>
@@ -2015,7 +2015,7 @@ const BugSplitView = () => {
                                                                 whileTap={{ scale: 0.98 }}
                                                                 onClick={() => fileInputRef.current?.click()}
                                                                 disabled={uploadingImages}
-                                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-xs font-medium"
+                                                                className="flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 text-xs font-medium"
                                                             >
                                                                 <Upload size={14} />
                                                                 {uploadingImages ? "Uploading..." : "Add Images"}
@@ -2033,7 +2033,7 @@ const BugSplitView = () => {
                                                                 <img
                                                                     src={image}
                                                                     alt={`Bug screenshot ${index + 1}`}
-                                                                    className="w-24 h-24 object-cover rounded-lg border border-gray-200 hover:border-blue-500 transition-colors cursor-pointer"
+                                                                    className="w-24 h-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-400 transition-colors cursor-pointer"
                                                                     onClick={() => setSelectedImageModal(image)}
                                                                     onDoubleClick={() => window.open(image, "_blank")}
                                                                 />
@@ -2049,7 +2049,7 @@ const BugSplitView = () => {
                                                     initial={{ opacity: 0 }}
                                                     animate={{ opacity: 1 }}
                                                     exit={{ opacity: 0 }}
-                                                    className="fixed inset-0 bg-gray-100 bg-opacity-75 flex items-center justify-center z-50"
+                                                    className="fixed inset-0 bg-gray-100 dark:bg-gray-900 bg-opacity-75 dark:bg-opacity-90 flex items-center justify-center z-50"
                                                     onClick={() => setSelectedImageModal(null)}
                                                 >
                                                     <motion.div
@@ -2068,7 +2068,7 @@ const BugSplitView = () => {
                                                             whileHover={{ scale: 1.1 }}
                                                             whileTap={{ scale: 0.9 }}
                                                             onClick={() => setSelectedImageModal(null)}
-                                                            className="absolute -top-4 -right-4 bg-red-500 text-white rounded-full p-2 hover:bg-red-600 transition-colors"
+                                                            className="absolute -top-4 -right-4 bg-red-500 dark:bg-red-600 text-white rounded-full p-2 hover:bg-red-600 dark:hover:bg-red-500 transition-colors"
                                                         >
                                                             <X size={20} />
                                                         </motion.button>
@@ -2086,9 +2086,9 @@ const BugSplitView = () => {
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
                                                 transition={{ delay: 0.3 }}
-                                                className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
+                                                className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
                                             >
-                                                <label className="text-xs font-bold text-gray-600 mb-2 block tracking-wide">
+                                                <label className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 block tracking-wide">
                                                     ADD BUG IMAGES
                                                 </label>
                                                 <div className="space-y-3">
@@ -2099,13 +2099,13 @@ const BugSplitView = () => {
                                                                     <img
                                                                         src={image}
                                                                         alt={`Bug screenshot ${index + 1}`}
-                                                                        className="w-24 h-24 object-cover rounded-lg border border-gray-200"
+                                                                        className="w-24 h-24 object-cover rounded-lg border border-gray-200 dark:border-gray-600"
                                                                     />
                                                                     <motion.button
                                                                         whileHover={{ scale: 1.1 }}
                                                                         whileTap={{ scale: 0.9 }}
                                                                         onClick={() => removeImage(index)}
-                                                                        className="absolute -top-2 -right-2 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
+                                                                        className="absolute -top-2 -right-2 bg-red-500 dark:bg-red-600 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity"
                                                                     >
                                                                         <X size={12} />
                                                                     </motion.button>
@@ -2129,7 +2129,7 @@ const BugSplitView = () => {
                                                             whileTap={{ scale: 0.98 }}
                                                             onClick={() => fileInputRef.current?.click()}
                                                             disabled={uploadingImages}
-                                                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 text-xs font-medium"
+                                                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 text-xs font-medium"
                                                         >
                                                             <Upload size={14} />
                                                             {uploadingImages
@@ -2148,22 +2148,22 @@ const BugSplitView = () => {
                                         transition={{ delay: 0.35 }}
                                         className="grid grid-cols-2 gap-4 pt-2"
                                     >
-                                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200">
-                                            <label className="text-xs font-bold text-gray-600 mb-1.5 tracking-wide flex items-center gap-1.5">
+                                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                                            <label className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1.5 tracking-wide flex items-center gap-1.5">
                                                 <Calendar size={12} />
                                                 CREATED AT
                                             </label>
-                                            <p className="text-xs text-gray-700 font-medium">
+                                            <p className="text-xs text-gray-700 dark:text-gray-300 font-medium">
                                                 {new Date(selectedBug.createdAt).toLocaleString()}
                                             </p>
                                         </div>
                                         {selectedBug.updatedAt && (
-                                            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200">
-                                                <label className="text-xs font-bold text-gray-600 mb-1.5 block tracking-wide  items-center gap-1.5">
+                                            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                                                <label className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1.5 block tracking-wide  items-center gap-1.5">
                                                     <Clock size={12} />
                                                     UPDATED AT
                                                 </label>
-                                                <p className="text-xs text-gray-700 font-medium">
+                                                <p className="text-xs text-gray-700 dark:text-gray-300 font-medium">
                                                     {new Date(selectedBug.updatedAt).toLocaleString()}
                                                 </p>
                                             </div>
@@ -2178,9 +2178,9 @@ const BugSplitView = () => {
                                     transition={{ delay: 0.2 }}
                                     className="lg:col-span-1"
                                 >
-                                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 top-1">
-                                        <h3 className="user-select-none text-sm font-bold text-gray-800 mb-4 flex items-center gap-2 tracking-wide">
-                                            <MessageSquare size={16} className="text-blue-600" />
+                                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 top-1">
+                                        <h3 className="user-select-none text-sm font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2 tracking-wide">
+                                            <MessageSquare size={16} className="text-blue-600 dark:text-blue-400" />
                                             COMMENTS
                                         </h3>
 
@@ -2191,14 +2191,14 @@ const BugSplitView = () => {
                                                 onChange={(e) => setNewComment(e.target.value)}
                                                 placeholder="Add a comment..."
                                                 rows={3}
-                                                className="w-full px-3 py-2.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2 transition-all resize-none"
+                                                className="w-full px-3 py-2.5 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2 transition-all resize-none"
                                             />
                                             <motion.button
                                                 whileHover={{ scale: 1.02 }}
                                                 whileTap={{ scale: 0.98 }}
                                                 onClick={() => submitComment(selectedBug._id)}
                                                 disabled={!newComment.trim() || submittingComment}
-                                                className="w-full px-4 py-2.5 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-2 font-medium shadow-sm transition-colors"
+                                                className="w-full px-4 py-2.5 bg-blue-600 dark:bg-blue-700 text-white rounded-lg hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed text-xs flex items-center justify-center gap-2 font-medium shadow-sm transition-colors"
                                             >
                                                 {submittingComment ? (
                                                     <>
@@ -2220,14 +2220,14 @@ const BugSplitView = () => {
                                                 <div className="flex items-center justify-center py-8">
                                                     <Loader2
                                                         size={24}
-                                                        className="animate-spin text-blue-600"
+                                                        className="animate-spin text-blue-600 dark:text-blue-400"
                                                     />
                                                 </div>
                                             ) : comments.length === 0 ? (
-                                                <div className="text-center py-8 text-gray-500 text-xs">
+                                                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-xs">
                                                     <MessageSquare
                                                         size={32}
-                                                        className="mx-auto mb-2 text-gray-300 dark:text-gray-800 "
+                                                        className="mx-auto mb-2 text-gray-300 dark:text-gray-600"
                                                     />
                                                     <p className="font-medium">No comments yet</p>
                                                 </div>
@@ -2238,27 +2238,27 @@ const BugSplitView = () => {
                                                         initial={{ opacity: 0, y: 10 }}
                                                         animate={{ opacity: 1, y: 0 }}
                                                         transition={{ delay: index * 0.05 }}
-                                                        className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-lg p-3 border border-gray-200"
+                                                        className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-600"
                                                     >
                                                         <div className="flex items-center gap-2 mb-2">
-                                                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
+                                                            <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 dark:from-blue-600 dark:to-blue-700 flex items-center justify-center flex-shrink-0 shadow-sm">
                                                                 <span className="text-xs font-bold text-white">
                                                                     {comment.commentBy?.charAt(0).toUpperCase() ||
                                                                         "U"}
                                                                 </span>
                                                             </div>
                                                             <div className="flex-1 min-w-0">
-                                                                <span className="text-xs font-bold text-gray-800 block truncate">
+                                                                <span className="text-xs font-bold text-gray-800 dark:text-gray-100 block truncate">
                                                                     {comment.commentBy || "Unknown"}
                                                                 </span>
-                                                                <span className="text-xs text-gray-500">
+                                                                <span className="text-xs text-gray-500 dark:text-gray-400">
                                                                     {new Date(
                                                                         comment.createdAt
                                                                     ).toLocaleDateString()}
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                        <p className="text-xs text-gray-700 leading-relaxed">
+                                                        <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
                                                             {comment.comment}
                                                         </p>
                                                     </motion.div>
@@ -2274,6 +2274,6 @@ const BugSplitView = () => {
             </div>
         </div>
     );
-};
+}
 
 export default BugSplitView;
