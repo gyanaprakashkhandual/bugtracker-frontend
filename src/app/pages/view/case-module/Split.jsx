@@ -52,7 +52,7 @@ const TestCaseSplitView = () => {
     const { showAlert } = useAlert();
     const { testTypeId, testTypeName } = useTestType();
     const { selectedProject } = useProject();
-     const projectId = selectedProject?._id;
+    const projectId = selectedProject?._id;
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
     const BASE_URL = 'http://localhost:5000/api/v1/test-case';
@@ -420,7 +420,7 @@ const TestCaseSplitView = () => {
             <div className={`relative inline-block ${className}`} ref={dropdownRef}>
                 <button
                     type="button"
-                    className="inline-flex items-center justify-between w-full px-3 py-1.5 text-sm font-medium text-gray-700 dark:bg-gray-100 bg-white dark:bg-gray-800 border border-gray-300 rounded-lg hover:bg-gray-50 dark:bg-gray-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                    className="inline-flex items-center justify-between w-full px-3 py-1.5 text-sm font-medium text-gray-700 dark:text-gray-200 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                     onClick={() => setIsOpen(!isOpen)}
                 >
                     <span className="truncate">{value}</span>
@@ -441,12 +441,12 @@ const TestCaseSplitView = () => {
                                 {options.map((option) => (
                                     <button
                                         key={option}
-                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 dark:bg-gray-800 transition-colors ${value === option ? 'bg-blue-50 dark:bg-gray-800 text-blue-700 dark:bg-gray-100 font-medium' : 'text-gray-700 dark:bg-gray-100'}`}
+                                        className={`w-full text-left px-4 py-2 text-sm hover:bg-blue-50 dark:hover:bg-gray-700 transition-colors ${value === option ? 'bg-blue-50 dark:bg-gray-700 text-blue-700 dark:text-blue-400 font-medium' : 'text-gray-700 dark:text-gray-300'}`}
                                         onClick={() => handleSelect(option)}
                                     >
                                         <div className="flex items-center justify-between">
                                             <span>{option}</span>
-                                            {value === option && <CheckCircle size={14} className="text-blue-600 dark:bg-gray-100" />}
+                                            {value === option && <CheckCircle size={14} className="text-blue-600 dark:text-blue-400" />}
                                         </div>
                                     </button>
                                 ))}
@@ -459,7 +459,7 @@ const TestCaseSplitView = () => {
     };
 
     return (
-        <div className="flex h-[calc(100vh-4rem)] w-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:bg-gray-800 overflow-hidden">
+        <div className="flex h-[calc(100vh-4rem)] w-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 overflow-hidden">
             <motion.div
                 ref={sidebarRef}
                 initial={{ width: sidebarWidth }}
@@ -471,16 +471,16 @@ const TestCaseSplitView = () => {
                     duration: 0.3,
                     ease: [0.4, 0.0, 0.2, 1],
                 }}
-                className="bg-white dark:bg-gray-800 border-r border-gray-200 dark:bg-gray-100 flex flex-col user-select-none sidebar-scrollbar sticky top-0 h-full"
+                className="bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-700 flex flex-col user-select-none sidebar-scrollbar sticky top-0 h-full"
                 style={{
                     minWidth: isSidebarOpen ? sidebarWidth : 0,
                     overflow: "hidden",
                 }}
             >
-                <div className="flex items-center justify-between p-[14px] border-b border-gray-200 bg-gradient-to-r from-blue-50 to-indigo-50 dark:bg-gray-800">
+                <div className="flex items-center justify-between p-[14px] border-b border-gray-200 dark:border-gray-700 bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-gray-800 dark:to-gray-900">
                     <h2
                         onClick={() => copyText(testTypeName)}
-                        className="text-sm font-bold text-gray-800 dark:bg-gray-100 tracking-wide cursor-pointer hover:text-blue-600 dark:bg-gray-100 transition-colors"
+                        className="text-sm font-bold text-gray-800 dark:text-gray-100 tracking-wide cursor-pointer hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
                     >
                         {testTypeName || 'Select Test Type'}
                     </h2>
@@ -490,29 +490,29 @@ const TestCaseSplitView = () => {
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.9 }}
                         onClick={() => setIsSidebarOpen(false)}
-                        className="p-1.5 hover:bg-white dark:bg-gray-800 rounded-lg transition-colors"
+                        className="p-1.5 hover:bg-white dark:hover:bg-gray-800 rounded-lg transition-colors"
                     >
-                        <ChevronRight size={16} className="text-gray-600 dark:bg-gray-100" />
+                        <ChevronRight size={16} className="text-gray-600 dark:text-gray-400" />
                     </motion.button>
                 </div>
-                <div className="p-4 border-b border-gray-200 bg-white dark:bg-gray-800">
+                <div className="p-4 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                     <div className="relative">
                         <Search
                             size={16}
-                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:bg-gray-100"
+                            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500"
                         />
                         <input
                             type="text"
                             placeholder="Search test cases..."
                             value={searchTerm}
                             onChange={(e) => setSearchTerm(e.target.value)}
-                            className="w-full pl-10 pr-10 py-2 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
+                            className="w-full pl-10 pr-10 py-2 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all shadow-sm"
                         />
                         <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.9 }}
                             onClick={() => setShowDatePicker(!showDatePicker)}
-                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:bg-gray-100 hover:text-blue-600 dark:bg-gray-100"
+                            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400"
                         >
                             <Calendar size={16} />
                         </motion.button>
@@ -524,11 +524,11 @@ const TestCaseSplitView = () => {
                                 initial={{ opacity: 0, y: -10 }}
                                 animate={{ opacity: 1, y: 0 }}
                                 exit={{ opacity: 0, y: -10 }}
-                                className="absolute right-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 rounded-lg shadow-lg z-50"
+                                className="absolute right-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50"
                             >
                                 <div className="space-y-2">
                                     <div>
-                                        <label className="text-xs font-medium text-gray-600 dark:bg-gray-100 block mb-1">
+                                        <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">
                                             Start Date
                                         </label>
                                         <input
@@ -540,11 +540,11 @@ const TestCaseSplitView = () => {
                                                     start: e.target.value,
                                                 }))
                                             }
-                                            className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                     </div>
                                     <div>
-                                        <label className="text-xs font-medium text-gray-600 dark:bg-gray-100 block mb-1">
+                                        <label className="text-xs font-medium text-gray-600 dark:text-gray-300 block mb-1">
                                             End Date
                                         </label>
                                         <input
@@ -556,7 +556,7 @@ const TestCaseSplitView = () => {
                                                     end: e.target.value,
                                                 }))
                                             }
-                                            className="w-full px-2 py-1.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                            className="w-full px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
                                         />
                                     </div>
                                     <motion.button
@@ -566,7 +566,7 @@ const TestCaseSplitView = () => {
                                             setDateFilter({ start: "", end: "" });
                                             fetchTestCases();
                                         }}
-                                        className="w-full px-3 py-1.5 text-xs bg-gray-200 dark:bg-gray-800 text-gray-700 dark:bg-gray-100 rounded-lg hover:bg-gray-300 dark:bg-gray-800 transition-colors font-medium"
+                                        className="w-full px-3 py-1.5 text-xs bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-lg hover:bg-gray-300 dark:hover:bg-gray-600 transition-colors font-medium"
                                     >
                                         Clear Filter
                                     </motion.button>
@@ -602,24 +602,24 @@ const TestCaseSplitView = () => {
                                     initial={{ opacity: 0 }}
                                     animate={{ opacity: 1 }}
                                     transition={{ delay: index * 0.05 }}
-                                    className="bg-white dark:bg-gray-800 rounded-xl border border-gray-200 p-3"
+                                    className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-700 p-3"
                                 >
                                     <div className="flex items-center justify-between gap-2 mb-2">
                                         <motion.div
                                             animate={{ opacity: [0.5, 1, 0.5] }}
                                             transition={{ duration: 1.5, repeat: Infinity }}
-                                            className="h-6 w-20 bg-gray-200 dark:bg-gray-800 rounded-md"
+                                            className="h-6 w-20 bg-gray-200 dark:bg-gray-700 rounded-md"
                                         />
                                         <div className="flex items-center gap-1.5">
                                             <motion.div
                                                 animate={{ opacity: [0.5, 1, 0.5] }}
                                                 transition={{ duration: 1.5, repeat: Infinity, delay: 0.1 }}
-                                                className="h-5 w-16 bg-gray-200 dark:bg-gray-800 rounded-md"
+                                                className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-md"
                                             />
                                             <motion.div
                                                 animate={{ opacity: [0.5, 1, 0.5] }}
                                                 transition={{ duration: 1.5, repeat: Infinity, delay: 0.2 }}
-                                                className="h-5 w-16 bg-gray-200 dark:bg-gray-800 rounded-md"
+                                                className="h-5 w-16 bg-gray-200 dark:bg-gray-700 rounded-md"
                                             />
                                         </div>
                                     </div>
@@ -627,18 +627,18 @@ const TestCaseSplitView = () => {
                                         <motion.div
                                             animate={{ opacity: [0.5, 1, 0.5] }}
                                             transition={{ duration: 1.5, repeat: Infinity, delay: 0.3 }}
-                                            className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-full"
+                                            className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"
                                         />
                                         <motion.div
                                             animate={{ opacity: [0.5, 1, 0.5] }}
                                             transition={{ duration: 1.5, repeat: Infinity, delay: 0.4 }}
-                                            className="h-3 bg-gray-200 dark:bg-gray-800 rounded w-3/4"
+                                            className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"
                                         />
                                     </div>
                                     <motion.div
                                         animate={{ opacity: [0.5, 1, 0.5] }}
                                         transition={{ duration: 1.5, repeat: Infinity, delay: 0.5 }}
-                                        className="h-3 w-32 bg-gray-200 dark:bg-gray-800 rounded"
+                                        className="h-3 w-32 bg-gray-200 dark:bg-gray-700 rounded"
                                     />
                                 </motion.div>
                             ))}
@@ -658,10 +658,10 @@ const TestCaseSplitView = () => {
                                 <motion.div
                                     animate={{ rotate: 360 }}
                                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
-                                    className="absolute inset-0 rounded-full bg-gradient-to-tr from-emerald-100 via-teal-50 to-blue-100 dark:bg-gray-800 blur-xl opacity-60"
+                                    className="absolute inset-0 rounded-full bg-gradient-to-tr from-emerald-100 via-teal-50 to-blue-100 dark:from-emerald-900 dark:via-teal-900 dark:to-blue-900 blur-xl opacity-60"
                                     style={{ width: '120px', height: '120px', left: '-10px', top: '-10px' }}
                                 />
-                                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-50 to-teal-50 dark:bg-gray-800 border-2 border-emerald-200 flex items-center justify-center">
+                                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-emerald-50 to-teal-50 dark:from-emerald-900 dark:to-teal-900 border-2 border-emerald-200 dark:border-emerald-700 flex items-center justify-center">
                                     <motion.svg
                                         initial={{ pathLength: 0 }}
                                         animate={{ pathLength: 1 }}
@@ -687,7 +687,7 @@ const TestCaseSplitView = () => {
                                 {[...Array(3)].map((_, i) => (
                                     <motion.div
                                         key={i}
-                                        className="absolute w-2 h-2 rounded-full bg-emerald-300 dark:bg-gray-800"
+                                        className="absolute w-2 h-2 rounded-full bg-emerald-300 dark:bg-emerald-600"
                                         style={{
                                             top: `${20 + i * 25}%`,
                                             left: `${-10 + i * 50}%`,
@@ -711,10 +711,10 @@ const TestCaseSplitView = () => {
                                 transition={{ delay: 0.6 }}
                                 className="text-center"
                             >
-                                <h3 className="text-lg font-semibold text-gray-800 dark:bg-gray-100 mb-1">
+                                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-100 mb-1">
                                     All Clear!
                                 </h3>
-                                <p className="text-sm text-gray-500 dark:bg-gray-100 max-w-xs">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 max-w-xs">
                                     No test cases found. Create your first test case to get started.
                                 </p>
                             </motion.div>
@@ -724,9 +724,9 @@ const TestCaseSplitView = () => {
                                 transition={{ delay: 0.8 }}
                                 className="mt-6 flex gap-2"
                             >
-                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-gray-800" />
-                                <div className="w-1.5 h-1.5 rounded-full bg-teal-400 dark:bg-gray-800" />
-                                <div className="w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-gray-800" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-emerald-400 dark:bg-emerald-600" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-teal-400 dark:bg-teal-600" />
+                                <div className="w-1.5 h-1.5 rounded-full bg-blue-400 dark:bg-blue-600" />
                             </motion.div>
                         </motion.div>
                     ) : (
@@ -741,9 +741,9 @@ const TestCaseSplitView = () => {
                                         y: -2,
                                         boxShadow: "0 4px 12px rgba(0,0,0,0.1)",
                                     }}
-                                    className={`bg-white dark:bg-gray-800 rounded-xl border-1 p-3 cursor-pointer transition-all duration-200 ${selectedTestCase?._id === testCase._id
+                                    className={`bg-white dark:bg-gray-900 rounded-xl border-1 p-3 cursor-pointer transition-all duration-200 ${selectedTestCase?._id === testCase._id
                                         ? "border-blue-500 bg-blue-50 dark:bg-gray-800 shadow-md"
-                                        : "border-gray-200 hover:border-blue-300"
+                                        : "border-gray-200 dark:border-gray-700 hover:border-blue-300 dark:hover:border-blue-600"
                                         }`}
                                     onClick={() => {
                                         setSelectedTestCase(testCase);
@@ -751,7 +751,7 @@ const TestCaseSplitView = () => {
                                     }}
                                 >
                                     <div className="flex items-center justify-between gap-2 mb-2">
-                                        <span className="text-xs font-bold text-gray-600 dark:bg-gray-100 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">
+                                        <span className="text-xs font-bold text-gray-600 dark:text-gray-300 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded-md">
                                             {testCase.serialNumber}
                                         </span>
                                         <div className="flex items-center gap-1.5">
@@ -771,11 +771,11 @@ const TestCaseSplitView = () => {
                                             </span>
                                         </div>
                                     </div>
-                                    <p className="text-xs text-gray-700 dark:bg-gray-100 mb-2 line-clamp-2 min-h-[2rem] leading-relaxed">
+                                    <p className="text-xs text-gray-700 dark:text-gray-300 mb-2 line-clamp-2 min-h-[2rem] leading-relaxed">
                                         {testCase.testCaseDescription || "No description"}
                                     </p>
-                                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:bg-gray-100 mb-2">
-                                        <Clock size={12} className="text-gray-400 dark:bg-gray-100" />
+                                    <div className="flex items-center gap-1.5 text-xs text-gray-500 dark:text-gray-400 mb-2">
+                                        <Clock size={12} className="text-gray-400 dark:text-gray-500" />
                                         <span>
                                             {testCase.updatedAt
                                                 ? `Updated: ${new Date(
@@ -795,12 +795,12 @@ const TestCaseSplitView = () => {
             {isSidebarOpen && (
                 <motion.div
                     whileHover={{ backgroundColor: "rgb(59, 130, 246)" }}
-                    className="w-[1px] bg-gray-200 dark:bg-gray-800 cursor-col-resize transition-colors"
+                    className="w-[1px] bg-gray-200 dark:bg-gray-700 cursor-col-resize transition-colors"
                     onMouseDown={startResizing}
                 />
             )}
             <div className="flex-1 flex flex-col overflow-hidden sidebar-scrollbar">
-                <div className="flex items-center user-select-none justify-between p-3 border-b border-gray-200 bg-white dark:bg-gray-800">
+                <div className="flex items-center user-select-none justify-between p-3 border-b border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900">
                     <div className="flex items-center gap-3">
                         {!isSidebarOpen && (
                             <motion.button
@@ -809,9 +809,9 @@ const TestCaseSplitView = () => {
                                 whileHover={{ scale: 1.05 }}
                                 whileTap={{ scale: 0.95 }}
                                 onClick={() => setIsSidebarOpen(true)}
-                                className="p-2 hover:bg-gray-100 dark:bg-gray-800 rounded-lg transition-colors"
+                                className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg transition-colors"
                             >
-                                <Menu size={18} className="text-gray-700 dark:bg-gray-100" />
+                                <Menu size={18} className="text-gray-700 dark:text-gray-300" />
                             </motion.button>
                         )}
                         {selectedTestCase && (
@@ -819,7 +819,7 @@ const TestCaseSplitView = () => {
                                 <motion.h2
                                     whileHover={{ scale: 1.02 }}
                                     onClick={() => copyText(selectedTestCase.serialNumber)}
-                                    className="text-sm font-bold text-gray-800 dark:bg-gray-100 cursor-pointer bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg"
+                                    className="text-sm font-bold text-gray-800 dark:text-gray-100 cursor-pointer bg-gray-100 dark:bg-gray-800 px-3 py-2 rounded-lg"
                                 >
                                     {selectedTestCase.serialNumber}
                                 </motion.h2>
@@ -863,14 +863,14 @@ const TestCaseSplitView = () => {
                                             initial={{ opacity: 0, y: -10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             exit={{ opacity: 0, y: -10 }}
-                                            className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 rounded-lg shadow-lg z-50 max-h-[200px] w-64 overflow-y-auto"
+                                            className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 max-h-[200px] w-64 overflow-y-auto"
                                         >
                                             <a
                                                 href={selectedTestCase.image}
                                                 target="_blank"
                                                 rel="noopener noreferrer"
                                                 onClick={() => setImageDropdownOpen(false)}
-                                                className="block px-4 py-2.5 text-xs text-gray-700 dark:bg-gray-100 hover:bg-purple-100 dark:bg-gray-800 hover:text-purple-700 dark:bg-gray-100 transition-colors border-b border-gray-100 last:border-b-0 truncate"
+                                                className="block px-4 py-2.5 text-xs text-gray-700 dark:text-gray-300 hover:bg-purple-100 dark:hover:bg-purple-900 hover:text-purple-700 dark:hover:text-purple-300 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0 truncate"
                                             >
                                                 {selectedTestCase.image}
                                             </a>
@@ -878,7 +878,7 @@ const TestCaseSplitView = () => {
                                     )}
                                 </div>
                             )}
-                            <div className="text-xs text-gray-600 dark:bg-gray-100 font-medium bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg">
+                            <div className="text-xs text-gray-600 dark:text-gray-300 font-medium bg-gray-100 dark:bg-gray-800 px-3 py-1.5 rounded-lg">
                                 Test Case{" "}
                                 {filteredTestCases.findIndex((tc) => tc._id === selectedTestCase._id) + 1}{" "}
                                 of {filteredTestCases.length}
@@ -893,7 +893,7 @@ const TestCaseSplitView = () => {
                                         filteredTestCases.findIndex((tc) => tc._id === selectedTestCase._id) ===
                                         0
                                     }
-                                    className="p-2 hover:bg-gray-200 dark:bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <ChevronLeft size={18} />
                                 </motion.button>
@@ -906,7 +906,7 @@ const TestCaseSplitView = () => {
                                         filteredTestCases.findIndex((tc) => tc._id === selectedTestCase._id) ===
                                         filteredTestCases.length - 1
                                     }
-                                    className="p-2 hover:bg-gray-200 dark:bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                                    className="p-2 hover:bg-gray-200 dark:hover:bg-gray-800 rounded-lg disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                                 >
                                     <ChevronRight size={18} />
                                 </motion.button>
@@ -974,7 +974,7 @@ const TestCaseSplitView = () => {
                         <motion.div
                             initial={{ opacity: 0, scale: 0.95 }}
                             animate={{ opacity: 1, scale: 1 }}
-                            className="flex flex-col items-center justify-center h-full text-gray-500 dark:bg-gray-100 px-8"
+                            className="flex flex-col items-center justify-center h-full text-gray-500 dark:text-gray-400 px-8"
                         >
                             <motion.div
                                 initial={{ scale: 0, rotate: -180 }}
@@ -992,17 +992,17 @@ const TestCaseSplitView = () => {
                                     transition={{ duration: 15, repeat: Infinity, ease: "linear" }}
                                     className="absolute inset-0 w-32 h-32 -left-4 -top-4"
                                 >
-                                    <div className="absolute inset-0 rounded-full border-2 border-dashed border-blue-200 dark:bg-gray-800 opacity-40" />
+                                    <div className="absolute inset-0 rounded-full border-2 border-dashed border-blue-200 dark:border-blue-800 opacity-40" />
                                 </motion.div>
                                 <motion.div
                                     animate={{ rotate: -360 }}
                                     transition={{ duration: 20, repeat: Infinity, ease: "linear" }}
                                     className="absolute inset-0 w-40 h-40 -left-8 -top-8"
                                 >
-                                    <div className="absolute inset-0 rounded-full border-2 border-dotted border-purple-200 dark:bg-gray-800 opacity-30" />
+                                    <div className="absolute inset-0 rounded-full border-2 border-dotted border-purple-200 dark:border-purple-800 opacity-30" />
                                 </motion.div>
-                                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:bg-gray-800 border-2 border-blue-200 flex items-center justify-center shadow-xl">
-                                    <div className="absolute inset-2 rounded-full bg-gradient-to-br from-blue-100/50 to-purple-100/50 dark:bg-gray-800 blur-md" />
+                                <div className="relative w-24 h-24 rounded-full bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900 dark:via-indigo-900 dark:to-purple-900 border-2border-blue-200 dark:border-blue-700 flex items-center justify-center shadow-xl">
+                                    <div className="absolute inset-2 rounded-full bg-gradient-to-br from-blue-100/50 to-purple-100/50 dark:from-blue-800/50 dark:to-purple-800/50 blur-md" />
                                     <motion.div
                                         animate={{
                                             scale: [1, 1.1, 1],
@@ -1021,7 +1021,7 @@ const TestCaseSplitView = () => {
                                             viewBox="0 0 24 24"
                                             fill="none"
                                             xmlns="http://www.w3.org/2000/svg"
-                                            className="text-blue-500 dark:bg-gray-100"
+                                            className="text-blue-500 dark:text-blue-400"
                                         >
                                             <motion.path
                                                 initial={{ pathLength: 0 }}
@@ -1039,7 +1039,7 @@ const TestCaseSplitView = () => {
                                 {[...Array(4)].map((_, i) => (
                                     <motion.div
                                         key={i}
-                                        className="absolute w-2 h-2 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 dark:bg-gray-800"
+                                        className="absolute w-2 h-2 rounded-full bg-gradient-to-br from-blue-400 to-purple-400 dark:from-blue-600 dark:to-purple-600"
                                         style={{
                                             top: `${[10, 50, 90, 50][i]}%`,
                                             left: `${[50, 90, 50, 10][i]}%`,
@@ -1063,10 +1063,10 @@ const TestCaseSplitView = () => {
                                 transition={{ delay: 0.6 }}
                                 className="text-center max-w-sm"
                             >
-                                <h3 className="text-lg font-semibold text-gray-700 dark:bg-gray-100 mb-2">
+                                <h3 className="text-lg font-semibold text-gray-700 dark:text-gray-200 mb-2">
                                     No Test Case Selected
                                 </h3>
-                                <p className="text-sm text-gray-500 dark:bg-gray-100 leading-relaxed mb-4">
+                                <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed mb-4">
                                     Choose a test case from the list to view its details, results, and comments
                                 </p>
                                 <motion.div
@@ -1076,10 +1076,10 @@ const TestCaseSplitView = () => {
                                         repeat: Infinity,
                                         ease: "easeInOut"
                                     }}
-                                    className="flex items-center justify-center gap-2 text-xs text-gray-400 dark:bg-gray-100"
+                                    className="flex items-center justify-center gap-2 text-xs text-gray-400 dark:text-gray-500"
                                 >
                                     <span>Click a test case card</span>
-                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-400 dark:bg-gray-100">
+                                    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" className="text-blue-400 dark:text-blue-500">
                                         <path
                                             d="M19 12H5M5 12L12 5M5 12L12 19"
                                             stroke="currentColor"
@@ -1099,7 +1099,7 @@ const TestCaseSplitView = () => {
                                 {[...Array(5)].map((_, i) => (
                                     <motion.div
                                         key={i}
-                                        className="w-1 h-1 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 dark:bg-gray-800"
+                                        className="w-1 h-1 rounded-full bg-gradient-to-r from-blue-400 to-purple-400 dark:from-blue-600 dark:to-purple-600"
                                         animate={{
                                             scale: [1, 1.5, 1],
                                             opacity: [0.3, 0.7, 0.3],
@@ -1126,9 +1126,9 @@ const TestCaseSplitView = () => {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.1 }}
-                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
+                                        className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
                                     >
-                                        <label className="user-select-none text-xs font-bold text-gray-600 dark:bg-gray-100 mb-2 block tracking-wide">
+                                        <label className="user-select-none text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 block tracking-wide">
                                             MODULE
                                         </label>
                                         {isEditing ? (
@@ -1141,11 +1141,11 @@ const TestCaseSplitView = () => {
                                                         moduleName: e.target.value,
                                                     }))
                                                 }
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
+                                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all"
                                                 placeholder="Enter module name..."
                                             />
                                         ) : (
-                                            <p className="text-sm text-gray-700 dark:bg-gray-100 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 rounded-lg border border-gray-200">
+                                            <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700">
                                                 {selectedTestCase.moduleName || "No module specified"}
                                             </p>
                                         )}
@@ -1154,9 +1154,9 @@ const TestCaseSplitView = () => {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.15 }}
-                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
+                                        className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
                                     >
-                                        <label className="user-select-none text-xs font-bold text-gray-600 dark:bg-gray-100 mb-2 block tracking-wide">
+                                        <label className="user-select-none text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 block tracking-wide">
                                             DESCRIPTION
                                         </label>
                                         {isEditing ? (
@@ -1169,11 +1169,11 @@ const TestCaseSplitView = () => {
                                                     }))
                                                 }
                                                 rows={4}
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                                                 placeholder="Enter test case description..."
                                             />
                                         ) : (
-                                            <p className="text-sm text-gray-700 dark:bg-gray-100 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 rounded-lg border border-gray-200 min-h-[100px] leading-relaxed">
+                                            <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 min-h-[100px] leading-relaxed">
                                                 {selectedTestCase.testCaseDescription || "No description"}
                                             </p>
                                         )}
@@ -1182,9 +1182,9 @@ const TestCaseSplitView = () => {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.2 }}
-                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
+                                        className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
                                     >
-                                        <label className="user-select-none text-xs font-bold text-gray-600 dark:bg-gray-100 mb-2 block tracking-wide">
+                                        <label className="user-select-none text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 block tracking-wide">
                                             EXPECTED RESULT
                                         </label>
                                         {isEditing ? (
@@ -1197,11 +1197,11 @@ const TestCaseSplitView = () => {
                                                     }))
                                                 }
                                                 rows={3}
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                                                 placeholder="Enter expected result..."
                                             />
                                         ) : (
-                                            <p className="text-sm text-gray-700 dark:bg-gray-100 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 rounded-lg border border-gray-200 min-h-[80px] leading-relaxed">
+                                            <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 min-h-[80px] leading-relaxed">
                                                 {selectedTestCase.expectedResult || "No expected result specified"}
                                             </p>
                                         )}
@@ -1210,9 +1210,9 @@ const TestCaseSplitView = () => {
                                         initial={{ opacity: 0, y: 10 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ delay: 0.25 }}
-                                        className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
+                                        className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
                                     >
-                                        <label className="user-select-none text-xs font-bold text-gray-600 dark:bg-gray-100 mb-2 block tracking-wide">
+                                        <label className="user-select-none text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 block tracking-wide">
                                             ACTUAL RESULT
                                         </label>
                                         {isEditing ? (
@@ -1225,11 +1225,11 @@ const TestCaseSplitView = () => {
                                                     }))
                                                 }
                                                 rows={3}
-                                                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
+                                                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all resize-none"
                                                 placeholder="Enter actual result..."
                                             />
                                         ) : (
-                                            <p className="text-sm text-gray-700 dark:bg-gray-100 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 rounded-lg border border-gray-200 min-h-[80px] leading-relaxed">
+                                            <p className="text-sm text-gray-700 dark:text-gray-300 bg-gray-50 dark:bg-gray-800 px-4 py-2.5 rounded-lg border border-gray-200 dark:border-gray-700 min-h-[80px] leading-relaxed">
                                                 {selectedTestCase.actualResult || "No actual result specified"}
                                             </p>
                                         )}
@@ -1239,9 +1239,9 @@ const TestCaseSplitView = () => {
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: 0.3 }}
-                                            className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
+                                            className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
                                         >
-                                            <label className="user-select-none text-xs font-bold text-gray-600 dark:bg-gray-100 mb-2 block tracking-wide">
+                                            <label className="user-select-none text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 block tracking-wide">
                                                 TEST CASE IMAGE
                                             </label>
                                             {isEditing ? (
@@ -1250,7 +1250,7 @@ const TestCaseSplitView = () => {
                                                         <img
                                                             src={editFormData.image}
                                                             alt="Test case screenshot"
-                                                            className="w-full h-40 object-cover rounded-lg border border-gray-200"
+                                                            className="w-full h-40 object-cover rounded-lg border border-gray-200 dark:border-gray-700"
                                                         />
                                                         <motion.button
                                                             whileHover={{ scale: 1.1 }}
@@ -1289,7 +1289,7 @@ const TestCaseSplitView = () => {
                                                     <img
                                                         src={selectedTestCase.image}
                                                         alt="Test case screenshot"
-                                                        className="w-full h-40 object-cover rounded-lg border border-gray-200 hover:border-blue-500 transition-colors cursor-pointer"
+                                                        className="w-full h-40 object-cover rounded-lg border border-gray-200 dark:border-gray-700 hover:border-blue-500 dark:hover:border-blue-600 transition-colors cursor-pointer"
                                                         onClick={() => setSelectedImageModal(selectedTestCase.image)}
                                                         onDoubleClick={() => window.open(selectedTestCase.image, "_blank")}
                                                     />
@@ -1302,9 +1302,9 @@ const TestCaseSplitView = () => {
                                             initial={{ opacity: 0, y: 10 }}
                                             animate={{ opacity: 1, y: 0 }}
                                             transition={{ delay: 0.3 }}
-                                            className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200"
+                                            className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700"
                                         >
-                                            <label className="text-xs font-bold text-gray-600 dark:bg-gray-100 mb-2 block tracking-wide">
+                                            <label className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-2 block tracking-wide">
                                                 ADD TEST CASE IMAGE
                                             </label>
                                             <div className="space-y-3">
@@ -1335,7 +1335,7 @@ const TestCaseSplitView = () => {
                                             initial={{ opacity: 0 }}
                                             animate={{ opacity: 1 }}
                                             exit={{ opacity: 0 }}
-                                            className="fixed inset-0 bg-gray-100 dark:bg-gray-800 bg-opacity-75 flex items-center justify-center z-50"
+                                            className="fixed inset-0 bg-black dark:bg-black bg-opacity-75 dark:bg-opacity-85 flex items-center justify-center z-50"
                                             onClick={() => setSelectedImageModal(null)}
                                         >
                                             <motion.div
@@ -1367,22 +1367,22 @@ const TestCaseSplitView = () => {
                                         transition={{ delay: 0.35 }}
                                         className="grid grid-cols-2 gap-4 pt-2"
                                     >
-                                        <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200">
-                                            <label className="text-xs font-bold text-gray-600 dark:bg-gray-100 mb-1.5 tracking-wide flex items-center gap-1.5">
+                                        <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                                            <label className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1.5 tracking-wide flex items-center gap-1.5">
                                                 <Calendar size={12} />
                                                 CREATED AT
                                             </label>
-                                            <p className="text-xs text-gray-700 dark:bg-gray-100 font-medium">
+                                            <p className="text-xs text-gray-700 dark:text-gray-300 font-medium">
                                                 {new Date(selectedTestCase.createdAt).toLocaleString()}
                                             </p>
                                         </div>
                                         {selectedTestCase.updatedAt && (
-                                            <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200">
-                                                <label className="text-xs font-bold text-gray-600 dark:bg-gray-100 mb-1.5 block tracking-wide items-center gap-1.5">
+                                            <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700">
+                                                <label className="text-xs font-bold text-gray-600 dark:text-gray-300 mb-1.5 block tracking-wide items-center gap-1.5">
                                                     <Clock size={12} />
                                                     UPDATED AT
                                                 </label>
-                                                <p className="text-xs text-gray-700 dark:bg-gray-100 font-medium">
+                                                <p className="text-xs text-gray-700 dark:text-gray-300 font-medium">
                                                     {new Date(selectedTestCase.updatedAt).toLocaleString()}
                                                 </p>
                                             </div>
@@ -1395,9 +1395,9 @@ const TestCaseSplitView = () => {
                                     transition={{ delay: 0.2 }}
                                     className="lg:col-span-1"
                                 >
-                                    <div className="bg-white dark:bg-gray-800 p-4 rounded-xl shadow-sm border border-gray-200 top-1">
-                                        <h3 className="user-select-none text-sm font-bold text-gray-800 dark:bg-gray-100 mb-4 flex items-center gap-2 tracking-wide">
-                                            <MessageSquare size={16} className="text-blue-600 dark:bg-gray-100" />
+                                    <div className="bg-white dark:bg-gray-900 p-4 rounded-xl shadow-sm border border-gray-200 dark:border-gray-700 top-1">
+                                        <h3 className="user-select-none text-sm font-bold text-gray-800 dark:text-gray-100 mb-4 flex items-center gap-2 tracking-wide">
+                                            <MessageSquare size={16} className="text-blue-600 dark:text-blue-400" />
                                             COMMENTS
                                         </h3>
                                         <div className="mb-4">
@@ -1406,7 +1406,7 @@ const TestCaseSplitView = () => {
                                                 onChange={(e) => setNewComment(e.target.value)}
                                                 placeholder="Add a comment..."
                                                 rows={3}
-                                                className="w-full px-3 py-2.5 text-xs border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2 transition-all resize-none"
+                                                className="w-full px-3 py-2.5 text-xs border border-gray-300 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent mb-2 transition-all resize-none"
                                             />
                                             <motion.button
                                                 whileHover={{ scale: 1.02 }}
@@ -1433,14 +1433,14 @@ const TestCaseSplitView = () => {
                                                 <div className="flex items-center justify-center py-8">
                                                     <Loader2
                                                         size={24}
-                                                        className="animate-spin text-blue-600 dark:bg-gray-100"
+                                                        className="animate-spin text-blue-600 dark:text-blue-400"
                                                     />
                                                 </div>
                                             ) : comments.length === 0 ? (
-                                                <div className="text-center py-8 text-gray-500 dark:bg-gray-100 text-xs">
+                                                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-xs">
                                                     <MessageSquare
                                                         size={32}
-                                                        className="mx-auto mb-2 text-gray-300 dark:bg-gray-100"
+                                                        className="mx-auto mb-2 text-gray-300 dark:text-gray-600"
                                                     />
                                                     <p className="font-medium">No comments yet</p>
                                                 </div>
@@ -1451,7 +1451,7 @@ const TestCaseSplitView = () => {
                                                         initial={{ opacity: 0, y: 10 }}
                                                         animate={{ opacity: 1, y: 0 }}
                                                         transition={{ delay: index * 0.05 }}
-                                                        className="bg-gradient-to-br from-gray-50 to-gray-100 dark:bg-gray-800 rounded-lg p-3 border border-gray-200"
+                                                        className="bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-800 dark:to-gray-900 rounded-lg p-3 border border-gray-200 dark:border-gray-700"
                                                     >
                                                         <div className="flex items-center gap-2 mb-2">
                                                             <div className="w-7 h-7 rounded-full bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0 shadow-sm">
@@ -1461,17 +1461,17 @@ const TestCaseSplitView = () => {
                                                                 </span>
                                                             </div>
                                                             <div className="flex-1 min-w-0">
-                                                                <span className="text-xs font-bold text-gray-800 dark:bg-gray-100 block truncate">
+                                                                <span className="text-xs font-bold text-gray-800 dark:text-gray-100 block truncate">
                                                                     {comment.commentBy || "Unknown"}
                                                                 </span>
-                                                                <span className="text-xs text-gray-500 dark:bg-gray-100">
+                                                                <span className="text-xs text-gray-500 dark:text-gray-400">
                                                                     {new Date(
                                                                         comment.createdAt
                                                                     ).toLocaleDateString()}
                                                                 </span>
                                                             </div>
                                                         </div>
-                                                        <p className="text-xs text-gray-700 dark:bg-gray-100 leading-relaxed">
+                                                        <p className="text-xs text-gray-700 dark:text-gray-300 leading-relaxed">
                                                             {comment.comment}
                                                         </p>
                                                     </motion.div>
