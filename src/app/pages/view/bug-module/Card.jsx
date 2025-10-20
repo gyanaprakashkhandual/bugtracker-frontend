@@ -6,7 +6,7 @@ import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
 import { useProject } from '@/app/script/Project.context';
 import { BUG_EVENTS } from '@/app/components/Sidebars/Bug';
-import { BugCardSkeletonGrid } from '@/app/components/assets/Card.loader';
+import {BugCardSkeletonGrid} from '@/app/components/assets/Card.loader';
 
 const BUG_EVENTS_CARD = {
     CREATED: 'bug:created',
