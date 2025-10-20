@@ -568,7 +568,7 @@ const StatCard = ({ title, value, icon, gradient, delay }) => (
     initial={{ opacity: 0, scale: 0.9 }}
     animate={{ opacity: 1, scale: 1 }}
     transition={{ delay }}
-    className="bg-white dark:bg-gray-900 rounded-xl shadow-lg hover:shadow-xl transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-800 group"
+    className="bg-white dark:bg-gray-900 rounded-xl hover:shadow-sm transition-all duration-300 overflow-hidden border border-gray-200 dark:border-gray-800 group"
   >
     <div className={`h-1.5 bg-gradient-to-r ${gradient}`}></div>
     <div className="p-5">
@@ -589,7 +589,7 @@ const ChartCard = ({ title, icon, children, delay }) => (
     initial={{ opacity: 0, y: 20 }}
     animate={{ opacity: 1, y: 0 }}
     transition={{ delay }}
-    className="bg-white dark:bg-gray-900 rounded-xl shadow-lg p-6 border border-gray-200 dark:border-gray-800"
+    className="bg-white dark:bg-gray-900 rounded-xl p-6 border border-gray-200 dark:border-gray-800"
   >
     <div className="flex items-center gap-3 mb-6">
       <div className="p-2 bg-gradient-to-br from-indigo-500 to-purple-600 rounded-lg text-white">
