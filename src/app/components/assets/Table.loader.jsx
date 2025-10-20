@@ -25,7 +25,7 @@ const TableSkeletonLoader = () => {
 
     const SkeletonBox = ({ className = '' }) => (
         <motion.div
-            className={`bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%] rounded ${className}`}
+            className={`bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 bg-[length:200%_100%] rounded ${className}`}
             variants={shimmer}
             initial="hidden"
             animate="visible"
@@ -36,7 +36,7 @@ const TableSkeletonLoader = () => {
 
     return (
         <motion.div
-            className="w-full bg-white"
+            className="w-full bg-white dark:bg-gray-900"
             variants={fadeIn}
             initial="hidden"
             animate="visible"
@@ -46,7 +46,7 @@ const TableSkeletonLoader = () => {
                 <table className="w-full border-collapse">
                     {/* Table Header */}
                     <thead>
-                        <tr className="border-b border-gray-200 bg-gray-50">
+                        <tr className="border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
                             <th className="px-4 py-3 text-left">
                                 <SkeletonBox className="h-4 w-12" />
                             </th>
@@ -80,7 +80,7 @@ const TableSkeletonLoader = () => {
                     {/* Table Body */}
                     <tbody>
                         {rows.map((row) => (
-                            <tr key={row} className="border-b border-gray-100 hover:bg-gray-50">
+                            <tr key={row} className="border-b border-gray-100 dark:border-gray-800 hover:bg-gray-50 dark:hover:bg-gray-800">
                                 {/* S.NO */}
                                 <td className="px-4 py-4">
                                     <SkeletonBox className="h-5 w-20" />
@@ -144,7 +144,7 @@ const TableSkeletonLoader = () => {
             </div>
 
             {/* Footer with pagination */}
-            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200">
+            <div className="flex items-center justify-between mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
                 <div className="flex items-center gap-4">
                     <SkeletonBox className="h-5 w-40" />
                     <SkeletonBox className="h-5 w-48" />

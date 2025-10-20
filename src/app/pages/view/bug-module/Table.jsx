@@ -1,4 +1,3 @@
-/* Updated BugSpreadsheet component with dark mode support: added dark:bg-gray-800 to bg classes and dark:bg-gray-100 to text classes */
 'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';

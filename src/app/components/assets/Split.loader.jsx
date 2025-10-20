@@ -25,7 +25,7 @@ const SplitSkeletonLoader = () => {
 
   const SkeletonBox = ({ className = '' }) => (
     <motion.div
-      className={`bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 bg-[length:200%_100%] rounded ${className}`}
+      className={`bg-gradient-to-r from-gray-200 via-gray-300 to-gray-200 dark:from-gray-700 dark:via-gray-600 dark:to-gray-700 bg-[length:200%_100%] rounded ${className}`}
       variants={shimmer}
       initial="hidden"
       animate="visible"
@@ -34,13 +34,13 @@ const SplitSkeletonLoader = () => {
 
   return (
     <motion.div
-      className="flex h-screen bg-gray-50"
+      className="flex h-screen bg-gray-50 dark:bg-gray-950"
       variants={fadeIn}
       initial="hidden"
       animate="visible"
     >
       {/* Left Sidebar */}
-      <div className="w-72 bg-white border-r border-gray-200 p-4">
+      <div className="w-72 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 p-4">
         {/* Header */}
         <div className="mb-4">
           <SkeletonBox className="h-8 w-40 mb-4" />
@@ -58,7 +58,7 @@ const SplitSkeletonLoader = () => {
         {/* Bug List Items */}
         <div className="space-y-3">
           {[1, 2, 3, 4].map((item) => (
-            <div key={item} className="border border-gray-200 rounded-lg p-3">
+            <div key={item} className="border border-gray-200 dark:border-gray-800 rounded-lg p-3">
               <div className="flex items-center gap-2 mb-2">
                 <SkeletonBox className="h-5 w-20" />
                 <SkeletonBox className="h-5 w-16" />
@@ -98,27 +98,27 @@ const SplitSkeletonLoader = () => {
         {/* Content Sections */}
         <div className="space-y-6">
           {/* Module Section */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
             <SkeletonBox className="h-5 w-20 mb-4" />
             <SkeletonBox className="h-6 w-32" />
           </div>
 
           {/* Description Section */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
             <SkeletonBox className="h-5 w-32 mb-4" />
             <SkeletonBox className="h-4 w-full mb-2" />
             <SkeletonBox className="h-4 w-5/6" />
           </div>
 
           {/* Requirement Section */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
             <SkeletonBox className="h-5 w-36 mb-4" />
             <SkeletonBox className="h-4 w-full mb-2" />
             <SkeletonBox className="h-4 w-3/4" />
           </div>
 
           {/* Reference Links Section */}
-          <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <div className="bg-white dark:bg-gray-900 rounded-lg border border-gray-200 dark:border-gray-800 p-6">
             <SkeletonBox className="h-5 w-36 mb-4" />
             <div className="space-y-3">
               <SkeletonBox className="h-10 w-full" />
