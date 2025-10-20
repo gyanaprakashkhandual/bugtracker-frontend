@@ -36,6 +36,7 @@ import {
   Legend,
   ResponsiveContainer
 } from 'recharts';
+import DashboardSkeleton from '../../assets/Dashboard.loader';
 
 const Dashboard = () => {
   const { selectedProject } = useProject();
@@ -221,10 +222,7 @@ const Dashboard = () => {
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
-        <div className="flex flex-col items-center gap-4">
-          <div className="w-16 h-16 border-4 border-indigo-600 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-gray-600 dark:text-gray-400 font-medium">Loading Dashboard...</p>
-        </div>
+        <DashboardSkeleton/>
       </div>
     );
   }

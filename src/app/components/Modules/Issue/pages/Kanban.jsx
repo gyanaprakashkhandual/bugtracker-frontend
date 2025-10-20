@@ -378,8 +378,7 @@ const KanbanBoard = () => {
               variants={columnVariants}
               initial="initial"
               animate="animate"
-              whileHover="hover"
-              className={`flex-shrink-0 w-[243px] min-h-[calc(100vh-80px)] ${statusColors[status]} border rounded-lg p-3 transition-all duration-300 ${dragOverColumn === status ? 'ring-2 ring-blue-400 dark:ring-blue-600 ring-offset-2 scale-[1.02]' : ''
+              className={`flex-shrink-0 w-[299px] min-h-[calc(100vh-80px)] ${statusColors[status]} border rounded-lg p-3 transition-all duration-300 ${dragOverColumn === status ? 'ring-2 ring-blue-400 dark:ring-blue-600 ring-offset-2' : ''
                 }`}
               onDragOver={handleDragOver}
               onDragEnter={() => handleDragEnter(status)}
