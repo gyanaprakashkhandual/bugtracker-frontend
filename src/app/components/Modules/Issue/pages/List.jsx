@@ -357,16 +357,32 @@ const BugTracker = () => {
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-sky-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900">
             <div className="max-w-full">
-                <div className="bg-white dark:bg-gray-800 border border-blue-100 dark:border-gray-700 shadow-xl rounded-xl overflow-hidden">
-                    {/* Table Header */}
-                    <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gradient-to-r from-blue-600 to-sky-600 dark:from-blue-900 dark:to-sky-900 text-xs font-bold text-white uppercase tracking-wider">
-                        <div className="col-span-1">ID</div>
-                        <div className="col-span-2">Type</div>
-                        <div className="col-span-3">Description</div>
-                        <div className="col-span-2">Assigned</div>
-                        <div className="col-span-1">Status</div>
-                        <div className="col-span-2">Timeline</div>
-                        <div className="col-span-1 text-center">Actions</div>
+                <div className="bg-white dark:bg-gray-800 border border-blue-100 dark:border-gray-700 shadow-xl overflow-hidden">
+                    <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                        {/* Table Header */}
+                        <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-b-2 border-indigo-400 dark:border-indigo-800">
+                            <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">ID</span>
+                            </div>
+                            <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Type</span>
+                            </div>
+                            <div className="col-span-3 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Description</span>
+                            </div>
+                            <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Assigned</span>
+                            </div>
+                            <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Status</span>
+                            </div>
+                            <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Timeline</span>
+                            </div>
+                            <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center justify-center">
+                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Actions</span>
+                            </div>
+                        </div>
                     </div>
 
                     {/* New Issue Row */}
