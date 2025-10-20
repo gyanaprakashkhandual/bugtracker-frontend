@@ -17,7 +17,7 @@ import { Color } from '@tiptap/extension-color';
 import FontFamily from '@tiptap/extension-font-family';
 import Typography from '@tiptap/extension-typography';
 import Placeholder from '@tiptap/extension-placeholder';
-import CodeBlock from '@tiptap/extension-code-block';
+import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
 import Blockquote from '@tiptap/extension-blockquote';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import Dropcursor from '@tiptap/extension-dropcursor';
@@ -26,7 +26,282 @@ import Subscript from '@tiptap/extension-subscript';
 import Superscript from '@tiptap/extension-superscript';
 import TaskList from '@tiptap/extension-task-list';
 import TaskItem from '@tiptap/extension-task-item';
+import Focus from '@tiptap/extension-focus';
+import CharacterCount from '@tiptap/extension-character-count';
+import Youtube from '@tiptap/extension-youtube';
+import BubbleMenu from '@tiptap/extension-bubble-menu';
+import FloatingMenu from '@tiptap/extension-floating-menu';
 import { Loader2 } from 'lucide-react';
+
+// Syntax highlighting
+import { lowlight } from 'lowlight';
+import javascript from 'highlight.js/lib/languages/javascript';
+import python from 'highlight.js/lib/languages/python';
+import java from 'highlight.js/lib/languages/java';
+import cpp from 'highlight.js/lib/languages/cpp';
+import csharp from 'highlight.js/lib/languages/csharp';
+import php from 'highlight.js/lib/languages/php';
+import ruby from 'highlight.js/lib/languages/ruby';
+import go from 'highlight.js/lib/languages/go';
+import rust from 'highlight.js/lib/languages/rust';
+import typescript from 'highlight.js/lib/languages/typescript';
+import xml from 'highlight.js/lib/languages/xml';
+import css from 'highlight.js/lib/languages/css';
+import sql from 'highlight.js/lib/languages/sql';
+import bash from 'highlight.js/lib/languages/bash';
+import json from 'highlight.js/lib/languages/json';
+
+// Register languages
+lowlight.registerLanguage('javascript', javascript);
+lowlight.registerLanguage('python', python);
+lowlight.registerLanguage('java', java);
+lowlight.registerLanguage('cpp', cpp);
+lowlight.registerLanguage('csharp', csharp);
+lowlight.registerLanguage('php', php);
+lowlight.registerLanguage('ruby', ruby);
+lowlight.registerLanguage('go', go);
+lowlight.registerLanguage('rust', rust);
+lowlight.registerLanguage('typescript', typescript);
+lowlight.registerLanguage('html', xml);
+lowlight.registerLanguage('css', css);
+lowlight.registerLanguage('sql', sql);
+lowlight.registerLanguage('bash', bash);
+lowlight.registerLanguage('json', json);
+
+// Custom Font Size Extension
+import { Extension } from '@tiptap/core';
+
+const FontSize = Extension.create({
+  name: 'fontSize',
+
+  addOptions() {
+    return {
+      types: ['textStyle'],
+    };
+  },
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          fontSize: {
+            default: null,
+            parseHTML: element => element.style.fontSize || null,
+            renderHTML: attributes => {
+              if (!attributes.fontSize) {
+                return {};
+              }
+              return {
+                style: `font-size: ${attributes.fontSize}`,
+              };
+            },
+          },
+        },
+      },
+    ];
+  },
+
+  addCommands() {
+    return {
+      setFontSize: fontSize => ({ chain }) => {
+        return chain()
+          .setMark('textStyle', { fontSize })
+          .run();
+      },
+      unsetFontSize: () => ({ chain }) => {
+        return chain()
+          .setMark('textStyle', { fontSize: null })
+          .removeEmptyTextStyle()
+          .run();
+      },
+    };
+  },
+});
+
+// Custom Line Height Extension
+const LineHeight = Extension.create({
+  name: 'lineHeight',
+
+  addOptions() {
+    return {
+      types: ['paragraph', 'heading'],
+    };
+  },
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          lineHeight: {
+            default: null,
+            parseHTML: element => element.style.lineHeight || null,
+            renderHTML: attributes => {
+              if (!attributes.lineHeight) {
+                return {};
+              }
+              return {
+                style: `line-height: ${attributes.lineHeight}`,
+              };
+            },
+          },
+        },
+      },
+    ];
+  },
+
+  addCommands() {
+    return {
+      setLineHeight: lineHeight => ({ commands }) => {
+        return this.options.types.every(type =>
+          commands.updateAttributes(type, { lineHeight })
+        );
+      },
+    };
+  },
+});
+
+// Custom Letter Spacing Extension
+const LetterSpacing = Extension.create({
+  name: 'letterSpacing',
+
+  addOptions() {
+    return {
+      types: ['textStyle'],
+    };
+  },
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          letterSpacing: {
+            default: null,
+            parseHTML: element => element.style.letterSpacing || null,
+            renderHTML: attributes => {
+              if (!attributes.letterSpacing) {
+                return {};
+              }
+              return {
+                style: `letter-spacing: ${attributes.letterSpacing}`,
+              };
+            },
+          },
+        },
+      },
+    ];
+  },
+
+  addCommands() {
+    return {
+      setLetterSpacing: letterSpacing => ({ chain }) => {
+        return chain()
+          .setMark('textStyle', { letterSpacing })
+          .run();
+      },
+    };
+  },
+});
+
+// Custom Indent Extension
+const Indent = Extension.create({
+  name: 'indent',
+
+  addOptions() {
+    return {
+      types: ['paragraph', 'heading'],
+      minLevel: 0,
+      maxLevel: 8,
+    };
+  },
+
+  addGlobalAttributes() {
+    return [
+      {
+        types: this.options.types,
+        attributes: {
+          indent: {
+            default: 0,
+            renderHTML: attributes => {
+              if (!attributes.indent) {
+                return {};
+              }
+              return {
+                style: `margin-left: ${attributes.indent * 30}px`,
+              };
+            },
+            parseHTML: element => {
+              const margin = element.style.marginLeft;
+              return margin ? parseInt(margin, 10) / 30 : 0;
+            },
+          },
+        },
+      },
+    ];
+  },
+
+  addCommands() {
+    return {
+      indent: () => ({ tr, state, dispatch, editor }) => {
+        const { selection } = state;
+        tr = tr.setSelection(selection);
+        tr = tr.setMeta('indent', true);
+
+        const { from, to } = selection;
+
+        state.doc.nodesBetween(from, to, (node, pos) => {
+          if (this.options.types.includes(node.type.name)) {
+            const currentIndent = node.attrs.indent || 0;
+            if (currentIndent < this.options.maxLevel) {
+              tr = tr.setNodeMarkup(pos, undefined, {
+                ...node.attrs,
+                indent: currentIndent + 1,
+              });
+            }
+          }
+        });
+
+        if (dispatch) {
+          dispatch(tr);
+        }
+        return true;
+      },
+      outdent: () => ({ tr, state, dispatch }) => {
+        const { selection } = state;
+        tr = tr.setSelection(selection);
+        tr = tr.setMeta('outdent', true);
+
+        const { from, to } = selection;
+
+        state.doc.nodesBetween(from, to, (node, pos) => {
+          if (this.options.types.includes(node.type.name)) {
+            const currentIndent = node.attrs.indent || 0;
+            if (currentIndent > this.options.minLevel) {
+              tr = tr.setNodeMarkup(pos, undefined, {
+                ...node.attrs,
+                indent: currentIndent - 1,
+              });
+            }
+          }
+        });
+
+        if (dispatch) {
+          dispatch(tr);
+        }
+        return true;
+      },
+    };
+  },
+
+  addKeyboardShortcuts() {
+    return {
+      Tab: () => this.editor.commands.indent(),
+      'Shift-Tab': () => this.editor.commands.outdent(),
+    };
+  },
+});
 
 import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
@@ -63,18 +338,26 @@ const DocumentEditor = () => {
     const saveTimeoutRef = useRef(null);
     const isLoadingRef = useRef(false);
 
-    // Initialize Tiptap Editor with additional extensions
+    // Initialize Tiptap Editor with all extensions
     const editor = useEditor({
         immediatelyRender: false,
         extensions: [
             StarterKit.configure({
-                history: true,
+                history: {
+                    depth: 100,
+                },
+                heading: {
+                    levels: [1, 2, 3, 4, 5, 6],
+                },
+                codeBlock: false, // Disable default code block to use CodeBlockLowlight
             }),
             Underline,
             Subscript,
             Superscript,
             TextAlign.configure({
                 types: ['heading', 'paragraph'],
+                alignments: ['left', 'center', 'right', 'justify'],
+                defaultAlignment: 'left',
             }),
             Highlight.configure({
                 multicolor: true,
@@ -82,12 +365,14 @@ const DocumentEditor = () => {
             Link.configure({
                 openOnClick: false,
                 HTMLAttributes: {
-                    class: 'text-blue-600 dark:text-blue-400 underline cursor-pointer',
+                    class: 'text-blue-600 dark:text-blue-400 underline cursor-pointer hover:text-blue-700 dark:hover:text-blue-300',
                 },
             }),
             Image.configure({
+                inline: true,
+                allowBase64: true,
                 HTMLAttributes: {
-                    class: 'max-w-full h-auto rounded-lg',
+                    class: 'max-w-full h-auto rounded-lg shadow-md my-4 cursor-pointer',
                 },
             }),
             Table.configure({
@@ -121,27 +406,47 @@ const DocumentEditor = () => {
             TextStyle,
             Color,
             FontFamily,
+            FontSize,
+            LineHeight,
+            LetterSpacing,
+            Indent,
             Typography,
             Placeholder.configure({
                 placeholder: 'Start writing your document...',
             }),
-            CodeBlock.configure({
+            CodeBlockLowlight.configure({
+                lowlight,
                 HTMLAttributes: {
-                    class: 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4 rounded-lg font-mono text-sm',
+                    class: 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto',
                 },
             }),
             Blockquote.configure({
                 HTMLAttributes: {
-                    class: 'border-l-4 border-blue-500 dark:border-blue-500 pl-4 italic text-gray-700 dark:text-gray-300',
+                    class: 'border-l-4 border-blue-500 dark:border-blue-500 pl-4 italic text-gray-700 dark:text-gray-300 my-4',
                 },
             }),
             HorizontalRule.configure({
                 HTMLAttributes: {
-                    class: 'my-4 border-gray-300 dark:border-gray-700',
+                    class: 'my-8 border-t-2 border-gray-300 dark:border-gray-700',
                 },
             }),
-            Dropcursor,
+            Dropcursor.configure({
+                color: '#3b82f6',
+                width: 2,
+            }),
             Gapcursor,
+            Focus.configure({
+                className: 'has-focus',
+                mode: 'all',
+            }),
+            CharacterCount,
+            Youtube.configure({
+                width: 640,
+                height: 480,
+                HTMLAttributes: {
+                    class: 'rounded-lg my-4',
+                },
+            }),
         ],
         content: '',
         editorProps: {
@@ -353,7 +658,9 @@ const DocumentEditor = () => {
         isLoading,
         editorExists: !!editor,
         documentExists: !!document,
-        title
+        title,
+        characterCount: editor?.storage.characterCount.characters() || 0,
+        wordCount: editor?.storage.characterCount.words() || 0
     });
 
     if (isLoading || !editor) {
@@ -398,6 +705,16 @@ const DocumentEditor = () => {
                 showImageDialog={showImageDialog}
                 setShowImageDialog={setShowImageDialog}
             />
+
+            {/* Character & Word Count Footer */}
+            {editor && (
+                <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
+                        <span>Words: {editor.storage.characterCount.words()}</span>
+                        <span>Characters: {editor.storage.characterCount.characters()}</span>
+                    </div>
+                </div>
+            )}
         </div>
     );
 };
