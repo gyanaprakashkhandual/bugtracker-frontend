@@ -45,6 +45,7 @@ const AppNavbar = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isComponentLoading, setIsComponentLoading] = useState(false);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const { selectedProject } = useProject();
     const router = useRouter();
 
@@ -113,6 +114,18 @@ const AppNavbar = () => {
             setActiveComponent(savedComponent)
         }
     }, [])
+
+    useEffect(() => {
+        const handleSidebarChange = (event) => {
+            const { isOpen } = event.detail;
+            console.log('Sidebar is now:', isOpen ? 'open' : 'closed');
+            setIsSidebarOpen(isOpen);
+        };
+        window.addEventListener('sidebarStateChanged', handleSidebarChange);
+        return () => {
+            window.removeEventListener('sidebarStateChanged', handleSidebarChange);
+        };
+    }, []);
 
     const handleComponentChange = (component, optionName = null, dropdownType = null) => {
         setIsComponentLoading(true);
@@ -194,12 +207,12 @@ const AppNavbar = () => {
                         {/* Left Section */}
                         <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3 lg:space-x-4 flex-1 min-w-0">
                             {/* Project Info */}
-                            <div className="hidden lg:block min-w-0 max-w-[200px] xl:max-w-xs 2xl:max-w-md">
+                            <div className={`hidden lg:block min-w-0 transition-all duration-300 ${isSidebarOpen ? 'max-w-[150px] xl:max-w-[200px]' : 'max-w-[200px] xl:max-w-xs 2xl:max-w-md'}`}>
                                 {!selectedProject ? (
                                     <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
                                 ) : (
-                                    <h1 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate">
-                                        {`${selectedProject.projectName}`}
+                                    <h1 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate" title={`${selectedProject.projectName} - ${selectedProject?.projectDesc}`}>
+                                        {`${selectedProject.projectName} - ${selectedProject?.projectDesc}`}
                                     </h1>
                                 )}
                             </div>
