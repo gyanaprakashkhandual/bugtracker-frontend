@@ -34,6 +34,7 @@ const TestCaseSpreadsheet = () => {
     const [newRowTempData, setNewRowTempData] = useState({});
     const [imagePreviewModal, setImagePreviewModal] = useState(null);
     const [activeImageModal, setActiveImageModal] = useState(null);
+    const [expandedColumns, setExpandedColumns] = useState(new Set());
 
     const dropdownRef = useRef(null);
     const commentModalRef = useRef(null);
@@ -60,14 +61,14 @@ const TestCaseSpreadsheet = () => {
     const ROWS_PER_PAGE = 11;
 
     const columns = [
-        { key: 'serialNumber', label: 'S.No', width: 90, editable: false, color: 'bg-purple-50 dark:bg-gray-800', sticky: true },
-        { key: 'testCaseType', label: 'Type', width: 123, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Performance', 'API', 'Database', 'Security', 'Others'], color: 'bg-blue-50 dark:bg-gray-800', sticky: true },
-        { key: 'moduleName', label: 'Module', width: 140, editable: true, color: 'bg-green-50 dark:bg-gray-800', sticky: true },
-        { key: 'testCaseDescription', label: 'Description', width: 370, editable: true, color: 'bg-yellow-50 dark:bg-gray-800', expandable: true },
-        { key: 'expectedResult', label: 'Expected Result', width: 250, editable: true, color: 'bg-pink-50 dark:bg-gray-800', expandable: true },
-        { key: 'actualResult', label: 'Actual Result', width: 250, editable: true, color: 'bg-orange-50 dark:bg-gray-800', expandable: true },
-        { key: 'priority', label: 'Priority', width: 90, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50 dark:bg-gray-800' },
-        { key: 'status', label: 'Status', width: 85, editable: true, type: 'select', options: ['Pass', 'Fail'], color: 'bg-teal-50 dark:bg-gray-800' },
+        { key: 'serialNumber', label: 'S.No', width: 90, editable: false, color: 'bg-purple-50 dark:bg-purple-900/20', sticky: true },
+        { key: 'testCaseType', label: 'Type', width: 123, editable: true, type: 'select', options: ['Functional', 'User-Interface', 'Performance', 'API', 'Database', 'Security', 'Others'], color: 'bg-blue-50 dark:bg-blue-900/20', sticky: true },
+        { key: 'moduleName', label: 'Module', width: 140, editable: true, color: 'bg-green-50 dark:bg-green-900/20', sticky: true },
+        { key: 'testCaseDescription', label: 'Description', width: 370, editable: true, color: 'bg-yellow-50 dark:bg-yellow-900/20', expandable: true },
+        { key: 'expectedResult', label: 'Expected Result', width: 250, editable: true, color: 'bg-pink-50 dark:bg-pink-900/20', expandable: true },
+        { key: 'actualResult', label: 'Actual Result', width: 250, editable: true, color: 'bg-orange-50 dark:bg-orange-900/20', expandable: true },
+        { key: 'priority', label: 'Priority', width: 90, editable: true, type: 'select', options: ['Critical', 'High', 'Medium', 'Low'], color: 'bg-red-50 dark:bg-red-900/20' },
+        { key: 'status', label: 'Status', width: 85, editable: true, type: 'select', options: ['Pass', 'Fail'], color: 'bg-teal-50 dark:bg-teal-900/20' },
         { key: 'actions', label: 'Actions', width: 130, editable: false, color: 'bg-gray-100 dark:bg-gray-800' }
     ];
 
@@ -516,33 +517,33 @@ const TestCaseSpreadsheet = () => {
 
     const getPriorityColor = (priority) => {
         const colors = {
-            'Critical': 'bg-red-100 dark:bg-gray-800 text-red-800 dark:bg-gray-100 border-red-300',
-            'High': 'bg-orange-100 dark:bg-gray-800 text-orange-800 dark:bg-gray-100 border-orange-300',
-            'Medium': 'bg-yellow-100 dark:bg-gray-800 text-yellow-800 dark:bg-gray-100 border-yellow-300',
-            'Low': 'bg-green-100 dark:bg-gray-800 text-green-800 dark:bg-gray-100 border-green-300'
+            'Critical': 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700',
+            'High': 'bg-orange-100 dark:bg-orange-900/30 text-orange-800 dark:text-orange-300 border-orange-300 dark:border-orange-700',
+            'Medium': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700',
+            'Low': 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700'
         };
-        return colors[priority] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-100 border-gray-300';
+        return colors[priority] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-700';
     };
 
     const getStatusColor = (status) => {
         const colors = {
-            'Pass': 'bg-green-100 dark:bg-gray-800 text-green-800 dark:bg-gray-100 border-green-300',
-            'Fail': 'bg-red-100 dark:bg-gray-800 text-red-800 dark:bg-gray-100 border-red-300'
+            'Pass': 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700',
+            'Fail': 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700'
         };
-        return colors[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-100 border-gray-300';
+        return colors[status] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-700';
     };
 
     const getTestCaseTypeColor = (type) => {
         const colors = {
-            'Functional': 'bg-blue-100 dark:bg-gray-800 text-blue-800 dark:bg-gray-100 border-blue-300',
-            'User-Interface': 'bg-purple-100 dark:bg-gray-800 text-purple-800 dark:bg-gray-100 border-purple-300',
-            'Performance': 'bg-green-100 dark:bg-gray-800 text-green-800 dark:bg-gray-100 border-green-300',
-            'API': 'bg-yellow-100 dark:bg-gray-800 text-yellow-800 dark:bg-gray-100 border-yellow-300',
-            'Database': 'bg-indigo-100 dark:bg-gray-800 text-indigo-800 dark:bg-gray-100 border-indigo-300',
-            'Security': 'bg-red-100 dark:bg-gray-800 text-red-800 dark:bg-gray-100 border-red-300',
-            'Others': 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-100 border-gray-300'
+            'Functional': 'bg-blue-100 dark:bg-blue-900/30 text-blue-800 dark:text-blue-300 border-blue-300 dark:border-blue-700',
+            'User-Interface': 'bg-purple-100 dark:bg-purple-900/30 text-purple-800 dark:text-purple-300 border-purple-300 dark:border-purple-700',
+            'Performance': 'bg-green-100 dark:bg-green-900/30 text-green-800 dark:text-green-300 border-green-300 dark:border-green-700',
+            'API': 'bg-yellow-100 dark:bg-yellow-900/30 text-yellow-800 dark:text-yellow-300 border-yellow-300 dark:border-yellow-700',
+            'Database': 'bg-indigo-100 dark:bg-indigo-900/30 text-indigo-800 dark:text-indigo-300 border-indigo-300 dark:border-indigo-700',
+            'Security': 'bg-red-100 dark:bg-red-900/30 text-red-800 dark:text-red-300 border-red-300 dark:border-red-700',
+            'Others': 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-700'
         };
-        return colors[type] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:bg-gray-100 border-gray-300';
+        return colors[type] || 'bg-gray-100 dark:bg-gray-800 text-gray-800 dark:text-gray-300 border-gray-300 dark:border-gray-700';
     };
 
     const calculateDropdownPosition = (cellKey) => {
@@ -592,7 +593,7 @@ const TestCaseSpreadsheet = () => {
                         if (el) dropdownButtonRefs.current[cellKey] = el;
                     }}
                     onClick={() => handleDropdownClick(cellKey)}
-                    className="w-full h-full px-2 py-1.5 flex items-center justify-between hover:bg-gray-50 dark:bg-gray-800 transition-colors group"
+                    className="w-full h-full px-2 py-1.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors group"
                 >
                     <span className={`px-2 py-1 w-full rounded text-xs font-medium border ${badgeClass}`}>
                         {value || 'Select'}
@@ -606,7 +607,7 @@ const TestCaseSpreadsheet = () => {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className={`absolute ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-48 bg-white dark:bg-gray-800 border border-gray-200 rounded-lg shadow-xl z-50 overflow-hidden`}
+                            className={`absolute ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden`}
                         >
                             <div className="py-1 max-h-64 overflow-y-auto">
                                 {column.options.map((option) => {
@@ -623,13 +624,13 @@ const TestCaseSpreadsheet = () => {
                                         <button
                                             key={option}
                                             onClick={() => handleDropdownSelect(testCaseId, column.key, option)}
-                                            className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 dark:bg-gray-800 transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50 dark:bg-gray-800' : ''}`}
+                                            className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50 dark:bg-blue-900/30' : ''}`}
                                         >
                                             <span className={`px-2 py-1 rounded text-xs font-medium border ${optionBadgeClass}`}>
                                                 {option}
                                             </span>
                                             {value === option && (
-                                                <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-gray-100 rounded-full"></div>
+                                                <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
                                             )}
                                         </button>
                                     );
@@ -659,7 +660,7 @@ const TestCaseSpreadsheet = () => {
                         if (el) imageButtonRefs.current[cellKey] = el;
                     }}
                     onClick={() => setActiveImageModal(isActive ? null : cellKey)}
-                    className={`p-1.5 rounded transition-colors relative ${hasImage ? 'text-purple-600 dark:bg-gray-100 hover:bg-purple-50 dark:bg-gray-800' : 'text-gray-400 dark:bg-gray-100 hover:bg-gray-50 dark:bg-gray-800'}`}
+                    className={`p-1.5 rounded transition-colors relative ${hasImage ? 'text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/30' : 'text-gray-400 dark:text-gray-500 hover:bg-gray-50 dark:hover:bg-gray-800'}`}
                 >
                     <ImageIcon size={14} />
                 </button>
@@ -672,13 +673,13 @@ const TestCaseSpreadsheet = () => {
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-64 bg-white dark:bg-gray-800 border border-gray-200 rounded-lg shadow-xl z-50`}
+                            className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-64 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50`}
                         >
-                            <div className="px-3 py-2 border-b border-gray-200 flex items-center justify-between">
-                                <h3 className="font-semibold text-gray-800 dark:bg-gray-100 text-sm">Test Case Image</h3>
+                            <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700 flex items-center justify-between">
+                                <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Test Case Image</h3>
                                 <button
                                     onClick={() => setActiveImageModal(null)}
-                                    className="text-gray-400 dark:bg-gray-100 hover:text-gray-600 dark:bg-gray-100 transition-colors"
+                                    className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                                 >
                                     <X size={16} />
                                 </button>
@@ -690,19 +691,19 @@ const TestCaseSpreadsheet = () => {
                                             <img
                                                 src={image}
                                                 alt="Test case screenshot"
-                                                className="w-full h-32 object-cover rounded border border-gray-200"
+                                                className="w-full h-32 object-cover rounded border border-gray-200 dark:border-gray-700"
                                             />
                                             <div className="absolute top-2 right-2 flex gap-1">
                                                 <button
                                                     onClick={() => setImagePreviewModal(image)}
-                                                    className="p-1 bg-white dark:bg-gray-800 rounded shadow hover:bg-gray-50 dark:bg-gray-800 transition-colors"
+                                                    className="p-1 bg-white dark:bg-gray-700 rounded shadow hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
                                                     tooltip-data="View full size"
                                                 >
                                                     <ZoomIn size={12} />
                                                 </button>
                                                 <button
                                                     onClick={() => handleRemoveImage(testCaseId)}
-                                                    className="p-1 bg-white dark:bg-gray-800 rounded shadow hover:bg-red-50 dark:bg-gray-800 text-red-600 dark:bg-gray-100 transition-colors"
+                                                    className="p-1 bg-white dark:bg-gray-700 rounded shadow hover:bg-red-50 dark:hover:bg-red-900/30 text-red-600 dark:text-red-400 transition-colors"
                                                     tooltip-data="Remove image"
                                                 >
                                                     <X size={12} />
@@ -711,7 +712,7 @@ const TestCaseSpreadsheet = () => {
                                         </div>
                                         <button
                                             onClick={() => fileInputRef.current?.click()}
-                                            className="w-full px-2 py-1.5 text-xs bg-purple-600 dark:bg-gray-800 text-white dark:bg-gray-100 rounded hover:bg-purple-700 dark:bg-gray-800 transition-colors flex items-center justify-center gap-1"
+                                            className="w-full px-2 py-1.5 text-xs bg-purple-600 dark:bg-purple-700 text-white dark:text-white rounded hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors flex items-center justify-center gap-1"
                                         >
                                             <ImageIcon size={14} />
                                             Change Image
@@ -720,7 +721,7 @@ const TestCaseSpreadsheet = () => {
                                 ) : (
                                     <button
                                         onClick={() => fileInputRef.current?.click()}
-                                        className="w-full px-2 py-1.5 text-xs bg-purple-600 dark:bg-gray-800 text-white dark:bg-gray-100 rounded hover:bg-purple-700 dark:bg-gray-800 transition-colors flex items-center justify-center gap-1"
+                                        className="w-full px-2 py-1.5 text-xs bg-purple-600 dark:bg-purple-700 text-white dark:text-white rounded hover:bg-purple-700 dark:hover:bg-purple-600 transition-colors flex items-center justify-center gap-1"
                                     >
                                         <ImageIcon size={14} />
                                         Upload Image
@@ -765,23 +766,23 @@ const TestCaseSpreadsheet = () => {
                 animate={{ opacity: 1, y: 0, scale: 1 }}
                 exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                 transition={{ duration: 0.2 }}
-                className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-80 bg-white dark:bg-gray-800 border border-gray-200 rounded-lg shadow-xl z-50`}
+                className={`absolute ${openUpward ? 'bottom-full mb-2' : 'top-full mt-2'} right-0 w-80 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50`}
                 style={{ maxHeight: '360px' }}
             >
-                <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200">
+                <div className="flex items-center justify-between px-3 py-2 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex items-center gap-1.5">
-                        <MessageSquare size={16} className="text-gray-600 dark:bg-gray-100" />
-                        <h3 className="font-semibold text-gray-800 dark:bg-gray-100 text-sm">Comments</h3>
+                        <MessageSquare size={16} className="text-gray-600 dark:text-gray-400" />
+                        <h3 className="font-semibold text-gray-800 dark:text-gray-200 text-sm">Comments</h3>
                     </div>
                     <button
                         onClick={() => setActiveCommentModal(null)}
-                        className="text-gray-400 dark:bg-gray-100 hover:text-gray-600 dark:bg-gray-100 transition-colors"
+                        className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                     >
                         <X size={16} />
                     </button>
                 </div>
 
-                <div className="px-3 py-2 border-b border-gray-200">
+                <div className="px-3 py-2 border-b border-gray-200 dark:border-gray-700">
                     <div className="flex gap-1.5">
                         <input
                             type="text"
@@ -794,13 +795,13 @@ const TestCaseSpreadsheet = () => {
                                 }
                             }}
                             placeholder="Add a comment..."
-                            className="flex-1 px-2 py-1.5 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-500"
+                            className="flex-1 px-2 py-1.5 text-xs border border-gray-300 dark:border-gray-600 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100"
                             disabled={submittingComment}
                         />
                         <button
                             onClick={() => submitComment(testCaseId)}
                             disabled={!newComment.trim() || submittingComment}
-                            className="px-2 py-1.5 bg-blue-600 dark:bg-gray-800 text-white dark:bg-gray-100 rounded hover:bg-blue-700 dark:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                            className="px-2 py-1.5 bg-blue-600 dark:bg-blue-700 text-white dark:text-white rounded hover:bg-blue-700 dark:hover:bg-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         >
                             {submittingComment ? <Loader2 size={14} className="animate-spin" /> : <Send size={14} />}
                         </button>
@@ -810,32 +811,32 @@ const TestCaseSpreadsheet = () => {
                 <div className="overflow-y-auto" style={{ maxHeight: '220px' }}>
                     {isLoading ? (
                         <div className="flex items-center justify-center py-6">
-                            <Loader2 size={20} className="animate-spin text-blue-600 dark:bg-gray-100" />
+                            <Loader2 size={20} className="animate-spin text-blue-600 dark:text-blue-400" />
                         </div>
                     ) : testCaseComments.length === 0 ? (
-                        <div className="text-center py-6 text-gray-500 dark:bg-gray-100 text-xs">
+                        <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-xs">
                             No comments yet. Be the first to comment!
                         </div>
                     ) : (
-                        <div className="divide-y divide-gray-100 dark:bg-gray-800">
+                        <div className="divide-y divide-gray-100 dark:divide-gray-700">
                             {testCaseComments.map((comment, index) => (
                                 <div key={index} className="px-3 py-2">
                                     <div className="flex items-start gap-2">
-                                        <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
-                                            <span className="text-xs font-semibold text-blue-600 dark:bg-gray-100">
+                                        <div className="w-6 h-6 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center flex-shrink-0">
+                                            <span className="text-xs font-semibold text-blue-600 dark:text-blue-400">
                                                 {comment.commentBy?.charAt(0).toUpperCase() || 'U'}
                                             </span>
                                         </div>
                                         <div className="flex-1 min-w-0">
                                             <div className="flex items-center gap-1.5 mb-0.5">
-                                                <span className="text-xs font-semibold text-gray-800 dark:bg-gray-100">
+                                                <span className="text-xs font-semibold text-gray-800 dark:text-gray-200">
                                                     {comment.commentBy || 'Unknown User'}
                                                 </span>
-                                                <span className="text-xs text-gray-500 dark:bg-gray-100">
+                                                <span className="text-xs text-gray-500 dark:text-gray-400">
                                                     {new Date(comment.createdAt).toLocaleDateString()}
                                                 </span>
                                             </div>
-                                            <p className="text-xs text-gray-700 dark:bg-gray-100 break-words">{comment.comment}</p>
+                                            <p className="text-xs text-gray-700 dark:text-gray-300 break-words">{comment.comment}</p>
                                         </div>
                                     </div>
                                 </div>
@@ -864,7 +865,7 @@ const TestCaseSpreadsheet = () => {
                             <>
                                 <button
                                     onClick={handleNewRowManualSave}
-                                    className="p-1.5 text-green-600 dark:bg-gray-100 hover:bg-green-50 dark:bg-gray-800 rounded transition-colors"
+                                    className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/30 rounded transition-colors"
                                     disabled={isCreatingTestCase}
                                     tooltip-data="Save"
                                 >
@@ -872,14 +873,14 @@ const TestCaseSpreadsheet = () => {
                                 </button>
                                 <button
                                     onClick={handleNewRowCancel}
-                                    className="p-1.5 text-red-600 dark:bg-gray-100 hover:bg-red-50 dark:bg-gray-800 rounded transition-colors"
+                                    className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
                                     tooltip-data="Cancel"
                                 >
                                     <Ban size={14} />
                                 </button>
                             </>
                         )}
-                        {isCreatingTestCase && <Loader2 size={14} className="animate-spin text-blue-500 dark:bg-gray-100" />}
+                        {isCreatingTestCase && <Loader2 size={14} className="animate-spin text-blue-500 dark:text-blue-400" />}
                     </div>
                 );
             }
@@ -900,21 +901,21 @@ const TestCaseSpreadsheet = () => {
                                 fetchComments(testCase._id);
                             }
                         }}
-                        classGDP className="p-1.5 text-blue-600 dark:bg-gray-100 hover:bg-blue-50 dark:bg-gray-800 rounded transition-colors"
+                        className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/30 rounded transition-colors"
                         tooltip-data="Comment"
                     >
                         <MessageSquare size={14} />
                     </button>
                     <button
                         onClick={() => moveTestCaseToTrash(testCase._id)}
-                        className="p-1.5 text-orange-600 dark:bg-gray-100 hover:bg-orange-50 dark:bg-gray-800 rounded transition-colors"
+                        className="p-1.5 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/30 rounded transition-colors"
                         tooltip-data="Trash"
                     >
                         <Archive size={14} />
                     </button>
                     <button
                         onClick={() => deleteTestCasePermanently(testCase._id)}
-                        className="p-1.5 text-red-600 dark:bg-gray-100 hover:bg-red-50 dark:bg-gray-800 rounded transition-colors"
+                        className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30 rounded transition-colors"
                         tooltip-data="Delete"
                     >
                         <Trash2 size={14} />
@@ -926,7 +927,7 @@ const TestCaseSpreadsheet = () => {
 
         if (column.key === 'serialNumber' && !isNewRow) {
             return (
-                <div className="flex items-center justify-center h-full px-2 font-medium text-gray-700 dark:bg-gray-100 text-xs">
+                <div className="flex items-center justify-center h-full px-2 font-medium text-gray-700 dark:text-gray-300 text-xs">
                     {value}
                 </div>
             );
@@ -952,7 +953,7 @@ const TestCaseSpreadsheet = () => {
                             setEditValue('');
                         }
                     }}
-                    className="w-full h-full border-2 border-blue-500 outline-none bg-white dark:bg-gray-800 px-2 py-1.5 text-xs resize-none"
+                    className="w-full h-full border-2 border-blue-500 dark:border-blue-400 outline-none bg-white dark:bg-gray-900 text-gray-900 dark:text-gray-100 px-2 py-1.5 text-xs resize-none"
                     autoFocus
                     style={{ minHeight: rowHeight }}
                 />
@@ -963,7 +964,7 @@ const TestCaseSpreadsheet = () => {
 
         return (
             <div
-                className={`w-full h-full px-2 py-1.5 flex items-center text-xs relative ${column.editable ? 'cursor-pointer hover:bg-gray-50 dark:bg-gray-800' : ''}`}
+                className={`w-full h-full px-2 py-1.5 flex items-center text-xs relative ${column.editable ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-800' : ''}`}
                 onDoubleClick={() => column.editable && (isNewRow ? handleNewRowCellClick(column.key) : startEditing(testCaseId, column.key, value))}
                 style={{
                     minHeight: rowHeight,
@@ -974,7 +975,7 @@ const TestCaseSpreadsheet = () => {
                 content-placement="top"
             >
                 <span
-                    className={`flex-1 ${!value && isNewRow ? 'text-gray-400 dark:bg-gray-100 italic' : ''}`}
+                    className={`flex-1 ${!value && isNewRow ? 'text-gray-400 dark:text-gray-500 italic' : 'text-gray-900 dark:text-gray-200'}`}
                     style={{
                         lineHeight: '1.4',
                         maxHeight: rowHeight - 12,
@@ -986,8 +987,8 @@ const TestCaseSpreadsheet = () => {
                 >
                     {value ? displayValue : (isNewRow ? 'Double-click to edit' : '')}
                 </span>
-                {isSaving && <Loader2 size={12} className="ml-1 animate-spin text-blue-500 dark:bg-gray-100 flex-shrink-0" />}
-                {hasError && <AlertCircle size={12} className="ml-1 text-red-500 dark:bg-gray-100 flex-shrink-0" />}
+                {isSaving && <Loader2 size={12} className="ml-1 animate-spin text-blue-500 dark:text-blue-400 flex-shrink-0" />}
+                {hasError && <AlertCircle size={12} className="ml-1 text-red-500 dark:text-red-400 flex-shrink-0" />}
             </div>
         );
     };
@@ -1017,44 +1018,21 @@ const TestCaseSpreadsheet = () => {
 
     if (loading) {
         return (
-            <div className="flex items-center justify-center h-screen mt-15 bg-gradient-to-br from-gray-50 dark:bg-gray-800 to-gray-100 dark:bg-gray-800">
+            <div className="flex items-center justify-center h-screen mt-15 bg-gradient-to-br from-gray-50 dark:from-gray-900 to-gray-100 dark:to-gray-800">
                 <TableSkeletonLoader />
             </div>
         );
     }
 
     return (
-        <div className="w-full bg-gradient-to-br from-gray-50 dark:bg-gray-800 to-gray-100 dark:bg-gray-800 flex flex-col">
-            <AnimatePresence>
-                {alert && (
-                    <motion.div
-                        initial={{ opacity: 0, y: -50 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -50 }}
-                        className="fixed top-4 right-4 z-50"
-                    >
-                        <div className={`px-4 py-3 rounded-lg shadow-lg flex items-center gap-2 ${alert.type === 'success' ? 'bg-green-500 dark:bg-gray-800 text-white dark:bg-gray-100' : 'bg-red-500 dark:bg-gray-800 text-white dark:bg-gray-100'
-                            }`}>
-                            {alert.type === 'success' ? (
-                                <div className="w-5 h-5 rounded-full bg-white dark:bg-gray-800 flex items-center justify-center">
-                                    <div className="w-2 h-2 bg-green-500 dark:bg-gray-100 rounded-full"></div>
-                                </div>
-                            ) : (
-                                <AlertCircle size={20} />
-                            )}
-                            <span className="text-sm font-medium">{alert.message}</span>
-                        </div>
-                    </motion.div>
-                )}
-            </AnimatePresence>
-
+        <div className="w-full bg-gradient-to-br from-gray-50 dark:from-gray-900 to-gray-100 dark:to-gray-800 flex flex-col">
             <AnimatePresence>
                 {imagePreviewModal && (
                     <motion.div
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black dark:bg-gray-800 bg-opacity-75 z-50 flex items-center justify-center p-4"
+                        className="fixed inset-0 bg-black dark:bg-black bg-opacity-75 dark:bg-opacity-90 z-50 flex items-center justify-center p-4"
                         onClick={() => setImagePreviewModal(null)}
                     >
                         <motion.div
@@ -1066,7 +1044,7 @@ const TestCaseSpreadsheet = () => {
                         >
                             <button
                                 onClick={() => setImagePreviewModal(null)}
-                                className="absolute -top-10 right-0 text-white dark:bg-gray-100 hover:text-gray-300 dark:bg-gray-100 transition-colors"
+                                className="absolute -top-10 right-0 text-white dark:text-gray-200 hover:text-gray-300 dark:hover:text-gray-400 transition-colors"
                             >
                                 <X size={32} />
                             </button>
@@ -1081,14 +1059,14 @@ const TestCaseSpreadsheet = () => {
             </AnimatePresence>
 
             <div className="flex-1 overflow-auto relative">
-                <div className="bg-white dark:bg-gray-800 border border-gray-200 overflow-hidden">
+                <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-700 overflow-hidden">
                     <div className="overflow-x-auto overflow-y-auto">
                         <div className="inline-block min-w-full">
-                            <div className="flex sticky top-0 z-30 border-b border-gray-300 bg-gradient-to-r from-gray-50 dark:bg-gray-800 to-gray-100 dark:bg-gray-800">
+                            <div className="flex sticky top-0 z-30 border-b border-gray-300 dark:border-gray-600 bg-gradient-to-r from-gray-50 dark:from-gray-800 to-gray-100 dark:to-gray-700">
                                 {columns.map((column) => (
                                     <div
                                         key={column.key}
-                                        className={`px-3 py-2.5 font-semibold text-gray-700 dark:bg-gray-100 text-xs border-r border-gray-300 relative group ${column.sticky ? 'sticky z-40' : ''}`}
+                                        className={`px-3 py-2.5 font-semibold text-gray-700 dark:text-gray-200 text-xs border-r border-gray-300 dark:border-gray-600 relative group ${column.sticky ? 'sticky z-40' : ''}`}
                                         style={{
                                             width: columnWidths[column.key],
                                             minWidth: columnWidths[column.key],
@@ -1097,27 +1075,27 @@ const TestCaseSpreadsheet = () => {
                                         }}
                                     >
                                         <div className="flex items-center justify-between">
-                                            <span className="text-xs font-semibold text-gray-700 dark:bg-gray-100 tracking-wide uppercase">
+                                            <span className="text-xs font-semibold text-gray-700 dark:text-gray-200 tracking-wide uppercase">
                                                 {column.label}
                                             </span>
                                             <div className="flex items-center space-x-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <GripVertical size={10} className="text-gray-400 dark:bg-gray-100" />
+                                                <GripVertical size={10} className="text-gray-400 dark:text-gray-500" />
                                             </div>
                                         </div>
                                         <div
-                                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 dark:bg-gray-800 group-hover:bg-blue-300 dark:bg-gray-800 transition-colors"
+                                            className="absolute right-0 top-0 bottom-0 w-1 cursor-col-resize hover:bg-blue-500 dark:hover:bg-blue-400 group-hover:bg-blue-300 dark:group-hover:bg-blue-500 transition-colors"
                                             onMouseDown={(e) => startColumnResize(column.key, e)}
                                         />
                                     </div>
                                 ))}
-                                <div className="flex-1 border-b border-gray-300 bg-gradient-to-r from-gray-100 dark:bg-gray-800 to-gray-50 dark:bg-gray-800"></div>
+                                <div className="flex-1 border-b border-gray-300 dark:border-gray-600 bg-gradient-to-r from-gray-100 dark:from-gray-800 to-gray-50 dark:to-gray-700"></div>
                             </div>
 
-                            <div className="flex border-b border-blue-200 bg-blue-50/50 dark:bg-gray-800 relative group">
+                            <div className="flex border-b border-blue-200 dark:border-blue-800 bg-blue-50/50 dark:bg-blue-900/20 relative group">
                                 {columns.map((column) => (
                                     <div
                                         key={`new-${column.key}`}
-                                        className={`border-r border-gray-200 ${column.sticky ? 'sticky z-20 bg-blue-50/50 dark:bg-gray-800' : ''}`}
+                                        className={`border-r border-gray-200 dark:border-gray-700 ${column.sticky ? 'sticky z-20 bg-blue-50/50 dark:bg-blue-900/20' : ''}`}
                                         style={{
                                             width: columnWidths[column.key],
                                             minWidth: columnWidths[column.key],
@@ -1128,19 +1106,19 @@ const TestCaseSpreadsheet = () => {
                                         {renderCellContent(null, column, true)}
                                     </div>
                                 ))}
-                                <div className="flex-1 bg-blue-50/50 dark:bg-gray-800 border-b border-blue-200"></div>
+                                <div className="flex-1 bg-blue-50/50 dark:bg-blue-900/20 border-b border-blue-200 dark:border-blue-800"></div>
                                 <div
-                                    className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 dark:bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                                    className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 dark:hover:bg-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
                                     onMouseDown={(e) => startRowResize('new', e)}
                                 />
                             </div>
 
                             {filteredTestCases.map((testCase) => (
-                                <div key={testCase._id} className="flex border-b border-gray-200 hover:bg-gray-50 dark:bg-gray-800 transition-colors relative group">
+                                <div key={testCase._id} className="flex border-b border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors relative group">
                                     {columns.map((column) => (
                                         <div
                                             key={`${testCase._id}-${column.key}`}
-                                            className={`border-r border-gray-200 relative ${column.sticky ? 'sticky z-20 bg-white dark:bg-gray-800 group-hover:bg-gray-50 dark:bg-gray-800' : ''}`}
+                                            className={`border-r border-gray-200 dark:border-gray-700 relative ${column.sticky ? 'sticky z-20 bg-white dark:bg-gray-900 group-hover:bg-gray-50 dark:group-hover:bg-gray-800' : ''}`}
                                             style={{
                                                 width: columnWidths[column.key],
                                                 minWidth: columnWidths[column.key],
@@ -1151,18 +1129,18 @@ const TestCaseSpreadsheet = () => {
                                             {renderCellContent(testCase, column)}
                                         </div>
                                     ))}
-                                    <div className="flex-1 border-b border-gray-200 group-hover:bg-gray-50 dark:bg-gray-800"></div>
+                                    <div className="flex-1 border-b border-gray-200 dark:border-gray-700 group-hover:bg-gray-50 dark:group-hover:bg-gray-800"></div>
                                     <div
-                                        className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 dark:bg-gray-800 opacity-0 group-hover:opacity-100 transition-opacity"
+                                        className="absolute left-0 right-0 bottom-0 h-1 cursor-row-resize hover:bg-blue-500 dark:hover:bg-blue-400 opacity-0 group-hover:opacity-100 transition-opacity"
                                         onMouseDown={(e) => startRowResize(testCase._id, e)}
                                     />
                                 </div>
                             ))}
 
                             {filteredTestCases.length === 0 && (
-                                <div className="flex justify-center items-center py-12 text-gray-500 dark:bg-gray-100">
+                                <div className="flex justify-center items-center py-12 text-gray-500 dark:text-gray-400">
                                     <div className="text-center">
-                                        <AlertCircle size={32} className="mx-auto mb-2 text-gray-400 dark:bg-gray-100" />
+                                        <AlertCircle size={32} className="mx-auto mb-2 text-gray-400 dark:text-gray-500" />
                                         <p className="text-sm font-medium">No test cases found</p>
                                         <p className="text-xs mt-1">Start typing in the blank row above to create your first test case</p>
                                     </div>
@@ -1173,13 +1151,13 @@ const TestCaseSpreadsheet = () => {
                 </div>
             </div>
 
-            <div className="border-t border-gray-200 bg-white dark:bg-gray-800 px-4 py-1 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 sm:px-6">
-                <div className="flex flex-col sm:flex-row items-center gap-2 text-xs text-gray-700 dark:bg-gray-100">
+            <div className="border-t border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 px-4 py-1 flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-6 sm:px-6">
+                <div className="flex flex-col sm:flex-row items-center gap-2 text-xs text-gray-700 dark:text-gray-300">
                     <div>
-                        <span className="font-medium text-gray-600 dark:bg-gray-100">Test Type:</span>{' '}
+                        <span className="font-medium text-gray-600 dark:text-gray-400">Test Type:</span>{' '}
                         <span>{testTypeName || 'Not selected'}</span>
                     </div>
-                    <div className="hidden sm:block h-3 w-px bg-gray-300 dark:bg-gray-800 mx-2" />
+                    <div className="hidden sm:block h-3 w-px bg-gray-300 dark:bg-gray-600 mx-2" />
                     <div>
                         Showing <span className="font-medium">{(currentPage - 1) * ROWS_PER_PAGE + 1}</span> to{' '}
                         <span className="font-medium">{Math.min(currentPage * ROWS_PER_PAGE, totalTestCases)}</span> of{' '}
@@ -1191,7 +1169,7 @@ const TestCaseSpreadsheet = () => {
                     <button
                         onClick={goToFirstPage}
                         disabled={currentPage === 1}
-                        className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 dark:bg-gray-100 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="relative inline-flex items-center rounded-l-md px-2 py-2 text-gray-400 dark:text-gray-500 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         aria-label="First page"
                     >
                         <span className="text-xs font-medium">&lt;&lt;</span>
@@ -1199,18 +1177,18 @@ const TestCaseSpreadsheet = () => {
                     <button
                         onClick={() => goToPage(currentPage - 1)}
                         disabled={currentPage === 1}
-                        className="relative inline-flex items-center px-2 py-2 text-gray-400 dark:bg-gray-100 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="relative inline-flex items-center px-2 py-2 text-gray-400 dark:text-gray-500 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         aria-label="Previous page"
                     >
                         <ChevronLeft className="h-4 w-4" />
                     </button>
-                    <div className="relative inline-flex items-center px-4 py-2 text-xs font-semibold text-gray-900 dark:bg-gray-100 ring-1 ring-inset ring-gray-300">
+                    <div className="relative inline-flex items-center px-4 py-2 text-xs font-semibold text-gray-900 dark:text-gray-100 ring-1 ring-inset ring-gray-300 dark:ring-gray-600">
                         Page {currentPage} of {totalPages}
                     </div>
                     <button
                         onClick={() => goToPage(currentPage + 1)}
                         disabled={currentPage === totalPages}
-                        className="relative inline-flex items-center px-2 py-2 text-gray-400 dark:bg-gray-100 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="relative inline-flex items-center px-2 py-2 text-gray-400 dark:text-gray-500 ring-1 ring-inset ring-gray-300 dark:ring-gray-600hover:bg-gray-50 dark:hover:bg-gray-800 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         aria-label="Next page"
                     >
                         <ChevronRight className="h-4 w-4" />
@@ -1218,7 +1196,7 @@ const TestCaseSpreadsheet = () => {
                     <button
                         onClick={goToLastPage}
                         disabled={currentPage === totalPages}
-                        className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 dark:bg-gray-100 ring-1 ring-inset ring-gray-300 hover:bg-gray-50 dark:bg-gray-800 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                        className="relative inline-flex items-center rounded-r-md px-2 py-2 text-gray-400 dark:text-gray-500 ring-1 ring-inset ring-gray-300 dark:ring-gray-600 hover:bg-gray-50 dark:hover:bg-gray-800 focus:z-20 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                         aria-label="Last page"
                     >
                         <span className="text-xs font-medium">&gt;&gt;</span>
