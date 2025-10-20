@@ -17,7 +17,8 @@ import { Color } from '@tiptap/extension-color';
 import FontFamily from '@tiptap/extension-font-family';
 import Typography from '@tiptap/extension-typography';
 import Placeholder from '@tiptap/extension-placeholder';
-import CodeBlockLowlight from '@tiptap/extension-code-block-lowlight';
+import { CodeBlockLowlight } from '@tiptap/extension-code-block-lowlight';
+import { createLowlight } from 'lowlight';
 import Blockquote from '@tiptap/extension-blockquote';
 import HorizontalRule from '@tiptap/extension-horizontal-rule';
 import Dropcursor from '@tiptap/extension-dropcursor';
@@ -33,8 +34,7 @@ import BubbleMenu from '@tiptap/extension-bubble-menu';
 import FloatingMenu from '@tiptap/extension-floating-menu';
 import { Loader2 } from 'lucide-react';
 
-// Syntax highlighting
-import { lowlight } from 'lowlight';
+// Import languages
 import javascript from 'highlight.js/lib/languages/javascript';
 import python from 'highlight.js/lib/languages/python';
 import java from 'highlight.js/lib/languages/java';
@@ -51,22 +51,25 @@ import sql from 'highlight.js/lib/languages/sql';
 import bash from 'highlight.js/lib/languages/bash';
 import json from 'highlight.js/lib/languages/json';
 
+// Create lowlight instance
+const lowlight = createLowlight();
+
 // Register languages
-lowlight.registerLanguage('javascript', javascript);
-lowlight.registerLanguage('python', python);
-lowlight.registerLanguage('java', java);
-lowlight.registerLanguage('cpp', cpp);
-lowlight.registerLanguage('csharp', csharp);
-lowlight.registerLanguage('php', php);
-lowlight.registerLanguage('ruby', ruby);
-lowlight.registerLanguage('go', go);
-lowlight.registerLanguage('rust', rust);
-lowlight.registerLanguage('typescript', typescript);
-lowlight.registerLanguage('html', xml);
-lowlight.registerLanguage('css', css);
-lowlight.registerLanguage('sql', sql);
-lowlight.registerLanguage('bash', bash);
-lowlight.registerLanguage('json', json);
+lowlight.register('javascript', javascript);
+lowlight.register('python', python);
+lowlight.register('java', java);
+lowlight.register('cpp', cpp);
+lowlight.register('csharp', csharp);
+lowlight.register('php', php);
+lowlight.register('ruby', ruby);
+lowlight.register('go', go);
+lowlight.register('rust', rust);
+lowlight.register('typescript', typescript);
+lowlight.register('xml', xml);
+lowlight.register('css', css);
+lowlight.register('sql', sql);
+lowlight.register('bash', bash);
+lowlight.register('json', json);
 
 // Custom Font Size Extension
 import { Extension } from '@tiptap/core';
