@@ -358,7 +358,7 @@ const BugTracker = () => {
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-sky-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900">
             <div className="max-w-full">
                 <div className="bg-white dark:bg-gray-800 border border-blue-100 dark:border-gray-700 shadow-xl overflow-hidden">
-                    <div className="overflow-hidden rounded-lg border border-gray-200 dark:border-gray-700 shadow-sm">
+                    <div className="overflow-hidden border border-gray-200 dark:border-gray-700 sticky top-0">
                         {/* Table Header */}
                         <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-b-2 border-indigo-400 dark:border-indigo-800">
                             <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center">
