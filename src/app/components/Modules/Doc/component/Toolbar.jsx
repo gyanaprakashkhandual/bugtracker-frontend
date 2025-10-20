@@ -165,7 +165,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().undo().run()}
             disabled={!editor.can().undo()}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors disabled:opacity-50 text-gray-700 dark:text-gray-300"
-            title="Undo"
+            tooltip-data="Undo"
           >
             <Undo className="w-4 h-4" />
           </button>
@@ -173,7 +173,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().redo().run()}
             disabled={!editor.can().redo()}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors disabled:opacity-50 text-gray-700 dark:text-gray-300"
-            title="Redo"
+            tooltip-data="Redo"
           >
             <Redo className="w-4 h-4" />
           </button>
@@ -185,7 +185,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleHeading({ level: 1 }).run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('heading', { level: 1 }) ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Heading 1"
+            tooltip-data="Heading 1"
           >
             <Heading1 className="w-4 h-4" />
           </button>
@@ -193,7 +193,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('heading', { level: 2 }) ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Heading 2"
+            tooltip-data="Heading 2"
           >
             <Heading2 className="w-4 h-4" />
           </button>
@@ -201,7 +201,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('heading', { level: 3 }) ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Heading 3"
+            tooltip-data="Heading 3"
           >
             <Heading3 className="w-4 h-4" />
           </button>
@@ -212,7 +212,7 @@ const EditorToolbar = ({
           <button
             onClick={() => setShowFontSizePicker(!showFontSizePicker)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 flex items-center gap-1"
-            title="Font Size"
+            tooltip-data="Font Size"
           >
             <Type className="w-4 h-4" />
           </button>
@@ -250,7 +250,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleBold().run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('bold') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Bold"
+            tooltip-data="Bold"
           >
             <Bold className="w-4 h-4" />
           </button>
@@ -258,7 +258,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleItalic().run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('italic') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Italic"
+            tooltip-data="Italic"
           >
             <Italic className="w-4 h-4" />
           </button>
@@ -266,7 +266,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleUnderline().run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('underline') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Underline"
+            tooltip-data="Underline"
           >
             <UnderlineIcon className="w-4 h-4" />
           </button>
@@ -274,7 +274,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleStrike().run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('strike') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Strikethrough"
+            tooltip-data="Strikethrough"
           >
             <Strikethrough className="w-4 h-4" />
           </button>
@@ -282,7 +282,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleCode().run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('code') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Code"
+            tooltip-data="Code"
           >
             <Code className="w-4 h-4" />
           </button>
@@ -290,7 +290,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleSubscript().run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('subscript') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Subscript"
+            tooltip-data="Subscript"
           >
             <Subscript className="w-4 h-4" />
           </button>
@@ -298,14 +298,14 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleSuperscript().run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('superscript') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Superscript"
+            tooltip-data="Superscript"
           >
             <Superscript className="w-4 h-4" />
           </button>
           <button
             onClick={() => editor.chain().focus().unsetAllMarks().run()}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Clear Formatting"
+            tooltip-data="Clear Formatting"
           >
             <RemoveFormatting className="w-4 h-4" />
           </button>
@@ -316,14 +316,14 @@ const EditorToolbar = ({
           <button
             onClick={() => setShowLineHeightPicker(!showLineHeightPicker)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Line Height"
+            tooltip-data="Line Height"
           >
             <LineHeight className="w-4 h-4" />
           </button>
           <button
             onClick={() => setShowLetterSpacingPicker(!showLetterSpacingPicker)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Letter Spacing"
+            tooltip-data="Letter Spacing"
           >
             <LetterSpacing className="w-4 h-4" />
           </button>
@@ -388,14 +388,14 @@ const EditorToolbar = ({
           <button
             onClick={() => setShowColorPicker(!showColorPicker)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors relative text-gray-700 dark:text-gray-300"
-            title="Text Color"
+            tooltip-data="Text Color"
           >
             <Palette className="w-4 h-4" />
           </button>
           <button
             onClick={() => setShowHighlightPicker(!showHighlightPicker)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Highlight"
+            tooltip-data="Highlight"
           >
             <Highlighter className="w-4 h-4" />
           </button>
@@ -459,7 +459,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().setTextAlign('left').run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive({ textAlign: 'left' }) ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Align Left"
+            tooltip-data="Align Left"
           >
             <AlignLeft className="w-4 h-4" />
           </button>
@@ -467,7 +467,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().setTextAlign('center').run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive({ textAlign: 'center' }) ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Align Center"
+            tooltip-data="Align Center"
           >
             <AlignCenter className="w-4 h-4" />
           </button>
@@ -475,7 +475,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().setTextAlign('right').run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive({ textAlign: 'right' }) ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Align Right"
+            tooltip-data="Align Right"
           >
             <AlignRight className="w-4 h-4" />
           </button>
@@ -483,7 +483,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().setTextAlign('justify').run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive({ textAlign: 'justify' }) ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Align Justify"
+            tooltip-data="Align Justify"
           >
             <AlignJustify className="w-4 h-4" />
           </button>
@@ -495,7 +495,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().outdent().run()}
             disabled={!editor.can().outdent()}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors disabled:opacity-50 text-gray-700 dark:text-gray-300"
-            title="Decrease Indent"
+            tooltip-data="Decrease Indent"
           >
             <IndentDecrease className="w-4 h-4" />
           </button>
@@ -503,7 +503,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().indent().run()}
             disabled={!editor.can().indent()}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors disabled:opacity-50 text-gray-700 dark:text-gray-300"
-            title="Increase Indent"
+            tooltip-data="Increase Indent"
           >
             <IndentIncrease className="w-4 h-4" />
           </button>
@@ -515,7 +515,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleBulletList().run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('bulletList') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Bullet List"
+            tooltip-data="Bullet List"
           >
             <List className="w-4 h-4" />
           </button>
@@ -523,7 +523,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleOrderedList().run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('orderedList') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Numbered List"
+            tooltip-data="Numbered List"
           >
             <ListOrdered className="w-4 h-4" />
           </button>
@@ -531,7 +531,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleTaskList().run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('taskList') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Task List"
+            tooltip-data="Task List"
           >
             <Check className="w-4 h-4" />
           </button>
@@ -542,21 +542,21 @@ const EditorToolbar = ({
           <button
             onClick={insertMention}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Insert Mention"
+            tooltip-data="Insert Mention"
           >
             <AtSign className="w-4 h-4" />
           </button>
           <button
             onClick={insertHashtag}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Insert Hashtag"
+            tooltip-data="Insert Hashtag"
           >
             <Hash className="w-4 h-4" />
           </button>
           <button
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Insert Emoji"
+            tooltip-data="Insert Emoji"
           >
             <Smile className="w-4 h-4" />
           </button>
@@ -591,14 +591,14 @@ const EditorToolbar = ({
           <button
             onClick={() => setShowLinkDialog(true)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Insert Link"
+            tooltip-data="Insert Link"
           >
             <LinkIcon className="w-4 h-4" />
           </button>
           <button
             onClick={() => setShowImageDialog(true)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Insert Image"
+            tooltip-data="Insert Image"
           >
             <ImageIcon className="w-4 h-4" />
           </button>
@@ -606,14 +606,14 @@ const EditorToolbar = ({
             onClick={deleteSelectedImage}
             disabled={!editor.isActive('image')}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 disabled:opacity-50 disabled:cursor-not-allowed"
-            title="Delete Selected Image"
+            tooltip-data="Delete Selected Image"
           >
             <Trash2 className="w-4 h-4" />
           </button>
           <button
             onClick={insertTable}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Insert Table"
+            tooltip-data="Insert Table"
           >
             <TableIcon className="w-4 h-4" />
           </button>
@@ -621,7 +621,7 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleBlockquote().run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('blockquote') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Quote"
+            tooltip-data="Quote"
           >
             <Quote className="w-4 h-4" />
           </button>
@@ -629,14 +629,14 @@ const EditorToolbar = ({
             onClick={() => editor.chain().focus().toggleCodeBlock().run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('codeBlock') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
-            title="Code Block"
+            tooltip-data="Code Block"
           >
             <Code className="w-4 h-4" />
           </button>
           <button
             onClick={() => editor.chain().focus().setHorizontalRule().run()}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Horizontal Line"
+            tooltip-data="Horizontal Line"
           >
             <Minus className="w-4 h-4" />
           </button>
@@ -647,14 +647,14 @@ const EditorToolbar = ({
           <button
             onClick={() => setShowYoutubeDialog(true)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Insert YouTube Video"
+            tooltip-data="Insert YouTube Video"
           >
             <Youtube className="w-4 h-4" />
           </button>
           <button
             onClick={() => document.getElementById('file-upload')?.click()}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Upload File"
+            tooltip-data="Upload File"
           >
             <FileText className="w-4 h-4" />
           </button>
@@ -665,14 +665,14 @@ const EditorToolbar = ({
           <button
             onClick={() => setShowSearchDialog(!showSearchDialog)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Search & Replace"
+            tooltip-data="Search & Replace"
           >
             <Search className="w-4 h-4" />
           </button>
           <button
             onClick={() => editor.chain().focus().addComment().run()}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            title="Add Comment"
+            tooltip-data="Add Comment"
           >
             <MessageSquare className="w-4 h-4" />
           </button>

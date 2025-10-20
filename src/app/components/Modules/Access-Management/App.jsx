@@ -1354,7 +1354,7 @@ const AccessListItem = ({ access, onRevoke, onUpdate, loading }) => {
                 onClick={() => access.userId && onRevoke(access.userId._id)}
                 disabled={loading || !access.userId}
                 className="ml-2 p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-                title="Revoke Access"
+                tooltip-data="Revoke Access"
               >
                 <Trash2 className="w-4 h-4" />
               </motion.button>

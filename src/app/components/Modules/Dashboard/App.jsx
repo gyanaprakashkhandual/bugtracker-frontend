@@ -242,35 +242,35 @@ const Dashboard = () => {
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-4">
             <StatCard
-              title="Total Issues"
+              tooltip-data="Total Issues"
               value={dashboardData.issues.total}
               icon={<Activity className="w-6 h-6" />}
               gradient="from-blue-500 to-cyan-500"
               delay={0.1}
             />
             <StatCard
-              title="Open"
+              tooltip-data="Open"
               value={dashboardData.issues.open}
               icon={<Target className="w-6 h-6" />}
               gradient="from-blue-500 to-indigo-500"
               delay={0.15}
             />
             <StatCard
-              title="On Going"
+              tooltip-data="On Going"
               value={dashboardData.issues.onGoing}
               icon={<Clock className="w-6 h-6" />}
               gradient="from-purple-500 to-pink-500"
               delay={0.2}
             />
             <StatCard
-              title="In Review"
+              tooltip-data="In Review"
               value={dashboardData.issues.inReview}
               icon={<ClipboardList className="w-6 h-6" />}
               gradient="from-orange-500 to-amber-500"
               delay={0.25}
             />
             <StatCard
-              title="Closed"
+              tooltip-data="Closed"
               value={dashboardData.issues.closed}
               icon={<CheckCircle2 className="w-6 h-6" />}
               gradient="from-green-500 to-emerald-500"
@@ -291,42 +291,42 @@ const Dashboard = () => {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <StatCard
-              title="Total Bugs"
+              tooltip-data="Total Bugs"
               value={dashboardData.bugs.total}
               icon={<Bug className="w-6 h-6" />}
               gradient="from-red-500 to-rose-500"
               delay={0.2}
             />
             <StatCard
-              title="New"
+              tooltip-data="New"
               value={dashboardData.bugs.new}
               icon={<Flame className="w-6 h-6" />}
               gradient="from-blue-500 to-cyan-500"
               delay={0.25}
             />
             <StatCard
-              title="Open"
+              tooltip-data="Open"
               value={dashboardData.bugs.open}
               icon={<AlertTriangle className="w-6 h-6" />}
               gradient="from-orange-500 to-yellow-500"
               delay={0.3}
             />
             <StatCard
-              title="In Progress"
+              tooltip-data="In Progress"
               value={dashboardData.bugs.inProgress}
               icon={<Clock className="w-6 h-6" />}
               gradient="from-purple-500 to-indigo-500"
               delay={0.35}
             />
             <StatCard
-              title="Fixed"
+              tooltip-data="Fixed"
               value={dashboardData.bugs.fixed}
               icon={<CheckCircle2 className="w-6 h-6" />}
               gradient="from-green-500 to-teal-500"
               delay={0.4}
             />
             <StatCard
-              title="Closed"
+              tooltip-data="Closed"
               value={dashboardData.bugs.closed}
               icon={<XCircle className="w-6 h-6" />}
               gradient="from-gray-500 to-slate-500"
@@ -347,42 +347,42 @@ const Dashboard = () => {
           </div>
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4">
             <StatCard
-              title="Total Tests"
+              tooltip-data="Total Tests"
               value={dashboardData.testCases.total}
               icon={<ClipboardList className="w-6 h-6" />}
               gradient="from-emerald-500 to-teal-500"
               delay={0.3}
             />
             <StatCard
-              title="Pass"
+              tooltip-data="Pass"
               value={dashboardData.testCases.pass}
               icon={<CheckCircle2 className="w-6 h-6" />}
               gradient="from-green-500 to-emerald-500"
               delay={0.35}
             />
             <StatCard
-              title="Fail"
+              tooltip-data="Fail"
               value={dashboardData.testCases.fail}
               icon={<XCircle className="w-6 h-6" />}
               gradient="from-red-500 to-pink-500"
               delay={0.4}
             />
             <StatCard
-              title="Blocked"
+              tooltip-data="Blocked"
               value={dashboardData.testCases.blocked}
               icon={<Shield className="w-6 h-6" />}
               gradient="from-orange-500 to-amber-500"
               delay={0.45}
             />
             <StatCard
-              title="Not Executed"
+              tooltip-data="Not Executed"
               value={dashboardData.testCases.notExecuted}
               icon={<Calendar className="w-6 h-6" />}
               gradient="from-gray-500 to-zinc-500"
               delay={0.5}
             />
             <StatCard
-              title="In Progress"
+              tooltip-data="In Progress"
               value={dashboardData.testCases.inProgress}
               icon={<TrendingUp className="w-6 h-6" />}
               gradient="from-blue-500 to-indigo-500"
@@ -394,7 +394,7 @@ const Dashboard = () => {
         {/* Charts Section */}
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
           {/* Bug Status Distribution */}
-          <ChartCard title="Bug Status Distribution" icon={<Bug className="w-5 h-5" />} delay={0.4}>
+          <ChartCard tooltip-data="Bug Status Distribution" icon={<Bug className="w-5 h-5" />} delay={0.4}>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={bugStatusData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
@@ -418,7 +418,7 @@ const Dashboard = () => {
           </ChartCard>
 
           {/* Bug Priority Distribution */}
-          <ChartCard title="Bug Priority Distribution" icon={<Flame className="w-5 h-5" />} delay={0.45}>
+          <ChartCard tooltip-data="Bug Priority Distribution" icon={<Flame className="w-5 h-5" />} delay={0.45}>
             <ResponsiveContainer width="100%" height={300}>
               <RePieChart>
                 <Pie
@@ -448,7 +448,7 @@ const Dashboard = () => {
           </ChartCard>
 
           {/* Bug Severity Distribution */}
-          <ChartCard title="Bug Severity Distribution" icon={<Shield className="w-5 h-5" />} delay={0.5}>
+          <ChartCard tooltip-data="Bug Severity Distribution" icon={<Shield className="w-5 h-5" />} delay={0.5}>
             <ResponsiveContainer width="100%" height={300}>
               <AreaChart data={bugSeverityData}>
                 <defs>
@@ -480,7 +480,7 @@ const Dashboard = () => {
           </ChartCard>
 
           {/* Test Case Status Distribution */}
-          <ChartCard title="Test Case Status Distribution" icon={<ClipboardList className="w-5 h-5" />} delay={0.55}>
+          <ChartCard tooltip-data="Test Case Status Distribution" icon={<ClipboardList className="w-5 h-5" />} delay={0.55}>
             <ResponsiveContainer width="100%" height={300}>
               <BarChart data={testCaseStatusData}>
                 <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />
@@ -504,7 +504,7 @@ const Dashboard = () => {
           </ChartCard>
 
           {/* Issue Status Distribution */}
-          <ChartCard title="Issue Status Distribution" icon={<AlertTriangle className="w-5 h-5" />} delay={0.6}>
+          <ChartCard tooltip-data="Issue Status Distribution" icon={<AlertTriangle className="w-5 h-5" />} delay={0.6}>
             <ResponsiveContainer width="100%" height={300}>
               <RePieChart>
                 <Pie
@@ -535,7 +535,7 @@ const Dashboard = () => {
 
           {/* Bug Type Distribution */}
           {bugTypeData.length > 0 && (
-            <ChartCard title="Bug Type Distribution" icon={<PieChart className="w-5 h-5" />} delay={0.65}>
+            <ChartCard tooltip-data="Bug Type Distribution" icon={<PieChart className="w-5 h-5" />} delay={0.65}>
               <ResponsiveContainer width="100%" height={300}>
                 <BarChart data={bugTypeData}>
                   <CartesianGrid strokeDasharray="3 3" stroke="#374151" opacity={0.1} />

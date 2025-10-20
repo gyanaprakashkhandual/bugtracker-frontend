@@ -889,7 +889,7 @@ const Chat = () => {
                                         onClick={() => fileInputRef.current?.click()}
                                         disabled={isUploading || isRecording}
                                         className="p-2.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-                                        title="Attach images"
+                                        tooltip-data="Attach images"
                                     >
                                         <Paperclip className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                                     </button>
@@ -924,7 +924,7 @@ const Chat = () => {
                                             isRecording
                                         }
                                         className="p-2.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:from-gray-300 disabled:to-gray-400 dark:disabled:from-gray-600 dark:disabled:to-gray-700 disabled:cursor-not-allowed rounded-xl transition-all shadow-md hover:shadow-lg flex-shrink-0"
-                                        title="Send message"
+                                        tooltip-data="Send message"
                                     >
                                         <Send className="w-5 h-5 text-white" />
                                     </button>

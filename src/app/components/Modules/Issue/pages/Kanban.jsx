@@ -79,6 +79,20 @@ const KanbanBoard = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
 
+  const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+  useEffect(() => {
+    const handleSidebarChange = (event) => {
+      const { isOpen } = event.detail;
+      console.log('Sidebar is now:', isOpen ? 'open' : 'closed');
+      setIsSidebarOpen(isOpen);
+    };
+    window.addEventListener('sidebarStateChanged', handleSidebarChange);
+    return () => {
+      window.removeEventListener('sidebarStateChanged', handleSidebarChange);
+    };
+  }, []);
+
   const statuses = ['Open', 'On Going', 'In Review', 'Closed'];
   const issueTypeOptions = ['Bug', 'Feature', 'Task', 'Improvement'];
   const statusOptions = statuses;
@@ -378,7 +392,8 @@ const KanbanBoard = () => {
               variants={columnVariants}
               initial="initial"
               animate="animate"
-              className={`flex-shrink-0 w-[299px] min-h-[calc(100vh-80px)] ${statusColors[status]} border rounded-lg p-3 transition-all duration-300 ${dragOverColumn === status ? 'ring-2 ring-blue-400 dark:ring-blue-600 ring-offset-2' : ''
+              className={`flex-shrink-0 transition-all duration-300 ${isSidebarOpen ? 'w-[299px]' : 'w-[355px]'
+                } min-h-[calc(100vh-80px)] ${statusColors[status]} border rounded-lg p-3 ${dragOverColumn === status ? 'ring-2 ring-blue-400 dark:ring-blue-600 ring-offset-2' : ''
                 }`}
               onDragOver={handleDragOver}
               onDragEnter={() => handleDragEnter(status)}
@@ -483,12 +498,12 @@ const KanbanBoard = () => {
                           <span className="text-xs font-mono text-gray-500 dark:text-gray-100">{issue.serialNumber}</span>
                           <span
                             className={`text-xs px-2 py-0.5 rounded ${issue.issueType === 'Bug'
-                                ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100'
-                                : issue.issueType === 'Feature'
-                                  ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-100'
-                                  : issue.issueType === 'Task'
-                                    ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-100'
-                                    : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-100'
+                              ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100'
+                              : issue.issueType === 'Feature'
+                                ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-100'
+                                : issue.issueType === 'Task'
+                                  ? 'bg-yellow-100 dark:bg-yellow-900 text-yellow-700 dark:text-yellow-100'
+                                  : 'bg-green-100 dark:bg-green-900 text-green-700 dark:text-green-100'
                               }`}
                           >
                             {issue.issueType || 'Unknown'}

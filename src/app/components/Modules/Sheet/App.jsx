@@ -283,21 +283,21 @@ export default function SheetManagement() {
                     <button
                       onClick={() => handleOpenSheet(sheet)}
                       className="p-2 text-blue-600 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-colors"
-                      title="Open Sheet"
+                      tooltip-data="Open Sheet"
                     >
                       <ExternalLink className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => openEditModal(sheet)}
                       className="p-2 text-green-600 hover:bg-green-50 dark:hover:bg-green-900/20 rounded-lg transition-colors"
-                      title="Edit Sheet"
+                      tooltip-data="Edit Sheet"
                     >
                       <Edit2 className="w-5 h-5" />
                     </button>
                     <button
                       onClick={() => handleDeleteSheet(sheet._id)}
                       className="p-2 text-red-600 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                      title="Delete Sheet"
+                      tooltip-data="Delete Sheet"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>

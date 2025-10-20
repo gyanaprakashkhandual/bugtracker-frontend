@@ -1898,7 +1898,7 @@ const BugSplitView = () => {
                                                                     }));
                                                                 }}
                                                                 className="text-red-500 dark:text-red-400 hover:text-red-700 dark:hover:text-red-300 transition"
-                                                                title="Remove link"
+                                                                tooltip-data="Remove link"
                                                             >
                                                                 ✕
                                                             </button>
@@ -1946,7 +1946,7 @@ const BugSplitView = () => {
                                                                     setTimeout(() => setCopiedIndex(null), 2000);
                                                                 }}
                                                                 className="text-gray-500 dark:text-gray-400 hover:text-blue-500 dark:hover:text-blue-400 transition"
-                                                                title="Copy link"
+                                                                tooltip-data="Copy link"
                                                             >
                                                                 {copiedIndex === index ? (
                                                                     <Check size={18} className="text-green-500 dark:text-green-400" />

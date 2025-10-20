@@ -534,14 +534,14 @@ const IssueRow = ({
             <button
               onClick={onRestore}
               className="p-1 text-blue-600 hover:bg-blue-50 rounded"
-              title="Restore"
+              tooltip-data="Restore"
             >
               <RefreshCw className="w-4 h-4" />
             </button>
             <button
               onClick={onDelete}
               className="p-1 text-red-600 hover:bg-red-50 rounded"
-              title="Delete Forever"
+              tooltip-data="Delete Forever"
             >
               <Trash2 className="w-4 h-4" />
             </button>
@@ -550,7 +550,7 @@ const IssueRow = ({
           <button
             onClick={onMoveToTrash}
             className="p-1 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded opacity-0 group-hover:opacity-100"
-            title="Move to Trash"
+            tooltip-data="Move to Trash"
           >
             <Trash2 className="w-4 h-4" />
           </button>

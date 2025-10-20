@@ -813,7 +813,7 @@ const ActionsColumn = ({
                         }
                     }}
                     className="p-2 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-                    title="Comments"
+                    tooltip-data="Comments"
                 >
                     <MessageSquare className="w-4 h-4" />
                 </motion.button>
@@ -825,7 +825,7 @@ const ActionsColumn = ({
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveModal(activeModal === 'images' ? null : 'images')}
                 className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md relative"
-                title="Images"
+                tooltip-data="Images"
             >
                 <ImageIcon className="w-4 h-4" />
                 {validImages.length > 0 && (
@@ -841,7 +841,7 @@ const ActionsColumn = ({
                 whileTap={{ scale: 0.95 }}
                 onClick={() => setActiveModal(activeModal === 'links' ? null : 'links')}
                 className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md relative"
-                title="Links"
+                tooltip-data="Links"
             >
                 <LinkIcon className="w-4 h-4" />
                 {validLinks.length > 0 && (
@@ -860,7 +860,7 @@ const ActionsColumn = ({
                             whileTap={{ scale: 0.95 }}
                             onClick={onRestore}
                             className="p-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-                            title="Restore"
+                            tooltip-data="Restore"
                         >
                             <RefreshCw className="w-4 h-4" />
                         </motion.button>
@@ -869,7 +869,7 @@ const ActionsColumn = ({
                             whileTap={{ scale: 0.95 }}
                             onClick={onDelete}
                             className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
-                            title="Delete Forever"
+                            tooltip-data="Delete Forever"
                         >
                             <Trash2 className="w-4 h-4" />
                         </motion.button>
@@ -880,7 +880,7 @@ const ActionsColumn = ({
                         whileTap={{ scale: 0.95 }}
                         onClick={onMoveToTrash}
                         className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm hover:shadow-md"
-                        title="Move to Trash"
+                        tooltip-data="Move to Trash"
                     >
                         <Trash2 className="w-4 h-4" />
                     </motion.button>
@@ -1015,7 +1015,7 @@ const ActionsColumn = ({
                                     onClick={() => fileInputRef.current?.click()}
                                     disabled={uploadingImage}
                                     className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all duration-200"
-                                    title="Upload new image"
+                                    tooltip-data="Upload new image"
                                 >
                                     <Plus className="w-5 h-5" />
                                 </motion.button>
@@ -1063,7 +1063,7 @@ const ActionsColumn = ({
                                                     whileTap={{ scale: 0.95 }}
                                                     onClick={() => setImagePreview(image)}
                                                     className="p-1.5 bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 rounded-lg shadow-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
-                                                    title="View full size"
+                                                    tooltip-data="View full size"
                                                 >
                                                     <ZoomIn className="w-4 h-4" />
                                                 </motion.button>
@@ -1073,7 +1073,7 @@ const ActionsColumn = ({
                                                         whileTap={{ scale: 0.95 }}
                                                         onClick={() => handleRemoveImage(image)}
                                                         className="p-1.5 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 rounded-lg shadow-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                                        title="Remove image"
+                                                        tooltip-data="Remove image"
                                                     >
                                                         <X className="w-4 h-4" />
                                                     </motion.button>
@@ -1167,7 +1167,7 @@ const ActionsColumn = ({
                                                         whileTap={{ scale: 0.95 }}
                                                         onClick={() => copyToClipboard(link)}
                                                         className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
-                                                        title="Copy link"
+                                                        tooltip-data="Copy link"
                                                     >
                                                         <Copy className="w-4 h-4" />
                                                     </motion.button>
@@ -1177,7 +1177,7 @@ const ActionsColumn = ({
                                                             whileTap={{ scale: 0.95 }}
                                                             onClick={() => handleRemoveLink(link)}
                                                             className="p-1.5 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
-                                                            title="Remove link"
+                                                            tooltip-data="Remove link"
                                                         >
                                                             <X className="w-4 h-4" />
                                                         </motion.button>

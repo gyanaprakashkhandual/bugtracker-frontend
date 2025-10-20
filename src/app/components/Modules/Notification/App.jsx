@@ -261,7 +261,7 @@ const NotificationPanel = () => {
                             whileTap={{ scale: 0.85 }}
                             onClick={() => markAsRead(notification._id)}
                             className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-100 dark:hover:bg-blue-900/30 rounded-lg transition-all shadow-sm hover:shadow-md"
-                            title="Mark as read"
+                            tooltip-data="Mark as read"
                           >
                             <Check size={16} className="sm:w-5 sm:h-5" />
                           </motion.button>
@@ -271,7 +271,7 @@ const NotificationPanel = () => {
                           whileTap={{ scale: 0.85 }}
                           onClick={() => deleteNotification(notification._id)}
                           className="p-2 text-red-600 dark:text-red-400 hover:bg-red-100 dark:hover:bg-red-900/30 rounded-lg transition-all shadow-sm hover:shadow-md"
-                          title="Delete"
+                          tooltip-data="Delete"
                         >
                           <Trash2 size={16} className="sm:w-5 sm:h-5" />
                         </motion.button>

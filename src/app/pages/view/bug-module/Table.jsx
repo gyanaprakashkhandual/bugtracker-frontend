@@ -767,7 +767,7 @@ const BugSpreadsheet = () => {
                                     <button
                                         onClick={() => setActiveLinkModal(bugId)}
                                         className="p-1 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                                        title="Add new link"
+                                        tooltip-data="Add new link"
                                     >
                                         <Plus size={14} />
                                     </button>
@@ -801,14 +801,14 @@ const BugSpreadsheet = () => {
                                                     <button
                                                         onClick={() => copyToClipboard(link)}
                                                         className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                                                        title="Copy link"
+                                                        tooltip-data="Copy link"
                                                     >
                                                         <Copy size={12} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleRemoveLink(bugId, link)}
                                                         className="p-1 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                                                        title="Remove link"
+                                                        tooltip-data="Remove link"
                                                     >
                                                         <X size={12} />
                                                     </button>
@@ -866,7 +866,7 @@ const BugSpreadsheet = () => {
                                     <button
                                         onClick={() => setActiveImageModal(bugId)}
                                         className="p-1 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
-                                        title="Upload new image"
+                                        tooltip-data="Upload new image"
                                     >
                                         <Plus size={14} />
                                     </button>
@@ -900,14 +900,14 @@ const BugSpreadsheet = () => {
                                                     <button
                                                         onClick={() => setImagePreviewModal(image)}
                                                         className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
-                                                        title="View full size"
+                                                        tooltip-data="View full size"
                                                     >
                                                         <ZoomIn size={12} />
                                                     </button>
                                                     <button
                                                         onClick={() => handleRemoveImage(bugId, image)}
                                                         className="p-1 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                                                        title="Remove image"
+                                                        tooltip-data="Remove image"
                                                     >
                                                         <X size={12} />
                                                     </button>
@@ -1151,14 +1151,14 @@ const BugSpreadsheet = () => {
                                     onClick={handleNewRowManualSave}
                                     className="p-1.5 text-green-600 dark:text-green-400 hover:bg-green-50 dark:hover:bg-green-900/20 rounded transition-colors"
                                     disabled={isCreatingBug}
-                                    title="Save"
+                                    tooltip-data="Save"
                                 >
                                     <Save size={14} />
                                 </button>
                                 <button
                                     onClick={handleNewRowCancel}
                                     className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                                    title="Cancel"
+                                    tooltip-data="Cancel"
                                 >
                                     <Ban size={14} />
                                 </button>
@@ -1189,21 +1189,21 @@ const BugSpreadsheet = () => {
                             }
                         }}
                         className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded transition-colors"
-                        title="Comments"
+                        tooltip-data="Comments"
                     >
                         <MessageSquare size={14} />
                     </button>
                     <button
                         onClick={() => moveBugToTrash(bug._id)}
                         className="p-1.5 text-orange-600 dark:text-orange-400 hover:bg-orange-50 dark:hover:bg-orange-900/20 rounded transition-colors"
-                        title="Move to trash"
+                        tooltip-data="Move to trash"
                     >
                         <Archive size={14} />
                     </button>
                     <button
                         onClick={() => deleteBugPermanently(bug._id)}
                         className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
-                        title="Delete permanently"
+                        tooltip-data="Delete permanently"
                     >
                         <Trash2 size={14} />
                     </button>
