@@ -211,7 +211,7 @@ const AppNavbar = () => {
                                 {!selectedProject ? (
                                     <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
                                 ) : (
-                                    <h1 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate" title={`${selectedProject.projectName} - ${selectedProject?.projectDesc}`}>
+                                    <h1 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate" tooltip-data={`${selectedProject.projectName} - ${selectedProject?.projectDesc}`}>
                                         {`${selectedProject.projectName} - ${selectedProject?.projectDesc}`}
                                     </h1>
                                 )}
