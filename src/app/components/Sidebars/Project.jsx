@@ -15,32 +15,15 @@ import { useProject } from "@/app/script/Project.context";
 import { useAlert } from "@/app/script/Alert.context";
 import { useConfirm } from "@/app/script/Confirm.context";
 import { PROJECT_EVENTS } from "@/app/components/modules/Project-Management/App";
+import { useSidebar } from "@/app/hooks/Project.sidebar.hook";
 
 const ProjectSidebar = () => {
-    const [isOpen, setIsOpen] = useState(true);
+    const { isSidebarOpen, toggleSidebar } = useSidebar();
     const [projects, setProjects] = useState([]);
     const [hoveredProject, setHoveredProject] = useState(null);
     const [userData, setUserData] = useState(null);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
-    // Initialize from localStorage
-    useState(() => {
-        if (typeof window !== "undefined") {
-            const saved = localStorage.getItem("sidebarOpen");
-            return saved !== null ? JSON.parse(saved) : true;
-        }
-        return true;
-    });
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            localStorage.setItem("sidebarOpen", JSON.stringify(isOpen));
-            
-            const event = new CustomEvent('sidebarStateChanged', {
-                detail: { isOpen }
-            });
-            window.dispatchEvent(event);
-        }
-    }, [isOpen]);
 
     const { showAlert } = useAlert();
     const { showConfirm } = useConfirm();
@@ -154,16 +137,6 @@ const ProjectSidebar = () => {
             }
         };
     }, []);
-
-    // Emit sidebar state changes
-    useEffect(() => {
-        if (typeof window !== 'undefined') {
-            const event = new CustomEvent('sidebarStateChanged', {
-                detail: { isOpen }
-            });
-            window.dispatchEvent(event);
-        }
-    }, [isOpen]);
 
     useEffect(() => {
         if (projects.length > 0) {
@@ -279,12 +252,12 @@ const ProjectSidebar = () => {
         <>
             <motion.div
                 variants={sidebarVariants}
-                animate={isOpen ? "open" : "closed"}
+                animate={isSidebarOpen ? "open" : "closed"}
                 className="user-select-none h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 text-slate-800 dark:text-slate-100 flex flex-col border-r border-slate-200/50 dark:border-slate-700/50 sticky top-0 sidebar-scrollbar"
             >
                 <div className="flex items-center justify-center p-4 border-b border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm">
                     <AnimatePresence mode="wait">
-                        {isOpen ? (
+                        {isSidebarOpen ? (
                             <motion.div
                                 key="open-header"
                                 variants={contentVariants}
@@ -302,7 +275,7 @@ const ProjectSidebar = () => {
                                 <motion.button
                                     whileHover={{ scale: 1.1, backgroundColor: "#f1f5f9" }}
                                     whileTap={{ scale: 0.9 }}
-                                    onClick={() => setIsOpen(!isOpen)}
+                                    onClick={() => toggleSidebar()}
                                     className="p-2 rounded-full text-slate-500 dark:text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 transition-all duration-200"
                                 >
                                     <GoogleArrowLeft />
@@ -317,7 +290,7 @@ const ProjectSidebar = () => {
                                 animate={{ opacity: 1, scale: 1 }}
                                 whileHover={{ scale: 1.1, backgroundColor: "#f1f5f9" }}
                                 whileTap={{ scale: 0.9 }}
-                                onClick={() => setIsOpen(!isOpen)}
+                                onClick={() => toggleSidebar()}
                                 className="p-2 rounded-full text-blue-900 dark:text-blue-400 hover:text-slate-950 dark:hover:text-slate-100 transition-all duration-200 cursor-pointer"
                             >
                                 <FaCoffee className="h-5 w-5" />
@@ -349,7 +322,7 @@ const ProjectSidebar = () => {
                                         : "border-transparent hover:border-slate-200/60 dark:hover:border-slate-700/60"
                                         }`}
                                 >
-                                    {isOpen ? (
+                                    {isSidebarOpen ? (
                                         <div className="flex items-center px-4 py-3">
                                             <motion.div className="flex-shrink-0 mr-3">
                                                 <Folder
@@ -408,7 +381,7 @@ const ProjectSidebar = () => {
 
                 <div className="mt-auto border-t border-slate-200/60 dark:border-slate-700/60 bg-white/80 dark:bg-slate-900/80 backdrop-blur-sm sticky bottom-0">
                     <AnimatePresence>
-                        {profileDropdownOpen && isOpen && (
+                        {profileDropdownOpen && isSidebarOpen && (
                             <motion.div
                                 initial={{ opacity: 0, y: 10 }}
                                 animate={{ opacity: 1, y: 0 }}
@@ -527,7 +500,7 @@ const ProjectSidebar = () => {
                                 )}
                             </div>
 
-                            {isOpen && (
+                            {isSidebarOpen && (
                                 <div className="text-left truncate max-w-[140px]">
                                     <div className="text-sm font-medium text-slate-800 dark:text-slate-100 truncate">
                                         {userData?.name || "User"}
@@ -539,7 +512,7 @@ const ProjectSidebar = () => {
                             )}
                         </div>
 
-                        {isOpen && (
+                        {isSidebarOpen && (
                             <motion.div
                                 animate={{ rotate: profileDropdownOpen ? 180 : 0 }}
                                 transition={{ duration: 0.2 }}

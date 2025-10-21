@@ -32,6 +32,7 @@ import Dashboard from '../Modules/Dashboard/App';
 import NotificationPanel from '../Modules/Notification/App';
 import IssueKanban from '../Modules/Issue/pages/Kanban';
 import IssueList from '../Modules/Issue/pages/List';
+import { useSidebar } from '@/app/hooks/Project.sidebar.hook';
 
 
 const AppNavbar = () => {
@@ -45,7 +46,8 @@ const AppNavbar = () => {
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState(null);
     const [isComponentLoading, setIsComponentLoading] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
+
+    const { isSidebarOpen } = useSidebar();
     const { selectedProject } = useProject();
     const router = useRouter();
 
@@ -114,18 +116,6 @@ const AppNavbar = () => {
             setActiveComponent(savedComponent)
         }
     }, [])
-
-    useEffect(() => {
-        const handleSidebarChange = (event) => {
-            const { isOpen } = event.detail;
-            console.log('Sidebar is now:', isOpen ? 'open' : 'closed');
-            setIsSidebarOpen(isOpen);
-        };
-        window.addEventListener('sidebarStateChanged', handleSidebarChange);
-        return () => {
-            window.removeEventListener('sidebarStateChanged', handleSidebarChange);
-        };
-    }, []);
 
     const handleComponentChange = (component, optionName = null, dropdownType = null) => {
         setIsComponentLoading(true);
