@@ -101,7 +101,7 @@ export default function CaffetestLanding() {
               </nav>
 
               <motion.button
-                onClick={() => router.push('/auth')}
+                onClick={() => router.push('/subscribe')}
                 className="px-5 py-2 bg-purple-600 text-white font-medium rounded-4xl hover:bg-purple-700 transition-all duration-200 text-sm"
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -521,7 +521,7 @@ export default function CaffetestLanding() {
             >
               <h4 className="text-white font-medium text-sm mb-4">Visit</h4>
               <ul className="space-y-2">
-                <li><a onClick={() => router.push("/blog")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Features</a></li>
+                <li><a onClick={() => router.push("/features")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Features</a></li>
                 <li><a onClick={() => router.push("/report-bug")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Report Bug</a></li>
                 <li><a onClick={() => router.push("/pricing")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Pricing</a></li>
                 <li><a onClick={() => router.push("/documentation")} className="text-gray-400 hover:text-white transition-colors duration-200 text-sm cursor-pointer">Documentation</a></li>
