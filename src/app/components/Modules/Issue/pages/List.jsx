@@ -8,6 +8,7 @@ import {
     AlertCircle, Save, X, ExternalLink, MessageSquare,
     Send, Loader2, Copy, ZoomIn
 } from 'lucide-react';
+import { Calendar, ArrowRight } from 'lucide-react';
 import { useProject } from '@/app/script/Project.context';
 
 const BASE_URL = 'http://localhost:5000/api/v1';
@@ -448,8 +449,220 @@ const BugTracker = () => {
     );
 };
 
+
+
+// Custom Calendar Component
+const CustomCalendar = ({ value, onChange, onClose, position }) => {
+    const [currentMonth, setCurrentMonth] = useState(value ? new Date(value) : new Date());
+    const calendarRef = useRef(null);
+
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (calendarRef.current && !calendarRef.current.contains(event.target)) {
+                onClose();
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [onClose]);
+
+    const getDaysInMonth = (date) => {
+        const year = date.getFullYear();
+        const month = date.getMonth();
+        const firstDay = new Date(year, month, 1);
+        const lastDay = new Date(year, month + 1, 0);
+        const daysInMonth = lastDay.getDate();
+        const startingDayOfWeek = firstDay.getDay();
+
+        const days = [];
+        for (let i = 0; i < startingDayOfWeek; i++) {
+            days.push(null);
+        }
+        for (let i = 1; i <= daysInMonth; i++) {
+            days.push(i);
+        }
+        return days;
+    };
+
+    const handleDateClick = (day) => {
+        if (day) {
+            const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
+            const formattedDate = selectedDate.toISOString().split('T')[0];
+            onChange(formattedDate);
+            onClose();
+        }
+    };
+
+    const changeMonth = (direction) => {
+        setCurrentMonth(prev => {
+            const newDate = new Date(prev);
+            newDate.setMonth(prev.getMonth() + direction);
+            return newDate;
+        });
+    };
+
+    const days = getDaysInMonth(currentMonth);
+    const monthYear = currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' });
+    const selectedDay = value ? new Date(value).getDate() : null;
+    const selectedMonth = value ? new Date(value).getMonth() : null;
+    const selectedYear = value ? new Date(value).getFullYear() : null;
+
+    return (
+        <motion.div
+            ref={calendarRef}
+            initial={{ opacity: 0, y: 10, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 10, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="absolute z-50 bg-white dark:bg-gray-800 rounded-xl shadow-2xl border-2 border-blue-200 dark:border-blue-700 p-4 w-72"
+            style={{
+                top: '100%',
+                left: position === 'end' ? 'auto' : '0',
+                right: position === 'end' ? '0' : 'auto',
+                marginTop: '8px'
+            }}
+
+        >
+            <div className="flex items-center justify-between mb-3">
+                <button
+                    onClick={() => changeMonth(-1)}
+                    className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors"
+                >
+                    <ChevronDown className="w-4 h-4 rotate-90 text-blue-600 dark:text-blue-400" />
+                </button>
+                <span className="text-sm font-semibold text-gray-800 dark:text-gray-200">
+                    {monthYear}
+                </span>
+                <button
+                    onClick={() => changeMonth(1)}
+                    className="p-1 hover:bg-blue-100 dark:hover:bg-blue-900 rounded-lg transition-colors"
+                >
+                    <ChevronDown className="w-4 h-4 -rotate-90 text-blue-600 dark:text-blue-400" />
+                </button>
+            </div>
+
+            <div className="grid grid-cols-7 gap-1 mb-2">
+                {['Su', 'Mo', 'Tu', 'We', 'Th', 'Fr', 'Sa'].map(day => (
+                    <div key={day} className="text-center text-xs font-medium text-gray-600 dark:text-gray-400 py-1">
+                        {day}
+                    </div>
+                ))}
+            </div>
+
+            <div className="grid grid-cols-7 gap-1">
+                {days.map((day, index) => {
+                    const isSelected = day &&
+                        day === selectedDay &&
+                        currentMonth.getMonth() === selectedMonth &&
+                        currentMonth.getFullYear() === selectedYear;
+                    const isToday = day &&
+                        day === new Date().getDate() &&
+                        currentMonth.getMonth() === new Date().getMonth() &&
+                        currentMonth.getFullYear() === new Date().getFullYear();
+
+                    return (
+                        <button
+                            key={index}
+                            onClick={() => handleDateClick(day)}
+                            disabled={!day}
+                            className={`
+                                h-8 text-xs rounded-lg transition-all duration-200
+                                ${!day ? 'invisible' : ''}
+                                ${isSelected
+                                    ? 'bg-blue-600 text-white font-semibold shadow-md'
+                                    : isToday
+                                        ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-300 font-medium'
+                                        : 'hover:bg-blue-50 dark:hover:bg-gray-700 text-gray-700 dark:text-gray-300'
+                                }
+                            `}
+                        >
+                            {day}
+                        </button>
+                    );
+                })}
+            </div>
+        </motion.div>
+    );
+};
+
+// Timeline Date Selector Component
+const TimelineDateSelector = ({ startDate, endDate, onStartChange, onEndChange, saving }) => {
+    const [showStartCalendar, setShowStartCalendar] = useState(false);
+    const [showEndCalendar, setShowEndCalendar] = useState(false);
+
+    const formatDisplayDate = (dateStr) => {
+        if (!dateStr) return 'Select';
+        const date = new Date(dateStr);
+        return date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+    };
+
+    return (
+        <div className="relative flex items-center gap-2">
+            {/* Start Date */}
+            <div className="relative flex-1">
+                <button
+                    onClick={() => setShowStartCalendar(!showStartCalendar)}
+                    title={startDate ? `Start: ${new Date(startDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : 'Select start date'}
+                    className="w-full px-2 py-1.5 text-xs font-medium border-2 border-blue-200 dark:border-blue-800 rounded-lg flex items-center justify-center gap-1 bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-all duration-200 hover:shadow-sm"
+                >
+                    {saving ? (
+                        <Loader2 className="w-3 h-3 animate-spin text-blue-600" />
+                    ) : (
+                        <Calendar className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                    )}
+                    <span className="truncate">{formatDisplayDate(startDate)}</span>
+                </button>
+                <AnimatePresence>
+                    {showStartCalendar && (
+                        <CustomCalendar
+                            value={startDate}
+                            onChange={onStartChange}
+                            onClose={() => setShowStartCalendar(false)}
+                            position="start"
+                        />
+                    )}
+                </AnimatePresence>
+            </div>
+
+            {/* Arrow */}
+            <div className="flex items-center">
+                <ArrowRight className="w-3 h-3 text-blue-500 dark:text-blue-400" />
+            </div>
+
+            {/* End Date */}
+            <div className="relative flex-1">
+                <button
+                    onClick={() => setShowEndCalendar(!showEndCalendar)}
+                    title={endDate ? `End: ${new Date(endDate).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}` : 'Select end date'}
+                    className="w-full px-2 py-1.5 text-xs font-medium border-2 border-blue-200 dark:border-blue-800 rounded-lg flex items-center justify-center gap-1 bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 transition-all duration-200 hover:shadow-sm"
+                >
+                    {saving ? (
+                        <Loader2 className="w-3 h-3 animate-spin text-blue-600" />
+                    ) : (
+                        <Calendar className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                    )}
+                    <span className="truncate">{formatDisplayDate(endDate)}</span>
+                </button>
+                <AnimatePresence>
+                    {showEndCalendar && (
+                        <CustomCalendar
+                            value={endDate}
+                            onChange={onEndChange}
+                            onClose={() => setShowEndCalendar(false)}
+                            position="end"
+                        />
+                    )}
+                </AnimatePresence>
+            </div>
+        </div>
+    );
+};
+
+// Main NewIssueRow Component
 const NewIssueRow = ({ issue, users, saving, uploadingImage, onChange, onImageUpload, onCreate }) => {
     const [isFocused, setIsFocused] = useState(false);
+    const [localSaving, setLocalSaving] = useState(false);
 
     const handleKeyPress = async (e) => {
         if (e.key === 'Enter' && !e.shiftKey) {
@@ -458,12 +671,22 @@ const NewIssueRow = ({ issue, users, saving, uploadingImage, onChange, onImageUp
             console.log('[NEW ISSUE] Enter pressed - Attempting to save');
 
             if (issue.issueType.trim() || issue.issueDesc.trim()) {
+                setLocalSaving(true);
                 const success = await onCreate(issue);
+                setLocalSaving(false);
                 if (success) {
                     console.log('[NEW ISSUE] Successfully saved and cleared');
                     setIsFocused(false);
                 }
             }
+        }
+    };
+
+    const handleDateChange = async (field, value) => {
+        onChange(field, value);
+        if (issue.issueType.trim() || issue.issueDesc.trim()) {
+            setLocalSaving(true);
+            setTimeout(() => setLocalSaving(false), 500);
         }
     };
 
@@ -473,13 +696,15 @@ const NewIssueRow = ({ issue, users, saving, uploadingImage, onChange, onImageUp
             animate={{ opacity: 1, y: 0 }}
             className="grid grid-cols-12 gap-4 px-6 py-4 border-b-2 border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50/50 to-sky-50/50 dark:from-blue-900/10 dark:to-sky-900/10"
         >
+            {/* Label Column */}
             <div className="col-span-1 flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400">
                 <Plus className="w-4 h-4" />
                 <span>New</span>
-                {saving && <Save className="w-4 h-4 text-blue-500 animate-pulse" />}
+                {(saving || localSaving) && <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />}
             </div>
 
-            <div className="col-span-2">
+            {/* Issue Type */}
+            <div className="col-span-2 relative">
                 <input
                     type="text"
                     value={issue.issueType}
@@ -491,9 +716,15 @@ const NewIssueRow = ({ issue, users, saving, uploadingImage, onChange, onImageUp
                     style={{ minWidth: '200px', maxWidth: '200px' }}
                     className="w-full px-3 py-2 text-sm border-2 border-blue-200 dark:border-blue-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200"
                 />
+                {localSaving && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                        <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                    </div>
+                )}
             </div>
 
-            <div className="col-span-3">
+            {/* Issue Description */}
+            <div className="col-span-3 relative">
                 <textarea
                     value={issue.issueDesc}
                     onChange={(e) => onChange('issueDesc', e.target.value)}
@@ -501,25 +732,32 @@ const NewIssueRow = ({ issue, users, saving, uploadingImage, onChange, onImageUp
                     onFocus={() => setIsFocused(true)}
                     onBlur={() => !issue.issueDesc && setIsFocused(false)}
                     placeholder="Describe the issue... (Press Enter to save)"
-                    rows={isFocused ? 3 : 1}
+                    rows={1}
                     style={{
                         minWidth: isFocused ? '500px' : '300px',
                         maxWidth: isFocused ? '500px' : '300px',
-                        minHeight: isFocused ? '72px' : '40px'
+                        minHeight: '40px',
+                        maxHeight: '40px'
                     }}
-                    className="w-full px-3 py-2 text-sm border-2 border-blue-200 dark:border-blue-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300"
+                    className="w-full px-3 py-2 text-sm border-2 border-blue-200 dark:border-blue-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300 overflow-hidden"
                 />
+                {localSaving && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                        <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                    </div>
+                )}
             </div>
 
-            <div className="col-span-2">
+            {/* Assign To */}
+            <div className="col-span-2 relative">
                 <Dropdown
                     trigger={
                         <button className="w-full px-3 py-2 text-sm text-left border-2 border-blue-200 dark:border-blue-800 rounded-lg flex items-center justify-between bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-gray-600 text-gray-900 dark:text-white transition-all duration-200">
-                            <span className="flex items-center gap-2 text-xs">
-                                <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                {issue.assignTo ? users.find(u => u._id === issue.assignTo)?.name : 'Unassigned'}
+                            <span className="flex items-center gap-2 text-xs truncate">
+                                <User className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                                <span className="truncate">{issue.assignTo ? users.find(u => u._id === issue.assignTo)?.name : 'Unassigned'}</span>
                             </span>
-                            <ChevronDown className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                            <ChevronDown className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
                         </button>
                     }
                     items={[
@@ -528,9 +766,15 @@ const NewIssueRow = ({ issue, users, saving, uploadingImage, onChange, onImageUp
                     ]}
                     onSelect={(item) => onChange('assignTo', item.value)}
                 />
+                {localSaving && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <Loader2 className="w-4 h-4 text-blue-500 animate-spin" />
+                    </div>
+                )}
             </div>
 
-            <div className="col-span-1">
+            {/* Status */}
+            <div className="col-span-1 relative">
                 <Dropdown
                     trigger={
                         <button className={`w-full px-3 py-2 text-xs font-semibold rounded-lg border-2 flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md ${STATUS_COLORS[issue.status]}`}>
@@ -541,23 +785,25 @@ const NewIssueRow = ({ issue, users, saving, uploadingImage, onChange, onImageUp
                     items={STATUS_OPTIONS.map(s => ({ label: s, value: s }))}
                     onSelect={(item) => onChange('status', item.value)}
                 />
+                {localSaving && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
+                    </div>
+                )}
             </div>
 
-            <div className="col-span-2 space-y-2">
-                <input
-                    type="date"
-                    value={issue.startDate}
-                    onChange={(e) => onChange('startDate', e.target.value)}
-                    className="w-full px-3 py-2 text-xs border-2 border-blue-200 dark:border-blue-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-200"
-                />
-                <input
-                    type="date"
-                    value={issue.endDate}
-                    onChange={(e) => onChange('endDate', e.target.value)}
-                    className="w-full px-3 py-2 text-xs border-2 border-blue-200 dark:border-blue-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white transition-all duration-200"
+            {/* Timeline Dates */}
+            <div className="col-span-2">
+                <TimelineDateSelector
+                    startDate={issue.startDate}
+                    endDate={issue.endDate}
+                    onStartChange={(value) => handleDateChange('startDate', value)}
+                    onEndChange={(value) => handleDateChange('endDate', value)}
+                    saving={localSaving}
                 />
             </div>
 
+            {/* Actions */}
             <div className="col-span-1 flex items-center justify-center">
                 <ActionsColumn
                     issue={issue}
@@ -570,6 +816,7 @@ const NewIssueRow = ({ issue, users, saving, uploadingImage, onChange, onImageUp
         </motion.div>
     );
 };
+
 
 const IssueRow = ({
     issue,
@@ -589,6 +836,7 @@ const IssueRow = ({
     const [localIssue, setLocalIssue] = useState(issue);
     const [isFocusedType, setIsFocusedType] = useState(false);
     const [isFocusedDesc, setIsFocusedDesc] = useState(false);
+    const [localSaving, setLocalSaving] = useState(false);
     const StatusIcon = STATUS_ICONS[localIssue.status];
 
     const handleChange = (field, value) => {
@@ -603,18 +851,26 @@ const IssueRow = ({
         }
     };
 
+    const handleDateChange = async (field, value) => {
+        handleChange(field, value);
+        setLocalSaving(true);
+        setTimeout(() => setLocalSaving(false), 500);
+    };
+
     return (
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-blue-100 dark:border-gray-700 hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-sky-50/30 dark:hover:from-blue-900/10 dark:hover:to-sky-900/10 items-start group transition-all duration-200"
         >
+            {/* Serial Number */}
             <div className="col-span-1 flex items-center gap-2 text-xs font-mono text-gray-600 dark:text-gray-400">
                 {localIssue.serialNumber}
-                {saving && <Save className="w-3 h-3 text-blue-500 animate-pulse" />}
+                {(saving || localSaving) && <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />}
             </div>
 
-            <div className="col-span-2">
+            {/* Issue Type */}
+            <div className="col-span-2 relative">
                 <input
                     type="text"
                     value={localIssue.issueType || ''}
@@ -626,9 +882,15 @@ const IssueRow = ({
                     style={{ minWidth: '200px', maxWidth: '200px' }}
                     className="w-full px-3 py-2 text-sm border border-transparent hover:border-blue-200 dark:hover:border-blue-800 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-200 bg-transparent text-gray-900 dark:text-white"
                 />
+                {localSaving && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                        <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
+                    </div>
+                )}
             </div>
 
-            <div className="col-span-3">
+            {/* Issue Description */}
+            <div className="col-span-3 relative">
                 <textarea
                     value={localIssue.issueDesc || ''}
                     onChange={(e) => handleChange('issueDesc', e.target.value)}
@@ -636,25 +898,32 @@ const IssueRow = ({
                     onFocus={() => setIsFocusedDesc(true)}
                     onBlur={() => setIsFocusedDesc(false)}
                     placeholder="Issue description"
-                    rows={isFocusedDesc ? 3 : 1}
+                    rows={1}
                     style={{
                         minWidth: isFocusedDesc ? '500px' : '300px',
                         maxWidth: isFocusedDesc ? '500px' : '300px',
-                        minHeight: isFocusedDesc ? '72px' : '40px'
+                        minHeight: '40px',
+                        maxHeight: '40px'
                     }}
-                    className="w-full px-3 py-2 text-sm border border-transparent hover:border-blue-200 dark:hover:border-blue-800 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 resize-none transition-all duration-300 bg-transparent text-gray-900 dark:text-white"
+                    className="w-full px-3 py-2 text-sm border border-transparent hover:border-blue-200 dark:hover:border-blue-800 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 resize-none transition-all duration-300 bg-transparent text-gray-900 dark:text-white overflow-hidden"
                 />
+                {localSaving && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
+                        <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
+                    </div>
+                )}
             </div>
 
-            <div className="col-span-2">
+            {/* Assign To */}
+            <div className="col-span-2 relative">
                 <Dropdown
                     trigger={
                         <button className="w-full px-3 py-2 text-sm text-left border border-transparent hover:border-blue-200 dark:hover:border-blue-800 rounded-lg flex items-center justify-between group/btn bg-transparent text-gray-900 dark:text-white transition-all duration-200">
-                            <span className="flex items-center gap-2 text-xs">
-                                <User className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                {localIssue.assignTo?.name || 'Unassigned'}
+                            <span className="flex items-center gap-2 text-xs truncate">
+                                <User className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                                <span className="truncate">{localIssue.assignTo?.name || 'Unassigned'}</span>
                             </span>
-                            <ChevronDown className="w-4 h-4 opacity-0 group-hover/btn:opacity-100 text-blue-600 dark:text-blue-400 transition-opacity" />
+                            <ChevronDown className="w-4 h-4 opacity-0 group-hover/btn:opacity-100 text-blue-600 dark:text-blue-400 transition-opacity flex-shrink-0" />
                         </button>
                     }
                     items={[
@@ -663,9 +932,15 @@ const IssueRow = ({
                     ]}
                     onSelect={(item) => handleChange('assignTo', item.value)}
                 />
+                {localSaving && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
+                    </div>
+                )}
             </div>
 
-            <div className="col-span-1">
+            {/* Status */}
+            <div className="col-span-1 relative">
                 <Dropdown
                     trigger={
                         <button className={`w-full px-3 py-2 text-xs font-semibold rounded-lg border-2 flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md ${STATUS_COLORS[localIssue.status]}`}>
@@ -676,25 +951,25 @@ const IssueRow = ({
                     items={STATUS_OPTIONS.map(s => ({ label: s, value: s }))}
                     onSelect={(item) => handleChange('status', item.value)}
                 />
+                {localSaving && (
+                    <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                        <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />
+                    </div>
+                )}
             </div>
 
-            <div className="col-span-2 space-y-2">
-                <input
-                    type="date"
-                    value={localIssue.startDate?.split('T')[0] || ''}
-                    onChange={(e) => handleChange('startDate', e.target.value)}
-                    onKeyPress={(e) => handleKeyPress(e, 'startDate')}
-                    className="w-full px-3 py-2 text-xs border border-transparent hover:border-blue-200 dark:hover:border-blue-800 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 bg-transparent text-gray-900 dark:text-white transition-all duration-200"
-                />
-                <input
-                    type="date"
-                    value={localIssue.endDate?.split('T')[0] || ''}
-                    onChange={(e) => handleChange('endDate', e.target.value)}
-                    onKeyPress={(e) => handleKeyPress(e, 'endDate')}
-                    className="w-full px-3 py-2 text-xs border border-transparent hover:border-blue-200 dark:hover:border-blue-800 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 bg-transparent text-gray-900 dark:text-white transition-all duration-200"
+            {/* Timeline Dates */}
+            <div className="col-span-2">
+                <TimelineDateSelector
+                    startDate={localIssue.startDate?.split('T')[0] || ''}
+                    endDate={localIssue.endDate?.split('T')[0] || ''}
+                    onStartChange={(value) => handleDateChange('startDate', value)}
+                    onEndChange={(value) => handleDateChange('endDate', value)}
+                    saving={localSaving}
                 />
             </div>
 
+            {/* Actions */}
             <div className="col-span-1 flex items-center justify-center">
                 <ActionsColumn
                     issue={localIssue}
@@ -713,7 +988,6 @@ const IssueRow = ({
         </motion.div>
     );
 };
-
 const ActionsColumn = ({
     issue,
     isNew = false,
@@ -815,7 +1089,7 @@ const ActionsColumn = ({
                     className="p-2 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                     tooltip-data="Comments"
                 >
-                    <MessageSquare className="w-4 h-4" />
+                    <MessageSquare className="w-3.5 h-3.5" />
                 </motion.button>
             )}
 
@@ -827,9 +1101,9 @@ const ActionsColumn = ({
                 className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md relative"
                 tooltip-data="Images"
             >
-                <ImageIcon className="w-4 h-4" />
+                <ImageIcon className="w-3.5 h-3.5" />
                 {validImages.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-purple-600 dark:bg-purple-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                    <span className="absolute -top-1 -right-1 bg-purple-600 dark:bg-purple-500 text-white text-[10px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold">
                         {validImages.length}
                     </span>
                 )}
@@ -843,9 +1117,9 @@ const ActionsColumn = ({
                 className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md relative"
                 tooltip-data="Links"
             >
-                <LinkIcon className="w-4 h-4" />
+                <LinkIcon className="w-3.5 h-3.5" />
                 {validLinks.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-blue-600 dark:bg-blue-500 text-white text-xs rounded-full w-4 h-4 flex items-center justify-center font-bold">
+                    <span className="absolute -top-1 -right-1 bg-blue-600 dark:bg-blue-500 text-white text-[10px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold">
                         {validLinks.length}
                     </span>
                 )}
@@ -862,7 +1136,7 @@ const ActionsColumn = ({
                             className="p-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                             tooltip-data="Restore"
                         >
-                            <RefreshCw className="w-4 h-4" />
+                            <RefreshCw className="w-3.5 h-3.5" />
                         </motion.button>
                         <motion.button
                             whileHover={{ scale: 1.1 }}
@@ -871,7 +1145,7 @@ const ActionsColumn = ({
                             className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
                             tooltip-data="Delete Forever"
                         >
-                            <Trash2 className="w-4 h-4" />
+                            <Trash2 className="w-3.5 h-3.5" />
                         </motion.button>
                     </>
                 ) : (
@@ -882,7 +1156,7 @@ const ActionsColumn = ({
                         className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm hover:shadow-md"
                         tooltip-data="Move to Trash"
                     >
-                        <Trash2 className="w-4 h-4" />
+                        <Trash2 className="w-3.5 h-3.5" />
                     </motion.button>
                 )
             )}
@@ -900,14 +1174,14 @@ const ActionsColumn = ({
                     >
                         <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-sky-100 to-blue-100 dark:from-sky-900/30 dark:to-blue-900/30 border-b-2 border-sky-200 dark:border-sky-800">
                             <div className="flex items-center gap-2">
-                                <MessageSquare className="w-5 h-5 text-sky-600 dark:text-sky-400" />
-                                <h3 className="font-bold text-gray-800 dark:text-gray-200">Comments</h3>
+                                <MessageSquare className="w-4 h-4 text-sky-600 dark:text-sky-400" />
+                                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Comments</h3>
                             </div>
                             <button
                                 onClick={() => setActiveModal(null)}
                                 className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
 
@@ -924,7 +1198,7 @@ const ActionsColumn = ({
                                         }
                                     }}
                                     placeholder="Add a comment..."
-                                    className="flex-1 px-3 py-2 text-sm border-2 border-sky-200 dark:border-sky-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent transition-all duration-200"
+                                    className="flex-1 px-3 py-2 text-xs border-2 border-sky-200 dark:border-sky-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent transition-all duration-200"
                                     disabled={submittingComment}
                                 />
                                 <motion.button
@@ -932,9 +1206,9 @@ const ActionsColumn = ({
                                     whileTap={{ scale: 0.95 }}
                                     onClick={submitComment}
                                     disabled={!newComment.trim() || submittingComment}
-                                    className="px-4 py-2 bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-700 dark:to-blue-700 text-white rounded-lg hover:from-sky-700 hover:to-blue-700 dark:hover:from-sky-600 dark:hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
+                                    className="px-3 py-2 bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-700 dark:to-blue-700 text-white rounded-lg hover:from-sky-700 hover:to-blue-700 dark:hover:from-sky-600 dark:hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
                                 >
-                                    {submittingComment ? <Loader2 className="w-5 h-5 animate-spin" /> : <Send className="w-5 h-5" />}
+                                    {submittingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                                 </motion.button>
                             </div>
                         </div>
@@ -942,10 +1216,10 @@ const ActionsColumn = ({
                         <div className="overflow-y-auto max-h-72">
                             {loadingComments ? (
                                 <div className="flex items-center justify-center py-8">
-                                    <Loader2 className="w-6 h-6 animate-spin text-sky-600 dark:text-sky-400" />
+                                    <Loader2 className="w-5 h-5 animate-spin text-sky-600 dark:text-sky-400" />
                                 </div>
                             ) : comments.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
+                                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-xs">
                                     No comments yet. Be the first to comment!
                                 </div>
                             ) : (
@@ -959,21 +1233,21 @@ const ActionsColumn = ({
                                             className="px-4 py-3 hover:bg-sky-50/50 dark:hover:bg-sky-900/10 transition-colors"
                                         >
                                             <div className="flex items-start gap-3">
-                                                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-sky-400 to-blue-500 dark:from-sky-600 dark:to-blue-700 flex items-center justify-center flex-shrink-0 shadow-md">
-                                                    <span className="text-sm font-bold text-white">
+                                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-sky-400 to-blue-500 dark:from-sky-600 dark:to-blue-700 flex items-center justify-center flex-shrink-0 shadow-md">
+                                                    <span className="text-xs font-bold text-white">
                                                         {comment.commentBy?.charAt(0).toUpperCase() || 'U'}
                                                     </span>
                                                 </div>
                                                 <div className="flex-1 min-w-0">
                                                     <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-sm font-bold text-gray-800 dark:text-gray-200">
+                                                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
                                                             {comment.commentBy || 'Unknown User'}
                                                         </span>
-                                                        <span className="text-xs text-gray-500 dark:text-gray-400">
+                                                        <span className="text-[10px] text-gray-500 dark:text-gray-400">
                                                             {new Date(comment.createdAt).toLocaleDateString()}
                                                         </span>
                                                     </div>
-                                                    <p className="text-sm text-gray-700 dark:text-gray-300 break-words">{comment.comment}</p>
+                                                    <p className="text-xs text-gray-700 dark:text-gray-300 break-words">{comment.comment}</p>
                                                 </div>
                                             </div>
                                         </motion.div>
@@ -995,8 +1269,8 @@ const ActionsColumn = ({
                     >
                         <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 border-b-2 border-purple-200 dark:border-purple-800">
                             <div className="flex items-center gap-2">
-                                <ImageIcon className="w-5 h-5 text-purple-600 dark:text-purple-400" />
-                                <h3 className="font-bold text-gray-800 dark:text-gray-200">Images</h3>
+                                <ImageIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
+                                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Images</h3>
                             </div>
                             <div className="flex items-center gap-2">
                                 <input
@@ -1017,13 +1291,13 @@ const ActionsColumn = ({
                                     className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all duration-200"
                                     tooltip-data="Upload new image"
                                 >
-                                    <Plus className="w-5 h-5" />
+                                    <Plus className="w-4 h-4" />
                                 </motion.button>
                                 <button
                                     onClick={() => setActiveModal(null)}
                                     className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                                 >
-                                    <X className="w-5 h-5" />
+                                    <X className="w-4 h-4" />
                                 </button>
                             </div>
                         </div>
@@ -1032,13 +1306,13 @@ const ActionsColumn = ({
                             {uploadingImage && (
                                 <div className="px-4 py-3 border-b border-purple-100 dark:border-purple-900/30 bg-purple-50/50 dark:bg-purple-900/10">
                                     <div className="flex items-center gap-3">
-                                        <Loader2 className="w-5 h-5 animate-spin text-purple-600 dark:text-purple-400" />
-                                        <span className="text-sm text-purple-700 dark:text-purple-300">Uploading image...</span>
+                                        <Loader2 className="w-4 h-4 animate-spin text-purple-600 dark:text-purple-400" />
+                                        <span className="text-xs text-purple-700 dark:text-purple-300">Uploading image...</span>
                                     </div>
                                 </div>
                             )}
                             {validImages.length === 0 && !uploadingImage ? (
-                                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
+                                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-xs">
                                     No images added yet
                                 </div>
                             ) : (
@@ -1065,7 +1339,7 @@ const ActionsColumn = ({
                                                     className="p-1.5 bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 rounded-lg shadow-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
                                                     tooltip-data="View full size"
                                                 >
-                                                    <ZoomIn className="w-4 h-4" />
+                                                    <ZoomIn className="w-3.5 h-3.5" />
                                                 </motion.button>
                                                 {!isNew && (
                                                     <motion.button
@@ -1075,7 +1349,7 @@ const ActionsColumn = ({
                                                         className="p-1.5 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 rounded-lg shadow-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                                         tooltip-data="Remove image"
                                                     >
-                                                        <X className="w-4 h-4" />
+                                                        <X className="w-3.5 h-3.5" />
                                                     </motion.button>
                                                 )}
                                             </div>
@@ -1098,14 +1372,14 @@ const ActionsColumn = ({
                     >
                         <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-100 to-sky-100 dark:from-blue-900/30 dark:to-sky-900/30 border-b-2 border-blue-200 dark:border-blue-800">
                             <div className="flex items-center gap-2">
-                                <LinkIcon className="w-5 h-5 text-blue-600 dark:text-blue-400" />
-                                <h3 className="font-bold text-gray-800 dark:text-gray-200">Links</h3>
+                                <LinkIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
+                                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Links</h3>
                             </div>
                             <button
                                 onClick={() => setActiveModal(null)}
                                 className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                             >
-                                <X className="w-5 h-5" />
+                                <X className="w-4 h-4" />
                             </button>
                         </div>
 
@@ -1122,23 +1396,23 @@ const ActionsColumn = ({
                                         }
                                     }}
                                     placeholder="Enter link URL..."
-                                    className="flex-1 px-3 py-2 text-sm border-2 border-blue-200 dark:border-blue-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+                                    className="flex-1 px-3 py-2 text-xs border-2 border-blue-200 dark:border-blue-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200"
                                 />
                                 <motion.button
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={handleAddLink}
                                     disabled={!newLink.trim()}
-                                    className="px-4 py-2 bg-gradient-to-r from-blue-600 to-sky-600 dark:from-blue-700 dark:to-sky-700 text-white rounded-lg hover:from-blue-700 hover:to-sky-700 dark:hover:from-blue-600 dark:hover:to-sky-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
+                                    className="px-3 py-2 bg-gradient-to-r from-blue-600 to-sky-600 dark:from-blue-700 dark:to-sky-700 text-white rounded-lg hover:from-blue-700 hover:to-sky-700 dark:hover:from-blue-600 dark:hover:to-sky-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
                                 >
-                                    <Plus className="w-5 h-5" />
+                                    <Plus className="w-4 h-4" />
                                 </motion.button>
                             </div>
                         </div>
 
                         <div className="overflow-y-auto max-h-72">
                             {validLinks.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-sm">
+                                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-xs">
                                     No links added yet
                                 </div>
                             ) : (
@@ -1156,7 +1430,7 @@ const ActionsColumn = ({
                                                     href={link}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="flex-1 text-sm text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 truncate hover:underline"
+                                                    className="flex-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 truncate hover:underline"
                                                     title={link}
                                                 >
                                                     {link}
@@ -1169,7 +1443,7 @@ const ActionsColumn = ({
                                                         className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
                                                         tooltip-data="Copy link"
                                                     >
-                                                        <Copy className="w-4 h-4" />
+                                                        <Copy className="w-3.5 h-3.5" />
                                                     </motion.button>
                                                     {!isNew && (
                                                         <motion.button
@@ -1179,7 +1453,7 @@ const ActionsColumn = ({
                                                             className="p-1.5 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
                                                             tooltip-data="Remove link"
                                                         >
-                                                            <X className="w-4 h-4" />
+                                                            <X className="w-3.5 h-3.5" />
                                                         </motion.button>
                                                     )}
                                                 </div>
@@ -1218,13 +1492,13 @@ const ActionsColumn = ({
                                 onClick={() => setImagePreview(null)}
                                 className="absolute top-4 right-4 p-2 bg-white dark:bg-gray-800 text-gray-800 dark:text-white rounded-full shadow-xl hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                             >
-                                <X className="w-6 h-6" />
+                                <X className="w-5 h-5" />
                             </motion.button>
                         </motion.div>
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div>
+        </div >
     );
 };
 
