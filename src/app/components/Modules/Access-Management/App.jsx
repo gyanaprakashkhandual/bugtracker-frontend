@@ -4,8 +4,6 @@ import React, { useState, useRef, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   Users,
-  Shield,
-  Lock,
   ChevronDown,
   X,
   Check,
@@ -13,24 +11,22 @@ import {
   Trash2,
   Clock,
   User,
-  FolderOpen,
   Calendar,
-  RefreshCw,
 } from "lucide-react";
 import { Loader2 } from "lucide-react";
 import { FaEye, FaEdit, FaShieldAlt } from "react-icons/fa";
 import { useAlert } from "@/app/script/Alert.context";
 import { useConfirm } from "@/app/script/Confirm.context";
+import { useProject } from "@/app/script/Project.context";
 
 const AccessControlSystem = () => {
-  const [projects, setProjects] = useState([]);
-  const [selectedProject, setSelectedProject] = useState(null);
+  const { selectedProject } = useProject();
+  const projectId = selectedProject?._id;
+
   const [accessList, setAccessList] = useState([]);
   const [users, setUsers] = useState([]);
   const [showGrantModal, setShowGrantModal] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
   const [showUserDropdown, setShowUserDropdown] = useState(false);
   const [userSearch, setUserSearch] = useState("");
   const [showCalendar, setShowCalendar] = useState(false);
@@ -55,15 +51,13 @@ const AccessControlSystem = () => {
   const { showConfirm } = useConfirm();
   const { showAlert } = useAlert();
 
-  // Grant access form state
   const [grantForm, setGrantForm] = useState({
     userId: "",
     accessLevel: "view",
     expiresAt: "",
-    autoGrantTestTypes: true, // Auto-grant test type access by default
+    autoGrantTestTypes: true,
   });
 
-  // Get auth token
   const getAuthToken = () => {
     if (typeof window !== "undefined") {
       return localStorage.getItem("token");
@@ -71,7 +65,6 @@ const AccessControlSystem = () => {
     return null;
   };
 
-  // API helper function with auth
   const fetchWithAuth = async (url, options = {}) => {
     const token = getAuthToken();
     if (!token) {
@@ -99,26 +92,15 @@ const AccessControlSystem = () => {
     return response.json();
   };
 
-  // Fetch initial data
   useEffect(() => {
-    fetchProjects();
     fetchUsers();
   }, []);
 
-  // Auto-dismiss messages
   useEffect(() => {
-    if (error) {
-      const timer = setTimeout(() => setError(null), 5000);
-      return () => clearTimeout(timer);
+    if (projectId) {
+      fetchAccessList(projectId);
     }
-  }, [error]);
-
-  useEffect(() => {
-    if (success) {
-      const timer = setTimeout(() => setSuccess(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [success]);
+  }, [projectId]);
 
   const accessLevels = [
     {
@@ -141,7 +123,6 @@ const AccessControlSystem = () => {
     },
   ];
 
-  // Close dropdowns when clicking outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (
@@ -187,7 +168,6 @@ const AccessControlSystem = () => {
 
   const selectedUser = users.find((u) => u._id === grantForm.userId);
 
-  // Calendar logic
   const currentDate = new Date();
   const [currentMonth, setCurrentMonth] = useState(currentDate.getMonth());
   const [currentYear, setCurrentYear] = useState(currentDate.getFullYear());
@@ -284,20 +264,6 @@ const AccessControlSystem = () => {
     );
   };
 
-  const fetchProjects = async () => {
-    try {
-      setLoading(true);
-      const data = await fetchWithAuth("http://localhost:5000/api/v1/project");
-      setProjects(data.projects || data || []);
-      setError(null);
-    } catch (err) {
-      console.error("Error fetching projects:", err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
   const fetchUsers = async () => {
     try {
       const data = await fetchWithAuth(
@@ -305,7 +271,10 @@ const AccessControlSystem = () => {
       );
       setUsers(data.users || data || []);
     } catch (err) {
-      console.error("Error fetching users:", err);
+      showAlert({
+        type: "error",
+        message: err.message,
+      });
     }
   };
 
@@ -316,49 +285,53 @@ const AccessControlSystem = () => {
         `http://localhost:5000/api/v1/access/project/${projectId}/details`
       );
       setAccessList(data.accessList || []);
-      setError(null);
     } catch (err) {
-      console.error("Error fetching access list:", err);
-      setError(err.message);
+      showAlert({
+        type: "error",
+        message: err.message,
+      });
       setAccessList([]);
     } finally {
       setLoading(false);
     }
   };
 
-  const handleProjectSelect = (project) => {
-    setSelectedProject(project);
-    fetchAccessList(project._id);
-  };
-
   const handleGrantAccess = async () => {
-    if (!grantForm.userId || !selectedProject) {
-      setError("Please select a user and project");
+    if (!grantForm.userId || !projectId) {
+      showAlert({
+        type: "error",
+        message: "Please select a user",
+      });
       return;
     }
 
     setLoading(true);
     try {
       const body = {
-        projectId: selectedProject._id,
+        projectId: projectId,
         userId: grantForm.userId,
         accessLevel: grantForm.accessLevel,
         expiresAt: grantForm.expiresAt || undefined,
         autoGrantTestTypes: grantForm.autoGrantTestTypes,
       };
 
-      const data = await fetchWithAuth("http://localhost:5000/api/v1/access/project/grant", {
-        method: "POST",
-        body: JSON.stringify(body),
-      });
+      const data = await fetchWithAuth(
+        "http://localhost:5000/api/v1/access/project/grant",
+        {
+          method: "POST",
+          body: JSON.stringify(body),
+        }
+      );
 
       setShowGrantModal(false);
       setGrantForm({
         userId: "",
         accessLevel: "view",
         expiresAt: "",
-        autoGrantTestTypes: true
+        autoGrantTestTypes: true,
       });
+      setSelectedDate(null);
+      setUserSearch("");
 
       showAlert({
         type: "success",
@@ -367,22 +340,24 @@ const AccessControlSystem = () => {
           : "Access granted successfully!",
       });
 
-      fetchAccessList(selectedProject._id);
-      setError(null);
+      fetchAccessList(projectId);
     } catch (err) {
-      console.error("Error granting access:", err);
-      setError(err.message);
+      showAlert({
+        type: "error",
+        message: err.message,
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleRevokeAccess = async (userId) => {
-    if (!selectedProject) return;
+    if (!projectId) return;
 
     const result = await showConfirm({
       title: "Revoke Access",
-      message: "Are you sure you want to revoke access? This will also remove access to all test types in this project.",
+      message:
+        "Are you sure you want to revoke access? This will also remove access to all test types in this project.",
       confirmText: "Revoke",
       cancelText: "Cancel",
       type: "warning",
@@ -393,7 +368,7 @@ const AccessControlSystem = () => {
     setLoading(true);
     try {
       await fetchWithAuth(
-        `http://localhost:5000/api/v1/access/project/revoke/${selectedProject._id}/${userId}`,
+        `http://localhost:5000/api/v1/access/project/revoke/${projectId}/${userId}`,
         {
           method: "DELETE",
           body: JSON.stringify({ autoRevokeTestTypes: true }),
@@ -402,26 +377,28 @@ const AccessControlSystem = () => {
 
       showAlert({
         type: "success",
-        message: "Access revoked successfully! All test type access has been removed."
+        message:
+          "Access revoked successfully! All test type access has been removed.",
       });
 
-      fetchAccessList(selectedProject._id);
-      setError(null);
+      fetchAccessList(projectId);
     } catch (err) {
-      console.error("Error revoking access:", err);
-      setError(err.message);
+      showAlert({
+        type: "error",
+        message: err.message,
+      });
     } finally {
       setLoading(false);
     }
   };
 
   const handleUpdateAccess = async (userId, newAccessLevel) => {
-    if (!selectedProject) return;
+    if (!projectId) return;
 
     setLoading(true);
     try {
       const data = await fetchWithAuth(
-        `http://localhost:5000/api/v1/access/project/update/${selectedProject._id}/${userId}`,
+        `http://localhost:5000/api/v1/access/project/update/${projectId}/${userId}`,
         {
           method: "PUT",
           body: JSON.stringify({
@@ -438,38 +415,12 @@ const AccessControlSystem = () => {
           : "Access level updated successfully!",
       });
 
-      fetchAccessList(selectedProject._id);
-      setError(null);
+      fetchAccessList(projectId);
     } catch (err) {
-      console.error("Error updating access:", err);
-      setError(err.message);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  const handleSyncTestTypes = async () => {
-    if (!selectedProject) return;
-
-    setLoading(true);
-    try {
-      const data = await fetchWithAuth(
-        `http://localhost:5000/api/v1/access/project/${selectedProject._id}/sync-test-types`,
-        {
-          method: "POST",
-        }
-      );
-
       showAlert({
-        type: "success",
-        message: data.details || "Test type access synced successfully!",
+        type: "error",
+        message: err.message,
       });
-
-      fetchAccessList(selectedProject._id);
-      setError(null);
-    } catch (err) {
-      console.error("Error syncing test types:", err);
-      setError(err.message);
     } finally {
       setLoading(false);
     }
@@ -477,148 +428,70 @@ const AccessControlSystem = () => {
 
   return (
     <div className="max-h[calc(100vh-60px)] bg-gray-50 dark:bg-gray-900">
-      {/* Main Content */}
       <div className="max-w-full mx-auto">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          {/* Left Sidebar - Projects List */}
-          <div className="lg:col-span-1 space-y-4">
-            {/* Projects List */}
-            <div className="bg-white dark:bg-gray-800 border shadow-sm border-gray-200 dark:border-gray-700 overflow-hidden sidebar-scrollbar">
-              <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                <div className="flex items-center justify-between">
-                  <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">
-                    Projects
+        <div className="bg-white dark:bg-gray-800 shadow-sm border border-gray-200 dark:border-gray-700 min-h-[calc(100vh-73px)] sidebar-scrollbar">
+          {/* Header */}
+          <div className="p-6 border-b border-gray-200 dark:border-gray-700">
+            <div className="flex items-center justify-between">
+              <div className="flex-1">
+                <div className="flex items-center space-x-3">
+                  <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
+                    {selectedProject?.projectName || "Access Management"}
                   </h2>
                 </div>
                 <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                  {projects.length} projects
+                  Manage user access - Test type access is automatically granted
                 </p>
               </div>
-              <div className="max-h-[calc(100vh-158px)] overflow-y-auto">
-                {loading && !selectedProject ? (
-                  <div className="space-y-3 p-4">
-                    {[...Array(6)].map((_, i) => (
-                      <div
-                        key={i}
-                        className="p-4 border-b border-gray-100 dark:border-gray-700 last:border-b-0"
-                      >
-                        <div className="h-4 bg-gray-200 dark:bg-gray-700 rounded w-2/3 animate-pulse mb-2"></div>
-                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full animate-pulse mb-2"></div>
-                        <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-1/3 animate-pulse"></div>
-                      </div>
-                    ))}
-                  </div>
-                ) : projects.length === 0 ? (
-                  <div className="p-8 text-center">
-                    <div className="w-12 h-12 bg-gray-100 dark:bg-gray-700 rounded-lg flex items-center justify-center mx-auto mb-3">
-                      <FolderOpen className="w-6 h-6 text-gray-400" />
-                    </div>
-                    <p className="text-gray-500 dark:text-gray-400">
-                      No projects found
-                    </p>
-                  </div>
-                ) : (
-                  projects.map((project) => (
-                    <button
-                      key={project._id}
-                      onClick={() => handleProjectSelect(project)}
-                      className={`w-full text-left px-4 py-3 hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors border-b border-gray-100 dark:border-gray-700 last:border-b-0 ${selectedProject?._id === project._id
-                        ? "bg-blue-50 dark:bg-blue-900/20"
-                        : ""
-                        }`}
-                    >
-                      <h3 className="font-medium text-gray-900 dark:text-gray-100 mb-1">
-                        {project.projectName}
-                      </h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 line-clamp-2">
-                        {project.projectDesc}
-                      </p>
-                    </button>
-                  ))
-                )}
-              </div>
+              <button
+                onClick={() => setShowGrantModal(true)}
+                disabled={loading || !projectId}
+                className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                <Plus className="w-4 h-4" />
+                <span>Grant Access</span>
+              </button>
             </div>
           </div>
 
-          {/* Right Content - Access Management */}
-          <div className="lg:col-span-2">
-            {selectedProject ? (
-              <div className="bg-white dark:bg-gray-800 shadow-sm  border border-gray-200 dark:border-gray-700 min-h-[calc(100vh-73px)] sidebar-scrollbar">
-                {/* Header */}
-                <div className="p-6 border-b border-gray-200 dark:border-gray-700">
-                  <div className="flex items-center justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-3">
-                        <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                          {selectedProject.projectName}
-                        </h2>
-                      </div>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
-                        Manage user access - Test type access is automatically granted
-                      </p>
+          {/* Access List */}
+          <div className="divide-y divide-gray-100 dark:divide-gray-700 max-h-[calc(100vh-350px)] overflow-y-auto">
+            {loading ? (
+              <div className="space-y-3 p-4">
+                {[...Array(5)].map((_, i) => (
+                  <div
+                    key={i}
+                    className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded"
+                  >
+                    <div className="w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full animate-pulse"></div>
+                    <div className="flex-1 space-y-2">
+                      <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-1/3 animate-pulse"></div>
+                      <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/4 animate-pulse"></div>
                     </div>
-                    <button
-                      onClick={() => setShowGrantModal(true)}
-                      disabled={loading}
-                      className="flex items-center space-x-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      <Plus className="w-4 h-4" />
-                      <span>Grant Access</span>
-                    </button>
+                    <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded w-20 animate-pulse"></div>
                   </div>
-                </div>
-
-                {/* Access List */}
-                <div className="divide-y divide-gray-100 dark:divide-gray-700 max-h-[calc(100vh-350px)] overflow-y-auto">
-                  {loading ? (
-                    <div className="space-y-3 p-4">
-                      {[...Array(5)].map((_, i) => (
-                        <div
-                          key={i}
-                          className="flex items-center space-x-3 p-4 bg-gray-50 dark:bg-gray-700 rounded"
-                        >
-                          <div className="w-10 h-10 bg-gray-200 dark:bg-gray-600 rounded-full animate-pulse"></div>
-                          <div className="flex-1 space-y-2">
-                            <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-1/3 animate-pulse"></div>
-                            <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/4 animate-pulse"></div>
-                          </div>
-                          <div className="h-8 bg-gray-200 dark:bg-gray-600 rounded w-20 animate-pulse"></div>
-                        </div>
-                      ))}
-                    </div>
-                  ) : accessList.length === 0 ? (
-                    <div className="p-8 text-center">
-                      <Users className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
-                      <p className="text-gray-500 dark:text-gray-400 mb-2">
-                        No users have access yet
-                      </p>
-                      <p className="text-sm text-gray-400 dark:text-gray-500">
-                        Click "Grant Access" to add users
-                      </p>
-                    </div>
-                  ) : (
-                    accessList.map((access) => (
-                      <AccessListItem
-                        key={access._id}
-                        access={access}
-                        onRevoke={handleRevokeAccess}
-                        onUpdate={handleUpdateAccess}
-                        loading={loading}
-                      />
-                    ))
-                  )}
-                </div>
+                ))}
               </div>
-            ) : (
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-sm border border-gray-200 dark:border-gray-700 p-12 text-center">
-                <Lock className="w-16 h-16 text-gray-300 dark:text-gray-600 mx-auto mb-4" />
-                <h3 className="text-lg font-medium text-gray-900 dark:text-gray-100 mb-2">
-                  Select a Project
-                </h3>
-                <p className="text-gray-500 dark:text-gray-400">
-                  Choose a project from the list to manage access permissions
+            ) : accessList.length === 0 ? (
+              <div className="p-8 text-center">
+                <Users className="w-12 h-12 text-gray-300 dark:text-gray-600 mx-auto mb-3" />
+                <p className="text-gray-500 dark:text-gray-400 mb-2">
+                  No users have access yet
+                </p>
+                <p className="text-sm text-gray-400 dark:text-gray-500">
+                  Click "Grant Access" to add users
                 </p>
               </div>
+            ) : (
+              accessList.map((access) => (
+                <AccessListItem
+                  key={access._id}
+                  access={access}
+                  onRevoke={handleRevokeAccess}
+                  onUpdate={handleUpdateAccess}
+                  loading={loading}
+                />
+              ))
             )}
           </div>
         </div>
@@ -645,7 +518,6 @@ const AccessControlSystem = () => {
               onClick={(e) => e.stopPropagation()}
               className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl max-w-md w-full"
             >
-              {/* Header */}
               <div className="px-6 py-5 border-b border-gray-200 dark:border-gray-700">
                 <div className="flex items-center justify-between">
                   <div>
@@ -666,7 +538,6 @@ const AccessControlSystem = () => {
                 </div>
               </div>
 
-              {/* Body */}
               <div className="px-6 py-5 space-y-5">
                 {/* User Dropdown */}
                 <div>
@@ -707,7 +578,6 @@ const AccessControlSystem = () => {
                           exit={{ opacity: 0, y: -8 }}
                           className="absolute z-50 mt-2 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg max-h-72 overflow-hidden"
                         >
-                          {/* Search */}
                           <div className="p-2 border-b border-gray-200 dark:border-gray-600">
                             <input
                               type="text"
@@ -719,7 +589,6 @@ const AccessControlSystem = () => {
                             />
                           </div>
 
-                          {/* User List */}
                           <div className="max-h-56 overflow-y-auto">
                             {filteredUsers.length === 0 ? (
                               <div className="px-4 py-8 text-center text-sm text-gray-500 dark:text-gray-400">
@@ -817,7 +686,8 @@ const AccessControlSystem = () => {
                       Auto-grant test type access
                     </p>
                     <p className="text-xs text-blue-700 dark:text-blue-300 mt-1">
-                      User will automatically get same access to all test types in this project
+                      User will automatically get same access to all test types
+                      in this project
                     </p>
                   </div>
                   <label className="relative inline-flex items-center cursor-pointer">
@@ -874,7 +744,6 @@ const AccessControlSystem = () => {
                             exit={{ opacity: 0, y: 8 }}
                             className="absolute z-50 bottom-full mb-2 left-0 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg shadow-xl p-3 w-72"
                           >
-                            {/* Month Navigation */}
                             <div className="flex items-center justify-between mb-3">
                               <button
                                 type="button"
@@ -909,7 +778,6 @@ const AccessControlSystem = () => {
                               </button>
                             </div>
 
-                            {/* Day Headers */}
                             <div className="grid grid-cols-7 gap-1 mb-2">
                               {[
                                 "Sun",
@@ -929,7 +797,6 @@ const AccessControlSystem = () => {
                               ))}
                             </div>
 
-                            {/* Calendar Days */}
                             <div className="grid grid-cols-7 gap-1">
                               {generateCalendarDays().map((day, index) => (
                                 <button
@@ -952,7 +819,6 @@ const AccessControlSystem = () => {
                               ))}
                             </div>
 
-                            {/* Today Button */}
                             <button
                               type="button"
                               onClick={() => {
@@ -1167,7 +1033,6 @@ const AccessControlSystem = () => {
                 </div>
               </div>
 
-              {/* Footer */}
               <div className="px-6 py-4 bg-gray-50 dark:bg-gray-700 border-t border-gray-200 dark:border-gray-600 rounded-b-xl flex justify-end space-x-3">
                 <button
                   onClick={() => setShowGrantModal(false)}
@@ -1199,13 +1064,10 @@ const AccessControlSystem = () => {
   );
 };
 
-// Access List Item Component
-// Add a check at the beginning of AccessListItem component to handle deleted users
 const AccessListItem = ({ access, onRevoke, onUpdate, loading }) => {
   const [showActions, setShowActions] = useState(false);
   const [showAccessLevelDropdown, setShowAccessLevelDropdown] = useState(false);
 
-  // Handle deleted user case
   if (!access.userId) {
     return (
       <motion.div
@@ -1260,7 +1122,9 @@ const AccessListItem = ({ access, onRevoke, onUpdate, loading }) => {
     { value: "admin", label: "Admin", icon: FaShieldAlt },
   ];
 
-  const currentLevel = accessLevels.find(level => level.value === access.accessLevel);
+  const currentLevel = accessLevels.find(
+    (level) => level.value === access.accessLevel
+  );
 
   return (
     <motion.div
@@ -1297,11 +1161,14 @@ const AccessListItem = ({ access, onRevoke, onUpdate, loading }) => {
         </div>
 
         <div className="flex items-center space-x-2">
-          {/* Access Level Dropdown */}
           <div className="relative">
             <button
-              onClick={() => setShowAccessLevelDropdown(!showAccessLevelDropdown)}
-              className={`px-3 py-1 text-xs font-medium rounded flex items-center space-x-1 ${getLevelColor(access.accessLevel)}`}
+              onClick={() =>
+                setShowAccessLevelDropdown(!showAccessLevelDropdown)
+              }
+              className={`px-3 py-1 text-xs font-medium rounded flex items-center space-x-1 ${getLevelColor(
+                access.accessLevel
+              )}`}
             >
               {currentLevel && <currentLevel.icon className="w-3 h-3" />}
               <span>{access.accessLevel}</span>
@@ -1321,7 +1188,6 @@ const AccessListItem = ({ access, onRevoke, onUpdate, loading }) => {
                     return (
                       <button
                         key={level.value}
-                        // Fix for access level update button - around line 1295
                         onClick={() => {
                           if (access.userId) {
                             onUpdate(access.userId._id, level.value);
@@ -1346,7 +1212,6 @@ const AccessListItem = ({ access, onRevoke, onUpdate, loading }) => {
 
           <AnimatePresence>
             {showActions && (
-              // Fix for AccessListItem component - Update the revoke button onClick
               <motion.button
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -1354,7 +1219,6 @@ const AccessListItem = ({ access, onRevoke, onUpdate, loading }) => {
                 onClick={() => access.userId && onRevoke(access.userId._id)}
                 disabled={loading || !access.userId}
                 className="ml-2 p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-                tooltip-data="Revoke Access"
               >
                 <Trash2 className="w-4 h-4" />
               </motion.button>
@@ -1363,20 +1227,22 @@ const AccessListItem = ({ access, onRevoke, onUpdate, loading }) => {
         </div>
       </div>
 
-      {/* Test Type Access Info */}
       {access.testTypeAccess && (
         <div className="mt-3 pl-13">
           <div className="flex items-center space-x-4 text-xs">
             <div className="flex items-center space-x-1 text-green-600 dark:text-green-400">
               <Check className="w-3 h-3" />
               <span>
-                {access.testTypeAccess.accessibleCount}/{access.testTypeAccess.totalCount} test types
+                {access.testTypeAccess.accessibleCount}/
+                {access.testTypeAccess.totalCount} test types
               </span>
             </div>
-            <span className={`px-2 py-1 rounded-full text-xs ${access.testTypeAccess.syncStatus === 'synced'
-              ? 'bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300'
-              : 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300'
-              }`}>
+            <span
+              className={`px-2 py-1 rounded-full text-xs ${access.testTypeAccess.syncStatus === "synced"
+                ? "bg-green-100 text-green-800 dark:bg-green-900/20 dark:text-green-300"
+                : "bg-yellow-100 text-yellow-800 dark:bg-yellow-900/20 dark:text-yellow-300"
+                }`}
+            >
               {access.testTypeAccess.syncStatus}
             </span>
           </div>
