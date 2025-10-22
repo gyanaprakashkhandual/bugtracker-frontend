@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Eye, Trash2, X, Send, Edit2, Save, ChevronLeft, ChevronRight, ArchiveIcon, Trash, Archive, Calendar, Clock, MessageSquare, Link, ImageIcon, Inbox, ArrowDownToLine, ChevronDown, Check } from 'lucide-react';
+import { Eye, Trash2, X, Send, Edit2, Save, ChevronLeft, ChevronRight, ArchiveIcon, Trash, Archive, Calendar, Clock, MessageSquare, Link, ImageIcon, Inbox, ArrowDownToLine, ChevronDown, Check, Loader2 } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context';
 import { useProject } from '@/app/script/Project.context';
 import KanbanSkeleton from '@/app/components/assets/Kanban.loader';
@@ -22,6 +22,8 @@ const BugKanbanView = () => {
     const [loading, setLoading] = useState(false);
     const [dragOverColumn, setDragOverColumn] = useState(null);
     const [openDropdown, setOpenDropdown] = useState(null);
+    const [isDragging, setIsDragging] = useState(false);
+    const [actionLoading, setActionLoading] = useState(false);
     const dropdownRefs = useRef({});
 
     const { showAlert } = useAlert();
@@ -58,33 +60,60 @@ const BugKanbanView = () => {
 
     const cardVariants = {
         initial: { opacity: 0, scale: 0.95, y: 20 },
-        animate: { opacity: 1, scale: 1, y: 0 },
+        animate: {
+            opacity: 1,
+            scale: 1,
+            y: 0,
+            transition: {
+                duration: 0.4,
+                ease: [0.4, 0, 0.2, 1]
+            }
+        },
         drag: {
             scale: 1.05,
             rotate: 3,
-            boxShadow: '0 8px 24px rgba(0,0,0,0.2)',
-            transition: { duration: 0.2 }
+            boxShadow: '0 12px 32px rgba(0,0,0,0.25)',
+            transition: {
+                duration: 0.3,
+                ease: [0.4, 0, 0.2, 1]
+            }
         },
         drop: {
             scale: 1,
             rotate: 0,
             boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-            transition: { duration: 0.3, ease: 'easeOut' }
+            transition: {
+                duration: 0.4,
+                ease: [0.4, 0, 0.2, 1]
+            }
         }
     };
 
     const columnVariants = {
         initial: { opacity: 0, y: 20 },
-        animate: { opacity: 1, y: 0 },
+        animate: {
+            opacity: 1,
+            y: 0,
+            transition: {
+                duration: 0.5,
+                ease: [0.4, 0, 0.2, 1]
+            }
+        },
         hover: {
             scale: 1.02,
             backgroundColor: 'rgba(59, 130, 246, 0.1)',
-            transition: { duration: 0.2 }
+            transition: {
+                duration: 0.3,
+                ease: [0.4, 0, 0.2, 1]
+            }
         },
         drop: {
             scale: 1.03,
             backgroundColor: 'rgba(59, 130, 246, 0.2)',
-            transition: { duration: 0.2 }
+            transition: {
+                duration: 0.3,
+                ease: [0.4, 0, 0.2, 1]
+            }
         }
     };
 
@@ -198,7 +227,7 @@ const BugKanbanView = () => {
     };
 
     const handleUpdateBug = async () => {
-        setLoading(true);
+        setActionLoading(true);
         try {
             const response = await fetch(`${BASE_BUG_URL}/bugs/${selectedBug._id}`, {
                 method: 'PUT',
@@ -220,11 +249,12 @@ const BugKanbanView = () => {
         } catch (error) {
             showAlert('error', 'Failed to update bug');
         } finally {
-            setLoading(false);
+            setActionLoading(false);
         }
     };
 
     const handleMoveBugToTrash = async (bugId) => {
+        setActionLoading(true);
         try {
             const response = await fetch(
                 `${BASE_BUG_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/bugs/${bugId}/trash`,
@@ -246,10 +276,13 @@ const BugKanbanView = () => {
             }
         } catch (error) {
             showAlert('error', 'Failed to move bug to trash');
+        } finally {
+            setActionLoading(false);
         }
     };
 
     const handleDeleteBugPermanently = async (bugId) => {
+        setActionLoading(true);
         try {
             const response = await fetch(
                 `${BASE_BUG_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/bugs/${bugId}/permanent`,
@@ -271,13 +304,15 @@ const BugKanbanView = () => {
             }
         } catch (error) {
             showAlert('error', 'Failed to delete bug');
+        } finally {
+            setActionLoading(false);
         }
     };
 
     const handlePostComment = async () => {
         if (!newComment.trim()) return;
 
-        setLoading(true);
+        setActionLoading(true);
         try {
             const response = await fetch(
                 `${BASE_COMMENT_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/bugs/${selectedBug._id}/comments`,
@@ -304,12 +339,13 @@ const BugKanbanView = () => {
         } catch (error) {
             showAlert('error', 'Failed to post comment');
         } finally {
-            setLoading(false);
+            setActionLoading(false);
         }
     };
 
     const handleDragStart = (e, bug) => {
         setDraggedBug(bug);
+        setIsDragging(true);
         e.dataTransfer.effectAllowed = 'move';
         e.currentTarget.style.opacity = '0.4';
     };
@@ -317,6 +353,7 @@ const BugKanbanView = () => {
     const handleDragEnd = (e) => {
         e.currentTarget.style.opacity = '1';
         setDragOverColumn(null);
+        setIsDragging(false);
     };
 
     const handleDragOver = (e) => {
@@ -340,8 +377,11 @@ const BugKanbanView = () => {
 
         if (!draggedBug || draggedBug.status === newStatus) {
             setDraggedBug(null);
+            setIsDragging(false);
             return;
         }
+
+        setActionLoading(true);
 
         try {
             const response = await fetch(`${BASE_BUG_URL}/bugs/${draggedBug._id}`, {
@@ -367,6 +407,8 @@ const BugKanbanView = () => {
             showAlert('error', 'Failed to update bug status');
         } finally {
             setDraggedBug(null);
+            setIsDragging(false);
+            setActionLoading(false);
         }
     };
 
@@ -390,6 +432,19 @@ const BugKanbanView = () => {
         return filteredBugs;
     };
 
+    const truncateText = (text, maxLength) => {
+        if (!text) return '';
+        if (text.length <= maxLength) return text;
+        return text.substring(0, maxLength) + '...';
+    };
+
+    const truncateWords = (text, maxWords) => {
+        if (!text) return '';
+        const words = text.split(' ');
+        if (words.length <= maxWords) return text;
+        return words.slice(0, maxWords).join(' ') + '...';
+    };
+
     const GitHubDropdown = ({ value, options, onChange, label, name }) => {
         const isOpen = openDropdown === name;
 
@@ -400,37 +455,39 @@ const BugKanbanView = () => {
                     className="text-xs px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 hover:bg-gray-50 dark:hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 cursor-pointer font-medium text-gray-700 dark:text-gray-100 flex items-center gap-1.5 min-w-[120px] justify-between"
                 >
                     <span>{value}</span>
-                    <ChevronDown className={`w-3 h-3 transition-transform ${isOpen ? 'rotate-180' : ''}`} />
+                    <ChevronDown className={`w-3 h-3 transition-transform duration-300 ${isOpen ? 'rotate-180' : ''}`} />
                 </button>
 
-                {isOpen && (
-                    <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md   z-50 py-1 max-h-64 overflow-y-auto"
-                    >
-                        <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700">
-                            {label}
-                        </div>
-                        {options.map((option) => (
-                            <button
-                                key={option}
-                                onClick={() => {
-                                    onChange(option);
-                                    setOpenDropdown(null);
-                                }}
-                                className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-between ${value === option ? 'bg-gray-50 dark:bg-gray-700/50' : ''}`}
-                            >
-                                <span className="text-gray-700 dark:text-gray-100">{option}</span>
-                                {value === option && (
-                                    <Check className="w-3 h-3 text-blue-600 dark:text-gray-100" />
-                                )}
-                            </button>
-                        ))}
-                    </motion.div>
-                )}
+                <AnimatePresence>
+                    {isOpen && (
+                        <motion.div
+                            initial={{ opacity: 0, scale: 0.95, y: -10 }}
+                            animate={{ opacity: 1, scale: 1, y: 0 }}
+                            exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                            transition={{ duration: 0.2 }}
+                            className="absolute top-full left-0 mt-1 w-48 bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-600 rounded-md z-50 py-1 max-h-64 overflow-y-auto shadow-lg"
+                        >
+                            <div className="px-2 py-1.5 text-xs font-semibold text-gray-500 dark:text-gray-100 border-b border-gray-200 dark:border-gray-700">
+                                {label}
+                            </div>
+                            {options.map((option) => (
+                                <button
+                                    key={option}
+                                    onClick={() => {
+                                        onChange(option);
+                                        setOpenDropdown(null);
+                                    }}
+                                    className={`w-full text-left px-3 py-2 text-xs hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors flex items-center justify-between ${value === option ? 'bg-gray-50 dark:bg-gray-700/50' : ''}`}
+                                >
+                                    <span className="text-gray-700 dark:text-gray-100">{option}</span>
+                                    {value === option && (
+                                        <Check className="w-3 h-3 text-blue-600 dark:text-gray-100" />
+                                    )}
+                                </button>
+                            ))}
+                        </motion.div>
+                    )}
+                </AnimatePresence>
             </div>
         );
     };
@@ -444,7 +501,30 @@ const BugKanbanView = () => {
     }
 
     return (
-        <div className="max-h-[calc(100vh-69px)] p-2 kanban-scrollbar justify-center items-center bg-gray-50 dark:bg-gray-900">
+        <div className="max-h-[calc(100vh-69px)] p-2 kanban-scrollbar justify-center items-center bg-gray-50 dark:bg-gray-900 relative">
+            <AnimatePresence>
+                {actionLoading && !isDragging && (
+                    <motion.div
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        className="fixed inset-0 bg-black/20 backdrop-blur-sm z-40 flex items-center justify-center"
+                    >
+                        <motion.div
+                            initial={{ scale: 0.8, opacity: 0 }}
+                            animate={{ scale: 1, opacity: 1 }}
+                            exit={{ scale: 0.8, opacity: 0 }}
+                            className="bg-white dark:bg-gray-800 rounded-lg p-6 shadow-2xl flex items-center gap-3"
+                        >
+                            <Loader2 className="w-6 h-6 text-blue-600 dark:text-blue-400 animate-spin" />
+                            <span className="text-sm font-medium text-gray-700 dark:text-gray-200">
+                                Processing...
+                            </span>
+                        </motion.div>
+                    </motion.div>
+                )}
+            </AnimatePresence>
+
             <div className="flex gap-3 overflow-x-auto">
                 {statuses.map((status) => {
                     const statusBugs = getBugsByStatus(status);
@@ -455,8 +535,7 @@ const BugKanbanView = () => {
                             variants={columnVariants}
                             initial="initial"
                             animate="animate"
-                            whileHover="hover"
-                            className={`flex-shrink-0 w-[243px] min-h-[calc(100vh-80px)] ${statusColors[status]} border rounded-lg p-3 transition-all duration-300 ${dragOverColumn === status ? 'ring-2 ring-blue-400 dark:ring-blue-600 ring-offset-2   scale-[1.02]' : ''}`}
+                            className={`flex-shrink-0 w-[243px] min-h-[calc(100vh-80px)] ${statusColors[status]} border rounded-lg p-3 transition-all duration-300 ${dragOverColumn === status ? 'ring-2 ring-blue-400 dark:ring-blue-600 ring-offset-2' : ''}`}
                             onDragOver={handleDragOver}
                             onDragEnter={() => handleDragEnter(status)}
                             onDragLeave={handleDragLeave}
@@ -548,11 +627,11 @@ const BugKanbanView = () => {
                                                 initial="initial"
                                                 animate="animate"
                                                 whileDrag="drag"
-                                                className={`bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-700 cursor-move hover:shadow-md transition-all duration-200 ${draggedBug?._id === bug._id ? 'opacity-40 rotate-2 scale-95' : ''}`}
+                                                className={`bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-700 cursor-move hover:shadow-md transition-all duration-300 ${draggedBug?._id === bug._id ? 'opacity-40 rotate-2 scale-95' : ''}`}
                                                 layout
                                                 transition={{
-                                                    layout: { duration: 0.3, ease: "easeInOut" },
-                                                    default: { duration: 0.2 }
+                                                    layout: { duration: 0.3, ease: [0.4, 0, 0.2, 1] },
+                                                    default: { duration: 0.3 }
                                                 }}
                                             >
                                                 <div className="flex items-start justify-between mb-2">
@@ -565,27 +644,27 @@ const BugKanbanView = () => {
                                                         {bug.priority}
                                                     </span>
                                                 </div>
-                                                <p className="text-xs text-gray-700 dark:text-gray-100 mb-2 line-clamp-2 leading-relaxed">
-                                                    {bug.bugDesc}
+                                                <p className="text-xs text-gray-700 dark:text-gray-100 mb-2 line-clamp-2 leading-relaxed h-8 overflow-hidden">
+                                                    {truncateText(bug.bugDesc, 80)}
                                                 </p>
                                                 <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
-                                                    <span className="text-xs text-gray-500 dark:text-gray-100">{bug.moduleName}</span>
+                                                    <span className="text-xs text-gray-500 dark:text-gray-100 truncate max-w-[120px]">{truncateWords(bug.moduleName, 15)}</span>
                                                     <div className="flex gap-2">
                                                         <button
                                                             onClick={() => handleViewBug(bug, bugs.indexOf(bug))}
-                                                            className="p-1 hover:bg-blue-50 dark:hover:bg-blue-900 rounded transition-colors"
+                                                            className="p-1 hover:bg-blue-50 dark:hover:bg-blue-900 rounded transition-colors duration-200"
                                                         >
                                                             <Eye className="w-3.5 h-3.5 text-blue-600 dark:text-blue-100" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleMoveBugToTrash(bug._id)}
-                                                            className="p-1 hover:bg-yellow-50 dark:hover:bg-yellow-900 rounded transition-colors"
+                                                            className="p-1 hover:bg-yellow-50 dark:hover:bg-yellow-900 rounded transition-colors duration-200"
                                                         >
                                                             <ArchiveIcon className="w-3.5 h-3.5 text-yellow-600 dark:text-yellow-100" />
                                                         </button>
                                                         <button
                                                             onClick={() => handleDeleteBugPermanently(bug._id)}
-                                                            className="p-1 hover:bg-red-50 dark:hover:bg-red-900 rounded transition-colors"
+                                                            className="p-1 hover:bg-red-50 dark:hover:bg-red-900 rounded transition-colors duration-200"
                                                         >
                                                             <Trash className="w-3.5 h-3.5 text-red-600 dark:text-red-100" />
                                                         </button>
@@ -608,6 +687,7 @@ const BugKanbanView = () => {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
+                        transition={{ duration: 0.3 }}
                         onClick={() => setIsModalOpen(false)}
                     >
                         <motion.div
@@ -679,49 +759,63 @@ const BugKanbanView = () => {
                                         {isEditMode ? (
                                             <button
                                                 onClick={handleUpdateBug}
-                                                disabled={loading}
-                                                className="p-2 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg transition-colors backdrop-blur-sm"
+                                                disabled={actionLoading}
+                                                className="p-2 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg transition-colors duration-200 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                             >
-                                                <Save className="w-4 h-4 text-sky-600 dark:text-sky-100" />
+                                                {actionLoading ? (
+                                                    <Loader2 className="w-4 h-4 text-sky-600 dark:text-sky-100 animate-spin" />
+                                                ) : (
+                                                    <Save className="w-4 h-4 text-sky-600 dark:text-sky-100" />
+                                                )}
                                             </button>
                                         ) : (
                                             <button
                                                 onClick={() => setIsEditMode(true)}
-                                                className="p-2 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg transition-colors backdrop-blur-sm"
+                                                className="p-2 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg transition-colors duration-200 backdrop-blur-sm"
                                             >
                                                 <Edit2 className="w-4 h-4 text-sky-600 dark:text-sky-100" />
                                             </button>
                                         )}
                                         <button
                                             onClick={() => handleMoveBugToTrash(selectedBug._id)}
-                                            className="p-2 hover:bg-orange-100 dark:hover:bg-orange-900 rounded-lg transition-colors backdrop-blur-sm"
+                                            disabled={actionLoading}
+                                            className="p-2 hover:bg-orange-100 dark:hover:bg-orange-900 rounded-lg transition-colors duration-200 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            <Archive className="w-4 h-4 text-orange-600 dark:text-orange-100" />
+                                            {actionLoading ? (
+                                                <Loader2 className="w-4 h-4 text-orange-600 dark:text-orange-100 animate-spin" />
+                                            ) : (
+                                                <Archive className="w-4 h-4 text-orange-600 dark:text-orange-100" />
+                                            )}
                                         </button>
                                         <button
                                             onClick={() => handleDeleteBugPermanently(selectedBug._id)}
-                                            className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors backdrop-blur-sm"
+                                            disabled={actionLoading}
+                                            className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors duration-200 backdrop-blur-sm disabled:opacity-50 disabled:cursor-not-allowed"
                                         >
-                                            <Trash2 className="w-4 h-4 text-red-600 dark:text-red-100" />
+                                            {actionLoading ? (
+                                                <Loader2 className="w-4 h-4 text-red-600 dark:text-red-100 animate-spin" />
+                                            ) : (
+                                                <Trash2 className="w-4 h-4 text-red-600 dark:text-red-100" />
+                                            )}
                                         </button>
                                         <div className="w-px h-6 bg-sky-300 dark:bg-sky-700 mx-1"></div>
                                         <button
                                             onClick={() => handleNavigateBug('prev')}
                                             disabled={currentBugIndex <= 0}
-                                            className="p-2 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+                                            className="p-2 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
                                         >
                                             <ChevronLeft className="w-4 h-4 text-gray-600 dark:text-gray-100" />
                                         </button>
                                         <button
                                             onClick={() => handleNavigateBug('next')}
                                             disabled={currentBugIndex >= bugs.length - 1}
-                                            className="p-2 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
+                                            className="p-2 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg transition-colors duration-200 disabled:opacity-50 disabled:cursor-not-allowed backdrop-blur-sm"
                                         >
                                             <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-100" />
                                         </button>
                                         <button
                                             onClick={() => setIsModalOpen(false)}
-                                            className="p-2 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg transition-colors backdrop-blur-sm"
+                                            className="p-2 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg transition-colors duration-200 backdrop-blur-sm"
                                         >
                                             <X className="w-4 h-4 text-gray-600 dark:text-gray-100" />
                                         </button>
@@ -729,7 +823,7 @@ const BugKanbanView = () => {
                                 </div>
 
                                 <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-br from-white via-sky-50/30 to-white dark:from-gray-900 dark:via-sky-950/30 dark:to-gray-900">
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5  ">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5">
                                         <h3 className="text-xs font-semibold text-sky-600 dark:text-sky-100 uppercase tracking-wider mb-3">MODULE</h3>
                                         {isEditMode ? (
                                             <input
@@ -743,7 +837,7 @@ const BugKanbanView = () => {
                                         )}
                                     </div>
 
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5  ">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5">
                                         <h3 className="text-xs font-semibold text-sky-600 dark:text-sky-100 uppercase tracking-wider mb-3">DESCRIPTION</h3>
                                         {isEditMode ? (
                                             <textarea
@@ -757,7 +851,7 @@ const BugKanbanView = () => {
                                         )}
                                     </div>
 
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5  ">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5">
                                         <h3 className="text-xs font-semibold text-sky-600 dark:text-sky-100 uppercase tracking-wider mb-3">REQUIREMENT</h3>
                                         {isEditMode ? (
                                             <textarea
@@ -771,7 +865,7 @@ const BugKanbanView = () => {
                                         )}
                                     </div>
 
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5  ">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5">
                                         <h3 className="text-xs font-semibold text-sky-600 dark:text-sky-100 uppercase tracking-wider mb-3 flex items-center gap-2">
                                             <Link className="w-3.5 h-3.5" />
                                             REFERENCE LINKS
@@ -779,7 +873,7 @@ const BugKanbanView = () => {
                                         <p className="text-sm text-gray-400 dark:text-gray-100 text-center py-8">No reference links</p>
                                     </div>
 
-                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5  ">
+                                    <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5">
                                         <h3 className="text-xs font-semibold text-sky-600 dark:text-sky-100 uppercase tracking-wider mb-3 flex items-center gap-2">
                                             <ImageIcon className="w-3.5 h-3.5" />
                                             IMAGES
@@ -790,14 +884,14 @@ const BugKanbanView = () => {
                                     </div>
 
                                     <div className="grid grid-cols-2 gap-4">
-                                        <div className="bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950 dark:to-blue-950 backdrop-blur-xl border border-sky-200 dark:border-sky-800 rounded-lg p-4  ">
+                                        <div className="bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-950 dark:to-blue-950 backdrop-blur-xl border border-sky-200 dark:border-sky-800 rounded-lg p-4">
                                             <div className="flex items-center gap-2 text-sky-700 dark:text-sky-100 mb-1">
                                                 <Calendar className="w-4 h-4" />
                                                 <span className="text-xs font-semibold uppercase tracking-wider">CREATED AT</span>
                                             </div>
                                             <p className="text-sm font-medium text-sky-900 dark:text-sky-100">{formatDate(selectedBug.createdAt)}</p>
                                         </div>
-                                        <div className="bg-gradient-to-br from-purple-50 to-sky-50 dark:from-purple-950 dark:to-sky-950 backdrop-blur-xl border border-purple-200 dark:border-purple-800 rounded-lg p-4  ">
+                                        <div className="bg-gradient-to-br from-purple-50 to-sky-50 dark:from-purple-950 dark:to-sky-950 backdrop-blur-xl border border-purple-200 dark:border-purple-800 rounded-lg p-4">
                                             <div className="flex items-center gap-2 text-purple-700 dark:text-purple-100 mb-1">
                                                 <Clock className="w-4 h-4" />
                                                 <span className="text-xs font-semibold uppercase tracking-wider">UPDATED AT</span>
@@ -829,6 +923,7 @@ const BugKanbanView = () => {
                                                 key={comment._id}
                                                 initial={{ opacity: 0, y: 10 }}
                                                 animate={{ opacity: 1, y: 0 }}
+                                                transition={{ duration: 0.3 }}
                                                 className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-800 rounded-lg p-4 shadow-md"
                                             >
                                                 <div className="flex items-start justify-between mb-2">
@@ -857,11 +952,20 @@ const BugKanbanView = () => {
                                     />
                                     <button
                                         onClick={handlePostComment}
-                                        disabled={loading || !newComment.trim()}
-                                        className="w-full px-4 py-2.5 bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-700 dark:to-blue-700 text-white dark:text-gray-100 text-sm font-medium rounded-lg hover:from-sky-700 hover:to-blue-700 dark:hover:from-sky-600 dark:hover:to-blue-600 transition-all   disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                                        disabled={actionLoading || !newComment.trim()}
+                                        className="w-full px-4 py-2.5 bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-700 dark:to-blue-700 text-white dark:text-gray-100 text-sm font-medium rounded-lg hover:from-sky-700 hover:to-blue-700 dark:hover:from-sky-600 dark:hover:to-blue-600 transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                                     >
-                                        <Send className="w-4 h-4" />
-                                        Post Comment
+                                        {actionLoading ? (
+                                            <>
+                                                <Loader2 className="w-4 h-4 animate-spin" />
+                                                Posting...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <Send className="w-4 h-4" />
+                                                Post Comment
+                                            </>
+                                        )}
                                     </button>
                                 </div>
                             </div>
