@@ -279,14 +279,6 @@ const EditorToolbar = ({
             <Strikethrough className="w-4 h-4" />
           </button>
           <button
-            onClick={() => editor.chain().focus().toggleCode().run()}
-            className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('code') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
-              }`}
-            tooltip-data="Code"
-          >
-            <Code className="w-4 h-4" />
-          </button>
-          <button
             onClick={() => editor.chain().focus().toggleSubscript().run()}
             className={`p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300 ${editor.isActive('subscript') ? 'bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400' : ''
               }`}
@@ -407,7 +399,7 @@ const EditorToolbar = ({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50"
+                className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[9999] min-w-max"
               >
                 <div className="grid grid-cols-6 gap-2">
                   {colors.map((color) => (
@@ -433,7 +425,7 @@ const EditorToolbar = ({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50"
+                className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[9999]"
               >
                 <div className="grid grid-cols-6 gap-2">
                   {highlightColors.map((color) => (
@@ -540,20 +532,6 @@ const EditorToolbar = ({
         {/* Mentions & Emojis */}
         <div className="flex items-center gap-1 border-r border-gray-300 dark:border-gray-700 pr-2 relative">
           <button
-            onClick={insertMention}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            tooltip-data="Insert Mention"
-          >
-            <AtSign className="w-4 h-4" />
-          </button>
-          <button
-            onClick={insertHashtag}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            tooltip-data="Insert Hashtag"
-          >
-            <Hash className="w-4 h-4" />
-          </button>
-          <button
             onClick={() => setShowEmojiPicker(!showEmojiPicker)}
             className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
             tooltip-data="Insert Emoji"
@@ -568,7 +546,7 @@ const EditorToolbar = ({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 max-h-64 overflow-y-auto"
+                className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-9999 max-h-64 overflow-y-auto"
               >
                 <div className="grid grid-cols-8 gap-2">
                   {emojis.map((emoji) => (
@@ -669,13 +647,7 @@ const EditorToolbar = ({
           >
             <Search className="w-4 h-4" />
           </button>
-          <button
-            onClick={() => editor.chain().focus().addComment().run()}
-            className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded transition-colors text-gray-700 dark:text-gray-300"
-            tooltip-data="Add Comment"
-          >
-            <MessageSquare className="w-4 h-4" />
-          </button>
+
         </div>
       </div>
 

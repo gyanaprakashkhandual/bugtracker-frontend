@@ -162,10 +162,10 @@ const EditorContentArea = ({
 
       for (let i = 0; i < items.length; i++) {
         const item = items[i];
-        
+
         if (item.type.indexOf('image') !== -1) {
           event.preventDefault();
-          
+
           const file = item.getAsFile();
           if (file) {
             try {
@@ -263,7 +263,7 @@ const EditorContentArea = ({
           )}
 
           <EditorContent editor={editor} className="text-gray-900 dark:text-gray-100" />
-          
+
           {/* Upload indicator */}
           {isUploading && (
             <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-xl">
@@ -384,7 +384,7 @@ const EditorContentArea = ({
               className="bg-white dark:bg-gray-900 rounded-xl p-6 w-full max-w-md border border-gray-200 dark:border-gray-800"
             >
               <h3 className="text-xl font-semibold mb-4 text-gray-900 dark:text-white">Insert Image</h3>
-              
+
               {/* Image URL Input */}
               <div className="mb-4">
                 <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
@@ -481,7 +481,7 @@ const EditorContentArea = ({
                 <MessageSquare className="w-5 h-5" />
                 Add Comment
               </h3>
-              
+
               {selectedText && (
                 <div className="mb-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg border-l-4 border-blue-500">
                   <p className="text-sm text-gray-600 dark:text-gray-400 italic">"{selectedText}"</p>

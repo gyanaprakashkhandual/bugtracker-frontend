@@ -34,7 +34,6 @@ import BubbleMenu from '@tiptap/extension-bubble-menu';
 import FloatingMenu from '@tiptap/extension-floating-menu';
 import { Loader2 } from 'lucide-react';
 
-// Import languages
 import javascript from 'highlight.js/lib/languages/javascript';
 import python from 'highlight.js/lib/languages/python';
 import java from 'highlight.js/lib/languages/java';
@@ -51,10 +50,8 @@ import sql from 'highlight.js/lib/languages/sql';
 import bash from 'highlight.js/lib/languages/bash';
 import json from 'highlight.js/lib/languages/json';
 
-// Create lowlight instance
 const lowlight = createLowlight();
 
-// Register languages
 lowlight.register('javascript', javascript);
 lowlight.register('python', python);
 lowlight.register('java', java);
@@ -71,7 +68,6 @@ lowlight.register('sql', sql);
 lowlight.register('bash', bash);
 lowlight.register('json', json);
 
-// Custom Font Size Extension
 import { Extension } from '@tiptap/core';
 
 const FontSize = Extension.create({
@@ -122,7 +118,6 @@ const FontSize = Extension.create({
   },
 });
 
-// Custom Line Height Extension
 const LineHeight = Extension.create({
   name: 'lineHeight',
 
@@ -165,7 +160,6 @@ const LineHeight = Extension.create({
   },
 });
 
-// Custom Letter Spacing Extension
 const LetterSpacing = Extension.create({
   name: 'letterSpacing',
 
@@ -208,7 +202,6 @@ const LetterSpacing = Extension.create({
   },
 });
 
-// Custom Indent Extension
 const Indent = Extension.create({
   name: 'indent',
 
@@ -310,416 +303,323 @@ import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
 import { useProject } from '@/app/script/Project.context';
 import { useDoc } from '@/app/script/Doc.context';
-import DocumentHeader from '../component/Header';
 import EditorToolbar from '../component/Toolbar';
 import EditorContentArea from '../component/Editor';
+import DocumentStatusBar from '../component/Statusbar';
 
 const DocumentEditor = () => {
-    console.log('🚀 DocumentEditor component rendering...');
+  const { showAlert } = useAlert();
+  const { selectedProject } = useProject();
+  const projectId = selectedProject?._id;
+  const { testTypeId, testTypeName } = useTestType();
+  const { docId, docName } = useDoc();
 
-    const { showAlert } = useAlert();
-    const { selectedProject } = useProject();
-    const projectId = selectedProject?._id;
-    const { testTypeId, testTypeName } = useTestType();
-    const { docId, docName } = useDoc();
+  const [document, setDocument] = useState(null);
+  const [title, setTitle] = useState('Untitled Document');
+  const [lastSaved, setLastSaved] = useState(null);
+  const [showLinkDialog, setShowLinkDialog] = useState(false);
+  const [showImageDialog, setShowImageDialog] = useState(false);
+  const [isLoading, setIsLoading] = useState(true);
 
-    console.log('📋 Context values:', {
-        projectId,
-        testTypeId,
-        testTypeName,
-        docId,
-        docName
-    });
+  const saveTimeoutRef = useRef(null);
+  const isLoadingRef = useRef(false);
 
-    const [document, setDocument] = useState(null);
-    const [title, setTitle] = useState('Untitled Document');
-    const [lastSaved, setLastSaved] = useState(null);
-    const [showLinkDialog, setShowLinkDialog] = useState(false);
-    const [showImageDialog, setShowImageDialog] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
-
-    const saveTimeoutRef = useRef(null);
-    const isLoadingRef = useRef(false);
-
-    // Initialize Tiptap Editor with all extensions
-    const editor = useEditor({
-        immediatelyRender: false,
-        extensions: [
-            StarterKit.configure({
-                history: {
-                    depth: 100,
-                },
-                heading: {
-                    levels: [1, 2, 3, 4, 5, 6],
-                },
-                codeBlock: false, // Disable default code block to use CodeBlockLowlight
-            }),
-            Underline,
-            Subscript,
-            Superscript,
-            TextAlign.configure({
-                types: ['heading', 'paragraph'],
-                alignments: ['left', 'center', 'right', 'justify'],
-                defaultAlignment: 'left',
-            }),
-            Highlight.configure({
-                multicolor: true,
-            }),
-            Link.configure({
-                openOnClick: false,
-                HTMLAttributes: {
-                    class: 'text-blue-600 dark:text-blue-400 underline cursor-pointer hover:text-blue-700 dark:hover:text-blue-300',
-                },
-            }),
-            Image.configure({
-                inline: true,
-                allowBase64: true,
-                HTMLAttributes: {
-                    class: 'max-w-full h-auto rounded-lg shadow-md my-4 cursor-pointer',
-                },
-            }),
-            Table.configure({
-                resizable: true,
-                HTMLAttributes: {
-                    class: 'border-collapse table-auto w-full my-4',
-                },
-            }),
-            TableRow,
-            TableCell.configure({
-                HTMLAttributes: {
-                    class: 'border border-gray-300 dark:border-gray-600 p-2 min-w-[100px]',
-                },
-            }),
-            TableHeader.configure({
-                HTMLAttributes: {
-                    class: 'border border-gray-300 dark:border-gray-600 p-2 bg-gray-100 dark:bg-gray-800 font-bold',
-                },
-            }),
-            TaskList.configure({
-                HTMLAttributes: {
-                    class: 'list-none space-y-2',
-                },
-            }),
-            TaskItem.configure({
-                nested: true,
-                HTMLAttributes: {
-                    class: 'flex items-start gap-2',
-                },
-            }),
-            TextStyle,
-            Color,
-            FontFamily,
-            FontSize,
-            LineHeight,
-            LetterSpacing,
-            Indent,
-            Typography,
-            Placeholder.configure({
-                placeholder: 'Start writing your document...',
-            }),
-            CodeBlockLowlight.configure({
-                lowlight,
-                HTMLAttributes: {
-                    class: 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto',
-                },
-            }),
-            Blockquote.configure({
-                HTMLAttributes: {
-                    class: 'border-l-4 border-blue-500 dark:border-blue-500 pl-4 italic text-gray-700 dark:text-gray-300 my-4',
-                },
-            }),
-            HorizontalRule.configure({
-                HTMLAttributes: {
-                    class: 'my-8 border-t-2 border-gray-300 dark:border-gray-700',
-                },
-            }),
-            Dropcursor.configure({
-                color: '#3b82f6',
-                width: 2,
-            }),
-            Gapcursor,
-            Focus.configure({
-                className: 'has-focus',
-                mode: 'all',
-            }),
-            CharacterCount,
-            Youtube.configure({
-                width: 640,
-                height: 480,
-                HTMLAttributes: {
-                    class: 'rounded-lg my-4',
-                },
-            }),
-        ],
-        content: '',
-        editorProps: {
-            attributes: {
-                class: 'prose dark:prose-invert prose-lg max-w-none focus:outline-none min-h-[600px] p-8',
-            },
+  const editor = useEditor({
+    immediatelyRender: false,
+    extensions: [
+      StarterKit.configure({
+        history: {
+          depth: 100,
         },
-        onUpdate: ({ editor }) => {
-            // Don't trigger auto-save while loading document
-            if (!isLoadingRef.current) {
-                const html = editor.getHTML();
-                handleContentChange(html);
-            }
+        heading: {
+          levels: [1, 2, 3, 4, 5, 6],
         },
-    });
+        codeBlock: false,
+      }),
+      Underline,
+      Subscript,
+      Superscript,
+      TextAlign.configure({
+        types: ['heading', 'paragraph'],
+        alignments: ['left', 'center', 'right', 'justify'],
+        defaultAlignment: 'left',
+      }),
+      Highlight.configure({
+        multicolor: true,
+      }),
+      Link.configure({
+        openOnClick: false,
+        HTMLAttributes: {
+          class: 'text-blue-600 dark:text-blue-400 underline cursor-pointer hover:text-blue-700 dark:hover:text-blue-300',
+        },
+      }),
+      Image.configure({
+        inline: true,
+        allowBase64: true,
+        HTMLAttributes: {
+          class: 'max-w-full h-auto rounded-lg shadow-md my-4 cursor-pointer',
+        },
+      }),
+      Table.configure({
+        resizable: true,
+        HTMLAttributes: {
+          class: 'border-collapse table-auto w-full my-4',
+        },
+      }),
+      TableRow,
+      TableCell.configure({
+        HTMLAttributes: {
+          class: 'border border-gray-300 dark:border-gray-600 p-2 min-w-[100px]',
+        },
+      }),
+      TableHeader.configure({
+        HTMLAttributes: {
+          class: 'border border-gray-300 dark:border-gray-600 p-2 bg-gray-100 dark:bg-gray-800 font-bold',
+        },
+      }),
+      TaskList.configure({
+        HTMLAttributes: {
+          class: 'list-none space-y-2',
+        },
+      }),
+      TaskItem.configure({
+        nested: true,
+        HTMLAttributes: {
+          class: 'flex items-start gap-2',
+        },
+      }),
+      TextStyle,
+      Color,
+      FontFamily,
+      FontSize,
+      LineHeight,
+      LetterSpacing,
+      Indent,
+      Typography,
+      Placeholder.configure({
+        placeholder: 'Start writing your document...',
+      }),
+      CodeBlockLowlight.configure({
+        lowlight,
+        HTMLAttributes: {
+          class: 'bg-gray-100 dark:bg-gray-800 text-gray-900 dark:text-gray-100 p-4 rounded-lg font-mono text-sm overflow-x-auto',
+        },
+      }),
+      Blockquote.configure({
+        HTMLAttributes: {
+          class: 'border-l-4 border-blue-500 dark:border-blue-500 pl-4 italic text-gray-700 dark:text-gray-300 my-4',
+        },
+      }),
+      HorizontalRule.configure({
+        HTMLAttributes: {
+          class: 'my-8 border-t-2 border-gray-300 dark:border-gray-700',
+        },
+      }),
+      Dropcursor.configure({
+        color: '#3b82f6',
+        width: 2,
+      }),
+      Gapcursor,
+      Focus.configure({
+        className: 'has-focus',
+        mode: 'all',
+      }),
+      CharacterCount,
+      Youtube.configure({
+        width: 640,
+        height: 480,
+        HTMLAttributes: {
+          class: 'rounded-lg my-4',
+        },
+      }),
+    ],
+    content: '',
+    editorProps: {
+      attributes: {
+        class: 'prose dark:prose-invert prose-lg max-w-none focus:outline-none min-h-[600px] p-8',
+      },
+    },
+    onUpdate: ({ editor }) => {
+      if (!isLoadingRef.current) {
+        const html = editor.getHTML();
+        handleContentChange(html);
+      }
+    },
+  });
 
-    console.log('✏️ Editor initialized:', editor ? 'YES' : 'NO');
+  const getToken = () => {
+    if (typeof window !== 'undefined') {
+      return localStorage.getItem('token');
+    }
+    return null;
+  };
 
-    // Get token from localStorage
-    const getToken = () => {
-        if (typeof window !== 'undefined') {
-            const token = localStorage.getItem('token');
-            console.log('🔑 Token retrieved:', token ? 'EXISTS' : 'NOT FOUND');
-            return token;
-        }
-        return null;
-    };
-
-    // Load document from API
-    const loadDocument = useCallback(async () => {
-        if (!docId || !editor) {
-            console.log('⚠️ Cannot load - docId or editor missing:', { docId: !!docId, editor: !!editor });
-            return;
-        }
-
-        console.log('📥 loadDocument function called');
-        console.log('🔗 API URL:', `http://localhost:5000/api/v1/doc/${docId}`);
-
-        setIsLoading(true);
-        isLoadingRef.current = true;
-
-        try {
-            const token = getToken();
-
-            if (!token) {
-                console.error('❌ No token available!');
-                showAlert('Authentication required', 'error');
-                setIsLoading(false);
-                isLoadingRef.current = false;
-                return;
-            }
-
-            console.log('🌐 Fetching document...');
-            const response = await fetch(`http://localhost:5000/api/v1/doc/${docId}`, {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            console.log('📡 Response status:', response.status);
-            console.log('📡 Response ok:', response.ok);
-
-            if (response.ok) {
-                const doc = await response.json();
-                console.log('✅ Document loaded successfully:', doc);
-                console.log('📄 Document content:', doc.content);
-
-                setDocument(doc);
-                setTitle(doc.title || 'Untitled Document');
-
-                // Set editor content - with a small delay to ensure editor is ready
-                if (doc.content?.html) {
-                    console.log('✏️ Setting editor content...');
-                    console.log('📝 Content HTML length:', doc.content.html.length);
-
-                    // Use setTimeout to ensure editor is fully mounted
-                    setTimeout(() => {
-                        editor.commands.setContent(doc.content.html);
-                        console.log('✅ Editor content set');
-                    }, 50);
-                } else {
-                    console.warn('⚠️ No content to load');
-                    editor.commands.setContent('');
-                }
-            } else {
-                const errorData = await response.text();
-                console.error('❌ Failed to load document:', errorData);
-                throw new Error('Failed to load document');
-            }
-        } catch (error) {
-            console.error('💥 Load error:', error);
-            console.error('Error details:', {
-                message: error.message,
-                stack: error.stack
-            });
-            showAlert('Failed to load document', 'error');
-        } finally {
-            console.log('🏁 loadDocument finished, setting isLoading to false');
-            // Delay setting loading to false to ensure content is rendered
-            setTimeout(() => {
-                setIsLoading(false);
-                isLoadingRef.current = false;
-            }, 100);
-        }
-    }, [docId, editor, showAlert]);
-
-    // Load existing document when docId or editor changes
-    useEffect(() => {
-        console.log('🔄 useEffect triggered - docId:', docId, 'editor:', !!editor);
-        if (docId && editor) {
-            console.log('✅ Both docId and editor exist, calling loadDocument...');
-            loadDocument();
-        } else {
-            console.log('❌ Missing requirements:', { docId: !!docId, editor: !!editor });
-            if (!docId) {
-                setIsLoading(false);
-            }
-        }
-    }, [docId, editor, loadDocument]);
-
-    // Auto-save functionality
-    const autoSave = useCallback(async (contentToSave) => {
-        console.log('💾 autoSave called');
-
-        if (!docId) {
-            console.warn('⚠️ No docId, skipping auto-save');
-            return;
-        }
-
-        try {
-            const token = getToken();
-            console.log('🌐 Saving document to:', `http://localhost:5000/api/v1/doc/${docId}`);
-
-            const payload = {
-                content: { html: contentToSave },
-                title: title,
-                version: (document?.version || 1) + 1
-            };
-
-            console.log('📦 Save payload (title & version):', { title: payload.title, version: payload.version });
-
-            const response = await fetch(`http://localhost:5000/api/v1/doc/${docId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}`
-                },
-                body: JSON.stringify(payload)
-            });
-
-            console.log('📡 Save response status:', response.status);
-
-            if (response.ok) {
-                const updatedDoc = await response.json();
-                console.log('✅ Document saved successfully');
-                setDocument(updatedDoc);
-                setLastSaved(new Date());
-            } else {
-                const errorData = await response.text();
-                console.error('❌ Save failed:', errorData);
-                throw new Error('Failed to save document');
-            }
-        } catch (error) {
-            console.error('💥 Save error:', error);
-            showAlert('Failed to save document', 'error');
-        }
-    }, [docId, document, title, showAlert]);
-
-    // Debounced auto-save on content change
-    const handleContentChange = useCallback((newContent) => {
-        console.log('📝 Content changed, scheduling auto-save...');
-
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-            console.log('⏱️ Cleared previous save timeout');
-        }
-
-        saveTimeoutRef.current = setTimeout(() => {
-            console.log('⏰ Auto-save timeout triggered');
-            autoSave(newContent);
-        }, 2000);
-    }, [autoSave]);
-
-    // Manual save
-    const handleManualSave = () => {
-        console.log('💾 Manual save triggered');
-
-        if (saveTimeoutRef.current) {
-            clearTimeout(saveTimeoutRef.current);
-        }
-        if (editor) {
-            autoSave(editor.getHTML());
-        } else {
-            console.warn('⚠️ Editor not available for manual save');
-        }
-    };
-
-    // Insert table
-    const insertTable = () => {
-        console.log('📊 Insert table triggered');
-        if (editor) {
-            editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
-        }
-    };
-
-    console.log('🔍 Current state:', {
-        isLoading,
-        editorExists: !!editor,
-        documentExists: !!document,
-        title,
-        characterCount: editor?.storage.characterCount.characters() || 0,
-        wordCount: editor?.storage.characterCount.words() || 0
-    });
-
-    if (isLoading || !editor) {
-        console.log('⏳ Showing loading spinner...');
-        return (
-            <div className="min-h-screen bg-white dark:bg-gray-950 flex items-center justify-center">
-                <div className="text-center">
-                    <Loader2 className="w-12 h-12 animate-spin text-blue-600 dark:text-blue-500 mx-auto" />
-                    <p className="text-gray-600 dark:text-gray-400 mt-4">
-                        {!editor ? 'Initializing editor...' : 'Loading document...'}
-                    </p>
-                    <p className="text-gray-400 dark:text-gray-600 text-sm mt-2">Doc ID: {docId || 'N/A'}</p>
-                </div>
-            </div>
-        );
+  const loadDocument = useCallback(async () => {
+    if (!docId || !editor) {
+      return;
     }
 
-    console.log('✅ Rendering main editor component');
+    setIsLoading(true);
+    isLoadingRef.current = true;
 
+    try {
+      const token = getToken();
+
+      if (!token) {
+        showAlert('Authentication required', 'error');
+        setIsLoading(false);
+        isLoadingRef.current = false;
+        return;
+      }
+
+      const response = await fetch(`http://localhost:5000/api/v1/doc/${docId}`, {
+        method: 'GET',
+        headers: {
+          'Authorization': `Bearer ${token}`,
+          'Content-Type': 'application/json'
+        }
+      });
+
+      if (response.ok) {
+        const doc = await response.json();
+        setDocument(doc);
+        setTitle(doc.title || 'Untitled Document');
+
+        if (doc.content?.html) {
+          setTimeout(() => {
+            editor.commands.setContent(doc.content.html);
+          }, 50);
+        } else {
+          editor.commands.setContent('');
+        }
+      } else {
+        throw new Error('Failed to load document');
+      }
+    } catch (error) {
+      showAlert('Failed to load document', 'error');
+    } finally {
+      setTimeout(() => {
+        setIsLoading(false);
+        isLoadingRef.current = false;
+      }, 100);
+    }
+  }, [docId, editor, showAlert]);
+
+  useEffect(() => {
+    if (docId && editor) {
+      loadDocument();
+    } else {
+      if (!docId) {
+        setIsLoading(false);
+      }
+    }
+  }, [docId, editor, loadDocument]);
+
+  const autoSave = useCallback(async (contentToSave) => {
+    if (!docId) {
+      return;
+    }
+
+    try {
+      const token = getToken();
+
+      const payload = {
+        content: { html: contentToSave },
+        title: title,
+        version: (document?.version || 1) + 1
+      };
+
+      const response = await fetch(`http://localhost:5000/api/v1/doc/${docId}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify(payload)
+      });
+
+      if (response.ok) {
+        const updatedDoc = await response.json();
+        setDocument(updatedDoc);
+        setLastSaved(new Date());
+      } else {
+        throw new Error('Failed to save document');
+      }
+    } catch (error) {
+      showAlert('Failed to save document', 'error');
+    }
+  }, [docId, document, title, showAlert]);
+
+  const handleContentChange = useCallback((newContent) => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    saveTimeoutRef.current = setTimeout(() => {
+      autoSave(newContent);
+    }, 2000);
+  }, [autoSave]);
+
+  const handleManualSave = () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+    if (editor) {
+      autoSave(editor.getHTML());
+    }
+  };
+
+  const insertTable = () => {
+    if (editor) {
+      editor.chain().focus().insertTable({ rows: 3, cols: 3, withHeaderRow: true }).run();
+    }
+  };
+
+  if (isLoading || !editor) {
     return (
-        <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
-            <DocumentHeader
-                title={title}
-                setTitle={setTitle}
-                testTypeName={testTypeName}
-                docName={docName}
-                lastSaved={lastSaved}
-                handleManualSave={handleManualSave}
-            />
-
-            <EditorToolbar
-                editor={editor}
-                setShowLinkDialog={setShowLinkDialog}
-                setShowImageDialog={setShowImageDialog}
-                insertTable={insertTable}
-            />
-
-            <EditorContentArea
-                editor={editor}
-                showLinkDialog={showLinkDialog}
-                setShowLinkDialog={setShowLinkDialog}
-                showImageDialog={showImageDialog}
-                setShowImageDialog={setShowImageDialog}
-            />
-
-            {/* Character & Word Count Footer */}
-            {editor && (
-                <div className="fixed bottom-4 right-4 bg-white dark:bg-gray-800 px-4 py-2 rounded-lg shadow-lg border border-gray-200 dark:border-gray-700">
-                    <div className="flex items-center gap-4 text-sm text-gray-600 dark:text-gray-400">
-                        <span>Words: {editor.storage.characterCount.words()}</span>
-                        <span>Characters: {editor.storage.characterCount.characters()}</span>
-                    </div>
-                </div>
-            )}
+      <div className="min-h-screen bg-white dark:bg-gray-950 flex items-center justify-center">
+        <div className="text-center">
+          <Loader2 className="w-12 h-12 animate-spin text-blue-600 dark:text-blue-500 mx-auto" />
+          <p className="text-gray-600 dark:text-gray-400 mt-4">
+            {!editor ? 'Initializing editor...' : 'Loading document...'}
+          </p>
         </div>
+      </div>
     );
+  }
+
+  return (
+    <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100 pb-6">
+      <div className="sticky top-0 z-50 bg-white dark:bg-gray-950">
+        <EditorToolbar
+          editor={editor}
+          setShowLinkDialog={setShowLinkDialog}
+          setShowImageDialog={setShowImageDialog}
+          insertTable={insertTable}
+        />
+      </div>
+
+      <div className="overflow-y-auto" style={{ maxHeight: 'calc(100vh - 96px)' }}>
+        <EditorContentArea
+          editor={editor}
+          showLinkDialog={showLinkDialog}
+          setShowLinkDialog={setShowLinkDialog}
+          showImageDialog={showImageDialog}
+          setShowImageDialog={setShowImageDialog}
+        />
+      </div>
+
+      <DocumentStatusBar
+        editor={editor}
+        title={title}
+        setTitle={setTitle}
+        testTypeName={testTypeName}
+        docName={docName}
+        lastSaved={lastSaved}
+        handleManualSave={handleManualSave}
+      />
+    </div>
+  );
 };
 
 export default DocumentEditor;
