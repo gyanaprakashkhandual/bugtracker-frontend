@@ -1,5 +1,6 @@
 'use client'
 import React, { useState, useEffect, useCallback, useRef } from 'react';
+import ReactDOM from 'react-dom'
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trash2, Search, AlertCircle, Loader2, RefreshCw, Archive, ChevronDown, GripVertical, MessageSquare, ExternalLink, X, Send, ChevronLeft, ChevronRight, Image as ImageIcon, Save, Ban, Link as LinkIcon, Copy, ZoomIn, Plus } from 'lucide-react';
 import { useTestType } from '@/app/script/TestType.context';
@@ -85,30 +86,55 @@ const BugSpreadsheet = () => {
     }, []);
 
     useEffect(() => {
-        const handleClickOutside = (event) => {
-            if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+    const handleClickOutside = (event) => {
+        // Check if click is on a dropdown button
+        const isDropdownButton = Object.values(dropdownButtonRefs.current).some(
+            ref => ref && ref.contains(event.target)
+        );
+        
+        // If not clicking on dropdown button or inside any dropdown content, close dropdown
+        if (!isDropdownButton) {
+            const clickedInsideDropdown = event.target.closest('.dropdown-portal-content');
+            if (!clickedInsideDropdown) {
                 setActiveDropdown(null);
             }
-            if (commentModalRef.current && !commentModalRef.current.contains(event.target)) {
+        }
+        
+        if (commentModalRef.current && !commentModalRef.current.contains(event.target)) {
+            const isCommentButton = Object.values(commentButtonRefs.current).some(
+                ref => ref && ref.contains(event.target)
+            );
+            if (!isCommentButton) {
                 setActiveCommentModal(null);
             }
-            if (linksDropdownRef.current && !linksDropdownRef.current.contains(event.target)) {
+        }
+        if (linksDropdownRef.current && !linksDropdownRef.current.contains(event.target)) {
+            const isLinksButton = Object.values(linksButtonRefs.current).some(
+                ref => ref && ref.contains(event.target)
+            );
+            if (!isLinksButton) {
                 setActiveLinksDropdown(null);
             }
-            if (imagesDropdownRef.current && !imagesDropdownRef.current.contains(event.target)) {
+        }
+        if (imagesDropdownRef.current && !imagesDropdownRef.current.contains(event.target)) {
+            const isImagesButton = Object.values(imagesButtonRefs.current).some(
+                ref => ref && ref.contains(event.target)
+            );
+            if (!isImagesButton) {
                 setActiveImagesDropdown(null);
             }
-            if (linkModalRef.current && !linkModalRef.current.contains(event.target)) {
-                setActiveLinkModal(null);
-            }
-            if (imageModalRef.current && !imageModalRef.current.contains(event.target)) {
-                setActiveImageModal(null);
-            }
-        };
+        }
+        if (linkModalRef.current && !linkModalRef.current.contains(event.target)) {
+            setActiveLinkModal(null);
+        }
+        if (imageModalRef.current && !imageModalRef.current.contains(event.target)) {
+            setActiveImageModal(null);
+        }
+    };
 
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+}, []);
 
     useEffect(() => {
         const handleBugChange = (event) => {
@@ -133,7 +159,7 @@ const BugSpreadsheet = () => {
     }, []);
 
     const fetchBugs = useCallback(async (page = 1) => {
-        if (!selectedProject._id || !testTypeId || !token) {
+        if (!selectedProject?._id || !testTypeId || !token) {
             setLoading(false);
             return;
         }
@@ -141,7 +167,7 @@ const BugSpreadsheet = () => {
         try {
             setLoading(true);
             const response = await fetch(
-                `${BASE_URL}/projects/${selectedProject._id}/test-types/${testTypeId}/bugs?page=${page}&limit=${ROWS_PER_PAGE}`,
+                `${BASE_URL}/projects/${selectedProject?._id}/test-types/${testTypeId}/bugs?page=${page}&limit=${ROWS_PER_PAGE}`,
                 {
                     headers: {
                         'Authorization': `Bearer ${token}`
@@ -160,7 +186,7 @@ const BugSpreadsheet = () => {
         } finally {
             setLoading(false);
         }
-    }, [selectedProject._id, testTypeId, token]);
+    }, [selectedProject?._id, testTypeId, token]);
 
     const fetchComments = async (bugId) => {
         if (!token || loadingComments[bugId]) return;
@@ -654,23 +680,23 @@ const BugSpreadsheet = () => {
         navigator.clipboard.writeText(text);
         showAlert({ type: 'success', message: 'Copied to clipboard' });
     };
+const renderDropdown = (bugId, column, value) => {
+    const cellKey = `${bugId}-${column.key}`;
+    const isActive = activeDropdown === cellKey;
+    const openUpward = dropdownOpenUpward[cellKey] || false;
 
-    const renderDropdown = (bugId, column, value) => {
-        const cellKey = `${bugId}-${column.key}`;
-        const isActive = activeDropdown === cellKey;
-        const openUpward = dropdownOpenUpward[cellKey] || false;
+    let badgeClass = '';
+    if (column.key === 'priority' || column.key === 'severity') {
+        badgeClass = getPriorityColor(value);
+    } else if (column.key === 'status') {
+        badgeClass = getStatusColor(value);
+    } else if (column.key === 'bugType') {
+        badgeClass = getBugTypeColor(value);
+    }
 
-        let badgeClass = '';
-        if (column.key === 'priority' || column.key === 'severity') {
-            badgeClass = getPriorityColor(value);
-        } else if (column.key === 'status') {
-            badgeClass = getStatusColor(value);
-        } else if (column.key === 'bugType') {
-            badgeClass = getBugTypeColor(value);
-        }
-
-        return (
-            <div className="relative w-full h-full" ref={isActive ? dropdownRef : null}>
+    return (
+        <>
+            <div className="relative w-full h-full">
                 <button
                     ref={(el) => {
                         if (el) dropdownButtonRefs.current[cellKey] = el;
@@ -682,15 +708,47 @@ const BugSpreadsheet = () => {
                         {value || 'Select'}
                     </span>
                 </button>
+            </div>
 
-                <AnimatePresence>
-                    {isActive && (
+            {isActive && typeof document !== 'undefined' && (
+                ReactDOM.createPortal(
+                    <AnimatePresence>
                         <motion.div
                             initial={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                             animate={{ opacity: 1, y: 0, scale: 1 }}
                             exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
                             transition={{ duration: 0.15 }}
-                            className={`absolute ${openUpward ? 'bottom-full mb-1' : 'top-full mt-1'} left-0 w-48 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50 overflow-hidden`}
+                            className="dropdown-portal-content fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden"
+                            style={{
+                                width: '192px',
+                                zIndex: 99999,
+                                ...(() => {
+                                    const buttonElement = dropdownButtonRefs.current[cellKey];
+                                    
+                                    if (!buttonElement) {
+                                        return { top: '0px', left: '0px' };
+                                    }
+                                    
+                                    const rect = buttonElement.getBoundingClientRect();
+                                    const spaceBelow = window.innerHeight - rect.bottom;
+                                    const shouldOpenUpward = spaceBelow < 300;
+                                    
+                                    let positioning;
+                                    if (shouldOpenUpward) {
+                                        positioning = {
+                                            bottom: `${window.innerHeight - rect.top + 4}px`,
+                                            left: `${rect.left}px`
+                                        };
+                                    } else {
+                                        positioning = {
+                                            top: `${rect.bottom + 4}px`,
+                                            left: `${rect.left}px`
+                                        };
+                                    }
+                                    
+                                    return positioning;
+                                })()
+                            }}
                         >
                             <div className="py-1 max-h-64 overflow-y-auto">
                                 {column.options.map((option) => {
@@ -706,7 +764,9 @@ const BugSpreadsheet = () => {
                                     return (
                                         <button
                                             key={option}
-                                            onClick={() => handleDropdownSelect(bugId, column.key, option)}
+                                            onClick={() => {
+                                                handleDropdownSelect(bugId, column.key, option);
+                                            }}
                                             className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
                                         >
                                             <span className={`px-2 py-1 rounded text-xs font-medium border ${optionBadgeClass}`}>
@@ -720,11 +780,13 @@ const BugSpreadsheet = () => {
                                 })}
                             </div>
                         </motion.div>
-                    )}
-                </AnimatePresence>
-            </div>
-        );
-    };
+                    </AnimatePresence>,
+                    document.body
+                )
+            )}
+        </>
+    );
+};
 
     const renderLinksDropdown = (bugId, refLinks) => {
         const cellKey = `links-${bugId}`;
