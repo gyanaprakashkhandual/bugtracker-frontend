@@ -319,53 +319,6 @@ const ExcelSheetEditor = () => {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800">
-      <motion.header
-        initial={{ y: -20, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        className="bg-white dark:bg-gray-800 border-b border-gray-200 dark:border-gray-700 relative z-10"
-      >
-        <div className="px-6 py-1">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <h6 className="text-md font-bold text-gray-800 dark:text-gray-100">
-                {selectedProject?.projectName || 'Project'}
-              </h6>
-              <h6 className="text-md font-bold text-gray-800 dark:text-gray-100">
-                {testTypeName || 'Test Type'}
-              </h6>
-              <h6 className="text-md font-bold text-gray-800 dark:text-gray-100">
-                {sheetName || 'Excel Sheet'}
-              </h6>
-              {sheetData && (
-                <span className="text-sm text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full">
-                  v{sheetData.version}
-                </span>
-              )}
-            </div>
-
-            <motion.button
-              whileHover={{ scale: 1.05 }}
-              whileTap={{ scale: 0.95 }}
-              onClick={handleSave}
-              disabled={saving || loading}
-              className="flex items-center gap-2 px-6 py-1 bg-gradient-to-r from-blue-600 to-blue-700 dark:from-blue-500 dark:to-blue-600 text-white rounded-lg shadow-md hover:shadow-lg disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 font-medium"
-            >
-              {saving ? (
-                <>
-                  <Loader2 className="w-2 h-2 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Save className="w-2 h-2" />
-                  <span>Save</span>
-                </>
-              )}
-            </motion.button>
-          </div>
-        </div>
-      </motion.header>
-
       <div className="">
         {loading ? (
           <motion.div
@@ -382,16 +335,87 @@ const ExcelSheetEditor = () => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.2 }}
-            className="bg-white dark:bg-gray-800 rounded-xl shadow-2xl overflow-hidden border border-gray-200 dark:border-gray-700"
+            className="bg-white dark:bg-gray-800  overflow-hidden border border-gray-200 dark:border-gray-700"
           >
             <div
               id="luckysheet-container"
               ref={luckysheetRef}
               className="w-full"
-              style={{ height: 'calc(100vh - 65px)', minHeight: '500px' }}
+              style={{ height: 'calc(100vh - 40px)', minHeight: '520px' }}
             />
           </motion.div>
         )}
+      </div>
+      <div className="bg-white border-t border-gray-200 px-4 py-1 flex items-center justify-between text-xs">
+        <div className="flex items-center gap-6">
+          {/* Project Info */}
+          <div className="flex items-center gap-2">
+            <span className="text-gray-600">Project:</span>
+            <span className="font-medium text-gray-900">{selectedProject?.projectName || 'Untitled'}</span>
+          </div>
+
+          {/* Test Type Info */}
+          <div className="flex items-center gap-2">
+            <span className="text-gray-600">Test Type:</span>
+            <span className="font-medium text-gray-900">{testTypeName || 'None'}</span>
+          </div>
+
+          {/* Sheet Info */}
+          <div className="flex items-center gap-2">
+            <span className="text-gray-600">Sheet:</span>
+            <span className="font-medium text-gray-900">{sheetName || 'Untitled'}</span>
+          </div>
+
+          {/* Version Info */}
+          {sheetData && (
+            <div className="flex items-center gap-2">
+              <span className="text-gray-600">Version:</span>
+              <span className="font-medium text-gray-900">v{sheetData.version}</span>
+            </div>
+          )}
+        </div>
+
+        <div className="flex items-center gap-4">
+          {/* Auto Save Status */}
+          <div className="flex items-center gap-2">
+            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+            <span className="text-gray-600">Auto Save: On</span>
+          </div>
+
+          {/* Save Status */}
+          <div className="flex items-center gap-2">
+            {saving ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin text-blue-600" />
+                <span className="text-blue-600">Saving...</span>
+              </>
+            ) : (
+              <>
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <span className="text-gray-600">Saved just now</span>
+              </>
+            )}
+          </div>
+
+          {/* Save Button */}
+          <button
+            onClick={handleSave}
+            disabled={saving || loading}
+            className="flex items-center gap-2 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+          >
+            {saving ? (
+              <>
+                <Loader2 className="w-3 h-3 animate-spin" />
+                <span>Saving...</span>
+              </>
+            ) : (
+              <>
+                <Save className="w-3 h-3" />
+                <span>Save</span>
+              </>
+            )}
+          </button>
+        </div>
       </div>
     </div>
   );
