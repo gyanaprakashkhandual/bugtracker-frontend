@@ -254,7 +254,7 @@ const EditorContentArea = ({
         transition={{ delay: 0.1 }}
         className="max-w-5xl mx-auto px-6 py-8"
       >
-        <div className="bg-white dark:bg-gray-900 rounded-xl shadow-2xl border border-gray-200 dark:border-gray-800 min-h-[600px] relative">
+        <div className="bg-white dark:bg-gray-900 rounded-xl border border-gray-200 dark:border-gray-800 min-h-[600px] relative">
           {/* Simple Bubble Menu functionality - appears on text selection */}
           {editor && editor.isActive && (
             <div className="hidden">
