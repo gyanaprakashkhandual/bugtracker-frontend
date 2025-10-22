@@ -1007,8 +1007,10 @@ const ActionsColumn = ({
     const [newComment, setNewComment] = useState('');
     const [submittingComment, setSubmittingComment] = useState(false);
     const [imagePreview, setImagePreview] = useState(null);
+    const [modalPosition, setModalPosition] = useState({ top: true, right: true });
     const fileInputRef = useRef(null);
     const modalRef = useRef(null);
+    const buttonRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -1019,6 +1021,27 @@ const ActionsColumn = ({
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
+
+    useEffect(() => {
+        if (activeModal && buttonRef.current) {
+            const buttonRect = buttonRef.current.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
+
+            const modalWidth = 320; // w-80 = 320px
+            const modalHeight = 400; // approximate max height
+
+            const spaceBelow = viewportHeight - buttonRect.bottom;
+            const spaceAbove = buttonRect.top;
+            const spaceRight = viewportWidth - buttonRect.right;
+            const spaceLeft = buttonRect.left;
+
+            setModalPosition({
+                top: spaceBelow >= modalHeight || spaceBelow > spaceAbove,
+                right: spaceRight >= modalWidth || spaceRight > spaceLeft
+            });
+        }
+    }, [activeModal]);
 
     const handleAddLink = () => {
         if (newLink.trim()) {
@@ -1073,23 +1096,44 @@ const ActionsColumn = ({
     const validLinks = (issue.refLink || []).filter(link => link && link !== 'No Link Provided');
     const validImages = (issue.image || []).filter(img => img && img !== 'No Image Provided' && img !== 'No Image provided');
 
+    const getModalPositionClasses = () => {
+        const baseClasses = "absolute w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-50 overflow-hidden border border-gray-200 dark:border-gray-700";
+        const positionClasses = [];
+
+        if (modalPosition.top) {
+            positionClasses.push("top-full mt-1");
+        } else {
+            positionClasses.push("bottom-full mb-1");
+        }
+
+        if (modalPosition.right) {
+            positionClasses.push("right-0");
+        } else {
+            positionClasses.push("left-0");
+        }
+
+        return `${baseClasses} ${positionClasses.join(' ')}`;
+    };
+
+    const toggleModal = (modalName) => {
+        setActiveModal(activeModal === modalName ? null : modalName);
+        if (modalName === 'comment' && activeModal !== 'comment' && onFetchComments) {
+            onFetchComments();
+        }
+    };
+
     return (
-        <div className="relative flex items-center justify-center gap-1">
+        <div className="relative flex items-center justify-center gap-0.5" ref={buttonRef}>
             {/* Comment Button */}
             {!isNew && (
                 <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
-                    onClick={() => {
-                        setActiveModal(activeModal === 'comment' ? null : 'comment');
-                        if (activeModal !== 'comment' && onFetchComments) {
-                            onFetchComments();
-                        }
-                    }}
-                    className="p-2 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                    onClick={() => toggleModal('comment')}
+                    className="p-1.5 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 rounded-md transition-all duration-200"
                     tooltip-data="Comments"
                 >
-                    <MessageSquare className="w-3.5 h-3.5" />
+                    <MessageSquare className="w-3 h-3" />
                 </motion.button>
             )}
 
@@ -1097,13 +1141,13 @@ const ActionsColumn = ({
             <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveModal(activeModal === 'images' ? null : 'images')}
-                className="p-2 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md relative"
+                onClick={() => toggleModal('images')}
+                className="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-md transition-all duration-200 relative"
                 tooltip-data="Images"
             >
-                <ImageIcon className="w-3.5 h-3.5" />
+                <ImageIcon className="w-3 h-3" />
                 {validImages.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-purple-600 dark:bg-purple-500 text-white text-[10px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold">
+                    <span className="absolute -top-0.5 -right-0.5 bg-purple-600 dark:bg-purple-500 text-white text-[9px] rounded-full w-3 h-3 flex items-center justify-center font-semibold">
                         {validImages.length}
                     </span>
                 )}
@@ -1113,13 +1157,13 @@ const ActionsColumn = ({
             <motion.button
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
-                onClick={() => setActiveModal(activeModal === 'links' ? null : 'links')}
-                className="p-2 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md relative"
+                onClick={() => toggleModal('links')}
+                className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-all duration-200 relative"
                 tooltip-data="Links"
             >
-                <LinkIcon className="w-3.5 h-3.5" />
+                <LinkIcon className="w-3 h-3" />
                 {validLinks.length > 0 && (
-                    <span className="absolute -top-1 -right-1 bg-blue-600 dark:bg-blue-500 text-white text-[10px] rounded-full w-3.5 h-3.5 flex items-center justify-center font-bold">
+                    <span className="absolute -top-0.5 -right-0.5 bg-blue-600 dark:bg-blue-500 text-white text-[9px] rounded-full w-3 h-3 flex items-center justify-center font-semibold">
                         {validLinks.length}
                     </span>
                 )}
@@ -1133,19 +1177,19 @@ const ActionsColumn = ({
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={onRestore}
-                            className="p-2 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                            className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-md transition-all duration-200"
                             tooltip-data="Restore"
                         >
-                            <RefreshCw className="w-3.5 h-3.5" />
+                            <RefreshCw className="w-3 h-3" />
                         </motion.button>
                         <motion.button
                             whileHover={{ scale: 1.1 }}
                             whileTap={{ scale: 0.95 }}
                             onClick={onDelete}
-                            className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-all duration-200 shadow-sm hover:shadow-md"
+                            className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-all duration-200"
                             tooltip-data="Delete Forever"
                         >
-                            <Trash2 className="w-3.5 h-3.5" />
+                            <Trash2 className="w-3 h-3" />
                         </motion.button>
                     </>
                 ) : (
@@ -1153,10 +1197,10 @@ const ActionsColumn = ({
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
                         onClick={onMoveToTrash}
-                        className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg opacity-0 group-hover:opacity-100 transition-all duration-200 shadow-sm hover:shadow-md"
+                        className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 rounded-md"
                         tooltip-data="Move to Trash"
                     >
-                        <Trash2 className="w-3.5 h-3.5" />
+                        <Trash2 className="w-3 h-3" />
                     </motion.button>
                 )
             )}
@@ -1166,27 +1210,27 @@ const ActionsColumn = ({
                 {activeModal === 'comment' && !isNew && (
                     <motion.div
                         ref={modalRef}
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute top-full mt-2 right-0 w-96 bg-white dark:bg-gray-800 border-2 border-sky-200 dark:border-sky-800 rounded-xl shadow-2xl z-50 overflow-hidden"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className={getModalPositionClasses()}
                     >
-                        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-sky-100 to-blue-100 dark:from-sky-900/30 dark:to-blue-900/30 border-b-2 border-sky-200 dark:border-sky-800">
-                            <div className="flex items-center gap-2">
-                                <MessageSquare className="w-4 h-4 text-sky-600 dark:text-sky-400" />
-                                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Comments</h3>
+                        <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border-b border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center gap-1.5">
+                                <MessageSquare className="w-3 h-3 text-sky-600 dark:text-sky-400" />
+                                <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-200">Comments</h3>
                             </div>
                             <button
                                 onClick={() => setActiveModal(null)}
                                 className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                             >
-                                <X className="w-4 h-4" />
+                                <X className="w-3 h-3" />
                             </button>
                         </div>
 
-                        <div className="px-4 py-3 border-b-2 border-sky-100 dark:border-sky-900/30">
-                            <div className="flex gap-2">
+                        <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+                            <div className="flex gap-1.5">
                                 <input
                                     type="text"
                                     value={newComment}
@@ -1198,7 +1242,7 @@ const ActionsColumn = ({
                                         }
                                     }}
                                     placeholder="Add a comment..."
-                                    className="flex-1 px-3 py-2 text-xs border-2 border-sky-200 dark:border-sky-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent transition-all duration-200"
+                                    className="flex-1 px-2 py-1.5 text-[11px] border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-sky-500 dark:focus:ring-sky-400 focus:border-transparent transition-all duration-200"
                                     disabled={submittingComment}
                                 />
                                 <motion.button
@@ -1206,48 +1250,48 @@ const ActionsColumn = ({
                                     whileTap={{ scale: 0.95 }}
                                     onClick={submitComment}
                                     disabled={!newComment.trim() || submittingComment}
-                                    className="px-3 py-2 bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-700 dark:to-blue-700 text-white rounded-lg hover:from-sky-700 hover:to-blue-700 dark:hover:from-sky-600 dark:hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
+                                    className="px-2 py-1.5 bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-700 dark:to-blue-700 text-white rounded hover:from-sky-700 hover:to-blue-700 dark:hover:from-sky-600 dark:hover:to-blue-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                                 >
-                                    {submittingComment ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                                    {submittingComment ? <Loader2 className="w-3 h-3 animate-spin" /> : <Send className="w-3 h-3" />}
                                 </motion.button>
                             </div>
                         </div>
 
-                        <div className="overflow-y-auto max-h-72">
+                        <div className="overflow-y-auto max-h-56">
                             {loadingComments ? (
-                                <div className="flex items-center justify-center py-8">
-                                    <Loader2 className="w-5 h-5 animate-spin text-sky-600 dark:text-sky-400" />
+                                <div className="flex items-center justify-center py-6">
+                                    <Loader2 className="w-4 h-4 animate-spin text-sky-600 dark:text-sky-400" />
                                 </div>
                             ) : comments.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-xs">
+                                <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-[10px]">
                                     No comments yet. Be the first to comment!
                                 </div>
                             ) : (
-                                <div className="divide-y divide-sky-100 dark:divide-sky-900/30">
+                                <div className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {comments.map((comment, index) => (
                                         <motion.div
                                             key={index}
                                             initial={{ opacity: 0, x: -10 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: index * 0.05 }}
-                                            className="px-4 py-3 hover:bg-sky-50/50 dark:hover:bg-sky-900/10 transition-colors"
+                                            className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
                                         >
-                                            <div className="flex items-start gap-3">
-                                                <div className="w-7 h-7 rounded-full bg-gradient-to-br from-sky-400 to-blue-500 dark:from-sky-600 dark:to-blue-700 flex items-center justify-center flex-shrink-0 shadow-md">
-                                                    <span className="text-xs font-bold text-white">
+                                            <div className="flex items-start gap-2">
+                                                <div className="w-6 h-6 rounded-full bg-gradient-to-br from-sky-400 to-blue-500 dark:from-sky-600 dark:to-blue-700 flex items-center justify-center flex-shrink-0">
+                                                    <span className="text-[10px] font-semibold text-white">
                                                         {comment.commentBy?.charAt(0).toUpperCase() || 'U'}
                                                     </span>
                                                 </div>
                                                 <div className="flex-1 min-w-0">
-                                                    <div className="flex items-center gap-2 mb-1">
-                                                        <span className="text-xs font-bold text-gray-800 dark:text-gray-200">
+                                                    <div className="flex items-center gap-1.5 mb-0.5">
+                                                        <span className="text-[10px] font-semibold text-gray-800 dark:text-gray-200">
                                                             {comment.commentBy || 'Unknown User'}
                                                         </span>
-                                                        <span className="text-[10px] text-gray-500 dark:text-gray-400">
+                                                        <span className="text-[9px] text-gray-500 dark:text-gray-400">
                                                             {new Date(comment.createdAt).toLocaleDateString()}
                                                         </span>
                                                     </div>
-                                                    <p className="text-xs text-gray-700 dark:text-gray-300 break-words">{comment.comment}</p>
+                                                    <p className="text-[10px] text-gray-700 dark:text-gray-300 break-words leading-relaxed">{comment.comment}</p>
                                                 </div>
                                             </div>
                                         </motion.div>
@@ -1261,18 +1305,18 @@ const ActionsColumn = ({
                 {activeModal === 'images' && (
                     <motion.div
                         ref={modalRef}
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute top-full mt-2 right-0 w-96 bg-white dark:bg-gray-800 border-2 border-purple-200 dark:border-purple-800 rounded-xl shadow-2xl z-50 overflow-hidden"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className={getModalPositionClasses()}
                     >
-                        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/30 dark:to-pink-900/30 border-b-2 border-purple-200 dark:border-purple-800">
-                            <div className="flex items-center gap-2">
-                                <ImageIcon className="w-4 h-4 text-purple-600 dark:text-purple-400" />
-                                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Images</h3>
+                        <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-b border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center gap-1.5">
+                                <ImageIcon className="w-3 h-3 text-purple-600 dark:text-purple-400" />
+                                <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-200">Images</h3>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex items-center gap-1.5">
                                 <input
                                     ref={fileInputRef}
                                     type="file"
@@ -1288,35 +1332,35 @@ const ActionsColumn = ({
                                     whileTap={{ scale: 0.95 }}
                                     onClick={() => fileInputRef.current?.click()}
                                     disabled={uploadingImage}
-                                    className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-lg transition-all duration-200"
+                                    className="p-1 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded transition-all duration-200"
                                     tooltip-data="Upload new image"
                                 >
-                                    <Plus className="w-4 h-4" />
+                                    <Plus className="w-3 h-3" />
                                 </motion.button>
                                 <button
                                     onClick={() => setActiveModal(null)}
                                     className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                                 >
-                                    <X className="w-4 h-4" />
+                                    <X className="w-3 h-3" />
                                 </button>
                             </div>
                         </div>
 
-                        <div className="overflow-y-auto max-h-96">
+                        <div className="overflow-y-auto max-h-72">
                             {uploadingImage && (
-                                <div className="px-4 py-3 border-b border-purple-100 dark:border-purple-900/30 bg-purple-50/50 dark:bg-purple-900/10">
-                                    <div className="flex items-center gap-3">
-                                        <Loader2 className="w-4 h-4 animate-spin text-purple-600 dark:text-purple-400" />
-                                        <span className="text-xs text-purple-700 dark:text-purple-300">Uploading image...</span>
+                                <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
+                                    <div className="flex items-center gap-2">
+                                        <Loader2 className="w-3 h-3 animate-spin text-purple-600 dark:text-purple-400" />
+                                        <span className="text-[10px] text-purple-700 dark:text-purple-300">Uploading image...</span>
                                     </div>
                                 </div>
                             )}
                             {validImages.length === 0 && !uploadingImage ? (
-                                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-xs">
+                                <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-[10px]">
                                     No images added yet
                                 </div>
                             ) : (
-                                <div className="grid grid-cols-2 gap-3 p-4">
+                                <div className="grid grid-cols-2 gap-2 p-3">
                                     {validImages.map((image, index) => (
                                         <motion.div
                                             key={index}
@@ -1328,28 +1372,28 @@ const ActionsColumn = ({
                                             <img
                                                 src={image}
                                                 alt={`Image ${index + 1}`}
-                                                className="w-full h-32 object-cover rounded-lg border-2 border-purple-200 dark:border-purple-800 shadow-md cursor-pointer hover:shadow-xl transition-all duration-200"
+                                                className="w-full h-24 object-cover rounded border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-lg transition-all duration-200"
                                                 onClick={() => setImagePreview(image)}
                                             />
-                                            <div className="absolute top-2 right-2 flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                            <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <motion.button
                                                     whileHover={{ scale: 1.1 }}
                                                     whileTap={{ scale: 0.95 }}
                                                     onClick={() => setImagePreview(image)}
-                                                    className="p-1.5 bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 rounded-lg shadow-lg hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                                                    className="p-1 bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 rounded shadow hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
                                                     tooltip-data="View full size"
                                                 >
-                                                    <ZoomIn className="w-3.5 h-3.5" />
+                                                    <ZoomIn className="w-2.5 h-2.5" />
                                                 </motion.button>
                                                 {!isNew && (
                                                     <motion.button
                                                         whileHover={{ scale: 1.1 }}
                                                         whileTap={{ scale: 0.95 }}
                                                         onClick={() => handleRemoveImage(image)}
-                                                        className="p-1.5 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 rounded-lg shadow-lg hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                        className="p-1 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 rounded shadow hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
                                                         tooltip-data="Remove image"
                                                     >
-                                                        <X className="w-3.5 h-3.5" />
+                                                        <X className="w-2.5 h-2.5" />
                                                     </motion.button>
                                                 )}
                                             </div>
@@ -1364,27 +1408,27 @@ const ActionsColumn = ({
                 {activeModal === 'links' && (
                     <motion.div
                         ref={modalRef}
-                        initial={{ opacity: 0, y: -10, scale: 0.95 }}
-                        animate={{ opacity: 1, y: 0, scale: 1 }}
-                        exit={{ opacity: 0, y: -10, scale: 0.95 }}
-                        transition={{ duration: 0.2 }}
-                        className="absolute top-full mt-2 right-0 w-96 bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-800 rounded-xl shadow-2xl z-50 overflow-hidden"
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        transition={{ duration: 0.15 }}
+                        className={getModalPositionClasses()}
                     >
-                        <div className="flex items-center justify-between px-4 py-3 bg-gradient-to-r from-blue-100 to-sky-100 dark:from-blue-900/30 dark:to-sky-900/30 border-b-2 border-blue-200 dark:border-blue-800">
-                            <div className="flex items-center gap-2">
-                                <LinkIcon className="w-4 h-4 text-blue-600 dark:text-blue-400" />
-                                <h3 className="text-sm font-bold text-gray-800 dark:text-gray-200">Links</h3>
+                        <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-blue-50 to-sky-50 dark:from-blue-900/20 dark:to-sky-900/20 border-b border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center gap-1.5">
+                                <LinkIcon className="w-3 h-3 text-blue-600 dark:text-blue-400" />
+                                <h3 className="text-xs font-semibold text-gray-800 dark:text-gray-200">Links</h3>
                             </div>
                             <button
                                 onClick={() => setActiveModal(null)}
                                 className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                             >
-                                <X className="w-4 h-4" />
+                                <X className="w-3 h-3" />
                             </button>
                         </div>
 
-                        <div className="px-4 py-3 border-b-2 border-blue-100 dark:border-blue-900/30">
-                            <div className="flex gap-2">
+                        <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700">
+                            <div className="flex gap-1.5">
                                 <input
                                     type="text"
                                     value={newLink}
@@ -1396,64 +1440,64 @@ const ActionsColumn = ({
                                         }
                                     }}
                                     placeholder="Enter link URL..."
-                                    className="flex-1 px-3 py-2 text-xs border-2 border-blue-200 dark:border-blue-800 dark:bg-gray-700 dark:text-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200"
+                                    className="flex-1 px-2 py-1.5 text-[11px] border border-gray-200 dark:border-gray-600 dark:bg-gray-700 dark:text-gray-200 rounded focus:outline-none focus:ring-1 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent transition-all duration-200"
                                 />
                                 <motion.button
                                     whileHover={{ scale: 1.05 }}
                                     whileTap={{ scale: 0.95 }}
                                     onClick={handleAddLink}
                                     disabled={!newLink.trim()}
-                                    className="px-3 py-2 bg-gradient-to-r from-blue-600 to-sky-600 dark:from-blue-700 dark:to-sky-700 text-white rounded-lg hover:from-blue-700 hover:to-sky-700 dark:hover:from-blue-600 dark:hover:to-sky-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-md"
+                                    className="px-2 py-1.5 bg-gradient-to-r from-blue-600 to-sky-600 dark:from-blue-700 dark:to-sky-700 text-white rounded hover:from-blue-700 hover:to-sky-700 dark:hover:from-blue-600 dark:hover:to-sky-600 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200"
                                 >
-                                    <Plus className="w-4 h-4" />
+                                    <Plus className="w-3 h-3" />
                                 </motion.button>
                             </div>
                         </div>
 
-                        <div className="overflow-y-auto max-h-72">
+                        <div className="overflow-y-auto max-h-56">
                             {validLinks.length === 0 ? (
-                                <div className="text-center py-8 text-gray-500 dark:text-gray-400 text-xs">
+                                <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-[10px]">
                                     No links added yet
                                 </div>
                             ) : (
-                                <div className="divide-y divide-blue-100 dark:divide-blue-900/30">
+                                <div className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {validLinks.map((link, index) => (
                                         <motion.div
                                             key={index}
                                             initial={{ opacity: 0, x: -10 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: index * 0.05 }}
-                                            className="px-4 py-3 hover:bg-blue-50/50 dark:hover:bg-blue-900/10 transition-colors"
+                                            className="px-3 py-2 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors"
                                         >
-                                            <div className="flex items-center justify-between gap-3">
+                                            <div className="flex items-center justify-between gap-2">
                                                 <a
                                                     href={link}
                                                     target="_blank"
                                                     rel="noopener noreferrer"
-                                                    className="flex-1 text-xs text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 truncate hover:underline"
+                                                    className="flex-1 text-[10px] text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 truncate hover:underline"
                                                     title={link}
                                                 >
                                                     {link}
                                                 </a>
-                                                <div className="flex items-center gap-1">
+                                                <div className="flex items-center gap-0.5">
                                                     <motion.button
                                                         whileHover={{ scale: 1.1 }}
                                                         whileTap={{ scale: 0.95 }}
                                                         onClick={() => copyToClipboard(link)}
-                                                        className="p-1.5 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                                                        className="p-1 text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 rounded transition-colors"
                                                         tooltip-data="Copy link"
                                                     >
-                                                        <Copy className="w-3.5 h-3.5" />
+                                                        <Copy className="w-2.5 h-2.5" />
                                                     </motion.button>
                                                     {!isNew && (
                                                         <motion.button
                                                             whileHover={{ scale: 1.1 }}
                                                             whileTap={{ scale: 0.95 }}
                                                             onClick={() => handleRemoveLink(link)}
-                                                            className="p-1.5 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                                                            className="p-1 text-red-400 dark:text-red-500 hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded transition-colors"
                                                             tooltip-data="Remove link"
                                                         >
-                                                            <X className="w-3.5 h-3.5" />
+                                                            <X className="w-2.5 h-2.5" />
                                                         </motion.button>
                                                     )}
                                                 </div>
@@ -1498,13 +1542,15 @@ const ActionsColumn = ({
                     </motion.div>
                 )}
             </AnimatePresence>
-        </div >
+        </div>
     );
 };
 
 const Dropdown = ({ trigger, items, onSelect }) => {
     const [isOpen, setIsOpen] = useState(false);
+    const [dropdownPosition, setDropdownPosition] = useState({ top: true, left: true });
     const dropdownRef = useRef(null);
+    const triggerRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -1516,19 +1562,56 @@ const Dropdown = ({ trigger, items, onSelect }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
+    useEffect(() => {
+        if (isOpen && triggerRef.current) {
+            const triggerRect = triggerRef.current.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
+
+            const spaceBelow = viewportHeight - triggerRect.bottom;
+            const spaceAbove = triggerRect.top;
+            const spaceRight = viewportWidth - triggerRect.left;
+            const spaceLeft = triggerRect.left;
+
+            setDropdownPosition({
+                top: spaceBelow > 320 || spaceBelow > spaceAbove,
+                left: spaceRight > 200 || spaceRight > spaceLeft
+            });
+        }
+    }, [isOpen]);
+
+    const getDropdownPositionClasses = () => {
+        const baseClasses = "absolute bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-lg z-50 min-w-[180px] max-h-64 overflow-auto";
+        const positionClasses = [];
+
+        if (dropdownPosition.top) {
+            positionClasses.push("top-full mt-1");
+        } else {
+            positionClasses.push("bottom-full mb-1");
+        }
+
+        if (dropdownPosition.left) {
+            positionClasses.push("left-0");
+        } else {
+            positionClasses.push("right-0");
+        }
+
+        return `${baseClasses} ${positionClasses.join(' ')}`;
+    };
+
     return (
         <div ref={dropdownRef} className="relative">
-            <div onClick={() => setIsOpen(!isOpen)}>
+            <div ref={triggerRef} onClick={() => setIsOpen(!isOpen)}>
                 {trigger}
             </div>
             <AnimatePresence>
                 {isOpen && (
                     <motion.div
-                        initial={{ opacity: 0, scale: 0.95, y: -10 }}
-                        animate={{ opacity: 1, scale: 1, y: 0 }}
-                        exit={{ opacity: 0, scale: 0.95, y: -10 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        animate={{ opacity: 1, scale: 1 }}
+                        exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
-                        className="absolute top-full left-0 mt-2 bg-white dark:bg-gray-800 border-2 border-blue-200 dark:border-blue-800 rounded-xl shadow-2xl z-50 min-w-[240px] max-h-80 overflow-auto"
+                        className={getDropdownPositionClasses()}
                     >
                         {items.map((item, idx) => (
                             <motion.button
@@ -1538,12 +1621,11 @@ const Dropdown = ({ trigger, items, onSelect }) => {
                                     onSelect(item);
                                     setIsOpen(false);
                                 }}
-                                className="w-full px-4 py-3 text-left text-sm hover:bg-blue-50
-                dark:hover:bg-blue-900/20 transition-all duration-200 first:rounded-t-xl last:rounded-b-xl"
+                                className="w-full px-3 py-2 text-left text-xs hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-all duration-200 first:rounded-t-lg last:rounded-b-lg border-b border-gray-100 dark:border-gray-700 last:border-b-0"
                             >
                                 <span className="font-medium text-gray-900 dark:text-white block">{item.label}</span>
                                 {item.subtitle && (
-                                    <span className="text-xs text-gray-500 dark:text-gray-400 mt-0.5 block">{item.subtitle}</span>
+                                    <span className="text-[10px] text-gray-500 dark:text-gray-400 mt-0.5 block">{item.subtitle}</span>
                                 )}
                             </motion.button>
                         ))}
@@ -1553,5 +1635,6 @@ const Dropdown = ({ trigger, items, onSelect }) => {
         </div>
     );
 };
+
 
 export default BugTracker;
