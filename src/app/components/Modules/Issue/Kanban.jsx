@@ -1,9 +1,10 @@
 'use client'
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Inbox, ArrowDownToLine, Eye, Archive, Trash, Edit2, Save, ChevronLeft, ChevronRight, X, Link, ImageIcon, Calendar, Clock, MessageSquare, Send } from 'lucide-react';
+import { Inbox, ArrowDownToLine, Eye, Archive, Trash, Edit2, Save, ChevronLeft, ChevronRight, X, Link, ImageIcon, Calendar, Clock, MessageSquare, Send, Upload, Plus, Loader2 } from 'lucide-react';
 import axios from 'axios';
 import { useProject } from '@/app/script/Project.context';
+import { useAlert } from '@/app/script/Alert.context';
 
 // Animation variants for columns and cards
 const columnVariants = {
@@ -45,25 +46,70 @@ const formatDate = (date) => {
   });
 };
 
-// Custom Dropdown Component (simplified for example)
-const GitHubDropdown = ({ value, options, onChange, label, name }) => (
-  <select
-    value={value}
-    onChange={(e) => onChange(e.target.value)}
-    name={name}
-    className="text-xs px-3 py-1.5 border border-sky-300 dark:border-sky-700 rounded-md bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm font-medium text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-600"
-  >
-    <option value="">{label}</option>
-    {options.map((option) => (
-      <option key={option} value={option}>
-        {option}
-      </option>
-    ))}
-  </select>
+// Truncate text utility
+const truncateText = (text, maxLength) => {
+  if (!text) return '';
+  if (text.length <= maxLength) return text;
+  return text.substring(0, maxLength) + '...';
+};
+
+// GitHub Style Dropdown Component
+const GitHubDropdown = ({ value, options, onChange, label, name, disabled = false }) => (
+  <div className="relative">
+    <select
+      value={value}
+      onChange={(e) => onChange(e.target.value)}
+      name={name}
+      disabled={disabled}
+      className="text-xs px-3 py-1.5 pr-8 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 font-medium text-gray-700 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-600 focus:border-blue-500 dark:focus:border-blue-600 appearance-none cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed shadow-sm"
+      style={{
+        backgroundImage: `url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 20 20'%3e%3cpath stroke='%236b7280' stroke-linecap='round' stroke-linejoin='round' stroke-width='1.5' d='M6 8l4 4 4-4'/%3e%3c/svg%3e")`,
+        backgroundPosition: 'right 0.5rem center',
+        backgroundRepeat: 'no-repeat',
+        backgroundSize: '1.5em 1.5em',
+      }}
+    >
+      {options.map((option) => (
+        <option key={option} value={option}>
+          {option}
+        </option>
+      ))}
+    </select>
+  </div>
+);
+
+// Skeleton Loader for Cards
+const CardSkeleton = () => (
+  <div className="bg-white dark:bg-gray-800 rounded-lg p-3 shadow-sm border border-gray-200 dark:border-gray-700 animate-pulse">
+    <div className="flex items-start justify-between mb-2">
+      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-20"></div>
+      <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-12"></div>
+    </div>
+    <div className="space-y-2 mb-2">
+      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-full"></div>
+      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-3/4"></div>
+    </div>
+    <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
+      <div className="h-3 bg-gray-200 dark:bg-gray-700 rounded w-24"></div>
+      <div className="flex gap-2">
+        <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
+        <div className="h-6 w-6 bg-gray-200 dark:bg-gray-700 rounded"></div>
+      </div>
+    </div>
+  </div>
+);
+
+// Spinner Loader Component
+const SpinnerLoader = () => (
+  <div className="flex items-center justify-center py-4">
+    <Loader2 className="w-6 h-6 animate-spin text-blue-600 dark:text-blue-400" />
+  </div>
 );
 
 const KanbanBoard = () => {
   const { selectedProject } = useProject();
+  const { showAlert } = useAlert();
   const projectId = selectedProject?._id;
 
   const [issues, setIssues] = useState([]);
@@ -78,30 +124,33 @@ const KanbanBoard = () => {
   const [currentIssueIndex, setCurrentIssueIndex] = useState(0);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
+  const [newRefLink, setNewRefLink] = useState('');
+  const [projectDetails, setProjectDetails] = useState(null);
+  const [loadingComments, setLoadingComments] = useState(false);
+  const [isDragging, setIsDragging] = useState(false);
+  const [updatingStatus, setUpdatingStatus] = useState(false);
 
   // Initialize from localStorage to get the correct initial state
-const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
+  const [isSidebarOpen, setIsSidebarOpen] = useState(() => {
     if (typeof window !== "undefined") {
-        const saved = localStorage.getItem("sidebarOpen");
-        return saved !== null ? JSON.parse(saved) : true;
+      const saved = localStorage.getItem("sidebarOpen");
+      return saved !== null ? JSON.parse(saved) : true;
     }
     return true;
-});
+  });
 
-useEffect(() => {
+  useEffect(() => {
     const handleSidebarChange = (event) => {
-        const { isOpen } = event.detail;
-        console.log('Sidebar is now:', isOpen ? 'open' : 'closed');
-        setIsSidebarOpen(isOpen);
+      const { isOpen } = event.detail;
+      setIsSidebarOpen(isOpen);
     };
     window.addEventListener('sidebarStateChanged', handleSidebarChange);
     return () => {
-        window.removeEventListener('sidebarStateChanged', handleSidebarChange);
+      window.removeEventListener('sidebarStateChanged', handleSidebarChange);
     };
-}, []);
+  }, []);
 
   const statuses = ['Open', 'On Going', 'In Review', 'Closed'];
-  const issueTypeOptions = ['Bug', 'Feature', 'Task', 'Improvement'];
   const statusOptions = statuses;
 
   // Get token from localStorage
@@ -120,6 +169,20 @@ useEffect(() => {
     };
   };
 
+  // Fetch project details
+  const fetchProjectDetails = async () => {
+    if (!projectId) return;
+    try {
+      const response = await axios.get(
+        `http://localhost:5000/api/v1/project/${projectId}`,
+        getAuthConfig()
+      );
+      setProjectDetails(response.data.data);
+    } catch (err) {
+      console.error('Error fetching project details:', err);
+    }
+  };
+
   // Fetch issues by project
   const fetchIssues = async () => {
     if (!projectId) return;
@@ -133,16 +196,19 @@ useEffect(() => {
       setIssues(response.data.data);
     } catch (err) {
       setError('Failed to fetch issues');
-      console.error('Error fetching issues:', err);
+      showAlert({
+        type: "error",
+        message: "Failed to fetch issues"
+      });
     } finally {
       setLoading(false);
     }
   };
 
   // Fetch comments for an issue
-  const fetchComments = async (issueId, testTypeId) => {
+  const fetchComments = async (issueId) => {
     try {
-      setLoading(true);
+      setLoadingComments(true);
       setError(null);
       const response = await axios.get(
         `http://localhost:5000/api/v1/comment/projects/${projectId}/issues/${issueId}/comments`,
@@ -151,9 +217,12 @@ useEffect(() => {
       setComments(response.data.comments);
     } catch (err) {
       setError('Failed to fetch comments');
-      console.error('Error fetching comments:', err);
+      showAlert({
+        type: "error",
+        message: "Failed to fetch comments"
+      });
     } finally {
-      setLoading(false);
+      setLoadingComments(false);
     }
   };
 
@@ -161,7 +230,7 @@ useEffect(() => {
   const handlePostComment = async () => {
     if (!newComment.trim() || !selectedIssue || !projectId) return;
     try {
-      setLoading(true);
+      setLoadingComments(true);
       setError(null);
       const response = await axios.post(
         `http://localhost:5000/api/v1/comment/projects/${projectId}/issues/${selectedIssue._id}/comments`,
@@ -173,95 +242,74 @@ useEffect(() => {
       );
       setComments([...comments, response.data.comment]);
       setNewComment('');
+      showAlert({
+        type: "success",
+        message: "Comment posted successfully"
+      });
     } catch (err) {
       setError('Failed to post comment');
-      console.error('Error posting comment:', err);
+      showAlert({
+        type: "error",
+        message: "Failed to post comment"
+      });
     } finally {
-      setLoading(false);
+      setLoadingComments(false);
     }
   };
 
   // Update issue status (drag and drop)
   const handleUpdateIssueStatus = async (issueId, newStatus) => {
     try {
-      setLoading(true);
+      setUpdatingStatus(true);
       setError(null);
       await axios.put(
         `http://localhost:5000/api/v1/issue/${issueId}`,
         { status: newStatus },
         getAuthConfig()
       );
-      // Refresh issues after update
       await fetchIssues();
+      showAlert({
+        type: "success",
+        message: "Issue status updated successfully"
+      });
     } catch (err) {
       setError('Failed to update issue status');
-      console.error('Error updating issue status:', err);
+      showAlert({
+        type: "error",
+        message: "Failed to update issue status"
+      });
     } finally {
-      setLoading(false);
-    }
-  };
-
-  // Create new issue
-  const handleCreateIssue = async (issueData) => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await axios.post(
-        'http://localhost:5000/api/v1/issue',
-        {
-          ...issueData,
-          project: projectId
-        },
-        getAuthConfig()
-      );
-      setIssues([...issues, response.data.data]);
-      return response.data.data;
-    } catch (err) {
-      setError('Failed to create issue');
-      console.error('Error creating issue:', err);
-      throw err;
-    } finally {
-      setLoading(false);
+      setUpdatingStatus(false);
     }
   };
 
   // Update existing issue
-  const handleUpdateIssue = async (issueId, issueData) => {
+  const handleUpdateIssue = async () => {
     try {
       setLoading(true);
       setError(null);
       const response = await axios.put(
-        `http://localhost:5000/api/v1/issue/${issueId}`,
-        issueData,
+        `http://localhost:5000/api/v1/issue/${selectedIssue._id}`,
+        editedIssue,
         getAuthConfig()
       );
-      // Update local state
       setIssues(issues.map(issue =>
-        issue._id === issueId ? response.data.data : issue
+        issue._id === selectedIssue._id ? response.data.data : issue
       ));
-      return response.data.data;
+      setSelectedIssue(response.data.data);
+      setEditedIssue(response.data.data);
+      setIsEditMode(false);
+      await fetchIssues();
+      showAlert({
+        type: "success",
+        message: "Issue updated successfully"
+      });
     } catch (err) {
       setError('Failed to update issue');
-      console.error('Error updating issue:', err);
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  // Delete issue
-  const handleDeleteIssue = async (issueId) => {
-    try {
-      setLoading(true);
-      setError(null);
-      await axios.delete(
-        `http://localhost:5000/api/v1/issue/${issueId}`,
-        getAuthConfig()
-      );
-      setIssues(issues.filter(issue => issue._id !== issueId));
-    } catch (err) {
-      setError('Failed to delete issue');
-      console.error('Error deleting issue:', err);
+      showAlert({
+        type: "error",
+        message: "Failed to update issue"
+      });
     } finally {
       setLoading(false);
     }
@@ -280,9 +328,16 @@ useEffect(() => {
       if (selectedIssue?._id === issueId) {
         setIsModalOpen(false);
       }
+      showAlert({
+        type: "success",
+        message: "Issue moved to trash successfully"
+      });
     } catch (err) {
       setError('Failed to move issue to trash');
-      console.error(err);
+      showAlert({
+        type: "error",
+        message: "Failed to move issue to trash"
+      });
     } finally {
       setLoading(false);
     }
@@ -300,9 +355,16 @@ useEffect(() => {
       if (selectedIssue?._id === issueId) {
         setIsModalOpen(false);
       }
+      showAlert({
+        type: "success",
+        message: "Issue deleted permanently"
+      });
     } catch (err) {
       setError('Failed to delete issue');
-      console.error(err);
+      showAlert({
+        type: "error",
+        message: "Failed to delete issue"
+      });
     } finally {
       setLoading(false);
     }
@@ -311,12 +373,14 @@ useEffect(() => {
   // Drag handlers
   const handleDragStart = (e, issue) => {
     setDraggedIssue(issue);
+    setIsDragging(true);
     e.dataTransfer.setData('issueId', issue._id);
   };
 
   const handleDragEnd = () => {
     setDraggedIssue(null);
     setDragOverColumn(null);
+    setIsDragging(false);
   };
 
   const handleDragOver = (e) => {
@@ -348,7 +412,7 @@ useEffect(() => {
     setCurrentIssueIndex(index);
     setIsModalOpen(true);
     setIsEditMode(false);
-    fetchComments(issue._id, issue.testType || 'default');
+    fetchComments(issue._id);
   };
 
   // Navigate between issues
@@ -359,7 +423,8 @@ useEffect(() => {
       setSelectedIssue(newIssue);
       setEditedIssue({ ...newIssue });
       setCurrentIssueIndex(newIndex);
-      fetchComments(newIssue._id, newIssue.testType || 'default');
+      setIsEditMode(false);
+      fetchComments(newIssue._id);
     }
   };
 
@@ -368,27 +433,54 @@ useEffect(() => {
     return issues.filter((issue) => issue.status === status);
   };
 
-  // Save edited issue
-  const handleSaveEdit = async () => {
-    try {
-      await handleUpdateIssue(selectedIssue._id, editedIssue);
-      setIsEditMode(false);
-      setSelectedIssue(editedIssue);
-      // Refresh issues to get updated data
-      await fetchIssues();
-    } catch (err) {
-      console.error('Error saving issue:', err);
-    }
+  // Add reference link
+  const handleAddRefLink = () => {
+    if (!newRefLink.trim()) return;
+    setEditedIssue({
+      ...editedIssue,
+      refLink: [...(editedIssue.refLink || []), newRefLink]
+    });
+    setNewRefLink('');
   };
 
-  // Fetch issues on mount or project change
+  // Remove reference link
+  const handleRemoveRefLink = (index) => {
+    const updatedLinks = editedIssue.refLink.filter((_, i) => i !== index);
+    setEditedIssue({
+      ...editedIssue,
+      refLink: updatedLinks
+    });
+  };
+
+  // Handle image upload (placeholder - implement actual upload logic)
+  const handleImageUpload = (e) => {
+    const files = Array.from(e.target.files);
+    showAlert({
+      type: "info",
+      message: "Image upload functionality - implement based on your backend"
+    });
+  };
+
+  // Fetch issues and project details on mount or project change
   useEffect(() => {
     fetchIssues();
+    fetchProjectDetails();
   }, [projectId]);
 
   return (
     <div className="max-h-[calc(100vh-69px)] p-2 kanban-scrollbar justify-center items-center bg-gray-50 dark:bg-gray-900">
       {error && <div className="text-red-500 dark:text-red-400 text-sm mb-2">{error}</div>}
+
+      {/* Drag and drop loader overlay */}
+      {updatingStatus && (
+        <div className="fixed inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm z-40 flex items-center justify-center">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-xl flex items-center gap-3">
+            <Loader2 className="w-5 h-5 animate-spin text-blue-600 dark:text-blue-400" />
+            <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Updating issue status...</span>
+          </div>
+        </div>
+      )}
+
       <div className="flex gap-3 overflow-x-auto">
         {statuses.map((status) => {
           const statusIssues = getIssuesByStatus(status);
@@ -417,7 +509,13 @@ useEffect(() => {
               </div>
 
               <div className="space-y-2 max-h-[calc(100vh-180px)] overflow-y-auto">
-                {statusIssues.length === 0 ? (
+                {loading ? (
+                  <>
+                    <CardSkeleton />
+                    <CardSkeleton />
+                    <CardSkeleton />
+                  </>
+                ) : statusIssues.length === 0 ? (
                   <motion.div
                     className="flex flex-col items-center justify-center py-16 px-4"
                     initial={{ opacity: 0, scale: 0.9 }}
@@ -502,7 +600,9 @@ useEffect(() => {
                         }}
                       >
                         <div className="flex items-start justify-between mb-2">
-                          <span className="text-xs font-mono text-gray-500 dark:text-gray-100">{issue.serialNumber}</span>
+                          <span className="text-xs font-mono text-gray-500 dark:text-gray-100" title={issue.serialNumber}>
+                            {truncateText(issue.serialNumber, 15)}
+                          </span>
                           <span
                             className={`text-xs px-2 py-0.5 rounded ${issue.issueType === 'Bug'
                               ? 'bg-red-100 dark:bg-red-900 text-red-700 dark:text-red-100'
@@ -516,11 +616,26 @@ useEffect(() => {
                             {issue.issueType || 'Unknown'}
                           </span>
                         </div>
-                        <p className="text-xs text-gray-700 dark:text-gray-100 mb-2 line-clamp-2 leading-relaxed">
+                        <p
+                          className="text-xs text-gray-700 dark:text-gray-100 mb-2 leading-relaxed overflow-hidden"
+                          style={{
+                            display: '-webkit-box',
+                            WebkitLineClamp: 2,
+                            WebkitBoxOrient: 'vertical',
+                            lineHeight: '1.4em',
+                            maxHeight: '2.8em'
+                          }}
+                          content-data={issue.issueDesc}
+                        >
                           {issue.issueDesc}
                         </p>
                         <div className="flex items-center justify-between pt-2 border-t border-gray-100 dark:border-gray-700">
-                          <span className="text-xs text-gray-500 dark:text-gray-100">{issue.project?.name || 'No Project'}</span>
+                          <span
+                            className="text-xs text-gray-500 dark:text-gray-100 truncate max-w-[150px]"
+                            title={projectDetails?.projectName || selectedProject?.projectName}
+                          >
+                            {truncateText(projectDetails?.projectName || selectedProject?.projectName || 'Loading...', 20)}
+                          </span>
                           <div className="flex gap-2">
                             <button
                               onClick={() => handleViewIssue(issue, index)}
@@ -575,32 +690,21 @@ useEffect(() => {
                     <h2 className="text-lg font-semibold text-gray-900 dark:text-gray-100">{selectedIssue.serialNumber}</h2>
                     <div className="flex items-center gap-2">
                       {isEditMode ? (
-                        <>
-                          <GitHubDropdown
-                            value={editedIssue.issueType}
-                            options={issueTypeOptions}
-                            onChange={(value) => setEditedIssue({ ...editedIssue, issueType: value })}
-                            label="Select Issue Type"
-                            name="issueType"
-                          />
-                          <GitHubDropdown
-                            value={editedIssue.status}
-                            options={statusOptions}
-                            onChange={(value) => setEditedIssue({ ...editedIssue, status: value })}
-                            label="Select Status"
-                            name="status"
-                          />
-                        </>
+                        <GitHubDropdown
+                          value={editedIssue.status}
+                          options={statusOptions}
+                          onChange={(value) => setEditedIssue({ ...editedIssue, status: value })}
+                          label="Select Status"
+                          name="status"
+                        />
                       ) : (
-                        <>
-                          <span className="text-xs px-3 py-1.5 border border-sky-300 dark:border-sky-700 rounded-md bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm font-medium text-gray-700 dark:text-gray-100">
-                            {selectedIssue.issueType || 'Unknown'}
-                          </span>
-                          <span className={`text-xs px-3 py-1.5 rounded-md font-medium backdrop-blur-sm ${statusBadgeColors[selectedIssue.status]}`}>
-                            {selectedIssue.status}
-                          </span>
-                        </>
+                        <span className={`text-xs px-3 py-1.5 rounded-md font-medium backdrop-blur-sm ${statusBadgeColors[selectedIssue.status]}`}>
+                          {selectedIssue.status}
+                        </span>
                       )}
+                      <span className="text-xs px-3 py-1.5 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 font-medium text-gray-700 dark:text-gray-100">
+                        {projectDetails?.projectName || selectedProject?.projectName || 'Loading...'}
+                      </span>
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
@@ -611,9 +715,9 @@ useEffect(() => {
                       <button
                         onClick={handleUpdateIssue}
                         disabled={loading}
-                        className="p-2 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg transition-colors backdrop-blur-sm"
+                        className="p-2 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg transition-colors backdrop-blur-sm disabled:opacity-50"
                       >
-                        <Save className="w-4 h-4 text-sky-600 dark:text-sky-100" />
+                        {loading ? <Loader2 className="w-4 h-4 text-sky-600 dark:text-sky-100 animate-spin" /> : <Save className="w-4 h-4 text-sky-600 dark:text-sky-100" />}
                       </button>
                     ) : (
                       <button
@@ -651,7 +755,10 @@ useEffect(() => {
                       <ChevronRight className="w-4 h-4 text-gray-600 dark:text-gray-100" />
                     </button>
                     <button
-                      onClick={() => setIsModalOpen(false)}
+                      onClick={() => {
+                        setIsModalOpen(false);
+                        setIsEditMode(false);
+                      }}
                       className="p-2 hover:bg-sky-100 dark:hover:bg-sky-900 rounded-lg transition-colors backdrop-blur-sm"
                     >
                       <X className="w-4 h-4 text-gray-600 dark:text-gray-100" />
@@ -660,9 +767,20 @@ useEffect(() => {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-6 space-y-6 bg-gradient-to-br from-white via-sky-50/30 to-white dark:from-gray-900 dark:via-sky-950/30 dark:to-gray-900">
+
                   <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5">
-                    <h3 className="text-xs font-semibold text-sky-600 dark:text-sky-100 uppercase tracking-wider mb-3">PROJECT</h3>
-                    <p className="text-sm text-gray-900 dark:text-gray-100">{selectedIssue.project?.name || 'No Project'}</p>
+                    <h3 className="text-xs font-semibold text-sky-600 dark:text-sky-100 uppercase tracking-wider mb-3">ISSUE TYPE</h3>
+                    {isEditMode ? (
+                      <input
+                        type="text"
+                        value={editedIssue.issueType || ''}
+                        onChange={(e) => setEditedIssue({ ...editedIssue, issueType: e.target.value })}
+                        className="w-full text-sm px-3 py-2 border border-sky-300 dark:border-sky-700 rounded-md bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-600"
+                        placeholder="Enter issue type (e.g., Bug, Feature, Task)"
+                      />
+                    ) : (
+                      <p className="text-sm text-gray-900 dark:text-gray-100">{selectedIssue.issueType || 'Unknown'}</p>
+                    )}
                   </div>
 
                   <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-xl border border-sky-200 dark:border-sky-900 rounded-lg p-5">
@@ -671,11 +789,12 @@ useEffect(() => {
                       <textarea
                         value={editedIssue.issueDesc}
                         onChange={(e) => setEditedIssue({ ...editedIssue, issueDesc: e.target.value })}
-                        rows={4}
+                        rows={6}
                         className="w-full text-sm px-3 py-2 border border-sky-300 dark:border-sky-700 rounded-md bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-600 resize-none"
+                        placeholder="Enter issue description..."
                       />
                     ) : (
-                      <p className="text-sm text-gray-700 dark:text-gray-100 leading-relaxed">{selectedIssue.issueDesc}</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-100 leading-relaxed whitespace-pre-wrap">{selectedIssue.issueDesc}</p>
                     )}
                   </div>
 
@@ -684,18 +803,73 @@ useEffect(() => {
                       <Link className="w-3.5 h-3.5" />
                       REFERENCE LINKS
                     </h3>
-                    {selectedIssue.refLink?.length > 0 ? (
-                      <ul className="text-sm text-gray-700 dark:text-gray-100">
-                        {selectedIssue.refLink.map((link, index) => (
-                          <li key={index}>
-                            <a href={link} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:underline">
-                              {link}
-                            </a>
-                          </li>
+                    {isEditMode ? (
+                      <div className="space-y-3">
+                        {(editedIssue.refLink || []).map((link, index) => (
+                          <div key={index} className="flex items-center gap-2 group">
+                            <input
+                              type="text"
+                              value={link}
+                              onChange={(e) => {
+                                const updatedLinks = [...editedIssue.refLink];
+                                updatedLinks[index] = e.target.value;
+                                setEditedIssue({ ...editedIssue, refLink: updatedLinks });
+                              }}
+                              className="flex-1 text-sm px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              placeholder="https://..."
+                            />
+                            <button
+                              onClick={() => handleRemoveRefLink(index)}
+                              className="p-2 hover:bg-red-100 dark:hover:bg-red-900 rounded-lg transition-colors"
+                            >
+                              <X className="w-4 h-4 text-red-600 dark:text-red-100" />
+                            </button>
+                          </div>
                         ))}
-                      </ul>
+                        <div className="flex gap-2">
+                          <input
+                            type="text"
+                            value={newRefLink}
+                            onChange={(e) => setNewRefLink(e.target.value)}
+                            placeholder="Enter new reference link..."
+                            className="flex-1 text-sm px-3 py-2 border border-gray-300 dark:border-gray-600 rounded-md bg-white dark:bg-gray-800 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            onKeyPress={(e) => {
+                              if (e.key === 'Enter') {
+                                e.preventDefault();
+                                handleAddRefLink();
+                              }
+                            }}
+                          />
+                          <button
+                            onClick={handleAddRefLink}
+                            className="px-4 py-2 bg-blue-600 dark:bg-blue-700 text-white rounded-md hover:bg-blue-700 dark:hover:bg-blue-600 transition-colors flex items-center gap-2"
+                          >
+                            <Plus className="w-4 h-4" />
+                            Add
+                          </button>
+                        </div>
+                      </div>
                     ) : (
-                      <p className="text-sm text-gray-400 dark:text-gray-100 text-center py-8">No reference links</p>
+                      <>
+                        {selectedIssue.refLink?.length > 0 ? (
+                          <ul className="space-y-2">
+                            {selectedIssue.refLink.map((link, index) => (
+                              <li key={index} className="text-sm">
+                                <a
+                                  href={link}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="text-blue-600 dark:text-blue-400 hover:underline break-all"
+                                >
+                                  {link}
+                                </a>
+                              </li>
+                            ))}
+                          </ul>
+                        ) : (
+                          <p className="text-sm text-gray-400 dark:text-gray-100 text-center py-8">No reference links</p>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -704,16 +878,53 @@ useEffect(() => {
                       <ImageIcon className="w-3.5 h-3.5" />
                       IMAGES
                     </h3>
-                    {selectedIssue.image?.length > 0 ? (
-                      <div className="grid grid-cols-2 gap-4">
-                        {selectedIssue.image.map((img, index) => (
-                          <img key={index} src={img} alt={`Issue ${index + 1}`} className="rounded-lg object-cover w-full h-32" />
-                        ))}
+                    {isEditMode ? (
+                      <div className="space-y-4">
+                        {selectedIssue.image?.length > 0 && (
+                          <div className="grid grid-cols-2 gap-4 mb-4">
+                            {selectedIssue.image.map((img, index) => (
+                              <div key={index} className="relative group">
+                                <img
+                                  src={img}
+                                  alt={`Issue ${index + 1}`}
+                                  className="rounded-lg object-cover w-full h-32 border border-gray-200 dark:border-gray-700"
+                                />
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                        <label className="border-2 border-dashed border-sky-300 dark:border-sky-700 rounded-lg py-8 bg-sky-50/30 dark:bg-sky-950/30 cursor-pointer hover:border-sky-400 dark:hover:border-sky-600 transition-colors flex flex-col items-center justify-center gap-2">
+                          <Upload className="w-8 h-8 text-sky-500 dark:text-sky-400" />
+                          <span className="text-sm text-gray-600 dark:text-gray-100 font-medium">Click to upload images</span>
+                          <span className="text-xs text-gray-400 dark:text-gray-100">PNG, JPG up to 5MB</span>
+                          <input
+                            type="file"
+                            multiple
+                            accept="image/*"
+                            onChange={handleImageUpload}
+                            className="hidden"
+                          />
+                        </label>
                       </div>
                     ) : (
-                      <div className="border-2 border-dashed border-sky-200 dark:border-sky-800 rounded-lg py-12 bg-sky-50/30 dark:bg-sky-950/30">
-                        <p className="text-sm text-gray-400 dark:text-gray-100 text-center">No images available</p>
-                      </div>
+                      <>
+                        {selectedIssue.image?.length > 0 ? (
+                          <div className="grid grid-cols-2 gap-4">
+                            {selectedIssue.image.map((img, index) => (
+                              <img
+                                key={index}
+                                src={img}
+                                alt={`Issue ${index + 1}`}
+                                className="rounded-lg object-cover w-full h-32 border border-gray-200 dark:border-gray-700"
+                              />
+                            ))}
+                          </div>
+                        ) : (
+                          <div className="border-2 border-dashed border-sky-200 dark:border-sky-800 rounded-lg py-12 bg-sky-50/30 dark:bg-sky-950/30">
+                            <p className="text-sm text-gray-400 dark:text-gray-100 text-center">No images available</p>
+                          </div>
+                        )}
+                      </>
                     )}
                   </div>
 
@@ -745,7 +956,9 @@ useEffect(() => {
                 </div>
 
                 <div className="flex-1 overflow-y-auto p-4 space-y-3">
-                  {comments.length === 0 ? (
+                  {loadingComments ? (
+                    <SpinnerLoader />
+                  ) : comments.length === 0 ? (
                     <div className="flex flex-col items-center justify-center h-full text-center px-4">
                       <MessageSquare className="w-12 h-12 text-sky-300 dark:text-sky-800 mb-3" />
                       <p className="text-sm text-gray-400 dark:text-gray-100 font-medium">No comments yet</p>
@@ -785,10 +998,10 @@ useEffect(() => {
                   />
                   <button
                     onClick={handlePostComment}
-                    disabled={loading || !newComment.trim()}
+                    disabled={loadingComments || !newComment.trim()}
                     className="w-full px-4 py-2.5 bg-gradient-to-r from-sky-600 to-blue-600 dark:from-sky-700 dark:to-blue-700 text-white dark:text-gray-100 text-sm font-medium rounded-lg hover:from-sky-700 hover:to-blue-700 dark:hover:from-sky-600 dark:hover:to-blue-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
                   >
-                    <Send className="w-4 h-4" />
+                    {loadingComments ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     Post Comment
                   </button>
                 </div>
