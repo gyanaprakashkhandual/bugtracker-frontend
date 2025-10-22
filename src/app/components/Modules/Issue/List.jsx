@@ -694,7 +694,7 @@ const NewIssueRow = ({ issue, users, saving, uploadingImage, onChange, onImageUp
         <motion.div
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
-            className="grid grid-cols-12 gap-4 px-6 py-4 border-b-2 border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50/50 to-sky-50/50 dark:from-blue-900/10 dark:to-sky-900/10"
+            className="grid grid-cols-12 gap-4 px-6 py-1 border-b-2 border-blue-200 dark:border-blue-800 bg-gradient-to-r from-blue-50/50 to-sky-50/50 dark:from-blue-900/10 dark:to-sky-900/10"
         >
             {/* Label Column */}
             <div className="col-span-1 flex items-center gap-2 text-xs font-semibold text-blue-600 dark:text-blue-400">
@@ -714,7 +714,7 @@ const NewIssueRow = ({ issue, users, saving, uploadingImage, onChange, onImageUp
                     onBlur={() => !issue.issueType && setIsFocused(false)}
                     placeholder="Issue type..."
                     style={{ minWidth: '200px', maxWidth: '200px' }}
-                    className="w-full px-3 py-2 text-sm border-2 border-blue-200 dark:border-blue-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200"
+                    className="w-full px-3 py-1 text-sm border-2 border-blue-200 dark:border-blue-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-200"
                 />
                 {localSaving && (
                     <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
@@ -736,10 +736,10 @@ const NewIssueRow = ({ issue, users, saving, uploadingImage, onChange, onImageUp
                     style={{
                         minWidth: isFocused ? '500px' : '300px',
                         maxWidth: isFocused ? '500px' : '300px',
-                        minHeight: '40px',
-                        maxHeight: '40px'
+                        minHeight: isFocused ? '90px' : '30px',
+                        maxHeight: isFocused ? '90px' : '30px'
                     }}
-                    className="w-full px-3 py-2 text-sm border-2 border-blue-200 dark:border-blue-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300 overflow-hidden"
+                    className={`w-full px-3 py-1 text-sm border-2 border-blue-200 dark:border-blue-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400 focus:border-transparent resize-none bg-white dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-400 dark:placeholder-gray-500 transition-all duration-300 overflow-hidden ${isFocused ? 'absolute z-50 shadow-xl' : ''}`}
                 />
                 {localSaving && (
                     <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
@@ -861,10 +861,10 @@ const IssueRow = ({
         <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
-            className="grid grid-cols-12 gap-4 px-6 py-4 border-b border-blue-100 dark:border-gray-700 hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-sky-50/30 dark:hover:from-blue-900/10 dark:hover:to-sky-900/10 items-start group transition-all duration-200"
+            className="grid grid-cols-12 gap-4 px-6 py-1 border-b border-blue-100 dark:border-gray-700 hover:bg-gradient-to-r hover:from-blue-50/30 hover:to-sky-50/30 dark:hover:from-blue-900/10 dark:hover:to-sky-900/10 items-start group transition-all duration-200"
         >
             {/* Serial Number */}
-            <div className="col-span-1 flex items-center gap-2 text-xs font-mono text-gray-600 dark:text-gray-400">
+            <div className="col-span-1 mt-1 flex items-center gap-2 text-xs font-mono text-gray-600 dark:text-gray-400">
                 {localIssue.serialNumber}
                 {(saving || localSaving) && <Loader2 className="w-3 h-3 text-blue-500 animate-spin" />}
             </div>
@@ -880,7 +880,7 @@ const IssueRow = ({
                     onBlur={() => setIsFocusedType(false)}
                     placeholder="Issue type"
                     style={{ minWidth: '200px', maxWidth: '200px' }}
-                    className="w-full px-3 py-2 text-sm border border-transparent hover:border-blue-200 dark:hover:border-blue-800 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-200 bg-transparent text-gray-900 dark:text-white"
+                    className="w-full px-3 py-1 text-sm border border-transparent hover:border-blue-200 dark:hover:border-blue-800 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 transition-all duration-200 bg-transparent text-gray-900 dark:text-white"
                 />
                 {localSaving && (
                     <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
@@ -902,10 +902,10 @@ const IssueRow = ({
                     style={{
                         minWidth: isFocusedDesc ? '500px' : '300px',
                         maxWidth: isFocusedDesc ? '500px' : '300px',
-                        minHeight: '40px',
-                        maxHeight: '40px'
+                        minHeight: isFocusedDesc ? '90px' : '30px',
+                        maxHeight: isFocusedDesc ? '90px' : '30px'
                     }}
-                    className="w-full px-3 py-2 text-sm border border-transparent hover:border-blue-200 dark:hover:border-blue-800 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 resize-none transition-all duration-300 bg-transparent text-gray-900 dark:text-white overflow-hidden"
+                    className={`w-full px-3 py-1 text-sm border border-transparent hover:border-blue-200 dark:hover:border-blue-800 focus:border-blue-500 dark:focus:border-blue-400 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500/20 dark:focus:ring-blue-400/20 resize-none transition-all duration-300 bg-transparent text-gray-900 dark:text-white overflow-hidden ${isFocusedDesc ? 'absolute z-50 bg-white dark:bg-gray-800 shadow-xl' : ''}`}
                 />
                 {localSaving && (
                     <div className="absolute right-2 top-1/2 transform -translate-y-1/2">
