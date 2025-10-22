@@ -289,7 +289,8 @@ import EditorToolbar from '../component/Toolbar';
 import EditorContentArea from '../component/Editor';
 import DocumentStatusBar from '../component/Statusbar';
 import OpenDocs from '../component/Doc';
-import Bot from '../component/Bot';
+import ComingSoonFeature from '../component/Bot';
+
 
 const DocumentEditor = () => {
     const { showAlert } = useAlert();
@@ -599,13 +600,13 @@ const DocumentEditor = () => {
                 />
             </div>
 
-            <div className="relative flex" style={{ height: 'calc(100vh - 96px)' }}>
+            <div className="relative flex" style={{ height: 'calc(100vh - 90px)' }}>
                 <AnimatePresence mode="wait">
                     {showOpenDocs && (
                         <OpenDocs onClose={() => setShowOpenDocs(false)} />
                     )}
                     {showDocBot && (
-                        <OpenDocBot onClose={() => setShowDocBot(false)} />
+                        <ComingSoonFeature onClose={() => setShowDocBot(false)} />
                     )}
                 </AnimatePresence>
 
