@@ -453,15 +453,15 @@ const TestTypeCard = ({ testType, index, onEdit, onDelete, onMoveToTrash }) => {
       className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-all duration-300"
     >
       <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg mb-1 line-clamp-1">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg mb-1 truncate">
             {testType.testTypeName}
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 truncate">
             by {testType.user?.name || 'Unknown User'}
           </p>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 flex-shrink-0">
           <button
             tooltip-data="Edit"
             tooltip-placement="bottom"

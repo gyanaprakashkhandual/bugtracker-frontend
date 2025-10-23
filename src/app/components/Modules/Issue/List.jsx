@@ -104,18 +104,19 @@ const BugTracker = () => {
             const data = await res.json();
 
             debugLog('FETCH_USERS_RESPONSE', {
-                success: data.success,
-                userCount: data.data?.length
+                success: true,
+                userCount: data.users?.length
             });
 
-            if (data.success) {
-                setUsers(data.data);
+            if (data.users) {
+                setUsers(data.users);
             }
         } catch (error) {
             debugLog('FETCH_USERS_ERROR', error);
             console.error('Error fetching users:', error);
         }
     }, []);
+
 
     const fetchComments = async (issueId) => {
         try {
@@ -921,16 +922,29 @@ const IssueRow = ({
                         <button className="w-full px-3 py-2 text-sm text-left border border-transparent hover:border-blue-200 dark:hover:border-blue-800 rounded-lg flex items-center justify-between group/btn bg-transparent text-gray-900 dark:text-white transition-all duration-200">
                             <span className="flex items-center gap-2 text-xs truncate">
                                 <User className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                                <span className="truncate">{localIssue.assignTo?.name || 'Unassigned'}</span>
+                                <span className="truncate">
+                                    {localIssue.assignTo?.name || 'Unassigned'}
+                                </span>
                             </span>
                             <ChevronDown className="w-4 h-4 opacity-0 group-hover/btn:opacity-100 text-blue-600 dark:text-blue-400 transition-opacity flex-shrink-0" />
                         </button>
                     }
                     items={[
                         { label: 'Unassigned', value: null },
-                        ...users.map(u => ({ label: u.name, value: u._id, subtitle: u.email }))
+                        ...users.map(u => ({
+                            label: u.name,
+                            value: u._id,
+                            subtitle: u.email
+                        }))
                     ]}
-                    onSelect={(item) => handleChange('assignTo', item.value)}
+                    onSelect={(item) => {
+                        if (item.value === null) {
+                            handleChange('assignTo', null);
+                        } else {
+                            const selectedUser = users.find(u => u._id === item.value);
+                            handleChange('assignTo', selectedUser);
+                        }
+                    }}
                 />
                 {localSaving && (
                     <div className="absolute right-2 top-1/2 transform -translate-y-1/2 pointer-events-none">
@@ -938,6 +952,7 @@ const IssueRow = ({
                     </div>
                 )}
             </div>
+
 
             {/* Status */}
             <div className="col-span-1 relative">
@@ -988,6 +1003,7 @@ const IssueRow = ({
         </motion.div>
     );
 };
+
 const ActionsColumn = ({
     issue,
     isNew = false,
@@ -1011,6 +1027,7 @@ const ActionsColumn = ({
     const fileInputRef = useRef(null);
     const modalRef = useRef(null);
     const buttonRef = useRef(null);
+     const containerRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -1023,26 +1040,76 @@ const ActionsColumn = ({
     }, []);
 
     useEffect(() => {
-        if (activeModal && buttonRef.current) {
-            const buttonRect = buttonRef.current.getBoundingClientRect();
-            const viewportHeight = window.innerHeight;
-            const viewportWidth = window.innerWidth;
+    if (activeModal && buttonRef.current) {
+        const buttonRect = buttonRef.current.getBoundingClientRect();
+        const viewportHeight = window.innerHeight;
+        const viewportWidth = window.innerWidth;
 
-            const modalWidth = 320; // w-80 = 320px
-            const modalHeight = 400; // approximate max height
+        const modalWidth = 320; // w-80 = 320px
+        const modalHeight = 400; // approximate max height
 
-            const spaceBelow = viewportHeight - buttonRect.bottom;
-            const spaceAbove = buttonRect.top;
-            const spaceRight = viewportWidth - buttonRect.right;
-            const spaceLeft = buttonRect.left;
+        // Calculate available space
+        const spaceBelow = viewportHeight - buttonRect.bottom;
+        const spaceAbove = buttonRect.top;
+        const spaceRight = viewportWidth - buttonRect.right;
+        const spaceLeft = buttonRect.left;
 
-            setModalPosition({
-                top: spaceBelow >= modalHeight || spaceBelow > spaceAbove,
-                right: spaceRight >= modalWidth || spaceRight > spaceLeft
-            });
-        }
-    }, [activeModal]);
+        // Debug logging
+        console.log('=== MODAL POSITION DEBUG ===');
+        console.log('Button position:', {
+            top: buttonRect.top,
+            bottom: buttonRect.bottom,
+            left: buttonRect.left,
+            right: buttonRect.right
+        });
+        console.log('Viewport:', {
+            height: viewportHeight,
+            width: viewportWidth
+        });
+        console.log('Available space:', {
+            below: spaceBelow,
+            above: spaceAbove,
+            right: spaceRight,
+            left: spaceLeft
+        });
+        console.log('Modal dimensions:', {
+            width: modalWidth,
+            height: modalHeight
+        });
 
+        // Check if modal would go off-screen
+        const wouldGoOffBottom = spaceBelow < modalHeight;
+        const wouldGoOffTop = spaceAbove < modalHeight;
+        const wouldGoOffRight = spaceRight < modalWidth;
+        const wouldGoOffLeft = spaceLeft < modalWidth;
+
+        console.log('Would go off screen:', {
+            bottom: wouldGoOffBottom,
+            top: wouldGoOffTop,
+            right: wouldGoOffRight,
+            left: wouldGoOffLeft
+        });
+
+        // FIXED LOGIC: Place modal where it fits best
+        const placeTop = wouldGoOffBottom && !wouldGoOffTop; // Place above if it would go off bottom AND there's space above
+        const placeLeft = wouldGoOffRight && !wouldGoOffLeft; // Place left if it would go off right AND there's space left
+
+        console.log('Optimal position:', {
+            placeTop,
+            placeLeft
+        });
+
+        const finalPosition = {
+            top: !placeTop, // if placeTop is true, place above (bottom-full)
+            right: !placeLeft // if placeLeft is true, place left
+        };
+
+        console.log('Final position:', finalPosition);
+        console.log('============================');
+
+        setModalPosition(finalPosition);
+    }
+}, [activeModal]);
     const handleAddLink = () => {
         if (newLink.trim()) {
             const updatedLinks = [...(issue.refLink || []), newLink.trim()];
@@ -1096,114 +1163,131 @@ const ActionsColumn = ({
     const validLinks = (issue.refLink || []).filter(link => link && link !== 'No Link Provided');
     const validImages = (issue.image || []).filter(img => img && img !== 'No Image Provided' && img !== 'No Image provided');
 
-    const getModalPositionClasses = () => {
-        const baseClasses = "absolute w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-50 overflow-hidden border border-gray-200 dark:border-gray-700";
-        const positionClasses = [];
+   const getModalPositionClasses = () => {
+    const baseClasses = "absolute w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-50 overflow-hidden border border-gray-200 dark:border-gray-700 max-h-96";
+    const positionClasses = [];
 
-        if (modalPosition.top) {
-            positionClasses.push("top-full mt-1");
-        } else {
-            positionClasses.push("bottom-full mb-1");
-        }
+    console.log('=== MODAL CSS DEBUG ===');
+    console.log('modalPosition:', modalPosition);
 
-        if (modalPosition.right) {
-            positionClasses.push("right-0");
-        } else {
-            positionClasses.push("left-0");
-        }
+    if (modalPosition.top) {
+        positionClasses.push("top-full mt-1");
+        console.log('Adding CSS: top-full mt-1');
+    } else {
+        positionClasses.push("bottom-full mb-1");
+        console.log('Adding CSS: bottom-full mb-1');
+    }
 
-        return `${baseClasses} ${positionClasses.join(' ')}`;
-    };
+    if (modalPosition.right) {
+        positionClasses.push("right-0");
+        console.log('Adding CSS: right-0');
+    } else {
+        positionClasses.push("left-0");
+        console.log('Adding CSS: left-0');
+    }
+
+    const finalClasses = `${baseClasses} ${positionClasses.join(' ')}`;
+    console.log('Final CSS classes:', finalClasses);
+    console.log('========================');
+
+    return finalClasses;
+};
 
     const toggleModal = (modalName) => {
-        setActiveModal(activeModal === modalName ? null : modalName);
-        if (modalName === 'comment' && activeModal !== 'comment' && onFetchComments) {
-            onFetchComments();
+        if (activeModal === modalName) {
+            setActiveModal(null);
+        } else {
+            setActiveModal(modalName);
+            if (modalName === 'comment' && onFetchComments) {
+                onFetchComments();
+            }
         }
     };
 
     return (
-        <div className="relative flex items-center justify-center gap-0.5" ref={buttonRef}>
-            {/* Comment Button */}
-            {!isNew && (
-                <motion.button
-                    whileHover={{ scale: 1.1 }}
-                    whileTap={{ scale: 0.95 }}
-                    onClick={() => toggleModal('comment')}
-                    className="p-1.5 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 rounded-md transition-all duration-200"
-                    tooltip-data="Comments"
-                >
-                    <MessageSquare className="w-3 h-3" />
-                </motion.button>
-            )}
-
-            {/* Images Button */}
-            <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => toggleModal('images')}
-                className="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-md transition-all duration-200 relative"
-                tooltip-data="Images"
-            >
-                <ImageIcon className="w-3 h-3" />
-                {validImages.length > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 bg-purple-600 dark:bg-purple-500 text-white text-[9px] rounded-full w-3 h-3 flex items-center justify-center font-semibold">
-                        {validImages.length}
-                    </span>
-                )}
-            </motion.button>
-
-            {/* Links Button */}
-            <motion.button
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={() => toggleModal('links')}
-                className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-all duration-200 relative"
-                tooltip-data="Links"
-            >
-                <LinkIcon className="w-3 h-3" />
-                {validLinks.length > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 bg-blue-600 dark:bg-blue-500 text-white text-[9px] rounded-full w-3 h-3 flex items-center justify-center font-semibold">
-                        {validLinks.length}
-                    </span>
-                )}
-            </motion.button>
-
-            {/* Delete/Restore Button */}
-            {!isNew && (
-                showTrash ? (
-                    <>
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={onRestore}
-                            className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-md transition-all duration-200"
-                            tooltip-data="Restore"
-                        >
-                            <RefreshCw className="w-3 h-3" />
-                        </motion.button>
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={onDelete}
-                            className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-all duration-200"
-                            tooltip-data="Delete Forever"
-                        >
-                            <Trash2 className="w-3 h-3" />
-                        </motion.button>
-                    </>
-                ) : (
+        <div className="relative flex items-center justify-center gap-0.5" ref={containerRef}> {/* Add ref here */}
+            <div ref={buttonRef} className="flex items-center justify-center gap-0.5"> {/* Wrap buttons */}
+                {/* Comment Button */}
+                {!isNew && (
                     <motion.button
                         whileHover={{ scale: 1.1 }}
                         whileTap={{ scale: 0.95 }}
-                        onClick={onMoveToTrash}
-                        className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 rounded-md"
-                        tooltip-data="Move to Trash"
+                        onClick={() => toggleModal('comment')}
+                        className="p-1.5 text-sky-600 dark:text-sky-400 hover:bg-sky-50 dark:hover:bg-sky-900/20 rounded-md transition-all duration-200"
+                        tooltip-data="Comments"
                     >
-                        <Trash2 className="w-3 h-3" />
+                        <MessageSquare className="w-3 h-3" />
                     </motion.button>
-                )
-            )}
+                )}
+
+                {/* Images Button */}
+                <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => toggleModal('images')}
+                    className="p-1.5 text-purple-600 dark:text-purple-400 hover:bg-purple-50 dark:hover:bg-purple-900/20 rounded-md transition-all duration-200 relative"
+                    tooltip-data="Images"
+                >
+                    <ImageIcon className="w-3 h-3" />
+                    {validImages.length > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 bg-purple-600 dark:bg-purple-500 text-white text-[9px] rounded-full w-3 h-3 flex items-center justify-center font-semibold">
+                            {validImages.length}
+                        </span>
+                    )}
+                </motion.button>
+
+                {/* Links Button */}
+                <motion.button
+                    whileHover={{ scale: 1.1 }}
+                    whileTap={{ scale: 0.95 }}
+                    onClick={() => toggleModal('links')}
+                    className="p-1.5 text-blue-600 dark:text-blue-400 hover:bg-blue-50 dark:hover:bg-blue-900/20 rounded-md transition-all duration-200 relative"
+                    tooltip-data="Links"
+                >
+                    <LinkIcon className="w-3 h-3" />
+                    {validLinks.length > 0 && (
+                        <span className="absolute -top-0.5 -right-0.5 bg-blue-600 dark:bg-blue-500 text-white text-[9px] rounded-full w-3 h-3 flex items-center justify-center font-semibold">
+                            {validLinks.length}
+                        </span>
+                    )}
+                </motion.button>
+
+                {/* Delete/Restore Button */}
+                {!isNew && (
+                    showTrash ? (
+                        <>
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={onRestore}
+                                className="p-1.5 text-emerald-600 dark:text-emerald-400 hover:bg-emerald-50 dark:hover:bg-emerald-900/20 rounded-md transition-all duration-200"
+                                tooltip-data="Restore"
+                            >
+                                <RefreshCw className="w-3 h-3" />
+                            </motion.button>
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={onDelete}
+                                className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-md transition-all duration-200"
+                                tooltip-data="Delete Forever"
+                            >
+                                <Trash2 className="w-3 h-3" />
+                            </motion.button>
+                        </>
+                    ) : (
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={onMoveToTrash}
+                            className="p-1.5 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all duration-200 rounded-md"
+                            tooltip-data="Move to Trash"
+                        >
+                            <Trash2 className="w-3 h-3" />
+                        </motion.button>
+                    )
+                )}
+            </div>
 
             {/* Modals */}
             <AnimatePresence>
@@ -1215,6 +1299,7 @@ const ActionsColumn = ({
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
                         className={getModalPositionClasses()}
+                    
                     >
                         <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border-b border-gray-200 dark:border-gray-700">
                             <div className="flex items-center gap-1.5">
@@ -1545,7 +1630,6 @@ const ActionsColumn = ({
         </div>
     );
 };
-
 const Dropdown = ({ trigger, items, onSelect }) => {
     const [isOpen, setIsOpen] = useState(false);
     const [dropdownPosition, setDropdownPosition] = useState({ top: true, left: true });

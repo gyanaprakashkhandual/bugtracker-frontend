@@ -45,7 +45,6 @@ const UserManagement = () => {
     { value: 'project manager', label: 'Project Manager', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
     { value: 'developer', label: 'Developer', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' },
     { value: 'qa tester', label: 'QA Tester', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300' },
-    { value: 'user', label: 'User', color: 'bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-300' }
   ];
 
   const getToken = () => {
@@ -664,16 +663,16 @@ const UserCard = ({ user, index, onEdit, onDelete, onToggleStatus, onUpdateRole,
       className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-all duration-300"
     >
       <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg mb-1 line-clamp-1">
+        <div className="flex-1 min-w-0">
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg mb-1 truncate">
             {user.name}
           </h3>
-          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 flex items-center">
-            <FiMail className="h-3 w-3 mr-1" />
-            {user.email}
+          <p className="text-sm text-gray-500 dark:text-gray-400 mb-2 flex items-center truncate">
+            <FiMail className="h-3 w-3 mr-1 flex-shrink-0" />
+            <span className="truncate">{user.email}</span>
           </p>
         </div>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 flex-shrink-0">
           <button
             tooltip-data="Edit"
             tooltip-placement="bottom"
