@@ -2,10 +2,12 @@
 
 import React, { useState } from 'react'
 import { motion } from 'framer-motion'
-import { Check, Zap, Code, Brain, Users, Calendar, MessageSquare, Bug, FileText, Sparkles } from 'lucide-react'
+import { Check, Zap, Code, Brain, Users, Calendar, MessageSquare, Bug, FileText, Sparkles } from 'lucide-react';
+import { useRouter } from 'next/navigation';
 
 export default function CaffeTestSubscription() {
-  const [billingCycle, setBillingCycle] = useState('monthly')
+  const [billingCycle, setBillingCycle] = useState('monthly');
+  const router = useRouter();
 
   const plans = {
     monthly: [
@@ -380,7 +382,7 @@ export default function CaffeTestSubscription() {
             <p className="text-gray-700 leading-relaxed mb-8">
               Together, we'll build a tool that not only meets your expectations but exceeds them, making your testing process smoother, faster, and more enjoyable. Let's create something extraordinary together!
             </p>
-            <button className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 inline-flex items-center gap-2">
+            <button onClick={() => router.push('/feedback')} className="bg-gradient-to-r from-purple-600 to-blue-600 text-white px-8 py-4 rounded-xl font-semibold hover:shadow-lg hover:scale-105 transition-all duration-300 inline-flex items-center gap-2">
               <MessageSquare className="w-5 h-5" />
               Share Your Feedback
             </button>
