@@ -34,7 +34,6 @@ const Chat = () => {
     const { testTypeId, testTypeName } = useTestType();
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
 
-    // States
     const [chats, setChats] = useState([]);
     const [currentChat, setCurrentChat] = useState(null);
     const [messages, setMessages] = useState([]);
@@ -52,15 +51,12 @@ const Chat = () => {
     const [uploadProgress, setUploadProgress] = useState(0);
     const [user, setUser] = useState([]);
 
-    // Refs
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
     const fileInputRef = useRef(null);
     const [isRecording, setIsRecording] = useState(false);
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
-
-
 
     const scrollToBottom = () => {
         messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
@@ -473,25 +469,23 @@ const Chat = () => {
 
     return (
         <div className="flex h-screen bg-white dark:bg-gray-900">
-            {/* Sidebar */}
             <AnimatePresence>
                 {isSidebarOpen && (
                     <motion.div
                         initial={{ x: -320 }}
                         animate={{ x: 0 }}
                         exit={{ x: -320 }}
-                        transition={{ type: 'spring', damping: 25, stiffness: 200 }}
-                        className="w-80 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col"
+                        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+                        className="w-full sm:w-80 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col absolute sm:relative z-20 h-full"
                     >
-                        {/* Sidebar Header */}
-                        <div className="p-4 border-b border-gray-200 dark:border-gray-700">
-                            <div className="flex items-center justify-between mb-4">
-                                <div className="flex items-center gap-3">
-                                    <div className="w-10 h-10 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
-                                        <span className="text-xl font-bold text-white">L</span>
+                        <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
+                            <div className="flex items-center justify-between mb-3 sm:mb-4">
+                                <div className="flex items-center gap-2 sm:gap-3">
+                                    <div className="w-8 h-8 sm:w-10 sm:h-10 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-lg">
+                                        <span className="text-lg sm:text-xl font-bold text-white">L</span>
                                     </div>
                                     <div>
-                                        <h2 className="text-lg font-bold text-gray-900 dark:text-gray-100">Lumen AI</h2>
+                                        <h2 className="text-base sm:text-lg font-bold text-gray-900 dark:text-gray-100">Lumen AI</h2>
                                         <p className="text-xs text-gray-500 dark:text-gray-400">QA Assistant</p>
                                     </div>
                                 </div>
@@ -505,15 +499,14 @@ const Chat = () => {
 
                             <button
                                 onClick={createNewChat}
-                                className="w-full flex items-center justify-center gap-2 px-4 py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-xl transition-all shadow-md hover:shadow-lg"
+                                className="w-full flex items-center justify-center gap-2 px-3 sm:px-4 py-2.5 sm:py-3 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 text-white rounded-xl transition-all shadow-md hover:shadow-lg"
                             >
-                                <Plus className="w-5 h-5" />
+                                <Plus className="w-4 h-4 sm:w-5 sm:h-5" />
                                 <span className="text-sm font-semibold">New Chat</span>
                             </button>
                         </div>
 
-                        {/* Search */}
-                        <div className="p-4">
+                        <div className="p-3 sm:p-4">
                             <div className="relative">
                                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
                                 <input
@@ -521,17 +514,16 @@ const Chat = () => {
                                     placeholder="Search conversations..."
                                     value={searchQuery}
                                     onChange={(e) => setSearchQuery(e.target.value)}
-                                    className="w-full pl-10 pr-4 py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-all"
+                                    className="w-full pl-10 pr-4 py-2 sm:py-2.5 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400 transition-all"
                                 />
                             </div>
                         </div>
 
-                        {/* Chat List */}
-                        <div className="flex-1 overflow-y-auto px-3">
+                        <div className="flex-1 overflow-y-auto px-2 sm:px-3">
                             {chats.length === 0 ? (
-                                <div className="p-8 text-center">
-                                    <div className="w-16 h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
-                                        <Plus className="w-8 h-8 text-gray-400 dark:text-gray-500" />
+                                <div className="p-6 sm:p-8 text-center">
+                                    <div className="w-12 h-12 sm:w-16 sm:h-16 bg-gray-200 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                                        <Plus className="w-6 h-6 sm:w-8 sm:h-8 text-gray-400 dark:text-gray-500" />
                                     </div>
                                     <p className="text-sm text-gray-500 dark:text-gray-400">No conversations yet</p>
                                     <p className="text-xs text-gray-400 dark:text-gray-500 mt-1">Start a new chat to begin</p>
@@ -553,7 +545,7 @@ const Chat = () => {
                                                     }`}
                                                 onClick={() => loadChat(chat._id)}
                                             >
-                                                <div className="p-3">
+                                                <div className="p-2.5 sm:p-3">
                                                     {isEditingTitle && editingChatId === chat._id ? (
                                                         <div className="flex items-center gap-2">
                                                             <input
@@ -561,7 +553,7 @@ const Chat = () => {
                                                                 value={editTitle}
                                                                 onChange={(e) => setEditTitle(e.target.value)}
                                                                 onClick={(e) => e.stopPropagation()}
-                                                                className="flex-1 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500"
+                                                                className="flex-1 px-2 py-1 bg-white dark:bg-gray-600 border border-gray-300 dark:border-gray-500 rounded text-sm text-gray-900 dark:text-gray-100 focus:outline-none focus:ring-2 focus:ring-sky-500 dark:focus:ring-sky-400"
                                                                 autoFocus
                                                             />
                                                             <button
@@ -644,9 +636,7 @@ const Chat = () => {
                 )}
             </AnimatePresence>
 
-            {/* Main Chat Area */}
             <div className="flex-1 flex flex-col">
-                {/* Messages Area */}
                 <div className="flex-1 overflow-y-auto">
                     {!currentChat ? (
                         <div className="h-full flex items-center justify-center px-4">
@@ -659,29 +649,29 @@ const Chat = () => {
                                         <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                                     </button>
                                 )}
-                                <div className="w-20 h-20 bg-gradient-to-br from-sky-400 to-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-2xl">
-                                    <span className="text-4xl font-bold text-white">L</span>
+                                <div className="w-16 h-16 sm:w-20 sm:h-20 bg-gradient-to-br from-sky-400 to-blue-600 rounded-3xl flex items-center justify-center mx-auto mb-4 sm:mb-6 shadow-2xl">
+                                    <span className="text-3xl sm:text-4xl font-bold text-white">L</span>
                                 </div>
-                                <h2 className="text-4xl font-bold text-gray-900 dark:text-gray-100 mb-3">
+                                <h2 className="text-3xl sm:text-4xl font-bold text-gray-900 dark:text-gray-100 mb-2 sm:mb-3">
                                     Hello there!
                                 </h2>
-                                <p className="text-lg text-gray-600 dark:text-gray-300 mb-8">
+                                <p className="text-base sm:text-lg text-gray-600 dark:text-gray-300 mb-6 sm:mb-8">
                                     I'm <span className="font-semibold text-sky-600 dark:text-sky-400">Lumen</span>, your intelligent QA testing assistant
                                 </p>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 max-w-xl mx-auto">
-                                    <div className="p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border border-sky-200 dark:border-sky-800 rounded-xl">
+                                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 max-w-xl mx-auto">
+                                    <div className="p-3 sm:p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border border-sky-200 dark:border-sky-800 rounded-xl">
                                         <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">Manage Bugs</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Track and resolve issues</p>
                                     </div>
-                                    <div className="p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border border-sky-200 dark:border-sky-800 rounded-xl">
+                                    <div className="p-3 sm:p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border border-sky-200 dark:border-sky-800 rounded-xl">
                                         <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">Test Cases</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Create and organize tests</p>
                                     </div>
-                                    <div className="p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border border-sky-200 dark:border-sky-800 rounded-xl">
+                                    <div className="p-3 sm:p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border border-sky-200 dark:border-sky-800 rounded-xl">
                                         <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">Projects</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Manage your workspace</p>
                                     </div>
-                                    <div className="p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border border-sky-200 dark:border-sky-800 rounded-xl">
+                                    <div className="p-3 sm:p-4 bg-gradient-to-br from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border border-sky-200 dark:border-sky-800 rounded-xl">
                                         <p className="text-sm text-gray-700 dark:text-gray-200 font-medium">Natural Language</p>
                                         <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Just ask me anything</p>
                                     </div>
@@ -689,7 +679,7 @@ const Chat = () => {
                             </div>
                         </div>
                     ) : (
-                        <div className="px-4 py-6 lg:px-8">
+                        <div className="px-4 py-4 sm:py-6 lg:px-8">
                             {!isSidebarOpen && (
                                 <button
                                     onClick={() => setIsSidebarOpen(true)}
@@ -698,25 +688,25 @@ const Chat = () => {
                                     <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                                 </button>
                             )}
-                            <div className="space-y-6 max-w-4xl mx-auto">
+                            <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
                                 {messages.map((message, index) => (
                                     <motion.div
                                         key={index}
                                         initial={{ opacity: 0, y: 20 }}
                                         animate={{ opacity: 1, y: 0 }}
                                         transition={{ duration: 0.3 }}
-                                        className={`flex gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'
+                                        className={`flex gap-2 sm:gap-3 ${message.role === 'user' ? 'justify-end' : 'justify-start'
                                             }`}
                                     >
                                         {message.role === 'assistant' && (
-                                            <div className="w-9 h-9 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
-                                                <span className="text-sm font-bold text-white">AI</span>
+                                            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                                                <span className="text-xs sm:text-sm font-bold text-white">AI</span>
                                             </div>
                                         )}
                                         <div
-                                            className={`max-w-3xl ${message.role === 'user'
-                                                ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-2xl rounded-tr-md px-5 py-3.5 shadow-lg'
-                                                : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-md px-5 py-3.5 shadow-sm'
+                                            className={`max-w-[85%] sm:max-w-3xl ${message.role === 'user'
+                                                ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-2xl rounded-tr-md px-4 sm:px-5 py-3 sm:py-3.5 shadow-lg'
+                                                : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-md px-4 sm:px-5 py-3 sm:py-3.5 shadow-sm'
                                                 }`}
                                         >
                                             <MessageParser
@@ -739,8 +729,8 @@ const Chat = () => {
                                             </div>
                                         </div>
                                         {message.role === 'user' && (
-                                            <div className="w-9 h-9 bg-gradient-to-br from-blue-500 to-sky-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
-                                                <span className="text-sm font-bold text-white">U</span>
+                                            <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-blue-500 to-sky-600 rounded-xl flex items-center justify-center flex-shrink-0 shadow-md">
+                                                <span className="text-xs sm:text-sm font-bold text-white">U</span>
                                             </div>
                                         )}
                                     </motion.div>
@@ -749,12 +739,12 @@ const Chat = () => {
                                     <motion.div
                                         initial={{ opacity: 0 }}
                                         animate={{ opacity: 1 }}
-                                        className="flex gap-3"
+                                        className="flex gap-2 sm:gap-3"
                                     >
-                                        <div className="w-9 h-9 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
-                                            <span className="text-sm font-bold text-white">AI</span>
+                                        <div className="w-8 h-8 sm:w-9 sm:h-9 bg-gradient-to-br from-sky-400 to-blue-600 rounded-xl flex items-center justify-center shadow-md">
+                                            <span className="text-xs sm:text-sm font-bold text-white">AI</span>
                                         </div>
-                                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-md px-5 py-3.5 shadow-sm">
+                                        <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-md px-4 sm:px-5 py-3 sm:py-3.5 shadow-sm">
                                             <Loader2 className="w-5 h-5 animate-spin text-sky-500 dark:text-sky-400" />
                                         </div>
                                     </motion.div>
@@ -765,9 +755,8 @@ const Chat = () => {
                     )}
                 </div>
 
-                {/* Input Area */}
                 {currentChat && (
-                    <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-4 py-4 lg:px-8">
+                    <div className="bg-white dark:bg-gray-800 border-t border-gray-200 dark:border-gray-700 px-3 sm:px-4 py-3 sm:py-4 lg:px-8">
                         <div className="max-w-4xl mx-auto relative">
                             <AnimatePresence>
                                 {showCommandDropdown && (
@@ -789,14 +778,14 @@ const Chat = () => {
                                 <motion.div
                                     initial={{ opacity: 0, y: -10 }}
                                     animate={{ opacity: 1, y: 0 }}
-                                    className="mb-3 flex items-center gap-2"
+                                    className="mb-2 sm:mb-3 flex items-center gap-2"
                                 >
-                                    <span className="text-xs bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 px-3 py-1.5 rounded-full font-medium">
+                                    <span className="text-xs bg-sky-100 dark:bg-sky-900/40 text-sky-700 dark:text-sky-300 px-2 sm:px-3 py-1 sm:py-1.5 rounded-full font-medium">
                                         Command: {selectedCommand}
                                     </span>
                                     <button
                                         onClick={() => setSelectedCommand(null)}
-                                        className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+                                        className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
                                     >
                                         <X className="w-4 h-4" />
                                     </button>
@@ -807,7 +796,7 @@ const Chat = () => {
                                 <motion.div
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: 'auto' }}
-                                    className="mb-3 flex flex-wrap gap-2"
+                                    className="mb-2 sm:mb-3 flex flex-wrap gap-2"
                                 >
                                     {attachments.map((attachment, index) => (
                                         <motion.div
@@ -819,7 +808,7 @@ const Chat = () => {
                                             <img
                                                 src={attachment.url}
                                                 alt={attachment.name}
-                                                className="w-20 h-20 object-cover rounded-xl border-2 border-gray-200 dark:border-gray-600 shadow-sm"
+                                                className="w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-xl border-2 border-gray-200 dark:border-gray-600 shadow-sm"
                                             />
                                             <button
                                                 onClick={() => removeAttachment(index)}
@@ -836,7 +825,7 @@ const Chat = () => {
                                 <motion.div
                                     initial={{ opacity: 0, height: 0 }}
                                     animate={{ opacity: 1, height: 'auto' }}
-                                    className="mb-3 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-lg p-2"
+                                    className="mb-2 sm:mb-3 bg-sky-50 dark:bg-sky-900/20 border border-sky-200 dark:border-sky-800 rounded-lg p-2"
                                 >
                                     <div className="flex items-center gap-2">
                                         <Loader2 className="w-4 h-4 animate-spin text-sky-500 dark:text-sky-400" />
@@ -888,10 +877,9 @@ const Chat = () => {
                                     <button
                                         onClick={() => fileInputRef.current?.click()}
                                         disabled={isUploading || isRecording}
-                                        className="p-2.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
-                                        tooltip-data="Attach images"
+                                        className="p-2 sm:p-2.5 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-xl transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex-shrink-0"
                                     >
-                                        <Paperclip className="w-5 h-5 text-gray-600 dark:text-gray-300" />
+                                        <Paperclip className="w-4 h-4 sm:w-5 sm:h-5 text-gray-600 dark:text-gray-300" />
                                     </button>
 
                                     <textarea
@@ -906,7 +894,7 @@ const Chat = () => {
                                         onKeyPress={handleKeyPress}
                                         placeholder="Ask Lumen about bugs, test cases, projects..."
                                         disabled={isUploading || isRecording}
-                                        className="flex-1 bg-transparent border-none outline-none resize-none text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50 overflow-y-auto"
+                                        className="flex-1 bg-transparent border-none outline-none resize-none text-sm sm:text-base text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 disabled:opacity-50 overflow-y-auto"
                                         rows={1}
                                         style={{
                                             minHeight: '24px',
@@ -923,10 +911,9 @@ const Chat = () => {
                                             isUploading ||
                                             isRecording
                                         }
-                                        className="p-2.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:from-gray-300 disabled:to-gray-400 dark:disabled:from-gray-600 dark:disabled:to-gray-700 disabled:cursor-not-allowed rounded-xl transition-all shadow-md hover:shadow-lg flex-shrink-0"
-                                        tooltip-data="Send message"
+                                        className="p-2 sm:p-2.5 bg-gradient-to-r from-sky-500 to-blue-600 hover:from-sky-600 hover:to-blue-700 disabled:from-gray-300 disabled:to-gray-400 dark:disabled:from-gray-600 dark:disabled:to-gray-700 disabled:cursor-not-allowed rounded-xl transition-all shadow-md hover:shadow-lg flex-shrink-0"
                                     >
-                                        <Send className="w-5 h-5 text-white" />
+                                        <Send className="w-4 h-4 sm:w-5 sm:h-5 text-white" />
                                     </button>
                                 </div>
 

@@ -26,7 +26,6 @@ const CommandDropdown = ({ onSelect, onClose }) => {
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  // Available commands (Future feature - these will trigger specific actions)
   const commands = [
     {
       id: 'add-test-case',
@@ -34,7 +33,7 @@ const CommandDropdown = ({ onSelect, onClose }) => {
       description: 'Create a new test case',
       icon: FileText,
       category: 'Test Cases',
-      color: 'text-blue-500'
+      color: 'text-blue-500 dark:text-blue-400'
     },
     {
       id: 'edit-test-case',
@@ -42,7 +41,7 @@ const CommandDropdown = ({ onSelect, onClose }) => {
       description: 'Modify existing test case',
       icon: Edit3,
       category: 'Test Cases',
-      color: 'text-green-500'
+      color: 'text-green-500 dark:text-green-400'
     },
     {
       id: 'delete-test-case',
@@ -50,7 +49,7 @@ const CommandDropdown = ({ onSelect, onClose }) => {
       description: 'Remove a test case',
       icon: Trash2,
       category: 'Test Cases',
-      color: 'text-red-500'
+      color: 'text-red-500 dark:text-red-400'
     },
     {
       id: 'get-test-case',
@@ -58,7 +57,7 @@ const CommandDropdown = ({ onSelect, onClose }) => {
       description: 'Retrieve test case details',
       icon: Search,
       category: 'Test Cases',
-      color: 'text-purple-500'
+      color: 'text-purple-500 dark:text-purple-400'
     },
     {
       id: 'add-bug',
@@ -66,7 +65,7 @@ const CommandDropdown = ({ onSelect, onClose }) => {
       description: 'Report a new bug',
       icon: Bug,
       category: 'Bugs',
-      color: 'text-orange-500'
+      color: 'text-orange-500 dark:text-orange-400'
     },
     {
       id: 'update-bug',
@@ -74,7 +73,7 @@ const CommandDropdown = ({ onSelect, onClose }) => {
       description: 'Update bug status or details',
       icon: AlertCircle,
       category: 'Bugs',
-      color: 'text-yellow-500'
+      color: 'text-yellow-500 dark:text-yellow-400'
     },
     {
       id: 'get-bugs',
@@ -82,75 +81,10 @@ const CommandDropdown = ({ onSelect, onClose }) => {
       description: 'List all bugs',
       icon: Database,
       category: 'Bugs',
-      color: 'text-red-600'
+      color: 'text-red-600 dark:text-red-400'
     },
-    {
-      id: 'create-project',
-      name: 'Create Project',
-      description: 'Start a new project',
-      icon: FolderOpen,
-      category: 'Projects',
-      color: 'text-indigo-500'
-    },
-    {
-      id: 'list-projects',
-      name: 'List Projects',
-      description: 'View all projects',
-      icon: GitBranch,
-      category: 'Projects',
-      color: 'text-cyan-500'
-    },
-    {
-      id: 'get-project-stats',
-      name: 'Project Statistics',
-      description: 'Get project analytics',
-      icon: Database,
-      category: 'Projects',
-      color: 'text-teal-500'
-    },
-    {
-      id: 'assign-task',
-      name: 'Assign Task',
-      description: 'Assign task to team member',
-      icon: Users,
-      category: 'Tasks',
-      color: 'text-pink-500'
-    },
-    {
-      id: 'update-status',
-      name: 'Update Status',
-      description: 'Change task or bug status',
-      icon: CheckSquare,
-      category: 'Tasks',
-      color: 'text-green-600'
-    },
-    {
-      id: 'code-review',
-      name: 'Code Review',
-      description: 'Request code review',
-      icon: Code,
-      category: 'Development',
-      color: 'text-violet-500'
-    },
-    {
-      id: 'generate-report',
-      name: 'Generate Report',
-      description: 'Create test report',
-      icon: FileCode,
-      category: 'Reports',
-      color: 'text-gray-600'
-    },
-    {
-      id: 'schedule-test',
-      name: 'Schedule Test',
-      description: 'Schedule automated test',
-      icon: Clock,
-      category: 'Automation',
-      color: 'text-blue-600'
-    }
   ];
 
-  // Filter commands based on search
   const filteredCommands = commands.filter(
     (cmd) =>
       cmd.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -158,7 +92,6 @@ const CommandDropdown = ({ onSelect, onClose }) => {
       cmd.category.toLowerCase().includes(searchQuery.toLowerCase())
   );
 
-  // Group commands by category
   const groupedCommands = filteredCommands.reduce((acc, cmd) => {
     if (!acc[cmd.category]) {
       acc[cmd.category] = [];
@@ -167,7 +100,6 @@ const CommandDropdown = ({ onSelect, onClose }) => {
     return acc;
   }, {});
 
-  // Handle keyboard navigation
   useEffect(() => {
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowDown') {
@@ -191,7 +123,6 @@ const CommandDropdown = ({ onSelect, onClose }) => {
     return () => document.removeEventListener('keydown', handleKeyDown);
   }, [filteredCommands, selectedIndex, onSelect, onClose]);
 
-  // Handle click outside
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
@@ -203,7 +134,6 @@ const CommandDropdown = ({ onSelect, onClose }) => {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [onClose]);
 
-  // Auto-focus search input
   useEffect(() => {
     searchInputRef.current?.focus();
   }, []);
@@ -215,12 +145,11 @@ const CommandDropdown = ({ onSelect, onClose }) => {
       animate={{ opacity: 1, y: 0, scale: 1 }}
       exit={{ opacity: 0, y: 10, scale: 0.95 }}
       transition={{ duration: 0.15 }}
-      className="absolute bottom-full left-0 mb-2 w-full max-w-2xl bg-white rounded-lg shadow-2xl border border-gray-200 overflow-hidden z-50"
+      className="absolute bottom-full left-0 mb-2 w-full max-w-2xl bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden z-50"
     >
-      {/* Search Header */}
-      <div className="p-3 border-b border-gray-200 bg-gray-50">
+      <div className="p-3 border-b border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
         <div className="relative">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" />
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400 dark:text-gray-500" />
           <input
             ref={searchInputRef}
             type="text"
@@ -230,33 +159,30 @@ const CommandDropdown = ({ onSelect, onClose }) => {
               setSearchQuery(e.target.value);
               setSelectedIndex(0);
             }}
-            className="w-full pl-10 pr-4 py-2 bg-white border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+            className="w-full pl-10 pr-4 py-2 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 placeholder-gray-400 dark:placeholder-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 dark:focus:ring-blue-400"
           />
         </div>
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mt-2">
           💡 <strong>Future Feature:</strong> Commands will trigger specific actions (add test case, create bug, etc.)
         </p>
       </div>
 
-      {/* Commands List */}
       <div className="max-h-96 overflow-y-auto">
         {Object.keys(groupedCommands).length === 0 ? (
           <div className="p-8 text-center">
-            <Search className="w-12 h-12 mx-auto mb-2 text-gray-300" />
-            <p className="text-sm text-gray-500">No commands found</p>
+            <Search className="w-12 h-12 mx-auto mb-2 text-gray-300 dark:text-gray-600" />
+            <p className="text-sm text-gray-500 dark:text-gray-400">No commands found</p>
           </div>
         ) : (
           <div className="p-2">
             {Object.entries(groupedCommands).map(([category, categoryCommands]) => (
               <div key={category} className="mb-3">
-                {/* Category Header */}
                 <div className="px-3 py-1 mb-1">
-                  <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                  <h3 className="text-xs font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">
                     {category}
                   </h3>
                 </div>
 
-                {/* Category Commands */}
                 {categoryCommands.map((command, idx) => {
                   const globalIndex = filteredCommands.indexOf(command);
                   const Icon = command.icon;
@@ -270,27 +196,27 @@ const CommandDropdown = ({ onSelect, onClose }) => {
                       onClick={() => onSelect(command.id)}
                       className={`w-full flex items-center gap-3 px-3 py-2.5 rounded-lg text-left transition-colors ${
                         isSelected
-                          ? 'bg-blue-50 border border-blue-200'
-                          : 'hover:bg-gray-50 border border-transparent'
+                          ? 'bg-blue-50 dark:bg-blue-900/30 border border-blue-200 dark:border-blue-700'
+                          : 'hover:bg-gray-50 dark:hover:bg-gray-700 border border-transparent'
                       }`}
                     >
                       <div
                         className={`w-8 h-8 rounded-lg flex items-center justify-center ${
-                          isSelected ? 'bg-blue-100' : 'bg-gray-100'
+                          isSelected ? 'bg-blue-100 dark:bg-blue-900/50' : 'bg-gray-100 dark:bg-gray-700'
                         }`}
                       >
                         <Icon className={`w-4 h-4 ${command.color}`} />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <h4 className="text-sm font-medium text-gray-900">
+                        <h4 className="text-sm font-medium text-gray-900 dark:text-gray-100">
                           {command.name}
                         </h4>
-                        <p className="text-xs text-gray-500 truncate">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 truncate">
                           {command.description}
                         </p>
                       </div>
                       {isSelected && (
-                        <div className="text-xs text-blue-600 font-medium">↵</div>
+                        <div className="text-xs text-blue-600 dark:text-blue-400 font-medium">↵</div>
                       )}
                     </motion.button>
                   );
@@ -301,9 +227,8 @@ const CommandDropdown = ({ onSelect, onClose }) => {
         )}
       </div>
 
-      {/* Footer */}
-      <div className="p-3 border-t border-gray-200 bg-gray-50">
-        <div className="flex items-center justify-between text-xs text-gray-500">
+      <div className="p-3 border-t border-gray-200 dark:border-gray-700 bg-gray-50 dark:bg-gray-800">
+        <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400">
           <span>Use ↑↓ to navigate</span>
           <span>↵ to select • Esc to close</span>
         </div>
