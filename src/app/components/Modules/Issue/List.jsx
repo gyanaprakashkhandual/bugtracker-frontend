@@ -1044,7 +1044,7 @@ const ActionsColumn = ({
     const fileInputRef = useRef(null);
     const modalRef = useRef(null);
     const buttonRef = useRef(null);
-     const containerRef = useRef(null);
+    const containerRef = useRef(null);
 
     useEffect(() => {
         const handleClickOutside = (e) => {
@@ -1056,77 +1056,35 @@ const ActionsColumn = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-    useEffect(() => {
+useEffect(() => {
     if (activeModal && buttonRef.current) {
         const buttonRect = buttonRef.current.getBoundingClientRect();
         const viewportHeight = window.innerHeight;
         const viewportWidth = window.innerWidth;
 
-        const modalWidth = 320; // w-80 = 320px
-        const modalHeight = 400; // approximate max height
+        const modalWidth = 340; // Account for padding: 320px + 20px padding
+        const modalHeight = 400;
 
         // Calculate available space
         const spaceBelow = viewportHeight - buttonRect.bottom;
         const spaceAbove = buttonRect.top;
-        const spaceRight = viewportWidth - buttonRect.right;
-        const spaceLeft = buttonRect.left;
+        const spaceRight = viewportWidth - buttonRect.right; // Space to the right of button
+        const spaceLeft = buttonRect.left; // Space to the left of button
 
-        // Debug logging
-        console.log('=== MODAL POSITION DEBUG ===');
-        console.log('Button position:', {
-            top: buttonRect.top,
-            bottom: buttonRect.bottom,
-            left: buttonRect.left,
-            right: buttonRect.right
+        // Determine best vertical position
+        const shouldPlaceAbove = spaceBelow < modalHeight && spaceAbove > spaceBelow;
+        
+        // Determine best horizontal position
+        // Place on LEFT if not enough space on RIGHT
+        const shouldPlaceOnLeft = spaceRight < modalWidth;
+
+        setModalPosition({
+            top: !shouldPlaceAbove,
+            right: !shouldPlaceOnLeft  // if shouldPlaceOnLeft is true, right becomes false
         });
-        console.log('Viewport:', {
-            height: viewportHeight,
-            width: viewportWidth
-        });
-        console.log('Available space:', {
-            below: spaceBelow,
-            above: spaceAbove,
-            right: spaceRight,
-            left: spaceLeft
-        });
-        console.log('Modal dimensions:', {
-            width: modalWidth,
-            height: modalHeight
-        });
-
-        // Check if modal would go off-screen
-        const wouldGoOffBottom = spaceBelow < modalHeight;
-        const wouldGoOffTop = spaceAbove < modalHeight;
-        const wouldGoOffRight = spaceRight < modalWidth;
-        const wouldGoOffLeft = spaceLeft < modalWidth;
-
-        console.log('Would go off screen:', {
-            bottom: wouldGoOffBottom,
-            top: wouldGoOffTop,
-            right: wouldGoOffRight,
-            left: wouldGoOffLeft
-        });
-
-        // FIXED LOGIC: Place modal where it fits best
-        const placeTop = wouldGoOffBottom && !wouldGoOffTop; // Place above if it would go off bottom AND there's space above
-        const placeLeft = wouldGoOffRight && !wouldGoOffLeft; // Place left if it would go off right AND there's space left
-
-        console.log('Optimal position:', {
-            placeTop,
-            placeLeft
-        });
-
-        const finalPosition = {
-            top: !placeTop, // if placeTop is true, place above (bottom-full)
-            right: !placeLeft // if placeLeft is true, place left
-        };
-
-        console.log('Final position:', finalPosition);
-        console.log('============================');
-
-        setModalPosition(finalPosition);
     }
 }, [activeModal]);
+
     const handleAddLink = () => {
         if (newLink.trim()) {
             const updatedLinks = [...(issue.refLink || []), newLink.trim()];
@@ -1180,34 +1138,20 @@ const ActionsColumn = ({
     const validLinks = (issue.refLink || []).filter(link => link && link !== 'No Link Provided');
     const validImages = (issue.image || []).filter(img => img && img !== 'No Image Provided' && img !== 'No Image provided');
 
-   const getModalPositionClasses = () => {
+const getModalPositionClasses = () => {
     const baseClasses = "absolute w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-50 overflow-hidden border border-gray-200 dark:border-gray-700 max-h-96";
     const positionClasses = [];
 
-    console.log('=== MODAL CSS DEBUG ===');
-    console.log('modalPosition:', modalPosition);
-
     if (modalPosition.top) {
         positionClasses.push("top-full mt-1");
-        console.log('Adding CSS: top-full mt-1');
     } else {
         positionClasses.push("bottom-full mb-1");
-        console.log('Adding CSS: bottom-full mb-1');
     }
 
-    if (modalPosition.right) {
-        positionClasses.push("right-0");
-        console.log('Adding CSS: right-0');
-    } else {
-        positionClasses.push("left-0");
-        console.log('Adding CSS: left-0');
-    }
+    // Since Actions column is on the far right, always position modal to open leftward
+    positionClasses.push("right-0");
 
-    const finalClasses = `${baseClasses} ${positionClasses.join(' ')}`;
-    console.log('Final CSS classes:', finalClasses);
-    console.log('========================');
-
-    return finalClasses;
+    return `${baseClasses} ${positionClasses.join(' ')}`;
 };
 
     const toggleModal = (modalName) => {
@@ -1222,8 +1166,8 @@ const ActionsColumn = ({
     };
 
     return (
-        <div className="relative flex items-center justify-center gap-0.5" ref={containerRef}> {/* Add ref here */}
-            <div ref={buttonRef} className="flex items-center justify-center gap-0.5"> {/* Wrap buttons */}
+        <div className="relative flex items-center justify-center gap-0.5" ref={containerRef}>
+            <div ref={buttonRef} className="flex items-center justify-center gap-0.5">
                 {/* Comment Button */}
                 {!isNew && (
                     <motion.button
@@ -1316,7 +1260,6 @@ const ActionsColumn = ({
                         exit={{ opacity: 0, scale: 0.95 }}
                         transition={{ duration: 0.15 }}
                         className={getModalPositionClasses()}
-                    
                     >
                         <div className="flex items-center justify-between px-3 py-2 bg-gradient-to-r from-sky-50 to-blue-50 dark:from-sky-900/20 dark:to-blue-900/20 border-b border-gray-200 dark:border-gray-700">
                             <div className="flex items-center gap-1.5">
