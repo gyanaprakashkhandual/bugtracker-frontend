@@ -357,7 +357,7 @@ const BugTracker = () => {
     };
 
     return (
-        <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-sky-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900">
+        <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-sky-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900">
             <div className="max-w-full overflow-x-auto">
                 <div className="bg-white dark:bg-gray-800 border border-blue-100 dark:border-gray-700 shadow-xl overflow-hidden">
                     <div className="overflow-hidden border border-gray-200 dark:border-gray-700 sticky top-0">

@@ -32,7 +32,6 @@ import Dashboard from '../Modules/Dashboard/App';
 import NotificationPanel from '../Modules/Notification/App';
 import IssueKanban from '../Modules/Issue/Kanban';
 import IssueList from '../Modules/Issue/List';
-import { useSidebar } from '@/app/hooks/Project.sidebar.hook';
 
 
 const AppNavbar = () => {
@@ -47,7 +46,6 @@ const AppNavbar = () => {
     const [error, setError] = useState(null);
     const [isComponentLoading, setIsComponentLoading] = useState(false);
 
-    const { isSidebarOpen } = useSidebar();
     const { selectedProject } = useProject();
     const router = useRouter();
 
@@ -145,6 +143,19 @@ const AppNavbar = () => {
         { name: 'Issue Kanban', icon: Kanban, component: 'IssueKanban' }
     ]
 
+    // Function to truncate project display text
+    const getTruncatedProjectDisplay = () => {
+        if (!selectedProject) return 'Create a Project';
+        
+        const fullText = `${selectedProject.projectName} - ${selectedProject?.projectDesc}`;
+        
+        if (fullText.length > 25) {
+            return fullText.substring(0, 25) + '...';
+        }
+        
+        return fullText;
+    };
+
     const renderComponent = () => {
         if (isComponentLoading) {
             return (
@@ -197,12 +208,15 @@ const AppNavbar = () => {
                         {/* Left Section */}
                         <div className="flex items-center space-x-1.5 sm:space-x-2 md:space-x-3 lg:space-x-4 flex-1 min-w-0">
                             {/* Project Info */}
-                            <div className={`hidden lg:block min-w-0 transition-all duration-300 ${isSidebarOpen ? 'max-w-[150px] xl:max-w-[200px]' : 'max-w-[200px] xl:max-w-xs 2xl:max-w-md'}`}>
-                                {!selectedProject ? (
-                                    <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-3/4 animate-pulse"></div>
+                            <div className="hidden lg:block min-w-0">
+                                {loading ? (
+                                    <div className="h-5 bg-gray-200 dark:bg-gray-700 rounded w-40 animate-pulse"></div>
                                 ) : (
-                                    <h1 className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100 truncate" tooltip-data={`${selectedProject.projectName} - ${selectedProject?.projectDesc}`}>
-                                        {`${selectedProject.projectName} - ${selectedProject?.projectDesc}`}
+                                    <h1 
+                                        className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100" 
+                                        title={selectedProject ? `${selectedProject.projectName} - ${selectedProject?.projectDesc}` : 'Create a Project'}
+                                    >
+                                        {getTruncatedProjectDisplay()}
                                     </h1>
                                 )}
                             </div>
