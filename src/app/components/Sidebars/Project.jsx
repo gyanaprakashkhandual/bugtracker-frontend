@@ -68,38 +68,57 @@ const ProjectSidebar = () => {
         }
     };
 
-    const fetchProjects = async () => {
-        setIsLoading(true);
-        const token = getToken();
-        if (!token) {
-            showAlert({
-                type: "error",
-                message: "Authentication token not found",
-            });
-            setIsLoading(false);
-            return;
-        }
+   const fetchProjects = async () => {
+    setIsLoading(true);
+    const token = getToken();
+    if (!token) {
+        showAlert({
+            type: "error",
+            message: "Authentication token not found",
+        });
+        setIsLoading(false);
+        return;
+    }
 
-        try {
+    try {
+        // Fetch ALL projects by getting all pages
+        let allProjects = [];
+        let currentPage = 1;
+        let totalPages = 1;
+
+        do {
             const res = await axios.get(
-                "http://localhost:5000/api/v1/project/",
+                `http://localhost:5000/api/v1/project/?page=${currentPage}`,
                 {
                     headers: { Authorization: `Bearer ${token}` },
                 }
             );
 
-            setProjects(res.data.projects || []);
-        } catch (err) {
-            console.error("Error fetching projects", err);
-            setProjects([]);
-            showAlert({
-                type: "error",
-                message: "Please Report a Bug",
-            });
-        } finally {
-            setIsLoading(false);
-        }
-    };
+            const fetchedProjects = res.data.projects || [];
+            allProjects = [...allProjects, ...fetchedProjects];
+
+            // Update pagination info
+            if (res.data.pagination) {
+                totalPages = res.data.pagination.totalPages;
+                currentPage++;
+            } else {
+                break; // No pagination data, exit loop
+            }
+
+        } while (currentPage <= totalPages);
+
+        setProjects(allProjects);
+    } catch (err) {
+        console.error("Error fetching projects", err);
+        setProjects([]);
+        showAlert({
+            type: "error",
+            message: "Please Report a Bug",
+        });
+    } finally {
+        setIsLoading(false);
+    }
+};
 
     useEffect(() => {
         fetchUserData();
