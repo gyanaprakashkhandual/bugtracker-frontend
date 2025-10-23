@@ -147,7 +147,7 @@ const AppNavbar = () => {
     const getTruncatedProjectDisplay = () => {
         if (!selectedProject) return 'Create a Project';
         
-        const fullText = `${selectedProject.projectName} - ${selectedProject?.projectDesc}`;
+        const fullText = `${selectedProject.projectName}`;
         
         if (fullText.length > 25) {
             return fullText.substring(0, 25) + '...';

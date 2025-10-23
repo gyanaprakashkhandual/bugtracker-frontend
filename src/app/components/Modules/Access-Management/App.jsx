@@ -455,7 +455,7 @@ const AccessControlSystem = () => {
           </div>
 
           {/* Access List */}
-          <div className="divide-y divide-gray-100 dark:divide-gray-700 max-h-[calc(100vh-350px)] overflow-y-auto">
+          <div className="divide-y divide-gray-100 dark:divide-gray-700 max-h-[calc(100vh-172px)] overflow-y-auto">
             {loading ? (
               <div className="space-y-3 p-4">
                 {[...Array(5)].map((_, i) => (
