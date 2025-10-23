@@ -357,8 +357,8 @@ const BugTracker = () => {
     };
 
     return (
-        <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-sky-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900">
-            <div className="max-w-full overflow-x-auto">
+<div className="bg-gradient-to-br from-slate-50 via-blue-50 to-sky-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900 h-[calc(100vh-69px)] overflow-auto">
+    <div className="max-w-full overflow-x-auto">
                 <div className="bg-white dark:bg-gray-800 border border-blue-100 dark:border-gray-700 shadow-xl overflow-hidden">
                     <div className="overflow-hidden border border-gray-200 dark:border-gray-700 sticky top-0">
                         {/* Table Header */}
@@ -910,6 +910,7 @@ const IssueRow = ({
             {/* Issue Description */}
             <div className="col-span-3 relative">
                 <textarea
+                content-data={localIssue.issueDesc || ''}
                     value={localIssue.issueDesc || ''}
                     onChange={(e) => handleChange('issueDesc', e.target.value)}
                     onKeyPress={(e) => handleKeyPress(e, 'issueDesc')}

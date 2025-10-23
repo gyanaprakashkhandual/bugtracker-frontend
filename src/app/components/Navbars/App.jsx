@@ -214,7 +214,7 @@ const AppNavbar = () => {
                                 ) : (
                                     <h1 
                                         className="text-base lg:text-lg font-semibold text-gray-900 dark:text-gray-100" 
-                                        title={selectedProject ? `${selectedProject.projectName} - ${selectedProject?.projectDesc}` : 'Create a Project'}
+                                        tooltip-data={selectedProject ? `${selectedProject.projectName} - ${selectedProject?.projectDesc}` : 'Create a Project'}
                                     >
                                         {getTruncatedProjectDisplay()}
                                     </h1>
