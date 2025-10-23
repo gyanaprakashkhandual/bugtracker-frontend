@@ -468,6 +468,21 @@ const CustomCalendar = ({ value, onChange, onClose, position }) => {
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, [onClose]);
 
+    useEffect(() => {
+        // Calculate position to prevent going off-screen
+        if (calendarRef.current) {
+            const rect = calendarRef.current.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            
+            if (rect.bottom > viewportHeight - 10) {
+                calendarRef.current.style.top = 'auto';
+                calendarRef.current.style.bottom = '100%';
+                calendarRef.current.style.marginTop = '0';
+                calendarRef.current.style.marginBottom = '8px';
+            }
+        }
+    }, []);
+
     const getDaysInMonth = (date) => {
         const year = date.getFullYear();
         const month = date.getMonth();
@@ -489,7 +504,9 @@ const CustomCalendar = ({ value, onChange, onClose, position }) => {
     const handleDateClick = (day) => {
         if (day) {
             const selectedDate = new Date(currentMonth.getFullYear(), currentMonth.getMonth(), day);
-            const formattedDate = selectedDate.toISOString().split('T')[0];
+            // Fix timezone issue by using local date without time
+            const localDate = new Date(selectedDate.getTime() - (selectedDate.getTimezoneOffset() * 60000));
+            const formattedDate = localDate.toISOString().split('T')[0];
             onChange(formattedDate);
             onClose();
         }
