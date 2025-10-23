@@ -1,4 +1,9 @@
 @import "tailwindcss";
+mark[data-color] {
+  border-radius: 4px;
+  padding: 3px 8px;
+  transition: background-color 0.2s ease-in-out;
+}
 
 /* Enable dark mode variant */
 @variant dark (&:is(.dark *));

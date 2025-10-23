@@ -590,7 +590,7 @@ const DocumentEditor = () => {
     }
 
     return (
-        <div className="min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
+        <div className="sidebar-scrollbar min-h-screen bg-white dark:bg-gray-950 text-gray-900 dark:text-gray-100">
             <div className="sticky top-0 z-50 bg-white dark:bg-gray-950">
                 <EditorToolbar
                     editor={editor}

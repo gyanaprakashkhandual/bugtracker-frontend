@@ -116,7 +116,7 @@ const DocumentStatusBar = ({
         </button>
 
         {/* OpenDocBot Button */}
-        <button
+        {/* <button
           onClick={onOpenDocBot}
           className={`flex items-center gap-1.5 px-2 py-0.5 rounded transition-colors ${
             isDocBotOpen 
@@ -127,7 +127,7 @@ const DocumentStatusBar = ({
         >
           <Bot className="w-3 h-3" />
           <span>OpenDocBot</span>
-        </button>
+        </button> */}
       </div>
 
       <div className="flex items-center gap-4">

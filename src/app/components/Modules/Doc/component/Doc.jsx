@@ -123,7 +123,7 @@ const OpenDocs = ({ onClose }) => {
   animate={{ x: 0, opacity: 1 }}
   exit={{ x: -320, opacity: 0 }}
   transition={{ duration: 0.2, ease: 'easeOut' }}
-  className="fixed left-0 top-0 h-full z-50 w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col"
+  className="fixed left-0 top-0 h-full z-50 w-80 bg-white dark:bg-gray-900 border-r border-gray-200 dark:border-gray-800 flex flex-col overflow-auto"
   >
       {/* Header */}
       <motion.div

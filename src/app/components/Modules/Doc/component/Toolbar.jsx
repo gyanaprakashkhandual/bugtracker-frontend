@@ -428,18 +428,25 @@ const EditorToolbar = ({
                 className="w-64 absolute top-full left-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[99999]"
               >
                 <div className="grid grid-cols-6 gap-2">
-                  {highlightColors.map((color) => (
-                    <button
-                      key={color}
-                      onClick={() => {
-                        editor.chain().focus().toggleHighlight({ color }).run();
-                        setShowHighlightPicker(false);
-                      }}
-                      className="w-8 h-8 rounded border-2 border-gray-300 dark:border-gray-600 hover:border-blue-500 dark:hover:border-blue-500 transition-colors"
-                      style={{ backgroundColor: color }}
-                    />
-                  ))}
-                </div>
+  {highlightColors.map((color) => (
+    <button
+      key={color}
+      onClick={() => {
+        editor.chain().focus().toggleHighlight({ color }).run();
+        setShowHighlightPicker(false);
+      }}
+      className="w-8 h-8 flex items-center justify-center rounded-lg border 
+                 border-gray-300 dark:border-gray-600 hover:border-blue-500 
+                 dark:hover:border-blue-500 transition-all p-[3px]"
+    >
+      <span
+        className="w-full h-full rounded-md shadow-sm"
+        style={{ backgroundColor: color }}
+      />
+    </button>
+  ))}
+</div>
+
               </motion.div>
             )}
           </AnimatePresence>
