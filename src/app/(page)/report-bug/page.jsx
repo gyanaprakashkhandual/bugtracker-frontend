@@ -1,10 +1,10 @@
-import ContactPage from '@/app/pages/utils/Contact'
+import BugReportPage from '@/app/pages/app/Bug-Report'
 import React from 'react'
 
 function page() {
   return (
     <div>
-      <ContactPage/>
+      <BugReportPage/>
     </div>
   )
 }
