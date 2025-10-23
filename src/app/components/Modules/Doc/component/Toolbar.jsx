@@ -157,7 +157,7 @@ const EditorToolbar = ({
   };
 
   return (
-    <div className="px-6 py-3 border-t border-b border-gray-200 dark:border-gray-800 overflow-x-auto">
+    <div className="px-6 py-3 border-t border-b border-gray-200 dark:border-gray-800">
       <div className="flex items-center gap-2 flex-wrap">
         {/* History */}
         <div className="flex items-center gap-1 border-r border-gray-300 dark:border-gray-700 pr-2">
@@ -223,7 +223,7 @@ const EditorToolbar = ({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 mt-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50"
+                className="absolute top-full left-0 mt-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[99999]"
               >
                 <div className="grid grid-cols-2 gap-1">
                   {fontSizes.map((size) => (
@@ -327,7 +327,7 @@ const EditorToolbar = ({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 mt-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50"
+                className="absolute top-full left-0 mt-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[99999]"
               >
                 <div className="grid grid-cols-1 gap-1">
                   {lineHeights.map((height) => (
@@ -354,7 +354,7 @@ const EditorToolbar = ({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 mt-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-50"
+                className="absolute top-full left-0 mt-2 p-2 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[99999]"
               >
                 <div className="grid grid-cols-1 gap-1">
                   {letterSpacings.map((spacing) => (
@@ -399,7 +399,7 @@ const EditorToolbar = ({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[9999] min-w-max"
+                className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[99999] min-w-max"
               >
                 <div className="grid grid-cols-6 gap-2">
                   {colors.map((color) => (
@@ -425,7 +425,7 @@ const EditorToolbar = ({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[9999]"
+                className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[99999]"
               >
                 <div className="grid grid-cols-6 gap-2">
                   {highlightColors.map((color) => (
@@ -546,7 +546,7 @@ const EditorToolbar = ({
                 initial={{ opacity: 0, y: -10 }}
                 animate={{ opacity: 1, y: 0 }}
                 exit={{ opacity: 0, y: -10 }}
-                className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-9999 max-h-64 overflow-y-auto"
+                className="absolute top-full left-0 mt-2 p-3 bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl z-[99999] max-h-64 overflow-y-auto"
               >
                 <div className="grid grid-cols-8 gap-2">
                   {emojis.map((emoji) => (
@@ -658,7 +658,7 @@ const EditorToolbar = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[99999]"
             onClick={() => setShowYoutubeDialog(false)}
           >
             <motion.div
@@ -704,7 +704,7 @@ const EditorToolbar = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/50 flex items-center justify-center z-50"
+            className="fixed inset-0 bg-black/50 flex items-center justify-center z-[99999]"
             onClick={() => setShowSearchDialog(false)}
           >
             <motion.div
