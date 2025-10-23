@@ -358,7 +358,7 @@ const BugTracker = () => {
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-sky-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900">
-            <div className="max-w-full">
+            <div className="max-w-full overflow-x-auto">
                 <div className="bg-white dark:bg-gray-800 border border-blue-100 dark:border-gray-700 shadow-xl overflow-hidden">
                     <div className="overflow-hidden border border-gray-200 dark:border-gray-700 sticky top-0">
                         {/* Table Header */}
@@ -1392,61 +1392,61 @@ const getModalPositionClasses = () => {
                         </div>
 
                         <div className="overflow-y-auto max-h-72">
-                            {uploadingImage && (
-                                <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
-                                    <div className="flex items-center gap-2">
-                                        <Loader2 className="w-3 h-3 animate-spin text-purple-600 dark:text-purple-400" />
-                                        <span className="text-[10px] text-purple-700 dark:text-purple-300">Uploading image...</span>
-                                    </div>
-                                </div>
-                            )}
-                            {validImages.length === 0 && !uploadingImage ? (
-                                <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-[10px]">
-                                    No images added yet
-                                </div>
-                            ) : (
-                                <div className="grid grid-cols-2 gap-2 p-3">
-                                    {validImages.map((image, index) => (
-                                        <motion.div
-                                            key={index}
-                                            initial={{ opacity: 0, scale: 0.8 }}
-                                            animate={{ opacity: 1, scale: 1 }}
-                                            transition={{ delay: index * 0.05 }}
-                                            className="relative group"
-                                        >
-                                            <img
-                                                src={image}
-                                                alt={`Image ${index + 1}`}
-                                                className="w-full h-24 object-cover rounded border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-lg transition-all duration-200"
-                                                onClick={() => setImagePreview(image)}
-                                            />
-                                            <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <motion.button
-                                                    whileHover={{ scale: 1.1 }}
-                                                    whileTap={{ scale: 0.95 }}
-                                                    onClick={() => setImagePreview(image)}
-                                                    className="p-1 bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 rounded shadow hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
-                                                    tooltip-data="View full size"
-                                                >
-                                                    <ZoomIn className="w-2.5 h-2.5" />
-                                                </motion.button>
-                                                {!isNew && (
-                                                    <motion.button
-                                                        whileHover={{ scale: 1.1 }}
-                                                        whileTap={{ scale: 0.95 }}
-                                                        onClick={() => handleRemoveImage(image)}
-                                                        className="p-1 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 rounded shadow hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                                        tooltip-data="Remove image"
-                                                    >
-                                                        <X className="w-2.5 h-2.5" />
-                                                    </motion.button>
-                                                )}
-                                            </div>
-                                        </motion.div>
-                                    ))}
-                                </div>
-                            )}
-                        </div>
+    {uploadingImage && (
+        <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
+            <div className="flex items-center gap-2">
+                <Loader2 className="w-3 h-3 animate-spin text-purple-600 dark:text-purple-400" />
+                <span className="text-[10px] text-purple-700 dark:text-purple-300">Uploading image...</span>
+            </div>
+        </div>
+    )}
+    {validImages.length === 0 && !uploadingImage ? (
+        <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-[10px]">
+            No images added yet
+        </div>
+    ) : validImages.length > 0 ? (
+        <div className="grid grid-cols-2 gap-2 p-3">
+            {validImages.map((image, index) => (
+                <motion.div
+                    key={index}
+                    initial={{ opacity: 0, scale: 0.8 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
+                    className="relative group"
+                >
+                    <img
+                        src={image}
+                        alt={`Image ${index + 1}`}
+                        className="w-full h-24 object-cover rounded border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-lg transition-all duration-200"
+                        onClick={() => setImagePreview(image)}
+                    />
+                    <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                        <motion.button
+                            whileHover={{ scale: 1.1 }}
+                            whileTap={{ scale: 0.95 }}
+                            onClick={() => setImagePreview(image)}
+                            className="p-1 bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 rounded shadow hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                            tooltip-data="View full size"
+                        >
+                            <ZoomIn className="w-2.5 h-2.5" />
+                        </motion.button>
+                        {!isNew && (
+                            <motion.button
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.95 }}
+                                onClick={() => handleRemoveImage(image)}
+                                className="p-1 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 rounded shadow hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                tooltip-data="Remove image"
+                            >
+                                <X className="w-2.5 h-2.5" />
+                            </motion.button>
+                        )}
+                    </div>
+                </motion.div>
+            ))}
+        </div>
+    ) : null}
+</div>
                     </motion.div>
                 )}
 
