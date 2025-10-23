@@ -39,13 +39,39 @@ const UserManagement = () => {
 
   const { showAlert } = useAlert();
   const { showConfirm } = useConfirm();
-
-  const roles = [
-    { value: 'admin', label: 'Admin', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' },
-    { value: 'project manager', label: 'Project Manager', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
-    { value: 'developer', label: 'Developer', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' },
-    { value: 'qa tester', label: 'QA Tester', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300' },
-  ];
+const roles = [
+  { value: 'admin', label: 'Admin', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' },
+  { value: 'project manager', label: 'Project Manager', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
+  { value: 'developer', label: 'Developer', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' },
+  { value: 'qa tester', label: 'QA Tester', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300' },
+  { value: 'hr manager', label: 'HR Manager', color: 'bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-300' },
+  { value: 'devops engineer', label: 'DevOps Engineer', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300' },
+  { value: 'ui-ux designer', label: 'UI/UX Designer', color: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300' },
+  { value: 'manager', label: 'Manager', color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300' },
+  { value: 'product manager', label: 'Product Manager', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300' },
+  { value: 'business analyst', label: 'Business Analyst', color: 'bg-lime-100 text-lime-800 dark:bg-lime-900 dark:text-lime-300' },
+  { value: 'scrum master', label: 'Scrum Master', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300' },
+  { value: 'data scientist', label: 'Data Scientist', color: 'bg-violet-100 text-violet-800 dark:bg-violet-900 dark:text-violet-300' },
+  { value: 'data engineer', label: 'Data Engineer', color: 'bg-fuchsia-100 text-fuchsia-800 dark:bg-fuchsia-900 dark:text-fuchsia-300' },
+  { value: 'ml engineer', label: 'ML Engineer', color: 'bg-rose-100 text-rose-800 dark:bg-rose-900 dark:text-rose-300' },
+  { value: 'ai engineer', label: 'AI Engineer', color: 'bg-sky-100 text-sky-800 dark:bg-sky-900 dark:text-sky-300' },
+  { value: 'frontend developer', label: 'Frontend Developer', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
+  { value: 'backend developer', label: 'Backend Developer', color: 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-300' },
+  { value: 'fullstack developer', label: 'Fullstack Developer', color: 'bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-300' },
+  { value: 'mobile developer', label: 'Mobile Developer', color: 'bg-orange-100 text-orange-800 dark:bg-orange-900 dark:text-orange-300' },
+  { value: 'cloud engineer', label: 'Cloud Engineer', color: 'bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-300' },
+  { value: 'security engineer', label: 'Security Engineer', color: 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-300' },
+  { value: 'automation tester', label: 'Automation Tester', color: 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-300' },
+  { value: 'manual tester', label: 'Manual Tester', color: 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-300' },
+  { value: 'support engineer', label: 'Support Engineer', color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300' },
+  { value: 'system administrator', label: 'System Administrator', color: 'bg-slate-100 text-slate-800 dark:bg-slate-900 dark:text-slate-300' },
+  { value: 'solution architect', label: 'Solution Architect', color: 'bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-300' },
+  { value: 'technical lead', label: 'Technical Lead', color: 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-300' },
+  { value: 'software architect', label: 'Software Architect', color: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900 dark:text-cyan-300' },
+  { value: 'database administrator', label: 'Database Administrator', color: 'bg-teal-100 text-teal-800 dark:bg-teal-900 dark:text-teal-300' },
+  { value: 'intern', label: 'Intern', color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300' },
+  { value: 'other', label: 'Other', color: 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-300' }
+];
 
   const getToken = () => {
     if (typeof window !== 'undefined') {
@@ -291,7 +317,7 @@ const UserManagement = () => {
   const selectedRole = roles.find(r => r.value === formData.role);
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900 kanban-scrollbar">
       <div className="max-w-full mx-auto">
         <div className="bg-white dark:bg-gray-800 rounded-sm">
           <div className="border-b border-gray-200 dark:border-gray-700">
@@ -470,60 +496,60 @@ const UserManagement = () => {
                 </div>
               )}
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                  Role
-                </label>
-                <div ref={roleDropdownRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => !saving && setShowRoleDropdown(!showRoleDropdown)}
-                    disabled={saving}
-                    className="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-left flex items-center justify-between hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
-                  >
-                    <span className="text-sm text-gray-900 dark:text-gray-100">
-                      {selectedRole ? selectedRole.label : 'Select a role'}
-                    </span>
-                    <FiChevronDown className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${showRoleDropdown ? 'rotate-180' : ''}`} />
-                  </button>
+             <div>
+  <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+    Role
+  </label>
+  <div ref={roleDropdownRef} className="relative">
+    <button
+      type="button"
+      onClick={() => !saving && setShowRoleDropdown(!showRoleDropdown)}
+      disabled={saving}
+      className="w-full px-3 py-2.5 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md text-left flex items-center justify-between hover:border-gray-400 dark:hover:border-gray-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all disabled:bg-gray-50 dark:disabled:bg-gray-600 disabled:cursor-not-allowed"
+    >
+      <span className="text-sm text-gray-900 dark:text-gray-100">
+        {selectedRole ? selectedRole.label : 'Select a role'}
+      </span>
+      <FiChevronDown className={`w-4 h-4 text-gray-500 dark:text-gray-400 transition-transform ${showRoleDropdown ? 'rotate-180' : ''}`} />
+    </button>
 
-                  <AnimatePresence>
-                    {showRoleDropdown && (
-                      <motion.div
-                        initial={{ opacity: 0, y: -8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        exit={{ opacity: 0, y: -8 }}
-                        className="absolute z-50 mt-2 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg"
-                      >
-                        <div className="max-h-60 overflow-y-auto">
-                          {roles.map((role) => (
-                            <button
-                              key={role.value}
-                              type="button"
-                              onClick={() => {
-                                setFormData({ ...formData, role: role.value });
-                                setShowRoleDropdown(false);
-                              }}
-                              className="w-full px-4 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between group transition-colors"
-                            >
-                              <div className="flex items-center space-x-3 flex-1 min-w-0">
-                                <div className="flex-1 min-w-0">
-                                  <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
-                                    {role.label}
-                                  </p>
-                                </div>
-                              </div>
-                              {formData.role === role.value && (
-                                <FiCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
-                              )}
-                            </button>
-                          ))}
-                        </div>
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+    <AnimatePresence>
+      {showRoleDropdown && (
+        <motion.div
+          initial={{ opacity: 0, y: -8 }}
+          animate={{ opacity: 1, y: 0 }}
+          exit={{ opacity: 0, y: -8 }}
+          className="absolute z-50 bottom-full mb-1 w-full bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-md shadow-lg"
+        >
+          <div className="max-h-60 overflow-y-auto">
+            {roles.map((role) => (
+              <button
+                key={role.value}
+                type="button"
+                onClick={() => {
+                  setFormData({ ...formData, role: role.value });
+                  setShowRoleDropdown(false);
+                }}
+                className="w-full px-4 py-2.5 text-left hover:bg-gray-50 dark:hover:bg-gray-600 flex items-center justify-between group transition-colors"
+              >
+                <div className="flex items-center space-x-3 flex-1 min-w-0">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-gray-900 dark:text-gray-100 truncate">
+                      {role.label}
+                    </p>
+                  </div>
                 </div>
-              </div>
+                {formData.role === role.value && (
+                  <FiCheck className="w-4 h-4 text-blue-600 dark:text-blue-400 flex-shrink-0" />
+                )}
+              </button>
+            ))}
+          </div>
+        </motion.div>
+      )}
+    </AnimatePresence>
+  </div>
+</div>
 
               <div className="flex justify-end space-x-3 pt-4">
                 <button
