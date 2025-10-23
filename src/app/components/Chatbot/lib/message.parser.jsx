@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
-import { Copy, Check, FileText, Table, Code, ExternalLink, Bug, CheckCircle, Beaker, ChevronDown, ChevronUp } from 'lucide-react';
+import { Copy, Check, FileText, Table, Code, ExternalLink, Bug, CheckCircle, Beaker, ChevronDown, ChevronUp, Download, X, AlertCircle, Calendar, User, Tag, BarChart3, PieChart, TrendingUp } from 'lucide-react';
+import * as XLSX from 'xlsx';
 
 const MessageParser = ({ content = '', role, attachments = [] }) => {
     const [copiedIndex, setCopiedIndex] = useState(null);
@@ -17,6 +18,26 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
 
     const toggleSection = (key) => {
         setExpandedSections(prev => ({ ...prev, [key]: !prev[key] }));
+    };
+
+    const downloadTableAsExcel = (headers, rows, filename = 'data') => {
+        const worksheet = XLSX.utils.aoa_to_sheet([headers, ...rows]);
+        const workbook = XLSX.utils.book_new();
+        XLSX.utils.book_append_sheet(workbook, worksheet, 'Data');
+        XLSX.writeFile(workbook, `${filename}_${Date.now()}.xlsx`);
+    };
+
+    const downloadTableAsCSV = (headers, rows, filename = 'data') => {
+        const csvContent = [
+            headers.join(','),
+            ...rows.map(row => row.map(cell => `"${cell}"`).join(','))
+        ].join('\n');
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(blob);
+        link.download = `${filename}_${Date.now()}.csv`;
+        link.click();
     };
 
     const parseContent = (text) => {
@@ -124,21 +145,21 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
             switch (item.type) {
                 case 'inline-code':
                     parts.push(
-                        <code key={`code-${index}`} className="px-2 py-0.5 bg-slate-100 text-rose-600 rounded-md text-sm font-mono border border-slate-200">
+                        <code key={`code-${index}`} className="px-2 py-0.5 bg-slate-100 dark:bg-slate-800 text-rose-600 dark:text-rose-400 rounded-md text-sm font-mono border border-slate-200 dark:border-slate-700">
                             {item.match[1]}
                         </code>
                     );
                     break;
                 case 'bold':
-                    parts.push(<strong key={`bold-${index}`} className="font-bold text-gray-900">{item.match[1]}</strong>);
+                    parts.push(<strong key={`bold-${index}`} className="font-bold text-gray-900 dark:text-gray-100">{item.match[1]}</strong>);
                     break;
                 case 'italic':
-                    parts.push(<em key={`italic-${index}`} className="italic text-gray-700">{item.match[1]}</em>);
+                    parts.push(<em key={`italic-${index}`} className="italic text-gray-700 dark:text-gray-300">{item.match[1]}</em>);
                     break;
                 case 'link':
                     parts.push(
                         <a key={`link-${index}`} href={item.match[2]} target="_blank" rel="noopener noreferrer"
-                            className="text-blue-600 hover:text-blue-700 underline decoration-blue-400 underline-offset-2 inline-flex items-center gap-1 font-medium transition-colors">
+                            className="text-blue-600 dark:text-blue-400 hover:text-blue-700 dark:hover:text-blue-300 underline decoration-blue-400 underline-offset-2 inline-flex items-center gap-1 font-medium transition-colors">
                             {item.match[1]}
                             <ExternalLink className="w-3.5 h-3.5" />
                         </a>
@@ -163,34 +184,49 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
         const isExpanded = expandedSections[`code-${index}`] !== false;
         const lineCount = code.split('\n').length;
 
+        const downloadCode = () => {
+            const blob = new Blob([code], { type: 'text/plain' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `code_${language}_${Date.now()}.${language === 'javascript' ? 'js' : language === 'python' ? 'py' : 'txt'}`;
+            a.click();
+            URL.revokeObjectURL(url);
+        };
+
         return (
-            <div className="my-4 rounded-xl overflow-hidden border border-slate-200 shadow-lg bg-gradient-to-br from-slate-900 to-slate-800">
-                <div className="flex items-center justify-between px-5 py-3 bg-gradient-to-r from-slate-800 to-slate-700 border-b border-slate-600">
+            <div className="my-4 rounded-xl overflow-hidden border border-slate-200 dark:border-slate-700 shadow-lg bg-gradient-to-br from-slate-900 to-slate-800 dark:from-slate-950 dark:to-slate-900">
+                <div className="flex items-center justify-between px-5 py-3 bg-gradient-to-r from-slate-800 to-slate-700 dark:from-slate-900 dark:to-slate-800 border-b border-slate-600 dark:border-slate-700">
                     <div className="flex items-center gap-3">
-                        <div className="p-2 bg-slate-700 rounded-lg">
-                            <Code className="w-4 h-4 text-emerald-400" />
+                        <div className="p-2 bg-slate-700 dark:bg-slate-800 rounded-lg">
+                            <Code className="w-4 h-4 text-emerald-400 dark:text-emerald-500" />
                         </div>
                         <div>
-                            <span className="text-sm text-slate-200 font-semibold uppercase tracking-wide">{language}</span>
-                            <span className="text-xs text-slate-400 ml-2">• {lineCount} lines</span>
+                            <span className="text-sm text-slate-200 dark:text-slate-300 font-semibold uppercase tracking-wide">{language}</span>
+                            <span className="text-xs text-slate-400 dark:text-slate-500 ml-2">• {lineCount} lines</span>
                         </div>
                     </div>
                     <div className="flex items-center gap-2">
                         {lineCount > 10 && (
                             <button onClick={() => toggleSection(`code-${index}`)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-xs text-slate-200 transition-all">
+                                className="flex items-center gap-1.5 px-3 py-1.5 bg-slate-700 dark:bg-slate-800 hover:bg-slate-600 dark:hover:bg-slate-700 rounded-lg text-xs text-slate-200 dark:text-slate-300 transition-all">
                                 {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                                 {isExpanded ? 'Collapse' : 'Expand'}
                             </button>
                         )}
+                        <button onClick={downloadCode}
+                            className="flex items-center gap-2 px-3 py-1.5 bg-blue-600 dark:bg-blue-700 hover:bg-blue-500 dark:hover:bg-blue-600 rounded-lg text-xs text-white font-medium transition-all shadow-md hover:shadow-lg">
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Download</span>
+                        </button>
                         <button onClick={() => copyToClipboard(code, `code-${index}`)}
-                            className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 hover:bg-emerald-500 rounded-lg text-sm text-white font-medium transition-all shadow-md hover:shadow-lg">
+                            className="flex items-center gap-2 px-4 py-1.5 bg-emerald-600 dark:bg-emerald-700 hover:bg-emerald-500 dark:hover:bg-emerald-600 rounded-lg text-sm text-white font-medium transition-all shadow-md hover:shadow-lg">
                             {isCopied ? (<><Check className="w-4 h-4" /><span>Copied!</span></>) : (<><Copy className="w-4 h-4" /><span>Copy</span></>)}
                         </button>
                     </div>
                 </div>
-                <div className={`overflow-x-auto transition-all ${!isExpanded && lineCount > 10 ? 'max-h-64' : 'max-h-[600px]'} overflow-y-auto`}>
-                    <pre className="p-5 text-sm text-slate-100 font-mono leading-relaxed">
+                <div className={`overflow-x-auto transition-all ${!isExpanded && lineCount > 10 ? 'max-h-64' : 'max-h-[600px]'} overflow-y-auto scrollbar-thin scrollbar-thumb-slate-600 dark:scrollbar-thumb-slate-700 scrollbar-track-slate-800 dark:scrollbar-track-slate-900`}>
+                    <pre className="p-5 text-sm text-slate-100 dark:text-slate-200 font-mono leading-relaxed">
                         <code>{code}</code>
                     </pre>
                 </div>
@@ -201,7 +237,7 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
     const detectTableType = (headers) => {
         const headerStr = headers.join(' ').toLowerCase();
 
-        if (headerStr.includes('bug') || headerStr.includes('defect') || headerStr.includes('issue')) {
+        if (headerStr.includes('bug') || headerStr.includes('defect') || headerStr.includes('issue') || headerStr.includes('serial')) {
             return { type: 'bug', icon: Bug, label: 'Bug Report', color: 'rose' };
         }
         if (headerStr.includes('test case') || headerStr.includes('scenario') || headerStr.includes('expected') || headerStr.includes('actual')) {
@@ -209,6 +245,9 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
         }
         if (headerStr.includes('test type') || headerStr.includes('framework') || headerStr.includes('automation')) {
             return { type: 'testtype', icon: Beaker, label: 'Test Types', color: 'blue' };
+        }
+        if (headerStr.includes('stats') || headerStr.includes('statistics') || headerStr.includes('count') || headerStr.includes('total')) {
+            return { type: 'stats', icon: BarChart3, label: 'Statistics', color: 'purple' };
         }
         return { type: 'general', icon: Table, label: 'Data Table', color: 'slate' };
     };
@@ -233,44 +272,57 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
         const IconComponent = tableType.icon;
 
         const colorClasses = {
-            rose: 'from-rose-50 to-rose-100 border-rose-200 text-rose-700',
-            emerald: 'from-emerald-50 to-emerald-100 border-emerald-200 text-emerald-700',
-            blue: 'from-blue-50 to-blue-100 border-blue-200 text-blue-700',
-            slate: 'from-slate-50 to-slate-100 border-slate-200 text-slate-700'
+            rose: 'from-rose-50 to-rose-100 dark:from-rose-950/50 dark:to-rose-900/50 border-rose-200 dark:border-rose-800 text-rose-700 dark:text-rose-300',
+            emerald: 'from-emerald-50 to-emerald-100 dark:from-emerald-950/50 dark:to-emerald-900/50 border-emerald-200 dark:border-emerald-800 text-emerald-700 dark:text-emerald-300',
+            blue: 'from-blue-50 to-blue-100 dark:from-blue-950/50 dark:to-blue-900/50 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-300',
+            purple: 'from-purple-50 to-purple-100 dark:from-purple-950/50 dark:to-purple-900/50 border-purple-200 dark:border-purple-800 text-purple-700 dark:text-purple-300',
+            slate: 'from-slate-50 to-slate-100 dark:from-slate-900/50 dark:to-slate-800/50 border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300'
         };
 
+        const tableDataForExport = rows.map(row => [...row]);
+
         return (
-            <div className="my-4 rounded-xl overflow-hidden border-2 border-slate-200 shadow-xl bg-white">
-                <div className={`flex items-center justify-between px-5 py-3 bg-gradient-to-r ${colorClasses[tableType.color]} border-b-2`}>
-                    <div className="flex items-center gap-3">
-                        <div className="p-2 bg-white rounded-lg shadow-sm">
+            <div className="my-6 rounded-xl overflow-hidden border-2 border-slate-200 dark:border-slate-700 shadow-2xl bg-white dark:bg-slate-900">
+                <div className={`flex flex-wrap items-center justify-between px-5 py-4 bg-gradient-to-r ${colorClasses[tableType.color]} border-b-2`}>
+                    <div className="flex items-center gap-3 mb-2 sm:mb-0">
+                        <div className="p-2.5 bg-white dark:bg-slate-800 rounded-lg shadow-md">
                             <IconComponent className="w-5 h-5" />
                         </div>
                         <div>
-                            <span className="text-sm font-bold">{tableType.label}</span>
-                            <span className="text-xs ml-2 opacity-75">• {rows.length} {rows.length === 1 ? 'row' : 'rows'}</span>
+                            <span className="text-base font-bold block">{tableType.label}</span>
+                            <span className="text-xs opacity-75">{rows.length} {rows.length === 1 ? 'row' : 'rows'} • {headers.length} columns</span>
                         </div>
                     </div>
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2 flex-wrap">
                         {rows.length > 5 && (
                             <button onClick={() => toggleSection(`table-${index}`)}
-                                className="flex items-center gap-1.5 px-3 py-1.5 bg-white hover:bg-slate-50 border border-slate-300 rounded-lg text-xs font-medium transition-all shadow-sm">
+                                className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-medium transition-all shadow-sm">
                                 {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
                                 {isExpanded ? 'Collapse' : 'Expand'}
                             </button>
                         )}
+                        <button onClick={() => downloadTableAsExcel(headers, tableDataForExport, tableType.label.toLowerCase().replace(/\s+/g, '_'))}
+                            className="flex items-center gap-2 px-3 py-2 bg-green-600 dark:bg-green-700 hover:bg-green-500 dark:hover:bg-green-600 rounded-lg text-xs text-white font-medium transition-all shadow-md hover:shadow-lg">
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Excel</span>
+                        </button>
+                        <button onClick={() => downloadTableAsCSV(headers, tableDataForExport, tableType.label.toLowerCase().replace(/\s+/g, '_'))}
+                            className="flex items-center gap-2 px-3 py-2 bg-blue-600 dark:bg-blue-700 hover:bg-blue-500 dark:hover:bg-blue-600 rounded-lg text-xs text-white font-medium transition-all shadow-md hover:shadow-lg">
+                            <Download className="w-3.5 h-3.5" />
+                            <span>CSV</span>
+                        </button>
                         <button onClick={() => copyToClipboard(tableContent, `table-${index}`)}
-                            className="flex items-center gap-2 px-4 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-sm text-white font-medium transition-all shadow-md hover:shadow-lg">
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-700 dark:bg-slate-600 hover:bg-slate-600 dark:hover:bg-slate-500 rounded-lg text-sm text-white font-medium transition-all shadow-md hover:shadow-lg">
                             {isCopied ? (<><Check className="w-4 h-4" /><span>Copied!</span></>) : (<><Copy className="w-4 h-4" /><span>Copy</span></>)}
                         </button>
                     </div>
                 </div>
-                <div className={`overflow-x-auto transition-all ${!isExpanded && rows.length > 5 ? 'max-h-80' : 'max-h-[600px]'} overflow-y-auto`}>
-                    <table className="w-full">
-                        <thead className="bg-slate-100 sticky top-0 z-10 shadow-sm">
+                <div className={`overflow-x-auto transition-all ${!isExpanded && rows.length > 5 ? 'max-h-96' : 'max-h-[700px]'} overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-slate-100 dark:scrollbar-track-slate-800`}>
+                    <table className="w-full min-w-full">
+                        <thead className="bg-slate-100 dark:bg-slate-800 sticky top-0 z-10 shadow-sm">
                             <tr>
                                 {headers.map((header, idx) => (
-                                    <th key={idx} className="px-4 py-3 text-left text-xs font-bold text-slate-700 border-b-2 border-slate-300 uppercase tracking-wider whitespace-nowrap"
+                                    <th key={idx} className="px-4 py-3 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b-2 border-slate-300 dark:border-slate-600 uppercase tracking-wider whitespace-nowrap"
                                         style={{ textAlign: alignments[idx] || 'left' }}>
                                         {header}
                                     </th>
@@ -279,28 +331,29 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
                         </thead>
                         <tbody>
                             {rows.map((row, rowIdx) => (
-                                <tr key={rowIdx} className={`${rowIdx % 2 === 0 ? 'bg-white' : 'bg-slate-50'} hover:bg-blue-50 transition-colors border-b border-slate-200`}>
+                                <tr key={rowIdx} className={`${rowIdx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-850'} hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors border-b border-slate-200 dark:border-slate-700`}>
                                     {row.map((cell, cellIdx) => {
                                         const cellLower = cell.toLowerCase();
-                                        let cellClass = 'px-4 py-3 text-sm text-slate-700';
+                                        let cellClass = 'px-4 py-3 text-sm text-slate-700 dark:text-slate-300';
                                         let badge = false;
 
-                                        if (['critical', 'high', 'medium', 'low', 'new', 'open', 'pending', 'in progress', 'testing', 'fixed', 'closed', 'pass', 'fail', 'failed', 'blocked'].includes(cellLower)) {
+                                        if (['critical', 'high', 'medium', 'low', 'new', 'open', 'pending', 'in progress', 'testing', 'fixed', 'closed', 'pass', 'fail', 'failed', 'blocked', 'functional', 'ui', 'api', 'performance', 'security'].includes(cellLower)) {
                                             badge = true;
                                             cellClass = 'px-4 py-3';
                                         }
 
                                         const getBadgeClass = (value) => {
                                             const val = value.toLowerCase();
-                                            if (val === 'critical') return 'bg-red-100 text-red-700 border-red-300';
-                                            if (val === 'high') return 'bg-orange-100 text-orange-700 border-orange-300';
-                                            if (val === 'medium') return 'bg-yellow-100 text-yellow-700 border-yellow-300';
-                                            if (val === 'low') return 'bg-green-100 text-green-700 border-green-300';
-                                            if (['new', 'open', 'pending'].includes(val)) return 'bg-blue-100 text-blue-700 border-blue-300';
-                                            if (['in progress', 'testing'].includes(val)) return 'bg-amber-100 text-amber-700 border-amber-300';
-                                            if (['fixed', 'closed', 'pass'].includes(val)) return 'bg-emerald-100 text-emerald-700 border-emerald-300';
-                                            if (['fail', 'failed', 'blocked'].includes(val)) return 'bg-rose-100 text-rose-700 border-rose-300';
-                                            return 'bg-slate-100 text-slate-700 border-slate-300';
+                                            if (val === 'critical') return 'bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800';
+                                            if (val === 'high') return 'bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-800';
+                                            if (val === 'medium') return 'bg-yellow-100 dark:bg-yellow-950/50 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-800';
+                                            if (val === 'low') return 'bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-400 border-green-300 dark:border-green-800';
+                                            if (['new', 'open', 'pending'].includes(val)) return 'bg-blue-100 dark:bg-blue-950/50 text-blue-700 dark:text-blue-400 border-blue-300 dark:border-blue-800';
+                                            if (['in progress', 'testing'].includes(val)) return 'bg-amber-100 dark:bg-amber-950/50 text-amber-700 dark:text-amber-400 border-amber-300 dark:border-amber-800';
+                                            if (['fixed', 'closed', 'pass'].includes(val)) return 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800';
+                                            if (['fail', 'failed', 'blocked'].includes(val)) return 'bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-800';
+                                            if (['functional', 'ui', 'api', 'performance', 'security'].includes(val)) return 'bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-400 border-violet-300 dark:border-violet-800';
+                                            return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600';
                                         };
 
                                         return (
@@ -310,7 +363,7 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
                                                         {cell}
                                                     </span>
                                                 ) : (
-                                                    <span className="font-medium">{cell}</span>
+                                                    <span className="font-medium">{cell.length > 100 ? cell.substring(0, 100) + '...' : cell}</span>
                                                 )}
                                             </td>
                                         );
@@ -333,16 +386,16 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
                     <div key={index} className="relative group">
                         {attachment.type === 'image' ? (
                             <a href={attachment.url} target="_blank" rel="noopener noreferrer"
-                                className="block rounded-xl overflow-hidden border-2 border-slate-200 hover:border-blue-400 transition-all shadow-md hover:shadow-xl transform hover:scale-105">
+                                className="block rounded-xl overflow-hidden border-2 border-slate-200 dark:border-slate-700 hover:border-blue-400 dark:hover:border-blue-600 transition-all shadow-md hover:shadow-xl transform hover:scale-105">
                                 <img src={attachment.url} alt={attachment.name} className="max-w-sm h-auto" />
                             </a>
                         ) : (
                             <a href={attachment.url} target="_blank" rel="noopener noreferrer"
-                                className="flex items-center gap-3 px-4 py-3 bg-slate-100 rounded-xl hover:bg-slate-200 transition-all shadow-sm hover:shadow-md border border-slate-200">
-                                <div className="p-2 bg-white rounded-lg">
-                                    <FileText className="w-5 h-5 text-slate-600" />
+                                className="flex items-center gap-3 px-4 py-3 bg-slate-100 dark:bg-slate-800 rounded-xl hover:bg-slate-200 dark:hover:bg-slate-700 transition-all shadow-sm hover:shadow-md border border-slate-200 dark:border-slate-700">
+                                <div className="p-2 bg-white dark:bg-slate-900 rounded-lg">
+                                    <FileText className="w-5 h-5 text-slate-600 dark:text-slate-400" />
                                 </div>
-                                <span className="text-sm font-medium text-slate-700">{attachment.name}</span>
+                                <span className="text-sm font-medium text-slate-700 dark:text-slate-300">{attachment.name}</span>
                             </a>
                         )}
                     </div>
@@ -364,7 +417,7 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
                         if (match) {
                             return (
                                 <div key={index} className="flex gap-3 ml-4 items-start">
-                                    <span className={role === 'user' ? 'text-blue-300 font-medium' : 'text-slate-600 font-medium mt-0.5'}>
+                                    <span className={role === 'user' ? 'text-blue-300 dark:text-blue-400 font-medium' : 'text-slate-600 dark:text-slate-400 font-medium mt-0.5'}>
                                         {match[1]}
                                     </span>
                                     <span className="flex-1">{formatInlineText(match[2])}</span>
@@ -379,12 +432,12 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
                             const level = match[1].length;
                             const HeadingTag = `h${level}`;
                             const headingClasses = {
-                                1: 'text-3xl font-bold mt-6 mb-3 text-slate-900',
-                                2: 'text-2xl font-bold mt-5 mb-3 text-slate-800',
-                                3: 'text-xl font-semibold mt-4 mb-2 text-slate-800',
-                                4: 'text-lg font-semibold mt-3 mb-2 text-slate-700',
-                                5: 'text-base font-semibold mt-3 mb-1 text-slate-700',
-                                6: 'text-sm font-semibold mt-2 mb-1 text-slate-600'
+                                1: 'text-3xl font-bold mt-6 mb-3 text-slate-900 dark:text-slate-100',
+                                2: 'text-2xl font-bold mt-5 mb-3 text-slate-800 dark:text-slate-200',
+                                3: 'text-xl font-semibold mt-4 mb-2 text-slate-800 dark:text-slate-200',
+                                4: 'text-lg font-semibold mt-3 mb-2 text-slate-700 dark:text-slate-300',
+                                5: 'text-base font-semibold mt-3 mb-1 text-slate-700 dark:text-slate-300',
+                                6: 'text-sm font-semibold mt-2 mb-1 text-slate-600 dark:text-slate-400'
                             };
                             return React.createElement(HeadingTag, { key: index, className: headingClasses[level] }, formatInlineText(match[2]));
                         }
@@ -399,7 +452,7 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
     const elements = parseContent(content);
 
     return (
-        <div className={`${role === 'user' ? 'text-white' : 'text-slate-800'} font-sans`}>
+        <div className={`${role === 'user' ? 'text-white dark:text-slate-100' : 'text-slate-800 dark:text-slate-200'} font-sans`}>
             {attachments && attachments.length > 0 && renderAttachments(attachments)}
             {elements.map((element, index) => {
                 switch (element.type) {
