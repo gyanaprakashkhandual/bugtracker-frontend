@@ -1376,7 +1376,7 @@ const renderDropdown = (bugId, column, value) => {
     }
 
     return (
-        <div className="w-full bg-gradient-to-br from-gray-50 dark:from-gray-900 to-gray-100 dark:to-gray-800 flex flex-col">
+        <div className="w-full bg-gradient-to-br from-gray-50 dark:from-gray-900 to-gray-100 dark:to-gray-800 flex flex-col min-h-[calc(100vh-65px)]">
             <AnimatePresence>
                 {imagePreviewModal && (
                     <motion.div
@@ -1489,7 +1489,7 @@ const renderDropdown = (bugId, column, value) => {
                             ))}
 
                             {filteredBugs.length === 0 && (
-                                <div className="flex justify-center items-center py-12 text-gray-500 dark:text-gray-400">
+                                <div className="flex justify-center items-center py-12 text-gray-500 dark:text-gray-400 min-h-[calc(100vh-192px)]">
                                     <div className="text-center">
                                         <AlertCircle size={32} className="mx-auto mb-2 text-gray-400 dark:text-gray-500" />
                                         <p className="text-sm font-medium dark:text-gray-300">No bugs found</p>

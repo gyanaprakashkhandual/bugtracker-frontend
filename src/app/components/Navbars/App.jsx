@@ -30,8 +30,8 @@ import Messaging from '../Modules/Messaging/App';
 import AccessControlSystem from '../Modules/Access-Management/App';
 import Dashboard from '../Modules/Dashboard/App';
 import NotificationPanel from '../Modules/Notification/App';
-import IssueKanban from '../Modules/Issue/List';
-import IssueList from '../Modules/Issue/Kanban';
+import IssueKanban from '../Modules/Issue/Kanban';
+import IssueList from '../Modules/Issue/List';
 import { useSidebar } from '@/app/hooks/Project.sidebar.hook';
 
 
