@@ -39,7 +39,7 @@ const Chat = () => {
     const [messages, setMessages] = useState([]);
     const [inputMessage, setInputMessage] = useState('');
     const [isLoading, setIsLoading] = useState(false);
-    const [isSidebarOpen, setIsSidebarOpen] = useState(true);
+    const [isSidebarOpen, setIsSidebarOpen] = useState(false);
     const [searchQuery, setSearchQuery] = useState('');
     const [showCommandDropdown, setShowCommandDropdown] = useState(false);
     const [selectedCommand, setSelectedCommand] = useState(null);
@@ -66,6 +66,7 @@ const Chat = () => {
         scrollToBottom();
     }, [messages]);
 
+    
     const uploadImageToCloudinary = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -249,60 +250,96 @@ const Chat = () => {
         }
     };
 
-    const sendMessage = async () => {
-        if ((!inputMessage.trim() && attachments.length === 0) || !currentChat) return;
-        if (inputRef.current) {
-            inputRef.current.style.height = 'auto';
-            inputRef.current.style.height = '24px';
-        }
+    // In Chat.jsx, update the sendMessage function around line 360-390:
 
-        const userMessage = {
-            role: 'user',
-            content: inputMessage || 'Analyze this image',
-            attachments: attachments,
-            timestamp: new Date()
-        };
+const sendMessage = async () => {
+    if ((!inputMessage.trim() && attachments.length === 0) || !currentChat) return;
+    if (inputRef.current) {
+        inputRef.current.style.height = 'auto';
+        inputRef.current.style.height = '24px';
+    }
 
-        setMessages((prev) => [...prev, userMessage]);
-        setInputMessage('');
-        const tempAttachments = [...attachments];
-        setAttachments([]);
-        setIsLoading(true);
+    const userMessage = {
+        role: 'user',
+        content: inputMessage || 'Analyze this image',
+        attachments: attachments,
+        timestamp: new Date()
+    };
 
-        try {
-            const response = await fetch(`${BASE_URL}/${currentChat._id}/messages`, {
-                method: 'POST',
-                headers: {
-                    Authorization: `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    content: inputMessage || 'Analyze this image',
-                    command: selectedCommand,
-                    attachments: tempAttachments
-                })
+    setMessages((prev) => [...prev, userMessage]);
+    setInputMessage('');
+    const tempAttachments = [...attachments];
+    setAttachments([]);
+    setIsLoading(true);
+
+    try {
+        console.log('🚀 [FRONTEND] Sending request:', {
+            chatId: currentChat._id,
+            content: inputMessage,
+            command: selectedCommand
+        });
+
+        const response = await fetch(`${BASE_URL}/${currentChat._id}/messages`, {
+            method: 'POST',
+            headers: {
+                Authorization: `Bearer ${token}`,
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                content: inputMessage || 'Analyze this image',
+                command: selectedCommand,
+                attachments: tempAttachments
+            })
+        });
+
+        const data = await response.json();
+        
+        console.log('📥 [FRONTEND] Response received:', {
+            success: data.success,
+            hasData: !!data.data,
+            hasUserMessage: !!data.data?.userMessage,
+            hasAssistantMessage: !!data.data?.assistantMessage
+        });
+
+        if (data.success) {
+            // 🔍 DEBUG: Check assistant message
+            console.log('🤖 [FRONTEND] Assistant message:', {
+                role: data.data.assistantMessage.role,
+                contentLength: data.data.assistantMessage.content?.length,
+                hasMetadata: !!data.data.assistantMessage.metadata,
+                metadataKeys: data.data.assistantMessage.metadata ? Object.keys(data.data.assistantMessage.metadata) : [],
+                operation: data.data.assistantMessage.metadata?.operation,
+                dataCount: data.data.assistantMessage.metadata?.data?.length || 0
             });
 
-            const data = await response.json();
-            if (data.success) {
-                setMessages((prev) => [
-                    ...prev.slice(0, -1),
-                    data.data.userMessage,
-                    data.data.assistantMessage
-                ]);
-                setCurrentChat((prev) => ({
-                    ...prev,
-                    title: data.data.chatMetadata.title
-                }));
-                fetchChats();
+            // 🔍 DEBUG: Log the actual metadata being received
+            if (data.data.assistantMessage.metadata?.data) {
+                console.log('📊 [FRONTEND] Metadata data:', {
+                    operation: data.data.assistantMessage.metadata.operation,
+                    dataLength: data.data.assistantMessage.metadata.data.length,
+                    firstItem: data.data.assistantMessage.metadata.data[0]
+                });
             }
-        } catch (error) {
-            console.error('Error sending message:', error);
-        } finally {
-            setIsLoading(false);
-            setSelectedCommand(null);
+
+            setMessages((prev) => [
+                ...prev.slice(0, -1),
+                data.data.userMessage,
+                data.data.assistantMessage
+            ]);
+            
+            setCurrentChat((prev) => ({
+                ...prev,
+                title: data.data.chatMetadata.title
+            }));
+            fetchChats();
         }
-    };
+    } catch (error) {
+        console.error('❌ [FRONTEND] Error sending message:', error);
+    } finally {
+        setIsLoading(false);
+        setSelectedCommand(null);
+    }
+};
 
     const updateChatTitle = async (chatId, newTitle) => {
         if (!newTitle.trim()) return;
@@ -475,7 +512,6 @@ const Chat = () => {
                         initial={{ x: -320 }}
                         animate={{ x: 0 }}
                         exit={{ x: -320 }}
-                        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
                         className="w-full sm:w-80 bg-gray-50 dark:bg-gray-800 border-r border-gray-200 dark:border-gray-700 flex flex-col absolute sm:relative z-20 h-full"
                     >
                         <div className="p-3 sm:p-4 border-b border-gray-200 dark:border-gray-700">
@@ -688,7 +724,7 @@ const Chat = () => {
                                     <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                                 </button>
                             )}
-                            <div className="space-y-4 sm:space-y-6 max-w-4xl mx-auto">
+                            <div className="space-y-4 sm:space-y-6 max-w-7xl mx-auto">
                                 {messages.map((message, index) => (
                                     <motion.div
                                         key={index}
@@ -709,11 +745,12 @@ const Chat = () => {
                                                 : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-md px-4 sm:px-5 py-3 sm:py-3.5 shadow-sm'
                                                 }`}
                                         >
-                                            <MessageParser
-                                                content={message.content}
-                                                role={message.role}
-                                                attachments={message.attachments}
-                                            />
+<MessageParser
+    content={message.content}
+    role={message.role}
+    attachments={message.attachments}
+    metadata={message.metadata}
+/>
                                             <div className="flex items-center gap-2 mt-2">
                                                 <span
                                                     className={`text-xs ${message.role === 'user'
