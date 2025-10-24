@@ -26,64 +26,75 @@ const CommandDropdown = ({ onSelect, onClose }) => {
   const dropdownRef = useRef(null);
   const searchInputRef = useRef(null);
 
-  const commands = [
-    {
-      id: 'add-test-case',
-      name: 'Add Test Case',
-      description: 'Create a new test case',
-      icon: FileText,
-      category: 'Test Cases',
-      color: 'text-blue-500 dark:text-blue-400'
-    },
-    {
-      id: 'edit-test-case',
-      name: 'Edit Test Case',
-      description: 'Modify existing test case',
-      icon: Edit3,
-      category: 'Test Cases',
-      color: 'text-green-500 dark:text-green-400'
-    },
-    {
-      id: 'delete-test-case',
-      name: 'Delete Test Case',
-      description: 'Remove a test case',
-      icon: Trash2,
-      category: 'Test Cases',
-      color: 'text-red-500 dark:text-red-400'
-    },
-    {
-      id: 'get-test-case',
-      name: 'Get Test Case',
-      description: 'Retrieve test case details',
-      icon: Search,
-      category: 'Test Cases',
-      color: 'text-purple-500 dark:text-purple-400'
-    },
-    {
-      id: 'add-bug',
-      name: 'Add Bug',
-      description: 'Report a new bug',
-      icon: Bug,
-      category: 'Bugs',
-      color: 'text-orange-500 dark:text-orange-400'
-    },
-    {
-      id: 'update-bug',
-      name: 'Update Bug',
-      description: 'Update bug status or details',
-      icon: AlertCircle,
-      category: 'Bugs',
-      color: 'text-yellow-500 dark:text-yellow-400'
-    },
-    {
-      id: 'get-bugs',
-      name: 'Get Bugs',
-      description: 'List all bugs',
-      icon: Database,
-      category: 'Bugs',
-      color: 'text-red-600 dark:text-red-400'
-    },
-  ];
+const commands = [
+  // ===== TEST CASE COMMANDS =====
+  {
+    id: 'add-test-case',
+    name: 'Add Test Case',
+    description: 'Create a new test case with AI enhancement',
+    icon: FileText,
+    category: 'Test Cases',
+    color: 'text-blue-500 dark:text-blue-400'
+  },
+  {
+    id: 'get-test-cases',
+    name: 'Get Test Cases',
+    description: 'List all test cases with filters',
+    icon: Database,
+    category: 'Test Cases',
+    color: 'text-purple-500 dark:text-purple-400'
+  },
+  {
+    id: 'search-test-cases',
+    name: 'Search Test Cases',
+    description: 'Search test cases by keyword',
+    icon: Search,
+    category: 'Test Cases',
+    color: 'text-indigo-500 dark:text-indigo-400'
+  },
+  {
+    id: 'import-google-sheets',
+    name: 'Import from Google Sheets',
+    description: 'Import test cases from Google Sheets',
+    icon: FileCode,
+    category: 'Import',
+    color: 'text-emerald-500 dark:text-emerald-400'
+  },
+  {
+    id: 'import-github',
+    name: 'Import from GitHub',
+    description: 'Generate test cases from GitHub repository',
+    icon: GitBranch,
+    category: 'Import',
+    color: 'text-orange-500 dark:text-orange-400'
+  },
+
+  // ===== BUG COMMANDS (Keep as is or add backend support) =====
+  {
+    id: 'add-bug',
+    name: 'Add Bug',
+    description: 'Report a new bug',
+    icon: Bug,
+    category: 'Bugs',
+    color: 'text-orange-500 dark:text-orange-400'
+  },
+  {
+    id: 'update-bug',
+    name: 'Update Bug',
+    description: 'Update bug status or details',
+    icon: AlertCircle,
+    category: 'Bugs',
+    color: 'text-yellow-500 dark:text-yellow-400'
+  },
+  {
+    id: 'get-bugs',
+    name: 'Get Bugs',
+    description: 'List all bugs',
+    icon: Database,
+    category: 'Bugs',
+    color: 'text-red-600 dark:text-red-400'
+  },
+];
 
   const filteredCommands = commands.filter(
     (cmd) =>

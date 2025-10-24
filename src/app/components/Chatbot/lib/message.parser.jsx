@@ -1,8 +1,10 @@
+'use client';
+
 import React, { useState } from 'react';
 import { Copy, Check, FileText, Table, Code, ExternalLink, Bug, CheckCircle, Beaker, ChevronDown, ChevronUp, Download, X, AlertCircle, Calendar, User, Tag, BarChart3, PieChart, TrendingUp } from 'lucide-react';
 import * as XLSX from 'xlsx';
 
-const MessageParser = ({ content = '', role, attachments = [] }) => {
+const MessageParser = ({ content = '', role, attachments = [], metadata = {} }) => {
     const [copiedIndex, setCopiedIndex] = useState(null);
     const [expandedSections, setExpandedSections] = useState({});
 
@@ -38,6 +40,130 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
         link.href = URL.createObjectURL(blob);
         link.download = `${filename}_${Date.now()}.csv`;
         link.click();
+    };
+
+    // ✅ NEW: Render test cases as table
+    const renderTestCasesTable = (testCases) => {
+        if (!testCases || !Array.isArray(testCases) || testCases.length === 0) return null;
+
+        const headers = [
+            'Serial Number',
+            'Module',
+            'Type',
+            'Description',
+            'Expected Result',
+            'Actual Result',
+            'Priority',
+            'Severity',
+            'Status'
+        ];
+
+        const rows = testCases.map(tc => [
+            tc.serialNumber || 'N/A',
+            tc.moduleName || 'N/A',
+            tc.testCaseType || 'N/A',
+            tc.testCaseDescription || 'N/A',
+            tc.expectedResult || 'N/A',
+            tc.actualResult || 'N/A',
+            tc.priority || 'N/A',
+            tc.severity || 'N/A',
+            tc.status || 'N/A'
+        ]);
+
+        const isExpanded = expandedSections['testcases-table'] !== false;
+        const isCopied = copiedIndex === 'testcases-table';
+
+        return (
+            <div className="my-6 rounded-xl overflow-hidden border-2 border-emerald-200 dark:border-emerald-700 shadow-2xl bg-white dark:bg-slate-900">
+                <div className="flex flex-wrap items-center justify-between px-5 py-4 bg-gradient-to-r from-emerald-50 to-emerald-100 dark:from-emerald-950/50 dark:to-emerald-900/50 border-b-2 border-emerald-200 dark:border-emerald-800">
+                    <div className="flex items-center gap-3 mb-2 sm:mb-0">
+                        <div className="p-2.5 bg-white dark:bg-slate-800 rounded-lg shadow-md">
+                            <CheckCircle className="w-5 h-5 text-emerald-700 dark:text-emerald-300" />
+                        </div>
+                        <div>
+                            <span className="text-base font-bold block text-emerald-700 dark:text-emerald-300">Test Cases</span>
+                            <span className="text-xs opacity-75 text-emerald-700 dark:text-emerald-300">{rows.length} {rows.length === 1 ? 'test case' : 'test cases'} • {headers.length} columns</span>
+                        </div>
+                    </div>
+                    <div className="flex items-center gap-2 flex-wrap">
+                        {rows.length > 5 && (
+                            <button onClick={() => toggleSection('testcases-table')}
+                                className="flex items-center gap-1.5 px-3 py-2 bg-white dark:bg-slate-800 hover:bg-slate-50 dark:hover:bg-slate-700 border border-slate-300 dark:border-slate-600 rounded-lg text-xs font-medium transition-all shadow-sm">
+                                {isExpanded ? <ChevronUp className="w-3.5 h-3.5" /> : <ChevronDown className="w-3.5 h-3.5" />}
+                                {isExpanded ? 'Collapse' : 'Expand'}
+                            </button>
+                        )}
+                        <button onClick={() => downloadTableAsExcel(headers, rows, 'test_cases')}
+                            className="flex items-center gap-2 px-3 py-2 bg-green-600 dark:bg-green-700 hover:bg-green-500 dark:hover:bg-green-600 rounded-lg text-xs text-white font-medium transition-all shadow-md hover:shadow-lg">
+                            <Download className="w-3.5 h-3.5" />
+                            <span>Excel</span>
+                        </button>
+                        <button onClick={() => downloadTableAsCSV(headers, rows, 'test_cases')}
+                            className="flex items-center gap-2 px-3 py-2 bg-blue-600 dark:bg-blue-700 hover:bg-blue-500 dark:hover:bg-blue-600 rounded-lg text-xs text-white font-medium transition-all shadow-md hover:shadow-lg">
+                            <Download className="w-3.5 h-3.5" />
+                            <span>CSV</span>
+                        </button>
+                        <button onClick={() => copyToClipboard(JSON.stringify(testCases, null, 2), 'testcases-table')}
+                            className="flex items-center gap-2 px-4 py-2 bg-slate-700 dark:bg-slate-600 hover:bg-slate-600 dark:hover:bg-slate-500 rounded-lg text-sm text-white font-medium transition-all shadow-md hover:shadow-lg">
+                            {isCopied ? (<><Check className="w-4 h-4" /><span>Copied!</span></>) : (<><Copy className="w-4 h-4" /><span>Copy</span></>)}
+                        </button>
+                    </div>
+                </div>
+                <div className={`overflow-x-auto transition-all ${!isExpanded && rows.length > 5 ? 'max-h-96' : 'max-h-[700px]'} overflow-y-auto scrollbar-thin scrollbar-thumb-slate-300 dark:scrollbar-thumb-slate-600 scrollbar-track-slate-100 dark:scrollbar-track-slate-800`}>
+                    <table className="w-full min-w-full">
+                        <thead className="bg-slate-100 dark:bg-slate-800 sticky top-0 z-10 shadow-sm">
+                            <tr>
+                                {headers.map((header, idx) => (
+                                    <th key={idx} className="px-4 py-3 text-left text-xs font-bold text-slate-700 dark:text-slate-300 border-b-2 border-slate-300 dark:border-slate-600 uppercase tracking-wider whitespace-nowrap">
+                                        {header}
+                                    </th>
+                                ))}
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {rows.map((row, rowIdx) => (
+                                <tr key={rowIdx} className={`${rowIdx % 2 === 0 ? 'bg-white dark:bg-slate-900' : 'bg-slate-50 dark:bg-slate-850'} hover:bg-blue-50 dark:hover:bg-blue-950/30 transition-colors border-b border-slate-200 dark:border-slate-700`}>
+                                    {row.map((cell, cellIdx) => {
+                                        const cellLower = cell.toLowerCase();
+                                        let cellClass = 'px-4 py-3 text-sm text-slate-700 dark:text-slate-300';
+                                        let badge = false;
+
+                                        if (['critical', 'high', 'medium', 'low', 'pass', 'fail', 'functional', 'ui', 'api', 'performance', 'security', 'integration', 'regression', 'smoke'].includes(cellLower)) {
+                                            badge = true;
+                                            cellClass = 'px-4 py-3';
+                                        }
+
+                                        const getBadgeClass = (value) => {
+                                            const val = value.toLowerCase();
+                                            if (val === 'critical') return 'bg-red-100 dark:bg-red-950/50 text-red-700 dark:text-red-400 border-red-300 dark:border-red-800';
+                                            if (val === 'high') return 'bg-orange-100 dark:bg-orange-950/50 text-orange-700 dark:text-orange-400 border-orange-300 dark:border-orange-800';
+                                            if (val === 'medium') return 'bg-yellow-100 dark:bg-yellow-950/50 text-yellow-700 dark:text-yellow-400 border-yellow-300 dark:border-yellow-800';
+                                            if (val === 'low') return 'bg-green-100 dark:bg-green-950/50 text-green-700 dark:text-green-400 border-green-300 dark:border-green-800';
+                                            if (val === 'pass') return 'bg-emerald-100 dark:bg-emerald-950/50 text-emerald-700 dark:text-emerald-400 border-emerald-300 dark:border-emerald-800';
+                                            if (['fail', 'failed'].includes(val)) return 'bg-rose-100 dark:bg-rose-950/50 text-rose-700 dark:text-rose-400 border-rose-300 dark:border-rose-800';
+                                            if (['functional', 'ui', 'api', 'performance', 'security', 'integration', 'regression', 'smoke'].includes(val)) return 'bg-violet-100 dark:bg-violet-950/50 text-violet-700 dark:text-violet-400 border-violet-300 dark:border-violet-800';
+                                            return 'bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-300 dark:border-slate-600';
+                                        };
+
+                                        return (
+                                            <td key={cellIdx} className={cellClass}>
+                                                {badge ? (
+                                                    <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-semibold border ${getBadgeClass(cell)}`}>
+                                                        {cell}
+                                                    </span>
+                                                ) : (
+                                                    <span className="font-medium" title={cell}>{cell.length > 50 ? cell.substring(0, 50) + '...' : cell}</span>
+                                                )}
+                                            </td>
+                                        );
+                                    })}
+                                </tr>
+                            ))}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        );
     };
 
     const parseContent = (text) => {
@@ -326,8 +452,7 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
                                         style={{ textAlign: alignments[idx] || 'left' }}>
                                         {header}
                                     </th>
-                                ))}
-                            </tr>
+                                ))}</tr>
                         </thead>
                         <tbody>
                             {rows.map((row, rowIdx) => (
@@ -336,7 +461,6 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
                                         const cellLower = cell.toLowerCase();
                                         let cellClass = 'px-4 py-3 text-sm text-slate-700 dark:text-slate-300';
                                         let badge = false;
-
                                         if (['critical', 'high', 'medium', 'low', 'new', 'open', 'pending', 'in progress', 'testing', 'fixed', 'closed', 'pass', 'fail', 'failed', 'blocked', 'functional', 'ui', 'api', 'performance', 'security'].includes(cellLower)) {
                                             badge = true;
                                             cellClass = 'px-4 py-3';
@@ -454,6 +578,10 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
     return (
         <div className={`${role === 'user' ? 'text-white dark:text-slate-100' : 'text-slate-800 dark:text-slate-200'} font-sans`}>
             {attachments && attachments.length > 0 && renderAttachments(attachments)}
+
+            {/* ✅ NEW: Render test cases table if metadata contains data */}
+            {metadata?.data && Array.isArray(metadata.data) && metadata.data.length > 0 && renderTestCasesTable(metadata.data)}
+
             {elements.map((element, index) => {
                 switch (element.type) {
                     case 'code':
@@ -468,5 +596,4 @@ const MessageParser = ({ content = '', role, attachments = [] }) => {
         </div>
     );
 };
-
 export default MessageParser;
