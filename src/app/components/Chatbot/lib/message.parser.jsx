@@ -59,7 +59,7 @@ ${tc.image && tc.image !== 'No image provided' ? `**Attachment:** ${tc.image}` :
         const isCopied = copiedIndex === 'testcases-document';
 
         return (
-            <div className="my-6 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
+            <div className="my-6 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                 <div className="flex flex-wrap items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-2">
                         <CheckCircle className="w-5 h-5 text-emerald-600 dark:text-emerald-400" />
@@ -181,7 +181,7 @@ ${bug.images && bug.images.length > 0 ? `**Attachments:** ${bug.images.length} i
         const isCopied = copiedIndex === 'bugs-document';
 
         return (
-            <div className="my-6 rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900 shadow-lg">
+            <div className="my-6 h-full rounded-lg overflow-hidden border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-900">
                 <div className="flex flex-wrap items-center justify-between px-4 py-3 bg-slate-50 dark:bg-slate-800 border-b border-slate-200 dark:border-slate-700">
                     <div className="flex items-center gap-2">
                         <Bug className="w-5 h-5 text-rose-600 dark:text-rose-400" />

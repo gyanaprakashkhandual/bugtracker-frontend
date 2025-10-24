@@ -740,8 +740,8 @@ const sendMessage = async () => {
                                             </div>
                                         )}
                                         <div
-                                            className={`max-w-[85%] sm:max-w-3xl ${message.role === 'user'
-                                                ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-2xl rounded-tr-md px-4 sm:px-5 py-3 sm:py-3.5 shadow-lg'
+                                            className={`max-w-[85%] h-full sm:max-w-4xl ${message.role === 'user'
+                                                ? 'bg-gradient-to-r from-sky-500 to-blue-600 text-white rounded-2xl rounded-tr-md px-4 sm:px-5 py-3 sm:py-3.5'
                                                 : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-md px-4 sm:px-5 py-3 sm:py-3.5 shadow-sm'
                                                 }`}
                                         >
