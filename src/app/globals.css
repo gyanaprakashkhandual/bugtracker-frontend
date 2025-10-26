@@ -4,22 +4,7 @@ mark[data-color] {
   padding: 3px 8px;
   transition: background-color 0.2s ease-in-out;
 }
-/* Hide Next.js development overlay and icons */
-#__next-build-watcher,
-nextjs-portal,
-nextjs-portal * {
-  display: none !important;
-  visibility: hidden !important;
-  pointer-events: none !important;
-  opacity: 0 !important;
-}
 
-/* Also target the fast refresh overlay container */
-body > nextjs-portal {
-  display: none !important;
-  opacity: 0 !important;
-  visibility: hidden !important;
-}
 
 
 /* Enable dark mode variant */

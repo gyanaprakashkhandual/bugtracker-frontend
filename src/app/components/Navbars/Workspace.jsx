@@ -1,3 +1,4 @@
+'use client'
 import { useEffect, useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import TestTypeList from '../Sidebars/TestType';
@@ -19,7 +20,8 @@ import {
   Plus,
   DockIcon,
   Sheet,
-  Trash2
+  Trash2,
+  BarChart3
 } from 'lucide-react';
 import { FiFilter } from "react-icons/fi";
 import { GoogleArrowDown } from '../utils/Icon';
@@ -107,6 +109,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
   const [selectedView, setSelectedView] = useState(null);
   const [selectedReport, setSelectedReport] = useState(null);
   const [selectedManual, setSelectedManual] = useState(null);
+  const [selectedAnalytics, setSelectedAnalytics] = useState(null);
   const [isKanbanActive, setIsKanbanActive] = useState(false);
 
   const [testTypeSidebarOpen, setTestTypeSidebarOpen] = useState(false);
@@ -138,11 +141,19 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
     }
   };
 
-  const handleKanbanToggle = () => {
-    const newKanbanState = !isKanbanActive;
-    setIsKanbanActive(newKanbanState);
+  const handleAnalyticsChange = (value) => {
     closeAllSidebars();
-    emitStateChange('kanban', newKanbanState);
+    setSelectedAnalytics(value);
+
+    if (value === 'kanban') {
+      setIsKanbanActive(true);
+      emitStateChange('kanban', true);
+      emitStateChange('testResult', false);
+    } else if (value === 'testResult') {
+      setIsKanbanActive(false);
+      emitStateChange('kanban', false);
+      emitStateChange('testResult', true);
+    }
   };
 
   const handleManualAdd = (value) => {
@@ -194,18 +205,22 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
     closeAllSidebars();
     setIsKanbanActive(false);
     setSelectedView(value);
+    setSelectedAnalytics(null);
     onViewChange?.(value);
     emitStateChange('view', value);
     emitStateChange('kanban', false);
+    emitStateChange('testResult', false);
   };
 
   const handleReportChange = (value) => {
     closeAllSidebars();
     setIsKanbanActive(false);
     setSelectedReport(value);
+    setSelectedAnalytics(null);
     onReportChange?.(value);
     emitStateChange('report', value);
     emitStateChange('kanban', false);
+    emitStateChange('testResult', false);
   };
 
   const viewOptions = [
@@ -222,6 +237,11 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
   const manualAddOptions = [
     { value: 'addBug', label: 'Bug', icon: <Plus className="h-4 w-4" /> },
     { value: 'addTestCase', label: 'Case', icon: <Plus className="h-4 w-4" /> }
+  ];
+
+  const analyticsOptions = [
+    { value: 'kanban', label: 'Kanban', icon: <BsFillKanbanFill className="w-4 h-4" /> },
+    { value: 'testResult', label: 'Test Result', icon: <BarChart3 className="w-4 h-4" /> }
   ];
 
   return (
@@ -355,17 +375,14 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                 <span>Filter</span>
               </motion.button>
 
-              <motion.button
-                tooltip-data="Kanban View"
-                tooltip-placement="bottom"
-                whileHover={{ scale: 1.05 }}
-                whileTap={{ scale: 0.95 }}
-                onClick={handleKanbanToggle}
-                className={`flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium transition-all duration-200 rounded-lg ${isKanbanActive ? 'bg-sky-500 dark:bg-sky-600 text-white' : 'bg-sky-100 dark:bg-slate-800 text-sky-700 dark:text-sky-300 hover:bg-sky-200 dark:hover:bg-slate-700'}`}
-              >
-                <BsFillKanbanFill size={14} />
-                <span>Kanban</span>
-              </motion.button>
+              <StyledDropdown
+                options={analyticsOptions}
+                placeholder="Analytics"
+                value={selectedAnalytics}
+                onChange={handleAnalyticsChange}
+                size="sm"
+                className="w-36"
+              />
 
               <motion.button
                 tooltip-data="Chat Bot"
@@ -409,9 +426,10 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                 whileHover={{ scale: 1.05 }}
                 whileTap={{ scale: 0.95 }}
                 onClick={() => router.push(`/app/projects/${project?.slug}/trash`)}
-                className="p-1.5 text-sky-600 dark:text-sky-400 transition-all duration-200 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 dark:hover:text-red-400"
+                className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium bg-red-50 dark:bg-red-900/30 text-red-600 dark:text-red-400 transition-all duration-200 rounded-lg hover:bg-red-100 dark:hover:bg-red-900/50"
               >
-                <Trash2 size={16} />
+                <Trash2 size={14} />
+                <span>Trash</span>
               </motion.button>
             </div>
           </div>
@@ -474,15 +492,14 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                     <span>Filter</span>
                   </motion.button>
 
-                  <motion.button
-                    whileHover={{ scale: 1.02 }}
-                    whileTap={{ scale: 0.98 }}
-                    onClick={handleKanbanToggle}
-                    className={`flex items-center w-full px-3 py-2 space-x-2 text-sm transition-colors duration-200 rounded-lg ${isKanbanActive ? 'bg-sky-500 dark:bg-sky-600 text-white' : 'text-sky-700 dark:text-sky-300 hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-slate-800'}`}
-                  >
-                    <BsFillKanbanFill className="w-4 h-4" />
-                    <span>Kanban</span>
-                  </motion.button>
+                  <StyledDropdown
+                    options={analyticsOptions}
+                    placeholder="Analytics"
+                    value={selectedAnalytics}
+                    onChange={handleAnalyticsChange}
+                    size="sm"
+                    className="w-full"
+                  />
 
                   <motion.button
                     whileHover={{ scale: 1.02 }}
@@ -507,6 +524,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                   <motion.button
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    onClick={() => router.push(`/app/projects/${project?.slug}/sheet`)}
                     className="flex items-center w-full px-3 py-2 space-x-2 text-xs text-sky-700 dark:text-sky-300 transition-colors duration-200 rounded-lg hover:text-sky-600 dark:hover:text-sky-400 hover:bg-sky-50 dark:hover:bg-slate-800"
                   >
                     <Sheet className="w-4 h-4" />
@@ -517,7 +535,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
                     onClick={() => router.push(`/app/projects/${project?.slug}/trash`)}
-                    className="flex items-center w-full px-3 py-2 space-x-2 text-xs text-sky-700 dark:text-sky-300 transition-colors duration-200 rounded-lg hover:text-red-600 dark:hover:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/30"
+                    className="flex items-center w-full px-3 py-2 space-x-2 text-xs text-red-600 dark:text-red-400 transition-colors duration-200 rounded-lg hover:bg-red-50 dark:hover:bg-red-900/30"
                   >
                     <Trash2 className="w-4 h-4" />
                     <span>Trash</span>

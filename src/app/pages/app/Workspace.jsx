@@ -7,6 +7,7 @@ import TestCaseSpreadsheet from '../view/case-module/Table'
 import BugSpreadsheet from '../view/bug-module/Table'
 import BugCardView from '../view/bug-module/Card'
 import BugSplitView from '../view/bug-module/Split'
+import TestResultsDashboard from '@/app/components/Modules/Test-Result/App'
 import BugKanbanView from '@/app/pages/view/bug-module/Kanban'
 
 function Workspace() {
@@ -25,6 +26,7 @@ function Workspace() {
     });
 
     const [isKanbanActive, setIsKanbanActive] = useState(false);
+    const [isTestResultActive, setIsTestResultActive] = useState(false);
 
     // Initialize workspace state
     useEffect(() => {
@@ -32,7 +34,8 @@ function Workspace() {
             window.workspaceState = {
                 selectedView: 'split',
                 selectedReport: 'bug',
-                isKanbanActive: false
+                isKanbanActive: false,
+                isTestResultActive: false
             };
         }
     }, []);
@@ -43,10 +46,11 @@ function Workspace() {
             window.workspaceState = {
                 selectedView,
                 selectedReport,
-                isKanbanActive
+                isKanbanActive,
+                isTestResultActive
             };
         }
-    }, [selectedView, selectedReport, isKanbanActive]);
+    }, [selectedView, selectedReport, isKanbanActive, isTestResultActive]);
 
     // Listen for state changes from navbar
     useEffect(() => {
@@ -54,12 +58,18 @@ function Workspace() {
             const { type, value } = event.detail;
             if (type === 'view') {
                 setSelectedView(value);
-                setIsKanbanActive(false); // Disable Kanban when view changes
+                setIsKanbanActive(false);
+                setIsTestResultActive(false);
             } else if (type === 'report') {
                 setSelectedReport(value);
-                setIsKanbanActive(false); // Disable Kanban when report changes
+                setIsKanbanActive(false);
+                setIsTestResultActive(false);
             } else if (type === 'kanban') {
                 setIsKanbanActive(value);
+                setIsTestResultActive(false);
+            } else if (type === 'testResult') {
+                setIsTestResultActive(value);
+                setIsKanbanActive(false);
             }
         };
 
@@ -75,6 +85,11 @@ function Workspace() {
     }, []);
 
     const renderComponent = () => {
+        // If Test Result is active, show Test Results Dashboard
+        if (isTestResultActive) {
+            return <TestResultsDashboard />;
+        }
+
         // If Kanban is active, show Kanban view (only for bug report currently)
         if (isKanbanActive && selectedReport === 'bug') {
             return <BugKanbanView />;
