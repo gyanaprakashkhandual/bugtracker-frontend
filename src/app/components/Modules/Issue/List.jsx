@@ -123,7 +123,7 @@ const BugTracker = () => {
             setLoadingComments(prev => ({ ...prev, [issueId]: true }));
             debugLog('FETCH_COMMENTS_START', { issueId });
 
-            const res = await fetch(`${BASE_COMMENT_URL}/issue/${issueId}`, {
+            const res = await fetch(`${BASE_COMMENT_URL}/project/{projectId}/issues/${issueId}`, {
                 headers: { Authorization: `Bearer ${getToken()}` }
             });
             const data = await res.json();
@@ -219,54 +219,68 @@ const BugTracker = () => {
     }, []);
 
     const createIssue = async (issueData) => {
-        if (!projectId) return;
+    if (!projectId) return false;
 
-        debugLog('CREATE_ISSUE_START', {
-            projectId,
-            issueData,
-            dataSize: JSON.stringify(issueData).length
+    debugLog('CREATE_ISSUE_START', {
+        projectId,
+        issueData,
+        dataSize: JSON.stringify(issueData).length
+    });
+
+    try {
+        setSaving(prev => ({ ...prev, new: true }));
+        
+        const res = await fetch(`${BASE_URL}/issue/project/${projectId}`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                Authorization: `Bearer ${getToken()}`
+            },
+            body: JSON.stringify(issueData)
         });
 
-        try {
-            setSaving(prev => ({ ...prev, new: true }));
-            const res = await fetch(`${BASE_URL}/issue/project/${projectId}`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    Authorization: `Bearer ${getToken()}`
-                },
-                body: JSON.stringify(issueData)
-            });
-            const data = await res.json();
+        const data = await res.json();
 
-            debugLog('CREATE_ISSUE_RESPONSE', {
-                success: data.success,
-                newIssueId: data.data?._id,
-                serialNumber: data.data?.serialNumber
-            });
+        debugLog('CREATE_ISSUE_RESPONSE', {
+            status: res.status,
+            success: data.success,
+            message: data.message,
+            newIssueId: data.data?._id,
+            serialNumber: data.data?.serialNumber
+        });
 
-            if (data.success) {
-                setIssues(prev => [data.data, ...prev]);
-                setNewIssue({
-                    issueType: '',
-                    issueDesc: '',
-                    refLink: [],
-                    image: [],
-                    assignTo: null,
-                    startDate: '',
-                    endDate: '',
-                    status: 'Open'
-                });
-                return true;
-            }
-        } catch (error) {
-            debugLog('CREATE_ISSUE_ERROR', error);
-            console.error('Create error:', error);
-        } finally {
-            setSaving(prev => ({ ...prev, new: false }));
+        if (!res.ok) {
+            console.error('Create issue failed:', data.message || 'Unknown error');
+            alert(data.message || 'Failed to create issue');
+            return false;
         }
-        return false;
-    };
+
+        if (data.success) {
+            setIssues(prev => [data.data, ...prev]);
+            setNewIssue({
+                issueType: '',
+                issueDesc: '',
+                refLink: [],
+                image: [],
+                assignTo: null,
+                startDate: '',
+                endDate: '',
+                status: 'Open'
+            });
+            return true;
+        }
+    } catch (error) {
+        debugLog('CREATE_ISSUE_ERROR', {
+            message: error.message,
+            stack: error.stack
+        });
+        console.error('Create error:', error);
+        alert('Network error: Failed to create issue');
+    } finally {
+        setSaving(prev => ({ ...prev, new: false }));
+    }
+    return false;
+};
 
     const moveToTrash = async (issueId) => {
         try {
@@ -1112,7 +1126,7 @@ useEffect(() => {
 
         setSubmittingComment(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/v1/comment/issue/${issue._id}`, {
+            const res = await fetch(`http://localhost:5000/api/v1/comment/projects/${projectId}/issues/${issue._id}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

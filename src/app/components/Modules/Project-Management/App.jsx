@@ -3,8 +3,13 @@
 import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  FiPlus, FiEdit, FiTrash2, FiSearch,
-  FiChevronLeft, FiChevronRight, FiEye,
+  FiPlus,
+  FiEdit,
+  FiTrash2,
+  FiSearch,
+  FiChevronLeft,
+  FiChevronRight,
+  FiX,
   FiFolder
 } from 'react-icons/fi';
 import { useAlert } from '@/app/script/Alert.context';
@@ -33,9 +38,7 @@ const emitProjectEvent = (eventType, projectData = null) => {
 
 const ProjectManagement = () => {
   const [projects, setProjects] = useState([]);
-  const [myProjects, setMyProjects] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [activeTab, setActiveTab] = useState('all');
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [selectedProject, setSelectedProject] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
@@ -83,11 +86,13 @@ const ProjectManagement = () => {
         ...options,
       });
 
+      const data = await response.json();
+
       if (!response.ok) {
-        throw new Error(`API call failed: ${response.status}`);
+        throw new Error(data.message || 'Something went wrong');
       }
 
-      return await response.json();
+      return data;
     } catch (error) {
       showAlert({
         type: 'error',
@@ -99,18 +104,11 @@ const ProjectManagement = () => {
 
   const fetchProjects = async (page = 1, search = '') => {
     setLoading(true);
-    const endpoint = activeTab === 'my'
-      ? `/my-projects?page=${page}&limit=8&search=${search}`
-      : `/?page=${page}&limit=8&search=${search}`;
-
+    const endpoint = `/my-projects?page=${page}&limit=8&search=${search}`;
     const result = await apiCall(endpoint);
 
     if (result) {
-      if (activeTab === 'my') {
-        setMyProjects(result.projects);
-      } else {
-        setProjects(result.projects);
-      }
+      setProjects(result.projects);
       setPagination(result.pagination);
     }
     setLoading(false);
@@ -133,6 +131,7 @@ const ProjectManagement = () => {
             type: 'success',
             message: `"${formData.projectName}" updated successfully`
           });
+          emitProjectEvent(PROJECT_EVENTS.UPDATED, result.project);
         }
       } else {
         result = await apiCall('/', {
@@ -145,8 +144,7 @@ const ProjectManagement = () => {
             type: 'success',
             message: `"${formData.projectName}" created successfully`
           });
-
-          emitProjectEvent(PROJECT_EVENTS.CREATED, result.project || formData);
+          emitProjectEvent(PROJECT_EVENTS.CREATED, result.project);
         }
       }
 
@@ -180,16 +178,44 @@ const ProjectManagement = () => {
           type: "success",
           message: `"${project.projectName}" deleted successfully`,
         });
-
         emitProjectEvent(PROJECT_EVENTS.DELETED, project);
         fetchProjects();
       }
     }
   };
 
+  const handleEditProject = (project) => {
+    if (!project.accessInfo?.canEdit) {
+      showAlert({
+        type: 'error',
+        message: 'You do not have permission to edit this project'
+      });
+      return;
+    }
+
+    setSelectedProject(project);
+    setFormData({
+      projectName: project.projectName,
+      projectDesc: project.projectDesc
+    });
+    setShowCreateModal(true);
+  };
+
+  const handleDeleteClick = (project) => {
+    if (!project.accessInfo?.canDelete) {
+      showAlert({
+        type: 'error',
+        message: 'You do not have permission to delete this project'
+      });
+      return;
+    }
+
+    handleDeleteProject(project);
+  };
+
   useEffect(() => {
     fetchProjects();
-  }, [activeTab]);
+  }, []);
 
   useEffect(() => {
     const delayDebounceFn = setTimeout(() => {
@@ -197,9 +223,7 @@ const ProjectManagement = () => {
     }, 500);
 
     return () => clearTimeout(delayDebounceFn);
-  }, [searchTerm, activeTab]);
-
-  const currentProjects = activeTab === 'my' ? myProjects : projects;
+  }, [searchTerm]);
 
   return (
     <div className="bg-gray-50 dark:bg-gray-900">
@@ -207,20 +231,13 @@ const ProjectManagement = () => {
         <div className="bg-white dark:bg-gray-800 rounded-sm">
           <div className="border-b border-gray-200 dark:border-gray-700">
             <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
-              <div className="flex space-x-4">
-                {['all', 'my'].map((tab) => (
-                  <button
-                    key={tab}
-                    onClick={() => setActiveTab(tab)}
-                    className={`px-4 py-2 rounded-lg font-medium transition-colors ${activeTab === tab
-                      ? 'bg-blue-100 dark:bg-blue-900 text-blue-700 dark:text-blue-100'
-                      : 'text-gray-600 dark:text-gray-300 hover:text-gray-900 dark:hover:text-gray-100'
-                      }`}
-                  >
-                    {tab === 'all' && 'All Projects'}
-                    {tab === 'my' && 'My Projects'}
-                  </button>
-                ))}
+              <div>
+                <h1 className="text-2xl font-semibold text-gray-900 dark:text-gray-100">
+                  My Projects
+                </h1>
+                <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">
+                  Manage your projects and collaborations
+                </p>
               </div>
               <div className="flex items-center space-x-4">
                 <div className="relative">
@@ -248,19 +265,12 @@ const ProjectManagement = () => {
 
           <div className="p-6">
             <ProjectsView
-              projects={currentProjects}
+              projects={projects}
               loading={loading}
               pagination={pagination}
               onPageChange={fetchProjects}
-              onEdit={(project) => {
-                setSelectedProject(project);
-                setFormData({
-                  projectName: project.projectName,
-                  projectDesc: project.projectDesc
-                });
-                setShowCreateModal(true);
-              }}
-              onDelete={handleDeleteProject}
+              onEdit={handleEditProject}
+              onDelete={handleDeleteClick}
             />
           </div>
         </div>
@@ -343,8 +353,8 @@ const ProjectManagement = () => {
 const ProjectsView = ({ projects, loading, pagination, onPageChange, onEdit, onDelete }) => {
   if (loading) {
     return (
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {[...Array(6)].map((_, i) => (
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+        {[...Array(8)].map((_, i) => (
           <div key={i} className="bg-gray-100 dark:bg-gray-700 rounded-xl h-48 animate-pulse"></div>
         ))}
       </div>
@@ -405,44 +415,64 @@ const ProjectsView = ({ projects, loading, pagination, onPageChange, onEdit, onD
 };
 
 const ProjectCard = ({ project, index, onEdit, onDelete }) => {
-  const displayName = project.projectName.length > 20
-    ? project.projectName.substring(0, 20) + '...'
+  const displayName = project.projectName.length > 30
+    ? project.projectName.substring(0, 30) + '...'
     : project.projectName;
-  const displayDesc = project.projectDesc.length > 50
-    ? project.projectDesc.substring(0, 50) + '...'
-    : project.projectDesc
+
+  const displayDesc = project.projectDesc.length > 80
+    ? project.projectDesc.substring(0, 80) + '...'
+    : project.projectDesc;
+
+  const canEdit = project.accessInfo?.canEdit ?? false;
+  const canDelete = project.accessInfo?.canDelete ?? false;
+  const isOwner = project.accessInfo?.isOwner ?? false;
+  const accessLevel = project.accessInfo?.accessLevel;
 
   return (
     <motion.div
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
-      transition={{ delay: index * 0.1 }}
+      transition={{ delay: index * 0.05 }}
       whileHover={{ y: -4 }}
       className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl p-6 hover:shadow-lg transition-all duration-300"
     >
       <div className="flex justify-between items-start mb-4">
-        <div>
-          <h3 className="font-semibold text-gray-900 dark:text-gray-100 text-lg mb-1 line-clamp-1" tooltip-data={project.projectName}>
+        <div className="flex-1 min-w-0">
+          <h3
+            className="font-semibold text-gray-900 dark:text-gray-100 text-lg mb-1 truncate"
+            title={project.projectName}
+          >
             {displayName}
           </h3>
           <p className="text-sm text-gray-500 dark:text-gray-400 mb-2">
             by {project.user?.name || 'Unknown User'}
           </p>
+          {!isOwner && accessLevel && (
+            <span className="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200">
+              {accessLevel}
+            </span>
+          )}
         </div>
-        <div className="flex space-x-2">
+        <div className="flex space-x-2 ml-2">
           <button
-            tooltip-data="Edit"
-            tooltip-placement="bottom"
             onClick={() => onEdit(project)}
-            className="p-2 text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400 transition-colors"
+            disabled={!canEdit}
+            title={canEdit ? "Edit" : "No edit permission"}
+            className={`p-2 transition-colors ${canEdit
+                ? 'text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400'
+                : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+              }`}
           >
             <FiEdit className="h-4 w-4" />
           </button>
           <button
-            tooltip-data="Delete"
-            tooltip-placement="bottom"
             onClick={() => onDelete(project)}
-            className="p-2 text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400 transition-colors"
+            disabled={!canDelete}
+            title={canDelete ? "Delete" : "No delete permission"}
+            className={`p-2 transition-colors ${canDelete
+                ? 'text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400'
+                : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
+              }`}
           >
             <FiTrash2 className="h-4 w-4" />
           </button>
@@ -450,8 +480,9 @@ const ProjectCard = ({ project, index, onEdit, onDelete }) => {
       </div>
 
       <p
-        tooltip-data={project.projectDesc}
-        className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2">
+        title={project.projectDesc}
+        className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2"
+      >
         {displayDesc || 'No description provided'}
       </p>
 
@@ -459,6 +490,11 @@ const ProjectCard = ({ project, index, onEdit, onDelete }) => {
         <span>
           {new Date(project.createdAt).toLocaleDateString()}
         </span>
+        {isOwner && (
+          <span className="font-medium text-blue-600 dark:text-blue-400">
+            Owner
+          </span>
+        )}
       </div>
     </motion.div>
   );
@@ -470,13 +506,13 @@ const Modal = ({ title, children, onClose }) => {
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}
-      className="fixed inset-0 bg-gray-100 dark:bg-gray-900 bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center p-4 z-50"
+      className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center p-4 z-50"
       onClick={onClose}
     >
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
+        initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0, scale: 0.9 }}
+        exit={{ opacity: 0, scale: 0.95 }}
         className="bg-white dark:bg-gray-800 rounded-xl shadow-xl max-w-md w-full max-h-[90vh] overflow-y-auto"
         onClick={(e) => e.stopPropagation()}
       >
@@ -486,7 +522,7 @@ const Modal = ({ title, children, onClose }) => {
             onClick={onClose}
             className="text-gray-400 dark:text-gray-500 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
           >
-            <FiEye className="h-6 w-6" />
+            <FiX className="h-6 w-6" />
           </button>
         </div>
         <div className="p-6">{children}</div>
