@@ -360,7 +360,7 @@ export default function Navbar({ onViewChange, onReportChange, onDataChange }) {
                 size='sm'
                 className='w-28'
               />
-               <StyledDropdown
+              <StyledDropdown
                 options={analyticsOptions}
                 placeholder="Analytics"
                 value={selectedAnalytics}
