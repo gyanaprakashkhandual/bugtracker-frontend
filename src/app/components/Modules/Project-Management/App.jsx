@@ -226,7 +226,7 @@ const ProjectManagement = () => {
   }, [searchTerm]);
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900">
+    <div className="bg-gray-50 dark:bg-gray-900 max-h-[calc(100vh-69px)] overflow-y-auto sidebar-scrollbar">
       <div className="max-w-full mx-auto">
         <div className="bg-white dark:bg-gray-800 rounded-sm">
           <div className="border-b border-gray-200 dark:border-gray-700">
@@ -279,7 +279,7 @@ const ProjectManagement = () => {
       <AnimatePresence>
         {showCreateModal && (
           <Modal
-            title={selectedProject ? 'Edit Project' : 'Create New Project'}
+            tooltip-data={selectedProject ? 'Edit Project' : 'Create New Project'}
             onClose={() => {
               setShowCreateModal(false);
               setSelectedProject(null);
@@ -440,7 +440,7 @@ const ProjectCard = ({ project, index, onEdit, onDelete }) => {
         <div className="flex-1 min-w-0">
           <h3
             className="font-semibold text-gray-900 dark:text-gray-100 text-lg mb-1 truncate"
-            title={project.projectName}
+            tooltip-data={project.projectName}
           >
             {displayName}
           </h3>
@@ -457,7 +457,7 @@ const ProjectCard = ({ project, index, onEdit, onDelete }) => {
           <button
             onClick={() => onEdit(project)}
             disabled={!canEdit}
-            title={canEdit ? "Edit" : "No edit permission"}
+            tooltip-data={canEdit ? "Edit" : "No edit permission"}
             className={`p-2 transition-colors ${canEdit
                 ? 'text-gray-400 dark:text-gray-500 hover:text-blue-600 dark:hover:text-blue-400'
                 : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
@@ -468,7 +468,7 @@ const ProjectCard = ({ project, index, onEdit, onDelete }) => {
           <button
             onClick={() => onDelete(project)}
             disabled={!canDelete}
-            title={canDelete ? "Delete" : "No delete permission"}
+            tooltip-data={canDelete ? "Delete" : "No delete permission"}
             className={`p-2 transition-colors ${canDelete
                 ? 'text-gray-400 dark:text-gray-500 hover:text-red-600 dark:hover:text-red-400'
                 : 'text-gray-300 dark:text-gray-600 cursor-not-allowed'
@@ -480,7 +480,7 @@ const ProjectCard = ({ project, index, onEdit, onDelete }) => {
       </div>
 
       <p
-        title={project.projectDesc}
+        tooltip-data={project.projectDesc}
         className="text-gray-600 dark:text-gray-300 text-sm mb-4 line-clamp-2"
       >
         {displayDesc || 'No description provided'}

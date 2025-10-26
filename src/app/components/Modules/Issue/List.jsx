@@ -370,37 +370,41 @@ const BugTracker = () => {
         }
     };
 
-    return (
-<div className="bg-gradient-to-br from-slate-50 via-blue-50 to-sky-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900 h-[calc(100vh-69px)] overflow-auto">
-    <div className="max-w-full overflow-x-auto">
-                <div className="bg-white dark:bg-gray-800 border border-blue-100 dark:border-gray-700 shadow-xl overflow-hidden">
-                    <div className="overflow-hidden border border-gray-200 dark:border-gray-700 sticky top-0">
-                        {/* Table Header */}
-                        <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-b-2 border-indigo-400 dark:border-indigo-800">
-                            <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center">
-                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">ID</span>
-                            </div>
-                            <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
-                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Type</span>
-                            </div>
-                            <div className="col-span-3 text-xs font-bold text-white uppercase tracking-wider flex items-center">
-                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Description</span>
-                            </div>
-                            <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
-                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Assigned</span>
-                            </div>
-                            <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center">
-                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Status</span>
-                            </div>
-                            <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
-                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Timeline</span>
-                            </div>
-                            <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center justify-center">
-                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Actions</span>
-                            </div>
+   return (
+    <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-sky-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900">
+        <div className="max-w-full h-[calc(100vh-69px-3rem)] overflow-hidden">
+            <div className="bg-white dark:bg-gray-800 border border-blue-100 dark:border-gray-700 shadow-xl overflow-hidden h-full flex flex-col">
+                {/* Table Header - Sticky */}
+                <div className="flex-shrink-0 overflow-hidden border-b border-gray-200 dark:border-gray-700"></div>
+                {/* Table Header - Sticky */}
+                <div className="sticky top-0 z-10 overflow-hidden border-b border-gray-200 dark:border-gray-700">
+                    <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-b-2 border-indigo-400 dark:border-indigo-800">
+                        <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                            <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">ID</span>
+                        </div>
+                        <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                            <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Type</span>
+                        </div>
+                        <div className="col-span-3 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                            <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Description</span>
+                        </div>
+                        <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                            <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Assigned</span>
+                        </div>
+                        <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                            <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Status</span>
+                        </div>
+                        <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                            <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Timeline</span>
+                        </div>
+                        <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center justify-center">
+                            <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Actions</span>
                         </div>
                     </div>
+                </div>
 
+                {/* Table Body */}
+                <div className="flex-1 overflow-y-auto sidebar-scrollbar">
                     {/* New Issue Row */}
                     <NewIssueRow
                         issue={newIssue}
@@ -461,7 +465,8 @@ const BugTracker = () => {
                 </div>
             </div>
         </div>
-    );
+    </div>
+);
 };
 
 
