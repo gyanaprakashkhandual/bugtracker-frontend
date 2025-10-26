@@ -25,10 +25,20 @@ function Workspace() {
         return 'bug';
     });
 
-    const [isKanbanActive, setIsKanbanActive] = useState(false);
-    const [isTestResultActive, setIsTestResultActive] = useState(false);
+    const [isKanbanActive, setIsKanbanActive] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.workspaceState?.isKanbanActive || false;
+        }
+        return false;
+    });
 
-    // Initialize workspace state
+    const [isTestResultActive, setIsTestResultActive] = useState(() => {
+        if (typeof window !== 'undefined') {
+            return window.workspaceState?.isTestResultActive || false;
+        }
+        return false;
+    });
+
     useEffect(() => {
         if (typeof window !== 'undefined' && !window.workspaceState) {
             window.workspaceState = {
@@ -40,7 +50,6 @@ function Workspace() {
         }
     }, []);
 
-    // Update window state when local state changes
     useEffect(() => {
         if (typeof window !== 'undefined') {
             window.workspaceState = {
@@ -52,24 +61,38 @@ function Workspace() {
         }
     }, [selectedView, selectedReport, isKanbanActive, isTestResultActive]);
 
-    // Listen for state changes from navbar
     useEffect(() => {
         const handleStateChange = (event) => {
             const { type, value } = event.detail;
+
+            if (type === 'kanban') {
+                setIsKanbanActive(value);
+                if (value) {
+                    setIsTestResultActive(false);
+                }
+                return;
+            }
+
+            if (type === 'testResult') {
+                setIsTestResultActive(value);
+                if (value) {
+                    setIsKanbanActive(false);
+                }
+                return;
+            }
+
             if (type === 'view') {
                 setSelectedView(value);
                 setIsKanbanActive(false);
                 setIsTestResultActive(false);
-            } else if (type === 'report') {
+                return;
+            }
+
+            if (type === 'report') {
                 setSelectedReport(value);
                 setIsKanbanActive(false);
                 setIsTestResultActive(false);
-            } else if (type === 'kanban') {
-                setIsKanbanActive(value);
-                setIsTestResultActive(false);
-            } else if (type === 'testResult') {
-                setIsTestResultActive(value);
-                setIsKanbanActive(false);
+                return;
             }
         };
 
@@ -85,17 +108,14 @@ function Workspace() {
     }, []);
 
     const renderComponent = () => {
-        // If Test Result is active, show Test Results Dashboard
+        if (isKanbanActive) {
+            return <BugKanbanView />;
+        }
+
         if (isTestResultActive) {
             return <TestResultsDashboard />;
         }
 
-        // If Kanban is active, show Kanban view (only for bug report currently)
-        if (isKanbanActive && selectedReport === 'bug') {
-            return <BugKanbanView />;
-        }
-
-        // Bug Report (default)
         if (selectedReport === 'bug') {
             switch (selectedView) {
                 case 'split':
@@ -109,7 +129,6 @@ function Workspace() {
             }
         }
 
-        // Test Case Report
         if (selectedReport === 'test-case') {
             switch (selectedView) {
                 case 'split':
