@@ -266,7 +266,7 @@ const EditorContentArea = ({
 
           {/* Upload indicator */}
           {isUploading && (
-            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center rounded-xl">
+            <div className="absolute inset-0 bg-black/40 bg-opacity-50 flex items-center justify-center rounded-xl">
               <div className="bg-white dark:bg-gray-800 px-6 py-4 rounded-lg flex items-center gap-3">
                 <Loader2 className="w-5 h-5 animate-spin text-blue-600" />
                 <span className="text-gray-900 dark:text-white font-medium">Uploading...</span>
@@ -326,7 +326,7 @@ const EditorContentArea = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/40 bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4"
             onClick={() => setShowLinkDialog(false)}
           >
             <motion.div
@@ -373,7 +373,7 @@ const EditorContentArea = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/40 bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4"
             onClick={() => setShowImageDialog(false)}
           >
             <motion.div
@@ -467,7 +467,7 @@ const EditorContentArea = ({
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4"
+            className="fixed inset-0 bg-black/40 bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center z-50 p-4"
             onClick={() => setShowCommentDialog(false)}
           >
             <motion.div

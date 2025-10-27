@@ -10,6 +10,7 @@ import { BUG_EVENTS } from '@/app/components/Sidebars/Bug';
 import TableSkeletonLoader from '@/app/components/assets/Table.loader';
 
 const BugSpreadsheet = () => {
+    const [editingCellRect, setEditingCellRect] = useState(null);
     const [bugs, setBugs] = useState([]);
     const [loading, setLoading] = useState(true);
     const [editingCell, setEditingCell] = useState(null);
@@ -86,55 +87,55 @@ const BugSpreadsheet = () => {
     }, []);
 
     useEffect(() => {
-    const handleClickOutside = (event) => {
-        // Check if click is on a dropdown button
-        const isDropdownButton = Object.values(dropdownButtonRefs.current).some(
-            ref => ref && ref.contains(event.target)
-        );
-        
-        // If not clicking on dropdown button or inside any dropdown content, close dropdown
-        if (!isDropdownButton) {
-            const clickedInsideDropdown = event.target.closest('.dropdown-portal-content');
-            if (!clickedInsideDropdown) {
-                setActiveDropdown(null);
-            }
-        }
-        
-        if (commentModalRef.current && !commentModalRef.current.contains(event.target)) {
-            const isCommentButton = Object.values(commentButtonRefs.current).some(
+        const handleClickOutside = (event) => {
+            // Check if click is on a dropdown button
+            const isDropdownButton = Object.values(dropdownButtonRefs.current).some(
                 ref => ref && ref.contains(event.target)
             );
-            if (!isCommentButton) {
-                setActiveCommentModal(null);
-            }
-        }
-        if (linksDropdownRef.current && !linksDropdownRef.current.contains(event.target)) {
-            const isLinksButton = Object.values(linksButtonRefs.current).some(
-                ref => ref && ref.contains(event.target)
-            );
-            if (!isLinksButton) {
-                setActiveLinksDropdown(null);
-            }
-        }
-        if (imagesDropdownRef.current && !imagesDropdownRef.current.contains(event.target)) {
-            const isImagesButton = Object.values(imagesButtonRefs.current).some(
-                ref => ref && ref.contains(event.target)
-            );
-            if (!isImagesButton) {
-                setActiveImagesDropdown(null);
-            }
-        }
-        if (linkModalRef.current && !linkModalRef.current.contains(event.target)) {
-            setActiveLinkModal(null);
-        }
-        if (imageModalRef.current && !imageModalRef.current.contains(event.target)) {
-            setActiveImageModal(null);
-        }
-    };
 
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-}, []);
+            // If not clicking on dropdown button or inside any dropdown content, close dropdown
+            if (!isDropdownButton) {
+                const clickedInsideDropdown = event.target.closest('.dropdown-portal-content');
+                if (!clickedInsideDropdown) {
+                    setActiveDropdown(null);
+                }
+            }
+
+            if (commentModalRef.current && !commentModalRef.current.contains(event.target)) {
+                const isCommentButton = Object.values(commentButtonRefs.current).some(
+                    ref => ref && ref.contains(event.target)
+                );
+                if (!isCommentButton) {
+                    setActiveCommentModal(null);
+                }
+            }
+            if (linksDropdownRef.current && !linksDropdownRef.current.contains(event.target)) {
+                const isLinksButton = Object.values(linksButtonRefs.current).some(
+                    ref => ref && ref.contains(event.target)
+                );
+                if (!isLinksButton) {
+                    setActiveLinksDropdown(null);
+                }
+            }
+            if (imagesDropdownRef.current && !imagesDropdownRef.current.contains(event.target)) {
+                const isImagesButton = Object.values(imagesButtonRefs.current).some(
+                    ref => ref && ref.contains(event.target)
+                );
+                if (!isImagesButton) {
+                    setActiveImagesDropdown(null);
+                }
+            }
+            if (linkModalRef.current && !linkModalRef.current.contains(event.target)) {
+                setActiveLinkModal(null);
+            }
+            if (imageModalRef.current && !imageModalRef.current.contains(event.target)) {
+                setActiveImageModal(null);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
 
     useEffect(() => {
         const handleBugChange = (event) => {
@@ -402,11 +403,21 @@ const BugSpreadsheet = () => {
     };
 
     const startEditing = (bugId, columnKey, value) => {
+        const cellKey = `${bugId}-${columnKey}`;
+        const cellElement = document.querySelector(`[data-cell-id="${cellKey}"]`);
+
+        if (cellElement) {
+            const rect = cellElement.getBoundingClientRect();
+            setEditingCellRect({
+                top: rect.top + window.scrollY,
+                left: rect.left + window.scrollX,
+                width: rect.width,
+                height: rect.height
+            });
+        }
+
         setEditingCell({ bugId, columnKey });
         setEditValue(value || '');
-        if (columnKey === 'bugDesc' || columnKey === 'bugRequirement') {
-            setColumnWidths(prev => ({ ...prev, [columnKey]: 600 }));
-        }
     };
 
     const stopEditing = () => {
@@ -423,15 +434,7 @@ const BugSpreadsheet = () => {
         }
         setEditingCell(null);
         setEditValue('');
-        setColumnWidths(prev => {
-            const newWidths = { ...prev };
-            columns.forEach(col => {
-                if (col.expandable) {
-                    newWidths[col.key] = col.width;
-                }
-            });
-            return newWidths;
-        });
+        setEditingCellRect(null); // Clear position
     };
 
     const handleImageUpload = async (bugId, file) => {
@@ -624,6 +627,27 @@ const BugSpreadsheet = () => {
         )
     );
 
+    useEffect(() => {
+        if (!editingCell) return;
+
+        const handleScroll = () => {
+            const cellKey = `${editingCell.bugId}-${editingCell.columnKey}`;
+            const cellElement = document.querySelector(`[data-cell-id="${cellKey}"]`);
+
+            if (cellElement) {
+                const rect = cellElement.getBoundingClientRect();
+                setEditingCellRect({
+                    top: rect.top + window.scrollY,
+                    left: rect.left + window.scrollX,
+                    width: rect.width,
+                    height: rect.height
+                });
+            }
+        };
+
+        window.addEventListener('scroll', handleScroll, true);
+        return () => window.removeEventListener('scroll', handleScroll, true);
+    }, [editingCell]);
     const getPriorityColor = (priority) => {
         const colors = {
             'Critical': 'bg-red-100 dark:bg-red-900 text-red-800 dark:text-red-200 border-red-300 dark:border-red-700',
@@ -680,113 +704,113 @@ const BugSpreadsheet = () => {
         navigator.clipboard.writeText(text);
         showAlert({ type: 'success', message: 'Copied to clipboard' });
     };
-const renderDropdown = (bugId, column, value) => {
-    const cellKey = `${bugId}-${column.key}`;
-    const isActive = activeDropdown === cellKey;
-    const openUpward = dropdownOpenUpward[cellKey] || false;
+    const renderDropdown = (bugId, column, value) => {
+        const cellKey = `${bugId}-${column.key}`;
+        const isActive = activeDropdown === cellKey;
+        const openUpward = dropdownOpenUpward[cellKey] || false;
 
-    let badgeClass = '';
-    if (column.key === 'priority' || column.key === 'severity') {
-        badgeClass = getPriorityColor(value);
-    } else if (column.key === 'status') {
-        badgeClass = getStatusColor(value);
-    } else if (column.key === 'bugType') {
-        badgeClass = getBugTypeColor(value);
-    }
+        let badgeClass = '';
+        if (column.key === 'priority' || column.key === 'severity') {
+            badgeClass = getPriorityColor(value);
+        } else if (column.key === 'status') {
+            badgeClass = getStatusColor(value);
+        } else if (column.key === 'bugType') {
+            badgeClass = getBugTypeColor(value);
+        }
 
-    return (
-        <>
-            <div className="relative w-full h-full">
-                <button
-                    ref={(el) => {
-                        if (el) dropdownButtonRefs.current[cellKey] = el;
-                    }}
-                    onClick={() => handleDropdownClick(cellKey)}
-                    className="w-full h-full px-2 py-1.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
-                >
-                    <span className={`px-2 py-1 w-full rounded text-xs font-medium border ${badgeClass}`}>
-                        {value || 'Select'}
-                    </span>
-                </button>
-            </div>
+        return (
+            <>
+                <div className="relative w-full h-full">
+                    <button
+                        ref={(el) => {
+                            if (el) dropdownButtonRefs.current[cellKey] = el;
+                        }}
+                        onClick={() => handleDropdownClick(cellKey)}
+                        className="w-full h-full px-2 py-1.5 flex items-center justify-between hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors group"
+                    >
+                        <span className={`px-2 py-1 w-full rounded text-xs font-medium border ${badgeClass}`}>
+                            {value || 'Select'}
+                        </span>
+                    </button>
+                </div>
 
-            {isActive && typeof document !== 'undefined' && (
-                ReactDOM.createPortal(
-                    <AnimatePresence>
-                        <motion.div
-                            initial={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
-                            animate={{ opacity: 1, y: 0, scale: 1 }}
-                            exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
-                            transition={{ duration: 0.15 }}
-                            className="dropdown-portal-content fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden"
-                            style={{
-                                width: '192px',
-                                zIndex: 99999,
-                                ...(() => {
-                                    const buttonElement = dropdownButtonRefs.current[cellKey];
-                                    
-                                    if (!buttonElement) {
-                                        return { top: '0px', left: '0px' };
-                                    }
-                                    
-                                    const rect = buttonElement.getBoundingClientRect();
-                                    const spaceBelow = window.innerHeight - rect.bottom;
-                                    const shouldOpenUpward = spaceBelow < 300;
-                                    
-                                    let positioning;
-                                    if (shouldOpenUpward) {
-                                        positioning = {
-                                            bottom: `${window.innerHeight - rect.top + 4}px`,
-                                            left: `${rect.left}px`
-                                        };
-                                    } else {
-                                        positioning = {
-                                            top: `${rect.bottom + 4}px`,
-                                            left: `${rect.left}px`
-                                        };
-                                    }
-                                    
-                                    return positioning;
-                                })()
-                            }}
-                        >
-                            <div className="py-1 max-h-64 overflow-y-auto">
-                                {column.options.map((option) => {
-                                    let optionBadgeClass = '';
-                                    if (column.key === 'priority' || column.key === 'severity') {
-                                        optionBadgeClass = getPriorityColor(option);
-                                    } else if (column.key === 'status') {
-                                        optionBadgeClass = getStatusColor(option);
-                                    } else if (column.key === 'bugType') {
-                                        optionBadgeClass = getBugTypeColor(option);
-                                    }
+                {isActive && typeof document !== 'undefined' && (
+                    ReactDOM.createPortal(
+                        <AnimatePresence>
+                            <motion.div
+                                initial={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
+                                animate={{ opacity: 1, y: 0, scale: 1 }}
+                                exit={{ opacity: 0, y: openUpward ? 8 : -8, scale: 0.95 }}
+                                transition={{ duration: 0.15 }}
+                                className="dropdown-portal-content fixed bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg shadow-xl overflow-hidden"
+                                style={{
+                                    width: '192px',
+                                    zIndex: 99999,
+                                    ...(() => {
+                                        const buttonElement = dropdownButtonRefs.current[cellKey];
 
-                                    return (
-                                        <button
-                                            key={option}
-                                            onClick={() => {
-                                                handleDropdownSelect(bugId, column.key, option);
-                                            }}
-                                            className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
-                                        >
-                                            <span className={`px-2 py-1 rounded text-xs font-medium border ${optionBadgeClass}`}>
-                                                {option}
-                                            </span>
-                                            {value === option && (
-                                                <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
-                                            )}
-                                        </button>
-                                    );
-                                })}
-                            </div>
-                        </motion.div>
-                    </AnimatePresence>,
-                    document.body
-                )
-            )}
-        </>
-    );
-};
+                                        if (!buttonElement) {
+                                            return { top: '0px', left: '0px' };
+                                        }
+
+                                        const rect = buttonElement.getBoundingClientRect();
+                                        const spaceBelow = window.innerHeight - rect.bottom;
+                                        const shouldOpenUpward = spaceBelow < 300;
+
+                                        let positioning;
+                                        if (shouldOpenUpward) {
+                                            positioning = {
+                                                bottom: `${window.innerHeight - rect.top + 4}px`,
+                                                left: `${rect.left}px`
+                                            };
+                                        } else {
+                                            positioning = {
+                                                top: `${rect.bottom + 4}px`,
+                                                left: `${rect.left}px`
+                                            };
+                                        }
+
+                                        return positioning;
+                                    })()
+                                }}
+                            >
+                                <div className="py-1 max-h-64 overflow-y-auto">
+                                    {column.options.map((option) => {
+                                        let optionBadgeClass = '';
+                                        if (column.key === 'priority' || column.key === 'severity') {
+                                            optionBadgeClass = getPriorityColor(option);
+                                        } else if (column.key === 'status') {
+                                            optionBadgeClass = getStatusColor(option);
+                                        } else if (column.key === 'bugType') {
+                                            optionBadgeClass = getBugTypeColor(option);
+                                        }
+
+                                        return (
+                                            <button
+                                                key={option}
+                                                onClick={() => {
+                                                    handleDropdownSelect(bugId, column.key, option);
+                                                }}
+                                                className={`w-full px-3 py-2 text-left text-xs hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors flex items-center justify-between ${value === option ? 'bg-blue-50 dark:bg-blue-900/20' : ''}`}
+                                            >
+                                                <span className={`px-2 py-1 rounded text-xs font-medium border ${optionBadgeClass}`}>
+                                                    {option}
+                                                </span>
+                                                {value === option && (
+                                                    <div className="w-1.5 h-1.5 bg-blue-600 dark:bg-blue-400 rounded-full"></div>
+                                                )}
+                                            </button>
+                                        );
+                                    })}
+                                </div>
+                            </motion.div>
+                        </AnimatePresence>,
+                        document.body
+                    )
+                )}
+            </>
+        );
+    };
 
     const renderLinksDropdown = (bugId, refLinks) => {
         const cellKey = `links-${bugId}`;
@@ -1289,32 +1313,54 @@ const renderDropdown = (bugId, column, value) => {
         }
 
         if (editingCell?.bugId === bugId && editingCell?.columnKey === column.key) {
+            const isExpandable = column.key === 'bugDesc' || column.key === 'bugRequirement';
+
             return (
-                <textarea
-                    value={editValue}
-                    onChange={(e) => setEditValue(e.target.value)}
-                    onBlur={stopEditing}
-                    onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                            e.preventDefault();
-                            stopEditing();
-                        }
-                        if (e.key === 'Escape') {
-                            setEditingCell(null);
-                            setEditValue('');
-                        }
-                    }}
-                    className="w-full h-full border-2 border-blue-500 outline-none bg-white dark:bg-gray-700 dark:text-gray-200 px-2 py-1.5 text-xs resize-none"
-                    autoFocus
-                    style={{ minHeight: rowHeight }}
-                />
+                <>
+                    {/* Placeholder to maintain cell structure */}
+                    <div className="w-full h-full px-2 py-1.5 border-2 border-blue-500 bg-blue-50 dark:bg-blue-900/20" />
+
+                    {/* Overlay textarea that floats above */}
+                    {editingCellRect && typeof document !== 'undefined' && ReactDOM.createPortal(
+                        <div
+                            className="fixed z-[9999]"
+                            style={{
+                                top: `${editingCellRect.top}px`,
+                                left: `${editingCellRect.left}px`,
+                                width: isExpandable ? '600px' : `${editingCellRect.width}px`,
+                                minHeight: `${editingCellRect.height}px`,
+                                maxHeight: '400px'
+                            }}
+                        >
+                            <textarea
+                                value={editValue}
+                                onChange={(e) => setEditValue(e.target.value)}
+                                onBlur={stopEditing}
+                                onKeyDown={(e) => {
+                                    if (e.key === 'Enter' && !e.shiftKey) {
+                                        e.preventDefault();
+                                        stopEditing();
+                                    }
+                                    if (e.key === 'Escape') {
+                                        setEditingCell(null);
+                                        setEditValue('');
+                                        setEditingCellRect(null);
+                                    }
+                                }}
+                                className="w-full h-full border-2 border-blue-500 outline-none bg-white dark:bg-gray-700 dark:text-gray-200 px-2 py-1.5 text-xs resize-none shadow-2xl rounded"
+                                autoFocus
+                            />
+                        </div>,
+                        document.body
+                    )}
+                </>
             );
         }
-
         const displayValue = value || '';
 
         return (
             <div
+                data-cell-id={cellKey}
                 className={`w-full h-full px-2 py-1.5 flex items-center text-xs relative ${column.editable ? 'cursor-pointer hover:bg-gray-50 dark:hover:bg-gray-700' : ''}`}
                 onDoubleClick={() => column.editable && (isNewRow ? handleNewRowCellClick(column.key) : startEditing(bugId, column.key, value))}
                 style={{
@@ -1411,7 +1457,7 @@ const renderDropdown = (bugId, column, value) => {
 
             <div className="flex-1 overflow-auto relative">
                 <div className="bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 overflow-hidden">
-                    <div className="overflow-x-auto overflow-y-auto">
+                    <div className="overflow-x-auto overflow-y-auto min-h-[calc(100vh-107px)]">
                         <div className="inline-block min-w-full">
                             <div className="flex sticky top-0 z-30 border-b border-gray-300 dark:border-gray-600 bg-gradient-to-r from-gray-50 dark:from-gray-800 to-gray-100 dark:to-gray-700">
                                 {columns.map((column) => (

@@ -246,7 +246,7 @@ export default function TestResultsDashboard() {
     }
 
     return (
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
+        <div className="min-h-[100vh(calc(100vh-65px))] bg-gray-50 dark:bg-gray-900 p-4 md:p-6">
             {/* Statistics Cards */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
                 {statsLoading ? (
@@ -345,7 +345,7 @@ export default function TestResultsDashboard() {
             </div>
 
             {/* Test Results Table */}
-            <div className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
+            <div className="min-h-[calc(100vh-226px)] bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 overflow-hidden">
                 <div className="overflow-x-auto">
                     {loading ? (
                         // Loading State
@@ -497,14 +497,14 @@ export default function TestResultsDashboard() {
                         initial={{ opacity: 0 }}
                         animate={{ opacity: 1 }}
                         exit={{ opacity: 0 }}
-                        className="fixed inset-0 bg-black bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center p-4 z-50"
+                        className="fixed inset-0 bg-black/40 bg-opacity-50 dark:bg-opacity-70 flex items-center justify-center p-4 z-50"
                         onClick={() => setSelectedResult(null)}
                     >
                         <motion.div
                             initial={{ scale: 0.9, opacity: 0 }}
                             animate={{ scale: 1, opacity: 1 }}
                             exit={{ scale: 0.9, opacity: 0 }}
-                            className="bg-white dark:bg-gray-800 rounded-lg max-w-3xl w-full max-h-[90vh] overflow-y-auto"
+                            className="bg-white dark:bg-gray-800 rounded-lg max-w-4xl w-full max-h-[90vh] overflow-y-auto"
                             onClick={(e) => e.stopPropagation()}
                         >
                             <div className="p-6">
