@@ -31,8 +31,8 @@ const BugKanbanView = () => {
     const { testTypeId } = useTestType();
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
-    const BASE_BUG_URL = 'http://localhost:5000/api/v1/bug';
-    const BASE_COMMENT_URL = 'http://localhost:5000/api/v1/comment';
+    const BASE_BUG_URL = 'https://caffetest.onrender.com/api/v1/bug';
+    const BASE_COMMENT_URL = 'https://caffetest.onrender.com/api/v1/comment';
 
     const statuses = ['New', 'Open', 'In Progress', 'In Review', 'Closed', 'Re Open'];
 

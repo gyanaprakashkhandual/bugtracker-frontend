@@ -6,7 +6,7 @@ import { Trash2, RefreshCw, Search, Filter, ChevronLeft, ChevronRight, AlertCirc
 import { useTestType } from '@/app/script/TestType.context';
 import { useAlert } from '@/app/script/Alert.context';
 
-const BASE_URL = 'http://localhost:5000/api/v1/bug';
+const BASE_URL = 'https://caffetest.onrender.com/api/v1/bug';
 
 export default function TrashedBugs() {
   const { showAlert } = useAlert();

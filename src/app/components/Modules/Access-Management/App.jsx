@@ -267,7 +267,7 @@ const AccessControlSystem = () => {
   const fetchUsers = async () => {
     try {
       const data = await fetchWithAuth(
-        "http://localhost:5000/api/v1/auth/admin/users"
+        "https://caffetest.onrender.com/api/v1/auth/admin/users"
       );
       setUsers(data.users || data || []);
     } catch (err) {
@@ -282,7 +282,7 @@ const AccessControlSystem = () => {
     setLoading(true);
     try {
       const data = await fetchWithAuth(
-        `http://localhost:5000/api/v1/access/project/${projectId}/details`
+        `https://caffetest.onrender.com/api/v1/access/project/${projectId}/details`
       );
       setAccessList(data.accessList || []);
     } catch (err) {
@@ -316,7 +316,7 @@ const AccessControlSystem = () => {
       };
 
       const data = await fetchWithAuth(
-        "http://localhost:5000/api/v1/access/project/grant",
+        "https://caffetest.onrender.com/api/v1/access/project/grant",
         {
           method: "POST",
           body: JSON.stringify(body),
@@ -368,7 +368,7 @@ const AccessControlSystem = () => {
     setLoading(true);
     try {
       await fetchWithAuth(
-        `http://localhost:5000/api/v1/access/project/revoke/${projectId}/${userId}`,
+        `https://caffetest.onrender.com/api/v1/access/project/revoke/${projectId}/${userId}`,
         {
           method: "DELETE",
           body: JSON.stringify({ autoRevokeTestTypes: true }),
@@ -398,7 +398,7 @@ const AccessControlSystem = () => {
     setLoading(true);
     try {
       const data = await fetchWithAuth(
-        `http://localhost:5000/api/v1/access/project/update/${projectId}/${userId}`,
+        `https://caffetest.onrender.com/api/v1/access/project/update/${projectId}/${userId}`,
         {
           method: "PUT",
           body: JSON.stringify({

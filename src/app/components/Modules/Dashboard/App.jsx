@@ -87,15 +87,15 @@ const Dashboard = () => {
       };
 
       // Fetch Issues
-      const issuesRes = await fetch(`http://localhost:5000/api/v1/issue/project/${projectId}`, { headers });
+      const issuesRes = await fetch(`https://caffetest.onrender.com/api/v1/issue/project/${projectId}`, { headers });
       const issuesData = await issuesRes.json();
 
       // Fetch Bugs
-      const bugsRes = await fetch(`http://localhost:5000/api/v1/bug/projects/${projectId}/bugs`, { headers });
+      const bugsRes = await fetch(`https://caffetest.onrender.com/api/v1/bug/projects/${projectId}/bugs`, { headers });
       const bugsData = await bugsRes.json();
 
       // Fetch Test Cases
-      const testCasesRes = await fetch(`http://localhost:5000/api/v1/test-case/projects/${projectId}/test-case`, { headers });
+      const testCasesRes = await fetch(`https://caffetest.onrender.com/api/v1/test-case/projects/${projectId}/test-case`, { headers });
       const testCasesData = await testCasesRes.json();
 
       // Process Issues

@@ -54,8 +54,8 @@ const TestCaseSpreadsheet = () => {
     const projectId = selectedProject?._id;
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
 
-    const BASE_URL = 'http://localhost:5000/api/v1/test-case';
-    const COMMENT_URL = 'http://localhost:5000/api/v1/comment';
+    const BASE_URL = 'https://caffetest.onrender.com/api/v1/test-case';
+    const COMMENT_URL = 'https://caffetest.onrender.com/api/v1/comment';
     const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
     const CLOUDINARY_PRESET = 'test_case_preset';
     const ROWS_PER_PAGE = 11;

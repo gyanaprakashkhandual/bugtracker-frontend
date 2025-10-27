@@ -20,7 +20,7 @@ const OpenDocs = ({ onClose }) => {
   const [loading, setLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
 
-  const API_BASE_URL = 'http://localhost:5000/api/v1/doc';
+  const API_BASE_URL = 'https://caffetest.onrender.com/api/v1/doc';
 
   const getToken = () => {
     return localStorage.getItem('token');

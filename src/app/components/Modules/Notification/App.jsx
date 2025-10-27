@@ -9,7 +9,7 @@ const NotificationPanel = () => {
   const [loading, setLoading] = useState(false);
   const [unreadCount, setUnreadCount] = useState(0);
 
-  const API_BASE_URL = 'http://localhost:5000/api/v1/notification';
+  const API_BASE_URL = 'https://caffetest.onrender.com/api/v1/notification';
 
   const getToken = () => {
     if (typeof window !== 'undefined') {

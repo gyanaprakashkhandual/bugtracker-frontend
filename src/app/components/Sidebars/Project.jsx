@@ -48,7 +48,7 @@ const ProjectSidebar = () => {
         }
 
         try {
-            const response = await axios.get(`http://localhost:5000/api/v1${endpoint}`, {
+            const response = await axios.get(`https://caffetest.onrender.com/api/v1${endpoint}`, {
                 headers: {
                     Authorization: `Bearer ${token}`,
                     ...options.headers,
@@ -125,7 +125,7 @@ const ProjectSidebar = () => {
         try {
             if (token) {
                 await axios.post(
-                    "http://localhost:5000/api/v1/auth/logout",
+                    "https://caffetest.onrender.com/api/v1/auth/logout",
                     {},
                     { headers: { Authorization: `Bearer ${token}` } }
                 );

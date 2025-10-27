@@ -174,7 +174,7 @@ const KanbanBoard = () => {
     if (!projectId) return;
     try {
       const response = await axios.get(
-        `http://localhost:5000/api/v1/project/${projectId}`,
+        `https://caffetest.onrender.com/api/v1/project/${projectId}`,
         getAuthConfig()
       );
       setProjectDetails(response.data.data);
@@ -190,7 +190,7 @@ const KanbanBoard = () => {
       setLoading(true);
       setError(null);
       const response = await axios.get(
-        `http://localhost:5000/api/v1/issue/project/${projectId}`,
+        `https://caffetest.onrender.com/api/v1/issue/project/${projectId}`,
         getAuthConfig()
       );
       setIssues(response.data.data);
@@ -211,7 +211,7 @@ const KanbanBoard = () => {
       setLoadingComments(true);
       setError(null);
       const response = await axios.get(
-        `http://localhost:5000/api/v1/comment/projects/${projectId}/issues/${issueId}/comments`,
+        `https://caffetest.onrender.com/api/v1/comment/projects/${projectId}/issues/${issueId}/comments`,
         getAuthConfig()
       );
       setComments(response.data.comments);
@@ -233,7 +233,7 @@ const KanbanBoard = () => {
       setLoadingComments(true);
       setError(null);
       const response = await axios.post(
-        `http://localhost:5000/api/v1/comment/projects/${projectId}/issues/${selectedIssue._id}/comments`,
+        `https://caffetest.onrender.com/api/v1/comment/projects/${projectId}/issues/${selectedIssue._id}/comments`,
         {
           comment: newComment,
           issueId: selectedIssue._id
@@ -263,7 +263,7 @@ const KanbanBoard = () => {
       setUpdatingStatus(true);
       setError(null);
       await axios.put(
-        `http://localhost:5000/api/v1/issue/${issueId}`,
+        `https://caffetest.onrender.com/api/v1/issue/${issueId}`,
         { status: newStatus },
         getAuthConfig()
       );
@@ -289,7 +289,7 @@ const KanbanBoard = () => {
       setLoading(true);
       setError(null);
       const response = await axios.put(
-        `http://localhost:5000/api/v1/issue/${selectedIssue._id}`,
+        `https://caffetest.onrender.com/api/v1/issue/${selectedIssue._id}`,
         editedIssue,
         getAuthConfig()
       );
@@ -320,7 +320,7 @@ const KanbanBoard = () => {
     try {
       setLoading(true);
       await axios.patch(
-        `http://localhost:5000/api/v1/issue/${issueId}/trash`,
+        `https://caffetest.onrender.com/api/v1/issue/${issueId}/trash`,
         {},
         getAuthConfig()
       );
@@ -348,7 +348,7 @@ const KanbanBoard = () => {
     try {
       setLoading(true);
       await axios.delete(
-        `http://localhost:5000/api/v1/issue/${issueId}`,
+        `https://caffetest.onrender.com/api/v1/issue/${issueId}`,
         getAuthConfig()
       );
       setIssues(issues.filter((i) => i._id !== issueId));

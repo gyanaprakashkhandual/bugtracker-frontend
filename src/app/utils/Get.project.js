@@ -24,7 +24,7 @@ export const useProject = (slug) => {
           throw new Error('No authentication token found');
         }
 
-        const url = `http://localhost:5000/api/v1/project/slug/${slug}`;
+        const url = `https://caffetest.onrender.com/api/v1/project/slug/${slug}`;
 
         const response = await axios.get(url, {
           headers: { Authorization: `Bearer ${token}` },

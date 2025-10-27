@@ -43,7 +43,7 @@ export default function TestTypeSidebar({ sidebarOpen, onClose }) {
             }
 
             const response = await axios.get(
-                `http://localhost:5000/api/v1/test-type/projects/${selectedProject._id}/test-types`,
+                `https://caffetest.onrender.com/api/v1/test-type/projects/${selectedProject._id}/test-types`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`
@@ -109,7 +109,7 @@ export default function TestTypeSidebar({ sidebarOpen, onClose }) {
             const token = localStorage.getItem('token');
 
             await axios.post(
-                `http://localhost:5000/api/v1/test-type/projects/${selectedProject._id}/test-types`,
+                `https://caffetest.onrender.com/api/v1/test-type/projects/${selectedProject._id}/test-types`,
                 {
                     testTypeName: newTestTypeName,
                     testTypeDesc: newTestTypeDesc || 'No Description'
@@ -144,7 +144,7 @@ export default function TestTypeSidebar({ sidebarOpen, onClose }) {
             const token = localStorage.getItem('token');
 
             await axios.put(
-                `http://localhost:5000/api/v1/test-type/test-types/${selectedTestTypeForAction._id}`,
+                `https://caffetest.onrender.com/api/v1/test-type/test-types/${selectedTestTypeForAction._id}`,
                 {
                     testTypeName: newTestTypeName,
                     testTypeDesc: newTestTypeDesc || selectedTestTypeForAction.testTypeDesc
@@ -187,7 +187,7 @@ export default function TestTypeSidebar({ sidebarOpen, onClose }) {
             const token = localStorage.getItem("token");
 
             await axios.patch(
-                `http://localhost:5000/api/v1/test-type/test-types/${testType._id}/trash`,
+                `https://caffetest.onrender.com/api/v1/test-type/test-types/${testType._id}/trash`,
                 {},
                 {
                     headers: {

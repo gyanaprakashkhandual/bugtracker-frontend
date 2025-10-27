@@ -91,7 +91,7 @@ const UserManagement = () => {
     }
 
     try {
-      const response = await fetch(`http://localhost:5000/api/v1/auth${endpoint}`, {
+      const response = await fetch(`https://caffetest.onrender.com/api/v1/auth${endpoint}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json',

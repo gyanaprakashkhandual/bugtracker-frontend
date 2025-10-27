@@ -59,8 +59,8 @@ const BugSpreadsheet = () => {
     const { testTypeId, testTypeName } = useTestType();
     const { selectedProject } = useProject();
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
-    const BASE_URL = 'http://localhost:5000/api/v1/bug';
-    const COMMENT_URL = 'http://localhost:5000/api/v1/comment';
+    const BASE_URL = 'https://caffetest.onrender.com/api/v1/bug';
+    const COMMENT_URL = 'https://caffetest.onrender.com/api/v1/comment';
     const ROWS_PER_PAGE = 11;
 
     const columns = [

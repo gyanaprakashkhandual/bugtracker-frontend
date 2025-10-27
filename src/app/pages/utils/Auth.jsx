@@ -227,7 +227,7 @@ const AuthPage = () => {
     }
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/v1/auth/send-otp', {
+      const response = await fetch('https://caffetest.onrender.com/api/v1/auth/send-otp', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -352,7 +352,7 @@ const AuthPage = () => {
     }
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/v1/auth/register', {
+      const response = await fetch('https://caffetest.onrender.com/api/v1/auth/register', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -417,7 +417,7 @@ const AuthPage = () => {
     }
     setIsLoading(true);
     try {
-      const response = await fetch('http://localhost:5000/api/v1/auth/login', {
+      const response = await fetch('https://caffetest.onrender.com/api/v1/auth/login', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -482,7 +482,7 @@ const AuthPage = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = 'http://localhost:5000/api/v1/auth/google?state=web';
+    window.location.href = 'https://caffetest.onrender.com/api/v1/auth/google?state=web';
   };
 
   return (

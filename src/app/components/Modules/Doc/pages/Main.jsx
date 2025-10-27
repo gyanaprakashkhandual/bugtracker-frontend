@@ -459,7 +459,7 @@ const DocumentEditor = () => {
                 return;
             }
 
-            const response = await fetch(`http://localhost:5000/api/v1/doc/${docId}`, {
+            const response = await fetch(`https://caffetest.onrender.com/api/v1/doc/${docId}`, {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,
@@ -516,7 +516,7 @@ const DocumentEditor = () => {
                 version: (document?.version || 1) + 1
             };
 
-            const response = await fetch(`http://localhost:5000/api/v1/doc/${docId}`, {
+            const response = await fetch(`https://caffetest.onrender.com/api/v1/doc/${docId}`, {
                 method: 'PUT',
                 headers: {
                     'Content-Type': 'application/json',

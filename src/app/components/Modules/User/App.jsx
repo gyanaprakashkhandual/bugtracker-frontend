@@ -48,7 +48,7 @@ const UserProfileInterface = () => {
         return;
       }
 
-      const response = await fetch('http://localhost:5000/api/v1/auth/me', {
+      const response = await fetch('https://caffetest.onrender.com/api/v1/auth/me', {
         method: 'GET',
         headers: {
           'Authorization': `Bearer ${token}`,
@@ -114,7 +114,7 @@ const UserProfileInterface = () => {
         duration: 0, // show until replaced
       });
 
-      const response = await fetch("http://localhost:5000/api/v1/auth/logout", {
+      const response = await fetch("https://caffetest.onrender.com/api/v1/auth/logout", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${token}`,

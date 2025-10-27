@@ -5,7 +5,7 @@ import { motion } from 'framer-motion';
 import { Mail, Phone, MapPin, Send, Loader2, Github, Linkedin, MessageSquare, Youtube, Facebook, Instagram } from 'lucide-react';
 import { useAlert } from '@/app/script/Alert.context';
 
-const BASE_URL = 'http://localhost:5000/api/v1/contact';
+const BASE_URL = 'https://caffetest.onrender.com/api/v1/contact';
 
 export default function ContactPage() {
     const { showAlert } = useAlert();

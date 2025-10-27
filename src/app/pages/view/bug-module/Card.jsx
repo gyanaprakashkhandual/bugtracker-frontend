@@ -64,8 +64,8 @@ const BugCardView = () => {
     const projectId = selectedProject?._id;
     const { testTypeId, testTypeName } = useTestType();
     const token = typeof window !== 'undefined' ? localStorage.getItem("token") : null;
-    const BASE_URL = 'http://localhost:5000/api/v1/bug';
-    const COMMENT_BASE_URL = 'http://localhost:5000/api/v1/comment';
+    const BASE_URL = 'https://caffetest.onrender.com/api/v1/bug';
+    const COMMENT_BASE_URL = 'https://caffetest.onrender.com/api/v1/comment';
     const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
     const CLOUDINARY_PRESET = 'test_case_preset';
 

@@ -23,9 +23,9 @@ import CommandDropdown from '../components/Dropdown.jsx';
 import { useAlert } from '@/app/script/Alert.context.js';
 
 const Chat = () => {
-    const BASE_URL = 'http://localhost:5000/api/v1/chat';
-    const AUDIO_API_URL = 'http://localhost:5000/api/v1/audio';
-    const PROJECT_API_URL = 'http://localhost:5000/api/v1/project';
+    const BASE_URL = 'https://caffetest.onrender.com/api/v1/chat';
+    const AUDIO_API_URL = 'https://caffetest.onrender.com/api/v1/audio';
+    const PROJECT_API_URL = 'https://caffetest.onrender.com/api/v1/project';
     const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
     const CLOUDINARY_PRESET = 'test_case_preset';
 
@@ -145,7 +145,7 @@ const Chat = () => {
         setIsLoadingTestTypes(true);
         try {
             const response = await fetch(
-                `http://localhost:5000/api/v1/test-type/projects/${projectId}/test-types`,
+                `https://caffetest.onrender.com/api/v1/test-type/projects/${projectId}/test-types`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,

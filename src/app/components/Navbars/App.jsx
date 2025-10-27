@@ -71,7 +71,7 @@ const AppNavbar = () => {
                 return;
             }
 
-            const response = await fetch('http://localhost:5000/api/v1/auth/me', {
+            const response = await fetch('https://caffetest.onrender.com/api/v1/auth/me', {
                 method: 'GET',
                 headers: {
                     'Authorization': `Bearer ${token}`,

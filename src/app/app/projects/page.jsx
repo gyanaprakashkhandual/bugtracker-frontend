@@ -8,7 +8,7 @@ export async function generateMetadata({ params }) {
   const token = cookieStore.get('token')?.value;
 
   try {
-    const res = await fetch(`http://localhost:5000/api/v1/project/${id}`, {
+    const res = await fetch(`https://caffetest.onrender.com/api/v1/project/${id}`, {
       cache: "no-store",
       headers: {
         'Authorization': token ? `Bearer ${token}` : '',
@@ -35,7 +35,7 @@ async function getProjectById(id) {
   const cookieStore = cookies();
   const token = cookieStore.get('token')?.value;
 
-  const res = await fetch(`http://localhost:5000/api/v1/project/${id}`, {
+  const res = await fetch(`https://caffetest.onrender.com/api/v1/project/${id}`, {
     cache: "no-store",
     headers: {
       'Authorization': token ? `Bearer ${token}` : '',

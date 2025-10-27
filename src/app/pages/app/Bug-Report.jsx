@@ -6,7 +6,7 @@ import { Bug, Upload, X, AlertCircle, CheckCircle2, Loader2 } from 'lucide-react
 import { useAlert } from '@/app/script/Alert.context';
 
 const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
-const BASE_URL = 'http://localhost:5000/api/v1/bug-report';
+const BASE_URL = 'https://caffetest.onrender.com/api/v1/bug-report';
 
 export default function BugReportPage() {
   const { showAlert } = useAlert();

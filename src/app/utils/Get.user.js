@@ -10,7 +10,7 @@ export const getUser = async () => {
     }
 
     // Call backend API
-    const response = await fetch("http://localhost:5000/api/v1/auth/me", {
+    const response = await fetch("https://caffetest.onrender.com/api/v1/auth/me", {
       method: "GET",
       headers: {
         "Content-Type": "application/json",

@@ -26,7 +26,7 @@ import {
 } from "lucide-react";
 import socketClient from "@/app/client/socket.client";
 
-const API_BASE_URL = "http://localhost:5000/api/v1/message";
+const API_BASE_URL = "https://caffetest.onrender.com/api/v1/message";
 const CLOUDINARY_UPLOAD_URL = "https://api.cloudinary.com/v1_1/dvytvjplt/image/upload";
 const CLOUDINARY_UPLOAD_PRESET = 'test_case_preset';
 

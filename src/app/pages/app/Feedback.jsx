@@ -217,7 +217,7 @@ const FeedbackPage = () => {
     const [selectedImage, setSelectedImage] = useState(null);
     const [showImageModal, setShowImageModal] = useState(false);
 
-    const BASE_URL = 'http://localhost:5000/api/v1/feed-back';
+    const BASE_URL = 'https://caffetest.onrender.com/api/v1/feed-back';
 
     const getToken = () => {
         if (typeof window !== 'undefined') {

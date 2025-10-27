@@ -231,8 +231,8 @@ const FilterSidebar = ({ isOpen, onClose }) => {
 
             let apiUrl = '';
             const baseURL = currentReportType === 'bug' 
-                ? 'http://localhost:5000/api/v1/bug'
-                : 'http://localhost:5000/api/v1/test-case';
+                ? 'https://caffetest.onrender.com/api/v1/bug'
+                : 'https://caffetest.onrender.com/api/v1/test-case';
 
             // Build API URL based on filters
             const hasDateRange = filterData.fromDate && filterData.toDate;

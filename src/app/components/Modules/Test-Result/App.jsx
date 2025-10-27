@@ -32,7 +32,7 @@ import { useAlert } from '@/app/script/Alert.context';
 import { useTestType } from '@/app/script/TestType.context';
 import { useProject } from '@/app/script/Project.context';
 
-const BASE_URL = 'http://localhost:5000/api/v1/test-result';
+const BASE_URL = 'https://caffetest.onrender.com/api/v1/test-result';
 
 export default function TestResultsDashboard() {
     const { showAlert } = useAlert();

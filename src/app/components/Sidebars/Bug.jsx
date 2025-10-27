@@ -70,7 +70,7 @@ const BugSidebar = ({ isOpen, onClose }) => {
     const { selectedProject } = useProject();
     const { testTypeId } = useTestType();
 
-    const BASE_URL = 'http://localhost:5000/api/v1/bug';
+    const BASE_URL = 'https://caffetest.onrender.com/api/v1/bug';
     const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
 
     const navItems = [

@@ -4,7 +4,7 @@ async function getPosts() {
     // For development - use relative URL or environment variable
     const baseUrl = process.env.NODE_ENV === 'production' 
       ? process.env.NEXT_PUBLIC_API_URL 
-      : 'http://localhost:5000';
+      : 'https://caffetest.onrender.com';
     
     const res = await fetch(`${baseUrl}/api/blog`, {
       next: { revalidate: 60 } // Revalidate every 60 seconds

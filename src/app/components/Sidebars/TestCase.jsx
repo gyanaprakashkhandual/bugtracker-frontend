@@ -57,7 +57,7 @@ const TestCaseSidebar = ({ isOpen, onClose }) => {
     const { selectedProject } = useProject();
     const { testTypeId } = useTestType();
 
-    const BASE_URL = 'http://localhost:5000/api/v1/test-case';
+    const BASE_URL = 'https://caffetest.onrender.com/api/v1/test-case';
 
     const navItems = [
         { id: 'text-prompt', label: 'Text Prompt' },

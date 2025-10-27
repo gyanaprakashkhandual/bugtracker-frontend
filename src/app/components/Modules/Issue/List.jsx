@@ -11,10 +11,10 @@ import {
 import { Calendar, ArrowRight } from 'lucide-react';
 import { useProject } from '@/app/script/Project.context';
 
-const BASE_URL = 'http://localhost:5000/api/v1';
+const BASE_URL = 'https://caffetest.onrender.com/api/v1';
 const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
 const UPLOAD_PRESET = 'test_case_preset';
-const BASE_COMMENT_URL = 'http://localhost:5000/api/v1/comment';
+const BASE_COMMENT_URL = 'https://caffetest.onrender.com/api/v1/comment';
 
 const STATUS_OPTIONS = ['Open', 'On Going', 'In Review', 'Closed'];
 const STATUS_COLORS = {
@@ -1129,7 +1129,7 @@ const ActionsColumn = ({
 
         setSubmittingComment(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/v1/comment/projects/${projectId}/issues/${issue._id}/comments`, {
+            const res = await fetch(`https://caffetest.onrender.com/api/v1/comment/projects/${projectId}/issues/${issue._id}/comments`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

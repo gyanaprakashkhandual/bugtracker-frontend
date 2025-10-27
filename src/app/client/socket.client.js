@@ -10,7 +10,7 @@ class SocketClient {
 
   // Initialize socket connection
   // In socketClient.js - update the connect method
-  connect(url = 'http://localhost:5000') {
+  connect(url = 'https://caffetest.onrender.com') {
     // Prevent multiple connection attempts
     if (this.isConnecting) {
       console.log('Socket connection already in progress...');

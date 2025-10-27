@@ -35,7 +35,7 @@ export default function DocumentManagement() {
     testType: testTypeId
   });
 
-  const API_BASE_URL = 'http://localhost:5000/api/v1/doc';
+  const API_BASE_URL = 'https://caffetest.onrender.com/api/v1/doc';
 
   const getToken = () => {
     return localStorage.getItem('token');
