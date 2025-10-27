@@ -226,7 +226,7 @@ const ProjectManagement = () => {
   }, [searchTerm]);
 
   return (
-    <div className="bg-gray-50 dark:bg-gray-900 max-h-[calc(100vh-69px)] overflow-y-auto sidebar-scrollbar">
+    <div className="bg-gray-50 dark:bg-gray-900 min-h-[calc(100vh-69px)] max-h-[calc(100vh-69px)] overflow-y-auto">
       <div className="max-w-full mx-auto">
         <div className="bg-white dark:bg-gray-800 rounded-sm">
           <div className="border-b border-gray-200 dark:border-gray-700">
@@ -263,7 +263,7 @@ const ProjectManagement = () => {
             </div>
           </div>
 
-          <div className="p-6">
+          <div className="p-4">
             <ProjectsView
               projects={projects}
               loading={loading}
@@ -373,7 +373,7 @@ const ProjectsView = ({ projects, loading, pagination, onPageChange, onEdit, onD
 
   return (
     <>
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
         {projects.map((project, index) => (
           <ProjectCard
             key={project._id}

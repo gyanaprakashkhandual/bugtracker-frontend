@@ -123,7 +123,7 @@ const BugTracker = () => {
             setLoadingComments(prev => ({ ...prev, [issueId]: true }));
             debugLog('FETCH_COMMENTS_START', { issueId });
 
-            const res = await fetch(`${BASE_COMMENT_URL}/project/{projectId}/issues/${issueId}`, {
+            const res = await fetch(`${BASE_COMMENT_URL}/projects/${projectId}/issues/${issueId}/comments`, {
                 headers: { Authorization: `Bearer ${getToken()}` }
             });
             const data = await res.json();
@@ -219,68 +219,68 @@ const BugTracker = () => {
     }, []);
 
     const createIssue = async (issueData) => {
-    if (!projectId) return false;
+        if (!projectId) return false;
 
-    debugLog('CREATE_ISSUE_START', {
-        projectId,
-        issueData,
-        dataSize: JSON.stringify(issueData).length
-    });
-
-    try {
-        setSaving(prev => ({ ...prev, new: true }));
-        
-        const res = await fetch(`${BASE_URL}/issue/project/${projectId}`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-                Authorization: `Bearer ${getToken()}`
-            },
-            body: JSON.stringify(issueData)
+        debugLog('CREATE_ISSUE_START', {
+            projectId,
+            issueData,
+            dataSize: JSON.stringify(issueData).length
         });
 
-        const data = await res.json();
+        try {
+            setSaving(prev => ({ ...prev, new: true }));
 
-        debugLog('CREATE_ISSUE_RESPONSE', {
-            status: res.status,
-            success: data.success,
-            message: data.message,
-            newIssueId: data.data?._id,
-            serialNumber: data.data?.serialNumber
-        });
-
-        if (!res.ok) {
-            console.error('Create issue failed:', data.message || 'Unknown error');
-            alert(data.message || 'Failed to create issue');
-            return false;
-        }
-
-        if (data.success) {
-            setIssues(prev => [data.data, ...prev]);
-            setNewIssue({
-                issueType: '',
-                issueDesc: '',
-                refLink: [],
-                image: [],
-                assignTo: null,
-                startDate: '',
-                endDate: '',
-                status: 'Open'
+            const res = await fetch(`${BASE_URL}/issue/project/${projectId}`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    Authorization: `Bearer ${getToken()}`
+                },
+                body: JSON.stringify(issueData)
             });
-            return true;
+
+            const data = await res.json();
+
+            debugLog('CREATE_ISSUE_RESPONSE', {
+                status: res.status,
+                success: data.success,
+                message: data.message,
+                newIssueId: data.data?._id,
+                serialNumber: data.data?.serialNumber
+            });
+
+            if (!res.ok) {
+                console.error('Create issue failed:', data.message || 'Unknown error');
+                alert(data.message || 'Failed to create issue');
+                return false;
+            }
+
+            if (data.success) {
+                setIssues(prev => [data.data, ...prev]);
+                setNewIssue({
+                    issueType: '',
+                    issueDesc: '',
+                    refLink: [],
+                    image: [],
+                    assignTo: null,
+                    startDate: '',
+                    endDate: '',
+                    status: 'Open'
+                });
+                return true;
+            }
+        } catch (error) {
+            debugLog('CREATE_ISSUE_ERROR', {
+                message: error.message,
+                stack: error.stack
+            });
+            console.error('Create error:', error);
+            alert('Network error: Failed to create issue');
+        } finally {
+            setSaving(prev => ({ ...prev, new: false }));
         }
-    } catch (error) {
-        debugLog('CREATE_ISSUE_ERROR', {
-            message: error.message,
-            stack: error.stack
-        });
-        console.error('Create error:', error);
-        alert('Network error: Failed to create issue');
-    } finally {
-        setSaving(prev => ({ ...prev, new: false }));
-    }
-    return false;
-};
+        return false;
+    };
 
     const moveToTrash = async (issueId) => {
         try {
@@ -370,103 +370,103 @@ const BugTracker = () => {
         }
     };
 
-   return (
-    <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-sky-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900">
-        <div className="max-w-full h-[calc(100vh-69px-3rem)] overflow-hidden">
-            <div className="bg-white dark:bg-gray-800 border border-blue-100 dark:border-gray-700 shadow-xl overflow-hidden h-full flex flex-col">
-                {/* Table Header - Sticky */}
-                <div className="flex-shrink-0 overflow-hidden border-b border-gray-200 dark:border-gray-700"></div>
-                {/* Table Header - Sticky */}
-                <div className="sticky top-0 z-10 overflow-hidden border-b border-gray-200 dark:border-gray-700">
-                    <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-b-2 border-indigo-400 dark:border-indigo-800">
-                        <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center">
-                            <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">ID</span>
-                        </div>
-                        <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
-                            <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Type</span>
-                        </div>
-                        <div className="col-span-3 text-xs font-bold text-white uppercase tracking-wider flex items-center">
-                            <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Description</span>
-                        </div>
-                        <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
-                            <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Assigned</span>
-                        </div>
-                        <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center">
-                            <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Status</span>
-                        </div>
-                        <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
-                            <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Timeline</span>
-                        </div>
-                        <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center justify-center">
-                            <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Actions</span>
+    return (
+        <div className="bg-gradient-to-br from-slate-50 via-blue-50 to-sky-50 dark:from-gray-900 dark:via-slate-900 dark:to-gray-900 sidebar-scrollbar">
+            <div className="max-w-full h-[calc(100vh-69px)] overflow-hidden">
+                <div className="bg-white dark:bg-gray-800 border border-blue-100 dark:border-gray-700 shadow-xl overflow-hidden h-full flex flex-col">
+                    {/* Table Header - Sticky */}
+                    <div className="flex-shrink-0 overflow-hidden border-b border-gray-200 dark:border-gray-700"></div>
+                    {/* Table Header - Sticky */}
+                    <div className="sticky top-0 z-10 overflow-hidden border-b border-gray-200 dark:border-gray-700">
+                        <div className="grid grid-cols-12 gap-4 px-6 py-4 bg-gradient-to-r from-indigo-600 via-purple-600 to-pink-600 dark:from-indigo-950 dark:via-purple-950 dark:to-pink-950 border-b-2 border-indigo-400 dark:border-indigo-800">
+                            <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">ID</span>
+                            </div>
+                            <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Type</span>
+                            </div>
+                            <div className="col-span-3 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Description</span>
+                            </div>
+                            <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Assigned</span>
+                            </div>
+                            <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Status</span>
+                            </div>
+                            <div className="col-span-2 text-xs font-bold text-white uppercase tracking-wider flex items-center">
+                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Timeline</span>
+                            </div>
+                            <div className="col-span-1 text-xs font-bold text-white uppercase tracking-wider flex items-center justify-center">
+                                <span className="bg-white/20 dark:bg-white/10 px-2 py-1 rounded backdrop-blur-sm">Actions</span>
+                            </div>
                         </div>
                     </div>
-                </div>
 
-                {/* Table Body */}
-                <div className="flex-1 overflow-y-auto sidebar-scrollbar">
-                    {/* New Issue Row */}
-                    <NewIssueRow
-                        issue={newIssue}
-                        users={users}
-                        saving={saving.new}
-                        uploadingImage={uploadingImage.new}
-                        onChange={(field, value) => {
-                            debugLog('NEW_ISSUE_FIELD_CHANGE', {
-                                field,
-                                value,
-                                valueLength: typeof value === 'string' ? value.length : 'N/A'
-                            });
-                            setNewIssue(prev => ({ ...prev, [field]: value }));
-                        }}
-                        onImageUpload={(file) => handleImageUpload(null, file, true)}
-                        onCreate={createIssue}
-                    />
+                    {/* Table Body */}
+                    <div className="flex-1 overflow-y-auto sidebar-scrollbar">
+                        {/* New Issue Row */}
+                        <NewIssueRow
+                            issue={newIssue}
+                            users={users}
+                            saving={saving.new}
+                            uploadingImage={uploadingImage.new}
+                            onChange={(field, value) => {
+                                debugLog('NEW_ISSUE_FIELD_CHANGE', {
+                                    field,
+                                    value,
+                                    valueLength: typeof value === 'string' ? value.length : 'N/A'
+                                });
+                                setNewIssue(prev => ({ ...prev, [field]: value }));
+                            }}
+                            onImageUpload={(file) => handleImageUpload(null, file, true)}
+                            onCreate={createIssue}
+                        />
 
-                    {/* Issue Rows */}
-                    {loading ? (
-                        <div className="p-12 text-center">
-                            <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400 mx-auto mb-4" />
-                            <p className="text-gray-500 dark:text-gray-400">Loading issues...</p>
-                        </div>
-                    ) : issues.length === 0 ? (
-                        <div className="p-12 text-center text-gray-500 dark:text-gray-400">
-                            <Circle className="w-12 h-12 mx-auto mb-4 opacity-30" />
-                            <p>No issues found</p>
-                        </div>
-                    ) : (
-                        issues.map((issue) => (
-                            <IssueRow
-                                key={issue._id}
-                                issue={issue}
-                                users={users}
-                                saving={saving[issue._id]}
-                                uploadingImage={uploadingImage[issue._id]}
-                                showTrash={showTrash}
-                                comments={comments[issue._id]}
-                                loadingComments={loadingComments[issue._id]}
-                                onChange={(field, value) => {
-                                    debugLog('ISSUE_FIELD_CHANGE', {
-                                        issueId: issue._id,
-                                        field,
-                                        value,
-                                        valueLength: typeof value === 'string' ? value.length : 'N/A'
-                                    });
-                                    autoSave(issue._id, field, value);
-                                }}
-                                onImageUpload={(file) => handleImageUpload(issue._id, file)}
-                                onMoveToTrash={() => moveToTrash(issue._id)}
-                                onRestore={() => restoreIssue(issue._id)}
-                                onDelete={() => deleteForever(issue._id)}
-                                onFetchComments={() => fetchComments(issue._id)}
-                            />
-                        ))
-                    )}
+                        {/* Issue Rows */}
+                        {loading ? (
+                            <div className="p-12 text-center">
+                                <Loader2 className="w-8 h-8 animate-spin text-blue-600 dark:text-blue-400 mx-auto mb-4" />
+                                <p className="text-gray-500 dark:text-gray-400">Loading issues...</p>
+                            </div>
+                        ) : issues.length === 0 ? (
+                            <div className="p-12 text-center text-gray-500 dark:text-gray-400">
+                                <Circle className="w-12 h-12 mx-auto mb-4 opacity-30" />
+                                <p>No issues found</p>
+                            </div>
+                        ) : (
+                            issues.map((issue) => (
+                                <IssueRow
+                                    key={issue._id}
+                                    issue={issue}
+                                    users={users}
+                                    saving={saving[issue._id]}
+                                    uploadingImage={uploadingImage[issue._id]}
+                                    showTrash={showTrash}
+                                    comments={comments[issue._id]}
+                                    loadingComments={loadingComments[issue._id]}
+                                    onChange={(field, value) => {
+                                        debugLog('ISSUE_FIELD_CHANGE', {
+                                            issueId: issue._id,
+                                            field,
+                                            value,
+                                            valueLength: typeof value === 'string' ? value.length : 'N/A'
+                                        });
+                                        autoSave(issue._id, field, value);
+                                    }}
+                                    onImageUpload={(file) => handleImageUpload(issue._id, file)}
+                                    onMoveToTrash={() => moveToTrash(issue._id)}
+                                    onRestore={() => restoreIssue(issue._id)}
+                                    onDelete={() => deleteForever(issue._id)}
+                                    onFetchComments={() => fetchComments(issue._id)}
+                                />
+                            ))
+                        )}
+                    </div>
                 </div>
             </div>
         </div>
-    </div>
-);
+    );
 };
 
 
@@ -492,7 +492,7 @@ const CustomCalendar = ({ value, onChange, onClose, position }) => {
         if (calendarRef.current) {
             const rect = calendarRef.current.getBoundingClientRect();
             const viewportHeight = window.innerHeight;
-            
+
             if (rect.bottom > viewportHeight - 10) {
                 calendarRef.current.style.top = 'auto';
                 calendarRef.current.style.bottom = '100%';
@@ -814,7 +814,7 @@ const NewIssueRow = ({ issue, users, saving, uploadingImage, onChange, onImageUp
             <div className="col-span-1 relative">
                 <Dropdown
                     trigger={
-                        <button className={`w-full px-3 py-2 text-xs font-semibold rounded-lg border-2 flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md ${STATUS_COLORS[issue.status]}`}>
+                        <button className={`w-[100px] px-3 py-2 text-xs font-semibold rounded-lg border-2 flex items-center justify-center gap-2 transition-all duration-200 hover:shadow-md ${STATUS_COLORS[issue.status]}`}>
                             {React.createElement(STATUS_ICONS[issue.status], { className: "w-4 h-4" })}
                             {issue.status}
                         </button>
@@ -929,7 +929,7 @@ const IssueRow = ({
             {/* Issue Description */}
             <div className="col-span-3 relative">
                 <textarea
-                content-data={localIssue.issueDesc || ''}
+                    content-data={localIssue.issueDesc || ''}
                     value={localIssue.issueDesc || ''}
                     onChange={(e) => handleChange('issueDesc', e.target.value)}
                     onKeyPress={(e) => handleKeyPress(e, 'issueDesc')}
@@ -1066,6 +1066,9 @@ const ActionsColumn = ({
     const buttonRef = useRef(null);
     const containerRef = useRef(null);
 
+    const { selectedProject } = useProject();
+    const projectId = selectedProject?._id;
+
     useEffect(() => {
         const handleClickOutside = (e) => {
             if (modalRef.current && !modalRef.current.contains(e.target)) {
@@ -1076,34 +1079,29 @@ const ActionsColumn = ({
         return () => document.removeEventListener('mousedown', handleClickOutside);
     }, []);
 
-useEffect(() => {
-    if (activeModal && buttonRef.current) {
-        const buttonRect = buttonRef.current.getBoundingClientRect();
-        const viewportHeight = window.innerHeight;
-        const viewportWidth = window.innerWidth;
+    useEffect(() => {
+        if (activeModal && buttonRef.current) {
+            const buttonRect = buttonRef.current.getBoundingClientRect();
+            const viewportHeight = window.innerHeight;
+            const viewportWidth = window.innerWidth;
 
-        const modalWidth = 340; // Account for padding: 320px + 20px padding
-        const modalHeight = 400;
+            const modalWidth = 340;
+            const modalHeight = 400;
 
-        // Calculate available space
-        const spaceBelow = viewportHeight - buttonRect.bottom;
-        const spaceAbove = buttonRect.top;
-        const spaceRight = viewportWidth - buttonRect.right; // Space to the right of button
-        const spaceLeft = buttonRect.left; // Space to the left of button
+            const spaceBelow = viewportHeight - buttonRect.bottom;
+            const spaceAbove = buttonRect.top;
+            const spaceRight = viewportWidth - buttonRect.right;
+            const spaceLeft = buttonRect.left;
 
-        // Determine best vertical position
-        const shouldPlaceAbove = spaceBelow < modalHeight && spaceAbove > spaceBelow;
-        
-        // Determine best horizontal position
-        // Place on LEFT if not enough space on RIGHT
-        const shouldPlaceOnLeft = spaceRight < modalWidth;
+            const shouldPlaceAbove = spaceBelow < modalHeight && spaceAbove > spaceBelow;
+            const shouldPlaceOnLeft = spaceRight < modalWidth;
 
-        setModalPosition({
-            top: !shouldPlaceAbove,
-            right: !shouldPlaceOnLeft  // if shouldPlaceOnLeft is true, right becomes false
-        });
-    }
-}, [activeModal]);
+            setModalPosition({
+                top: !shouldPlaceAbove,
+                right: !shouldPlaceOnLeft
+            });
+        }
+    }, [activeModal]);
 
     const handleAddLink = () => {
         if (newLink.trim()) {
@@ -1131,7 +1129,7 @@ useEffect(() => {
 
         setSubmittingComment(true);
         try {
-            const res = await fetch(`http://localhost:5000/api/v1/comment/projects/${projectId}/issues/${issue._id}`, {
+            const res = await fetch(`http://localhost:5000/api/v1/comment/projects/${projectId}/issues/${issue._id}/comments`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -1142,7 +1140,9 @@ useEffect(() => {
 
             if (res.ok) {
                 setNewComment('');
-                onFetchComments && onFetchComments();
+                if (onFetchComments) {
+                    await onFetchComments();
+                }
             }
         } catch (error) {
             console.error('Comment submit error:', error);
@@ -1158,21 +1158,20 @@ useEffect(() => {
     const validLinks = (issue.refLink || []).filter(link => link && link !== 'No Link Provided');
     const validImages = (issue.image || []).filter(img => img && img !== 'No Image Provided' && img !== 'No Image provided');
 
-const getModalPositionClasses = () => {
-    const baseClasses = "absolute w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-50 overflow-hidden border border-gray-200 dark:border-gray-700 max-h-96";
-    const positionClasses = [];
+    const getModalPositionClasses = () => {
+        const baseClasses = "absolute w-80 bg-white dark:bg-gray-800 rounded-lg shadow-xl z-50 overflow-hidden border border-gray-200 dark:border-gray-700 max-h-96";
+        const positionClasses = [];
 
-    if (modalPosition.top) {
-        positionClasses.push("top-full mt-1");
-    } else {
-        positionClasses.push("bottom-full mb-1");
-    }
+        if (modalPosition.top) {
+            positionClasses.push("top-full mt-1");
+        } else {
+            positionClasses.push("bottom-full mb-1");
+        }
 
-    // Since Actions column is on the far right, always position modal to open leftward
-    positionClasses.push("right-0");
+        positionClasses.push("right-0");
 
-    return `${baseClasses} ${positionClasses.join(' ')}`;
-};
+        return `${baseClasses} ${positionClasses.join(' ')}`;
+    };
 
     const toggleModal = (modalName) => {
         if (activeModal === modalName) {
@@ -1185,10 +1184,13 @@ const getModalPositionClasses = () => {
         }
     };
 
+    const handleImageUpload = async (file) => {
+        await onImageUpload(file);
+    };
+
     return (
         <div className="relative flex items-center justify-center gap-0.5" ref={containerRef}>
             <div ref={buttonRef} className="flex items-center justify-center gap-0.5">
-                {/* Comment Button */}
                 {!isNew && (
                     <motion.button
                         whileHover={{ scale: 1.1 }}
@@ -1201,7 +1203,6 @@ const getModalPositionClasses = () => {
                     </motion.button>
                 )}
 
-                {/* Images Button */}
                 <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
@@ -1217,7 +1218,6 @@ const getModalPositionClasses = () => {
                     )}
                 </motion.button>
 
-                {/* Links Button */}
                 <motion.button
                     whileHover={{ scale: 1.1 }}
                     whileTap={{ scale: 0.95 }}
@@ -1233,7 +1233,6 @@ const getModalPositionClasses = () => {
                     )}
                 </motion.button>
 
-                {/* Delete/Restore Button */}
                 {!isNew && (
                     showTrash ? (
                         <>
@@ -1270,7 +1269,6 @@ const getModalPositionClasses = () => {
                 )}
             </div>
 
-            {/* Modals */}
             <AnimatePresence>
                 {activeModal === 'comment' && !isNew && (
                     <motion.div
@@ -1335,7 +1333,7 @@ const getModalPositionClasses = () => {
                                 <div className="divide-y divide-gray-100 dark:divide-gray-700">
                                     {comments.map((comment, index) => (
                                         <motion.div
-                                            key={index}
+                                            key={comment._id || index}
                                             initial={{ opacity: 0, x: -10 }}
                                             animate={{ opacity: 1, x: 0 }}
                                             transition={{ delay: index * 0.05 }}
@@ -1388,7 +1386,7 @@ const getModalPositionClasses = () => {
                                     accept="image/*"
                                     onChange={(e) => {
                                         const file = e.target.files[0];
-                                        if (file) onImageUpload(file);
+                                        if (file) handleImageUpload(file);
                                     }}
                                     className="hidden"
                                 />
@@ -1412,61 +1410,61 @@ const getModalPositionClasses = () => {
                         </div>
 
                         <div className="overflow-y-auto max-h-72">
-    {uploadingImage && (
-        <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
-            <div className="flex items-center gap-2">
-                <Loader2 className="w-3 h-3 animate-spin text-purple-600 dark:text-purple-400" />
-                <span className="text-[10px] text-purple-700 dark:text-purple-300">Uploading image...</span>
-            </div>
-        </div>
-    )}
-    {validImages.length === 0 && !uploadingImage ? (
-        <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-[10px]">
-            No images added yet
-        </div>
-    ) : validImages.length > 0 ? (
-        <div className="grid grid-cols-2 gap-2 p-3">
-            {validImages.map((image, index) => (
-                <motion.div
-                    key={index}
-                    initial={{ opacity: 0, scale: 0.8 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    transition={{ delay: index * 0.05 }}
-                    className="relative group"
-                >
-                    <img
-                        src={image}
-                        alt={`Image ${index + 1}`}
-                        className="w-full h-24 object-cover rounded border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-lg transition-all duration-200"
-                        onClick={() => setImagePreview(image)}
-                    />
-                    <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <motion.button
-                            whileHover={{ scale: 1.1 }}
-                            whileTap={{ scale: 0.95 }}
-                            onClick={() => setImagePreview(image)}
-                            className="p-1 bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 rounded shadow hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
-                            tooltip-data="View full size"
-                        >
-                            <ZoomIn className="w-2.5 h-2.5" />
-                        </motion.button>
-                        {!isNew && (
-                            <motion.button
-                                whileHover={{ scale: 1.1 }}
-                                whileTap={{ scale: 0.95 }}
-                                onClick={() => handleRemoveImage(image)}
-                                className="p-1 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 rounded shadow hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
-                                tooltip-data="Remove image"
-                            >
-                                <X className="w-2.5 h-2.5" />
-                            </motion.button>
-                        )}
-                    </div>
-                </motion.div>
-            ))}
-        </div>
-    ) : null}
-</div>
+                            {uploadingImage && (
+                                <div className="px-3 py-2 border-b border-gray-100 dark:border-gray-700 bg-purple-50/50 dark:bg-purple-900/10">
+                                    <div className="flex items-center gap-2">
+                                        <Loader2 className="w-3 h-3 animate-spin text-purple-600 dark:text-purple-400" />
+                                        <span className="text-[10px] text-purple-700 dark:text-purple-300">Uploading image...</span>
+                                    </div>
+                                </div>
+                            )}
+                            {validImages.length === 0 && !uploadingImage ? (
+                                <div className="text-center py-6 text-gray-500 dark:text-gray-400 text-[10px]">
+                                    No images added yet
+                                </div>
+                            ) : validImages.length > 0 ? (
+                                <div className="grid grid-cols-2 gap-2 p-3">
+                                    {validImages.map((image, index) => (
+                                        <motion.div
+                                            key={index}
+                                            initial={{ opacity: 0, scale: 0.8 }}
+                                            animate={{ opacity: 1, scale: 1 }}
+                                            transition={{ delay: index * 0.05 }}
+                                            className="relative group"
+                                        >
+                                            <img
+                                                src={image}
+                                                alt={`Image ${index + 1}`}
+                                                className="w-full h-24 object-cover rounded border border-gray-200 dark:border-gray-700 cursor-pointer hover:shadow-lg transition-all duration-200"
+                                                onClick={() => setImagePreview(image)}
+                                            />
+                                            <div className="absolute top-1 right-1 flex gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <motion.button
+                                                    whileHover={{ scale: 1.1 }}
+                                                    whileTap={{ scale: 0.95 }}
+                                                    onClick={() => setImagePreview(image)}
+                                                    className="p-1 bg-white dark:bg-gray-800 text-purple-600 dark:text-purple-400 rounded shadow hover:bg-purple-50 dark:hover:bg-purple-900/20 transition-colors"
+                                                    tooltip-data="View full size"
+                                                >
+                                                    <ZoomIn className="w-2.5 h-2.5" />
+                                                </motion.button>
+                                                {!isNew && (
+                                                    <motion.button
+                                                        whileHover={{ scale: 1.1 }}
+                                                        whileTap={{ scale: 0.95 }}
+                                                        onClick={() => handleRemoveImage(image)}
+                                                        className="p-1 bg-white dark:bg-gray-800 text-red-600 dark:text-red-400 rounded shadow hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors"
+                                                        tooltip-data="Remove image"
+                                                    >
+                                                        <X className="w-2.5 h-2.5" />
+                                                    </motion.button>
+                                                )}
+                                            </div>
+                                        </motion.div>
+                                    ))}
+                                </div>
+                            ) : null}
+                        </div>
                     </motion.div>
                 )}
 

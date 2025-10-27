@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAlert } from '@/app/script/Alert.context';
 import { useConfirm } from '@/app/script/Confirm.context';
+import { useRouter } from 'next/navigation';
 const UserProfileInterface = () => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
@@ -23,6 +24,8 @@ const UserProfileInterface = () => {
 
   const { showAlert } = useAlert();
   const { showConfirm } = useConfirm();
+
+  const router = useRouter();
 
   // Get token from localStorage
   const getToken = () => {
@@ -125,6 +128,7 @@ const UserProfileInterface = () => {
 
       // Clear token and user data
       localStorage.removeItem("token");
+      router.push('/auth');
       setUser(null);
 
       showAlert({
@@ -406,7 +410,7 @@ const UserProfileInterface = () => {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500 dark:text-gray-400">User ID</p>
-                    <p className="font-medium text-gray-900 dark:text-gray-100 font-mono text-sm">{user._id}</p>
+                    <p className="font-medium text-gray-900 dark:text-gray-100 font-mono text-sm">{user.name}</p>
                   </div>
                 </div>
               </motion.div>

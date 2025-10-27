@@ -221,14 +221,14 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
         <DashboardSkeleton/>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-indigo-950 p-6">
+    <div className="bg-gradient-to-br from-gray-50 via-blue-50 to-indigo-50 dark:from-gray-950 dark:via-gray-900 dark:to-indigo-950 p-6 min-h-[calc(100vh-69px)] max-h-[calc(100vh-69px)] overflow-y-auto kanban-scro">
       <div className="max-w-full mx-auto space-y-6">
         {/* Issues Section */}
         <motion.div

@@ -149,8 +149,8 @@ const AppNavbar = () => {
         
         const fullText = `${selectedProject.projectName}`;
         
-        if (fullText.length > 25) {
-            return fullText.substring(0, 25) + '...';
+        if (fullText.length > 20) {
+            return fullText.substring(0, 20) + '...';
         }
         
         return fullText;
@@ -375,6 +375,7 @@ const AppNavbar = () => {
                                 <AnimatePresence mode="wait">
                                     {theme === 'dark' ? (
                                         <motion.div
+                                        tooltip-data="Switch To White"
                                             key="moon"
                                             initial={{ rotate: -90, opacity: 0 }}
                                             animate={{ rotate: 0, opacity: 1 }}
@@ -385,6 +386,7 @@ const AppNavbar = () => {
                                         </motion.div>
                                     ) : (
                                         <motion.div
+                                        tooltip-data="Switch To White"
                                             key="sun"
                                             initial={{ rotate: 90, opacity: 0 }}
                                             animate={{ rotate: 0, opacity: 1 }}

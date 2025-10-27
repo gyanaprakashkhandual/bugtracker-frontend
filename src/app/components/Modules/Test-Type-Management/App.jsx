@@ -232,6 +232,19 @@ const TestTypeManagement = () => {
     return () => clearTimeout(delayDebounceFn);
   }, [searchTerm]);
 
+  // Function to truncate project display text
+    const getTruncatedProjectDisplay = () => {
+        if (!selectedProject) return 'Create a Project';
+        
+        const fullText = `${selectedProject.projectName}`;
+        
+        if (fullText.length > 30) {
+            return fullText.substring(0, 30) + '...';
+        }
+        
+        return fullText;
+    };
+
   if (!selectedProject || !selectedProject._id) {
     return (
       <div className="bg-gray-50 dark:bg-gray-900 min-h-screen flex items-center justify-center">
@@ -244,15 +257,16 @@ const TestTypeManagement = () => {
     );
   }
 
+
   return (
     <div className="bg-gray-50 dark:bg-gray-900">
-      <div className="max-w-full mx-auto">
+      <div className="max-w-full mx-auto min-h-[calc(100vh-69px)] max-h-[calc(100vh-69px)]">
         <div className="bg-white dark:bg-gray-800 rounded-sm">
           <div className="border-b border-gray-200 dark:border-gray-700">
             <div className="px-6 py-4 flex flex-col sm:flex-row justify-between items-start sm:items-center space-y-4 sm:space-y-0">
               <div className="flex items-center space-x-3">
                 <h2 className="text-xl font-semibold text-gray-900 dark:text-gray-100">
-                  {selectedProject?.projectName} - Test Types
+                  {getTruncatedProjectDisplay()} - Test Types
                 </h2>
                 <span className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2.5 py-0.5 rounded-full text-sm font-medium">
                   {pagination.totalTestTypes} test types

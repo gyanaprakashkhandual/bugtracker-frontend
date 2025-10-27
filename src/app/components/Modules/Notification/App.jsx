@@ -138,10 +138,10 @@ const NotificationPanel = () => {
   );
 
   return (
-    <div className="w-full max-h-[calc(100vh-65px)] bg-white dark:bg-gray-900 overflow-hidden flex flex-col">
+    <div className="w-full min-h-[calc(100vh-69px)] max-h-[calc(100vh-69px)] bg-white dark:bg-gray-900 overflow-y-auto flex flex-col">
       {/* Header */}
       <div className="sticky top-0 bg-gradient-to-br from-blue-600 via-blue-600 to-blue-700 dark:from-blue-700 dark:via-blue-800 dark:to-blue-900 text-white dark:text-gray-100 p-4 sm:p-5 lg:p-6 z-10 shadow-lg">
-        <div className="max-w-7xl mx-auto">
+        <div className="max-w-full mx-auto">
           <div className="flex items-center justify-between mb-4">
             <h2 className="text-lg sm:text-xl lg:text-2xl font-bold flex items-center gap-2.5">
               <div className="p-1.5 bg-white/20 dark:bg-white/10 rounded-lg backdrop-blur-sm">

@@ -624,7 +624,7 @@ const Messaging = () => {
   }, []);
 
   return (
-    <div className="flex max-h-[calc(100vh-69px)] sidebar-scrollbar">
+    <div className="flex min-h-[calc(100vh-69px)] max-h-[calc(100vh-69px)] sidebar-scrollbar">
       <AnimatePresence>
         {fullScreenImage && (
           <motion.div
