@@ -5,10 +5,8 @@ import { motion, AnimatePresence } from 'framer-motion';
 import {
     Send,
     Paperclip,
-    Mic,
     Search,
     Plus,
-    Menu,
     Pin,
     Trash2,
     Edit2,
@@ -17,22 +15,22 @@ import {
     Loader2,
     ChevronLeft,
     ChevronRight,
-    StopCircle
+    StopCircle,
+    ChevronDown
 } from 'lucide-react';
-import { useTestType } from '@/app/script/TestType.context.js';
 import MessageParser from '../lib/message.parser.jsx';
 import CommandDropdown from '../components/Dropdown.jsx';
-import { getUser } from '@/app/utils/Get.user.js';
+import { useAlert } from '@/app/script/Alert.context.js';
 
 const Chat = () => {
     const BASE_URL = 'http://localhost:5000/api/v1/chat';
     const AUDIO_API_URL = 'http://localhost:5000/api/v1/audio';
+    const PROJECT_API_URL = 'http://localhost:5000/api/v1/project';
     const CLOUDINARY_URL = 'https://api.cloudinary.com/v1_1/dvytvjplt/image/upload';
     const CLOUDINARY_PRESET = 'test_case_preset';
 
-    const projectId = typeof window !== 'undefined' ? localStorage.getItem('currentProjectId') : null;
-    const { testTypeId, testTypeName } = useTestType();
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    const { showAlert } = useAlert();
 
     const [chats, setChats] = useState([]);
     const [currentChat, setCurrentChat] = useState(null);
@@ -49,11 +47,21 @@ const Chat = () => {
     const [attachments, setAttachments] = useState([]);
     const [isUploading, setIsUploading] = useState(false);
     const [uploadProgress, setUploadProgress] = useState(0);
-    const [user, setUser] = useState([]);
+
+    const [projects, setProjects] = useState([]);
+    const [testTypes, setTestTypes] = useState([]);
+    const [selectedProject, setSelectedProject] = useState(null);
+    const [selectedTestType, setSelectedTestType] = useState(null);
+    const [showProjectDropdown, setShowProjectDropdown] = useState(false);
+    const [showTestTypeDropdown, setShowTestTypeDropdown] = useState(false);
+    const [isLoadingProjects, setIsLoadingProjects] = useState(false);
+    const [isLoadingTestTypes, setIsLoadingTestTypes] = useState(false);
 
     const messagesEndRef = useRef(null);
     const inputRef = useRef(null);
     const fileInputRef = useRef(null);
+    const projectDropdownRef = useRef(null);
+    const testTypeDropdownRef = useRef(null);
     const [isRecording, setIsRecording] = useState(false);
     const mediaRecorderRef = useRef(null);
     const audioChunksRef = useRef([]);
@@ -66,7 +74,97 @@ const Chat = () => {
         scrollToBottom();
     }, [messages]);
 
-    
+    useEffect(() => {
+        const handleClickOutside = (event) => {
+            if (projectDropdownRef.current && !projectDropdownRef.current.contains(event.target)) {
+                setShowProjectDropdown(false);
+            }
+            if (testTypeDropdownRef.current && !testTypeDropdownRef.current.contains(event.target)) {
+                setShowTestTypeDropdown(false);
+            }
+        };
+
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, []);
+
+    useEffect(() => {
+        const handlePaste = async (e) => {
+            const items = e.clipboardData?.items;
+            if (!items) return;
+
+            for (let i = 0; i < items.length; i++) {
+                if (items[i].type.indexOf('image') !== -1) {
+                    e.preventDefault();
+                    const file = items[i].getAsFile();
+                    if (file) {
+                        setIsUploading(true);
+                        try {
+                            const uploadedImage = await uploadImageToCloudinary(file);
+                            setAttachments((prev) => [...prev, uploadedImage]);
+                            setInputMessage((prev) => prev + (prev ? '\n' : '') + uploadedImage.url);
+                        } catch (error) {
+                            showAlert({ type: 'error', message: 'Error uploading pasted image: ' + error.message });
+                        } finally {
+                            setIsUploading(false);
+                        }
+                    }
+                }
+            }
+        };
+
+        const inputElement = inputRef.current;
+        if (inputElement) {
+            inputElement.addEventListener('paste', handlePaste);
+            return () => inputElement.removeEventListener('paste', handlePaste);
+        }
+    }, []);
+
+    const fetchProjects = async () => {
+        setIsLoadingProjects(true);
+        try {
+            const response = await fetch(`${PROJECT_API_URL}`, {
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                }
+            });
+            const data = await response.json();
+            if (data.projects) {
+                setProjects(data.projects);
+            }
+        } catch (error) {
+            console.error('Error fetching projects:', error);
+            showAlert({ type: 'error', message: 'Failed to load projects' });
+        } finally {
+            setIsLoadingProjects(false);
+        }
+    };
+
+    const fetchTestTypes = async (projectId) => {
+        setIsLoadingTestTypes(true);
+        try {
+            const response = await fetch(
+                `http://localhost:5000/api/v1/test-type/projects/${projectId}/test-types`,
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json'
+                    }
+                }
+            );
+            const data = await response.json();
+            if (data.testTypes) {
+                setTestTypes(data.testTypes);
+            }
+        } catch (error) {
+            console.error('Error fetching test types:', error);
+            showAlert({ type: 'error', message: 'Failed to load test types' });
+        } finally {
+            setIsLoadingTestTypes(false);
+        }
+    };
+
     const uploadImageToCloudinary = async (file) => {
         const formData = new FormData();
         formData.append('file', file);
@@ -122,11 +220,14 @@ const Chat = () => {
             const uploadedImages = await Promise.all(uploadPromises);
             setAttachments((prev) => [...prev, ...uploadedImages]);
 
+            const imageUrls = uploadedImages.map(img => img.url).join('\n');
+            setInputMessage((prev) => prev + (prev ? '\n' : '') + imageUrls);
+
             if (fileInputRef.current) {
                 fileInputRef.current.value = '';
             }
         } catch (error) {
-            alert('Error uploading images: ' + error.message);
+            showAlert({ type: 'error', message: 'Error uploading images: ' + error.message });
         } finally {
             setIsUploading(false);
             setUploadProgress(0);
@@ -137,55 +238,12 @@ const Chat = () => {
         setAttachments((prev) => prev.filter((_, i) => i !== index));
     };
 
-    const fetchUserData = async () => {
-        try {
-            setLoading(true);
-            setError(null);
-
-            const token = getToken();
-
-            if (!token) {
-                setError('No authentication token found. Please login again.');
-                return;
-            }
-
-            const response = await fetch('http://localhost:5000/api/v1/auth/me', {
-                method: 'GET',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                }
-            });
-
-            if (!response.ok) {
-                if (response.status === 401) {
-                    localStorage.removeItem('token');
-                    setError('Session expired. Please login again.');
-                    return;
-                }
-                throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
-            const data = await response.json();
-
-            if (data.user) {
-                setUser(data.user);
-            } else {
-                setError('Invalid response format from server');
-            }
-
-        } catch (err) {
-            console.error('Error fetching user data:', err);
-            setError(err.message || 'Failed to fetch user data');
-        } finally {
-            setLoading(false);
-        }
-    };
-
     const fetchChats = async () => {
+        if (!selectedTestType || !selectedProject) return;
+
         try {
             const response = await fetch(
-                `${BASE_URL}?testTypeId=${testTypeId}&projectId=${projectId}`,
+                `${BASE_URL}?testTypeId=${selectedTestType._id}&projectId=${selectedProject._id}`,
                 {
                     headers: {
                         Authorization: `Bearer ${token}`,
@@ -199,10 +257,16 @@ const Chat = () => {
             }
         } catch (error) {
             console.error('Error fetching chats:', error);
+            showAlert({ type: 'error', message: 'Failed to load chats' });
         }
     };
 
     const createNewChat = async () => {
+        if (!selectedProject || !selectedTestType) {
+            showAlert({ type: 'error', message: 'Please select both project and test type' });
+            return;
+        }
+
         try {
             const response = await fetch(BASE_URL, {
                 method: 'POST',
@@ -211,8 +275,8 @@ const Chat = () => {
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    testTypeId,
-                    projectId,
+                    testTypeId: selectedTestType._id,
+                    projectId: selectedProject._id,
                     title: 'New Conversation',
                     aiConfig: {
                         model: 'openai/gpt-3.5-turbo',
@@ -226,9 +290,11 @@ const Chat = () => {
                 setCurrentChat(data.data);
                 setMessages([]);
                 fetchChats();
+                showAlert({ type: 'success', message: 'New chat created' });
             }
         } catch (error) {
             console.error('Error creating chat:', error);
+            showAlert({ type: 'error', message: 'Failed to create chat' });
         }
     };
 
@@ -247,99 +313,67 @@ const Chat = () => {
             }
         } catch (error) {
             console.error('Error loading chat:', error);
+            showAlert({ type: 'error', message: 'Failed to load chat' });
         }
     };
 
-    // In Chat.jsx, update the sendMessage function around line 360-390:
+    const sendMessage = async () => {
+        if ((!inputMessage.trim() && attachments.length === 0) || !currentChat) return;
+        if (inputRef.current) {
+            inputRef.current.style.height = 'auto';
+            inputRef.current.style.height = '24px';
+        }
 
-const sendMessage = async () => {
-    if ((!inputMessage.trim() && attachments.length === 0) || !currentChat) return;
-    if (inputRef.current) {
-        inputRef.current.style.height = 'auto';
-        inputRef.current.style.height = '24px';
-    }
+        const userMessage = {
+            role: 'user',
+            content: inputMessage || 'Analyze this image',
+            attachments: attachments,
+            timestamp: new Date()
+        };
 
-    const userMessage = {
-        role: 'user',
-        content: inputMessage || 'Analyze this image',
-        attachments: attachments,
-        timestamp: new Date()
-    };
+        setMessages((prev) => [...prev, userMessage]);
+        setInputMessage('');
+        const tempAttachments = [...attachments];
+        setAttachments([]);
+        setIsLoading(true);
 
-    setMessages((prev) => [...prev, userMessage]);
-    setInputMessage('');
-    const tempAttachments = [...attachments];
-    setAttachments([]);
-    setIsLoading(true);
-
-    try {
-        console.log('🚀 [FRONTEND] Sending request:', {
-            chatId: currentChat._id,
-            content: inputMessage,
-            command: selectedCommand
-        });
-
-        const response = await fetch(`${BASE_URL}/${currentChat._id}/messages`, {
-            method: 'POST',
-            headers: {
-                Authorization: `Bearer ${token}`,
-                'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-                content: inputMessage || 'Analyze this image',
-                command: selectedCommand,
-                attachments: tempAttachments
-            })
-        });
-
-        const data = await response.json();
-        
-        console.log('📥 [FRONTEND] Response received:', {
-            success: data.success,
-            hasData: !!data.data,
-            hasUserMessage: !!data.data?.userMessage,
-            hasAssistantMessage: !!data.data?.assistantMessage
-        });
-
-        if (data.success) {
-            // 🔍 DEBUG: Check assistant message
-            console.log('🤖 [FRONTEND] Assistant message:', {
-                role: data.data.assistantMessage.role,
-                contentLength: data.data.assistantMessage.content?.length,
-                hasMetadata: !!data.data.assistantMessage.metadata,
-                metadataKeys: data.data.assistantMessage.metadata ? Object.keys(data.data.assistantMessage.metadata) : [],
-                operation: data.data.assistantMessage.metadata?.operation,
-                dataCount: data.data.assistantMessage.metadata?.data?.length || 0
+        try {
+            const response = await fetch(`${BASE_URL}/${currentChat._id}/messages`, {
+                method: 'POST',
+                headers: {
+                    Authorization: `Bearer ${token}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    content: inputMessage || 'Analyze this image',
+                    command: selectedCommand,
+                    attachments: tempAttachments
+                })
             });
 
-            // 🔍 DEBUG: Log the actual metadata being received
-            if (data.data.assistantMessage.metadata?.data) {
-                console.log('📊 [FRONTEND] Metadata data:', {
-                    operation: data.data.assistantMessage.metadata.operation,
-                    dataLength: data.data.assistantMessage.metadata.data.length,
-                    firstItem: data.data.assistantMessage.metadata.data[0]
-                });
-            }
+            const data = await response.json();
 
-            setMessages((prev) => [
-                ...prev.slice(0, -1),
-                data.data.userMessage,
-                data.data.assistantMessage
-            ]);
-            
-            setCurrentChat((prev) => ({
-                ...prev,
-                title: data.data.chatMetadata.title
-            }));
-            fetchChats();
+            if (data.success) {
+                setMessages((prev) => [
+                    ...prev.slice(0, -1),
+                    data.data.userMessage,
+                    data.data.assistantMessage
+                ]);
+
+                setCurrentChat((prev) => ({
+                    ...prev,
+                    title: data.data.chatMetadata.title
+                }));
+                fetchChats();
+            }
+        } catch (error) {
+            console.error('Error sending message:', error);
+            showAlert({ type: 'error', message: 'Failed to send message' });
+        } finally {
+            setIsLoading(false);
+            setSelectedCommand(null);
         }
-    } catch (error) {
-        console.error('❌ [FRONTEND] Error sending message:', error);
-    } finally {
-        setIsLoading(false);
-        setSelectedCommand(null);
-    }
-};
+    };
 
     const updateChatTitle = async (chatId, newTitle) => {
         if (!newTitle.trim()) return;
@@ -362,9 +396,11 @@ const sendMessage = async () => {
                 fetchChats();
                 setIsEditingTitle(false);
                 setEditingChatId(null);
+                showAlert({ type: 'success', message: 'Chat title updated' });
             }
         } catch (error) {
             console.error('Error updating title:', error);
+            showAlert({ type: 'error', message: 'Failed to update title' });
         }
     };
 
@@ -385,9 +421,11 @@ const sendMessage = async () => {
                     setCurrentChat(null);
                     setMessages([]);
                 }
+                showAlert({ type: 'success', message: 'Chat deleted' });
             }
         } catch (error) {
             console.error('Error deleting chat:', error);
+            showAlert({ type: 'error', message: 'Failed to delete chat' });
         }
     };
 
@@ -405,9 +443,11 @@ const sendMessage = async () => {
             const data = await response.json();
             if (data.success) {
                 fetchChats();
+                showAlert({ type: 'success', message: isPinned ? 'Chat unpinned' : 'Chat pinned' });
             }
         } catch (error) {
             console.error('Error toggling pin:', error);
+            showAlert({ type: 'error', message: 'Failed to update pin' });
         }
     };
 
@@ -449,7 +489,7 @@ const sendMessage = async () => {
             setIsRecording(true);
         } catch (error) {
             console.error('Error starting recording:', error);
-            alert('Microphone access denied or not available.');
+            showAlert({ type: 'error', message: 'Microphone access denied or not available.' });
         }
     };
 
@@ -486,7 +526,7 @@ const sendMessage = async () => {
             }
         } catch (error) {
             console.error('Error processing audio:', error);
-            alert('Failed to process audio.');
+            showAlert({ type: 'error', message: 'Failed to process audio.' });
         }
     };
 
@@ -499,10 +539,73 @@ const sendMessage = async () => {
     };
 
     useEffect(() => {
-        if (testTypeId && projectId && token) {
-            fetchChats();
+        if (token) {
+            fetchProjects();
         }
-    }, [testTypeId, projectId, token]);
+    }, [token]);
+
+    useEffect(() => {
+        const savedProject = localStorage.getItem('selectedProject');
+        const savedTestType = localStorage.getItem('selectedTestType');
+
+        if (savedProject) {
+            try {
+                setSelectedProject(JSON.parse(savedProject));
+            } catch (error) {
+                console.error('Error parsing saved project:', error);
+                localStorage.removeItem('selectedProject');
+            }
+        }
+
+        if (savedTestType) {
+            try {
+                setSelectedTestType(JSON.parse(savedTestType));
+            } catch (error) {
+                console.error('Error parsing saved test type:', error);
+                localStorage.removeItem('selectedTestType');
+            }
+        }
+    }, []);
+
+    useEffect(() => {
+        if (selectedProject) {
+            localStorage.setItem('selectedProjectId', selectedProject._id);
+            localStorage.setItem('selectedProject', JSON.stringify(selectedProject));
+            fetchTestTypes(selectedProject._id);
+        }
+    }, [selectedProject]);
+
+    useEffect(() => {
+        if (selectedTestType) {
+            localStorage.setItem('selectedTestTypeId', selectedTestType._id);
+            localStorage.setItem('selectedTestType', JSON.stringify(selectedTestType));
+        }
+    }, [selectedTestType]);
+
+    useEffect(() => {
+        const loadChats = async () => {
+            if (selectedTestType && selectedProject && token) {
+                await fetchChats();
+            }
+        };
+
+        loadChats();
+    }, [selectedTestType, selectedProject, token]);
+
+    useEffect(() => {
+        const autoInitializeChat = async () => {
+            if (!selectedProject || !selectedTestType || !token) return;
+            if (currentChat) return;
+
+            if (chats.length > 0) {
+                await loadChat(chats[0]._id);
+            } else {
+                await createNewChat();
+            }
+        };
+
+        autoInitializeChat();
+    }, [chats]);
 
     return (
         <div className="flex h-screen bg-white dark:bg-gray-900">
@@ -531,6 +634,128 @@ const sendMessage = async () => {
                                 >
                                     <ChevronLeft className="w-5 h-5 text-gray-600 dark:text-gray-300" />
                                 </button>
+                            </div>
+
+                            <div className="space-y-2 mb-3">
+                                <div ref={projectDropdownRef} className="relative">
+                                    <button
+                                        onClick={() => {
+                                            setShowProjectDropdown(!showProjectDropdown);
+                                            if (!showProjectDropdown && projects.length === 0) {
+                                                fetchProjects();
+                                            }
+                                        }}
+                                        className="w-full flex items-center justify-between px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors"
+                                    >
+                                        <span className="truncate">
+                                            {selectedProject ? selectedProject.projectName : 'Select Project'}
+                                        </span>
+                                        <ChevronDown className="w-4 h-4 ml-2 flex-shrink-0" />
+                                    </button>
+
+                                    <AnimatePresence>
+                                        {showProjectDropdown && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: 10 }}
+                                                className="absolute top-full mt-1 left-0 right-0 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50"
+                                            >
+                                                {isLoadingProjects ? (
+                                                    <div className="p-4 text-center">
+                                                        <Loader2 className="w-5 h-5 animate-spin text-sky-500 mx-auto" />
+                                                    </div>
+                                                ) : projects.length === 0 ? (
+                                                    <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                                        No projects found
+                                                    </div>
+                                                ) : (
+                                                    projects.map((project) => (
+                                                        <button
+                                                            key={project._id}
+                                                            onClick={() => {
+                                                                setSelectedProject(project);
+                                                                setShowProjectDropdown(false);
+                                                            }}
+                                                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors ${selectedProject?._id === project._id
+                                                                    ? 'bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400'
+                                                                    : 'text-gray-900 dark:text-gray-100'
+                                                                }`}
+                                                        >
+                                                            <div className="font-medium truncate">{project.projectName}</div>
+                                                            {project.projectDesc && (
+                                                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                                                    {project.projectDesc}
+                                                                </div>
+                                                            )}
+                                                        </button>
+                                                    ))
+                                                )}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
+
+                                <div ref={testTypeDropdownRef} className="relative">
+                                    <button
+                                        onClick={() => {
+                                            if (!selectedProject) {
+                                                showAlert({ type: 'error', message: 'Please select a project first' });
+                                                return;
+                                            }
+                                            setShowTestTypeDropdown(!showTestTypeDropdown);
+                                        }}
+                                        disabled={!selectedProject}
+                                        className="w-full flex items-center justify-between px-3 py-2 bg-white dark:bg-gray-700 border border-gray-300 dark:border-gray-600 rounded-lg text-sm text-gray-900 dark:text-gray-100 hover:bg-gray-50 dark:hover:bg-gray-600 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                                    >
+                                        <span className="truncate">
+                                            {selectedTestType ? selectedTestType.testTypeName : 'Select Test Type'}
+                                        </span>
+                                        <ChevronDown className="w-4 h-4 ml-2 flex-shrink-0" />
+                                    </button>
+
+                                    <AnimatePresence>
+                                        {showTestTypeDropdown && (
+                                            <motion.div
+                                                initial={{ opacity: 0, y: 10 }}
+                                                animate={{ opacity: 1, y: 0 }}
+                                                exit={{ opacity: 0, y: 10 }}
+                                                className="absolute top-full mt-1 left-0 right-0 bg-white dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-lg shadow-lg max-h-60 overflow-y-auto z-50"
+                                            >
+                                                {isLoadingTestTypes ? (
+                                                    <div className="p-4 text-center">
+                                                        <Loader2 className="w-5 h-5 animate-spin text-sky-500 mx-auto" />
+                                                    </div>
+                                                ) : testTypes.length === 0 ? (
+                                                    <div className="p-4 text-center text-sm text-gray-500 dark:text-gray-400">
+                                                        No test types found
+                                                    </div>
+                                                ) : (
+                                                    testTypes.map((testType) => (
+                                                        <button
+                                                            key={testType._id}
+                                                            onClick={() => {
+                                                                setSelectedTestType(testType);
+                                                                setShowTestTypeDropdown(false);
+                                                            }}
+                                                            className={`w-full text-left px-3 py-2 text-sm hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors ${selectedTestType?._id === testType._id
+                                                                    ? 'bg-sky-50 dark:bg-sky-900/30 text-sky-600 dark:text-sky-400'
+                                                                    : 'text-gray-900 dark:text-gray-100'
+                                                                }`}
+                                                        >
+                                                            <div className="font-medium truncate">{testType.testTypeName}</div>
+                                                            {testType.testTypeDesc && (
+                                                                <div className="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">
+                                                                    {testType.testTypeDesc}
+                                                                </div>
+                                                            )}
+                                                        </button>
+                                                    ))
+                                                )}
+                                            </motion.div>
+                                        )}
+                                    </AnimatePresence>
+                                </div>
                             </div>
 
                             <button
@@ -745,12 +970,12 @@ const sendMessage = async () => {
                                                 : 'bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-2xl rounded-tl-md px-4 sm:px-5 py-3 sm:py-3.5 shadow-sm'
                                                 }`}
                                         >
-<MessageParser
-    content={message.content}
-    role={message.role}
-    attachments={message.attachments}
-    metadata={message.metadata}
-/>
+                                            <MessageParser
+                                                content={message.content}
+                                                role={message.role}
+                                                attachments={message.attachments}
+                                                metadata={message.metadata}
+                                            />
                                             <div className="flex items-center gap-2 mt-2">
                                                 <span
                                                     className={`text-xs ${message.role === 'user'
@@ -868,7 +1093,7 @@ const sendMessage = async () => {
                                         <Loader2 className="w-4 h-4 animate-spin text-sky-500 dark:text-sky-400" />
                                         <div className="flex-1">
                                             <div className="text-xs text-sky-700 dark:text-sky-300 font-medium">
-                                                {Math.round(uploadProgress)}%
+                                                Uploading {Math.round(uploadProgress)}%
                                             </div>
                                             <div className="w-full bg-sky-200 dark:bg-sky-800 rounded-full h-1 overflow-hidden mt-1">
                                                 <motion.div
