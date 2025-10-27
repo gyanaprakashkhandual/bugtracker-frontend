@@ -118,32 +118,32 @@ const BugTracker = () => {
     }, []);
 
 
-    const fetchComments = async (issueId) => {
-        try {
-            setLoadingComments(prev => ({ ...prev, [issueId]: true }));
-            debugLog('FETCH_COMMENTS_START', { issueId });
+   const fetchComments = async (issueId) => {
+    try {
+        setLoadingComments(prev => ({ ...prev, [issueId]: true }));
+        debugLog('FETCH_COMMENTS_START', { issueId });
 
-            const res = await fetch(`${BASE_COMMENT_URL}/projects/${projectId}/issues/${issueId}/comments`, {
-                headers: { Authorization: `Bearer ${getToken()}` }
-            });
-            const data = await res.json();
+        const res = await fetch(`${BASE_COMMENT_URL}/projects/${projectId}/issues/${issueId}/comments`, {
+            headers: { Authorization: `Bearer ${getToken()}` }
+        });
+        const data = await res.json();
 
-            debugLog('FETCH_COMMENTS_RESPONSE', {
-                success: data.success,
-                count: data.data?.length
-            });
+        debugLog('FETCH_COMMENTS_RESPONSE', {
+            success: data.success,
+            count: data.count
+        });
 
-            if (data.success) {
-                setComments(prev => ({ ...prev, [issueId]: data.data }));
-            }
-        } catch (error) {
-            debugLog('FETCH_COMMENTS_ERROR', error);
-            console.error('Error fetching comments:', error);
-        } finally {
-            setLoadingComments(prev => ({ ...prev, [issueId]: false }));
+        if (data.success) {
+            // Backend returns 'comments' not 'data'
+            setComments(prev => ({ ...prev, [issueId]: data.comments }));
         }
-    };
-
+    } catch (error) {
+        debugLog('FETCH_COMMENTS_ERROR', error);
+        console.error('Error fetching comments:', error);
+    } finally {
+        setLoadingComments(prev => ({ ...prev, [issueId]: false }));
+    }
+};
     useEffect(() => {
         fetchIssues();
         fetchUsers();
