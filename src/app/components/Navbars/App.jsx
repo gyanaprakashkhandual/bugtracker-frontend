@@ -21,7 +21,7 @@ import {
 import { useTheme } from '@/app/script/Theme.context';
 import { useProject } from '@/app/script/Project.context';
 import { GoogleArrowDown } from '@/app/components/utils/Icon';
-import UserManagementDashboard from '../modules/User-Management/App';
+import UserManagement from '../modules/User-Management/App';
 import ProjectManagement from '../modules/Project-Management/App';
 import UserProfileInterface from '../modules/User/App';
 import TestTypeManagement from '../modules/Test-Type-Management/App';
@@ -181,7 +181,7 @@ const AppNavbar = () => {
             case 'TestTypeConfiguration':
                 return <TestTypeManagement />
             case 'UserManagement':
-                return <UserManagementDashboard />
+                return <UserManagement />
             case 'Notification':
                 return <NotificationPanel />
             case 'Messages':
