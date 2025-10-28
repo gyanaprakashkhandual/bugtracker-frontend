@@ -1,4 +1,4 @@
-import SheetManagement from '@/app/components/Modules/Sheet/App'
+import SheetManagement from '@/app/components/modules/Sheet/App'
 import React from 'react'
 
 function page() {

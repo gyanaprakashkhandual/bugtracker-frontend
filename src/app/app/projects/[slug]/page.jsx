@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react';
 import { useParams } from 'next/navigation';
-import { useProject } from '@/app/utils/Get.project';
+import { useProject } from '@/app/script/Project.context';
 import Workspace from '@/app/pages/app/Workspace';
 import BugTrackerSkeleton from '@/app/components/assets/Main.loader';
 

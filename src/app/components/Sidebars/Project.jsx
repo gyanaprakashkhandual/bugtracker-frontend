@@ -18,23 +18,32 @@ import { PROJECT_EVENTS } from "@/app/components/modules/Project-Management/App"
 import { useSidebar } from "@/app/hooks/Project.sidebar.hook";
 
 const ProjectSidebar = () => {
-    const { isSidebarOpen, toggleSidebar } = useSidebar();
+    const { isSidebarOpen, toggleSidebar, isHydrated } = useSidebar();
     const [projects, setProjects] = useState([]);
     const [hoveredProject, setHoveredProject] = useState(null);
     const [userData, setUserData] = useState(null);
     const [profileDropdownOpen, setProfileDropdownOpen] = useState(false);
     const [isLoading, setIsLoading] = useState(true);
+    const [isMounted, setIsMounted] = useState(false);
 
     const { showAlert } = useAlert();
     const { showConfirm } = useConfirm();
     const { selectedProject, setSelectedProject } = useProject();
     const router = useRouter();
 
+    // Wait for client-side hydration
+    useEffect(() => {
+        setIsMounted(true);
+    }, []);
+
     const getToken = () => {
-        if (typeof window !== "undefined") {
+        if (typeof window === "undefined") return null;
+        try {
             return localStorage.getItem("token");
+        } catch (error) {
+            console.error("Error accessing localStorage:", error);
+            return null;
         }
-        return null;
     };
 
     const apiCall = async (endpoint, options = {}) => {
@@ -80,29 +89,40 @@ const ProjectSidebar = () => {
         let currentPage = 1;
         let totalPages = 1;
 
-        do {
-            const result = await apiCall(`/project/my-projects?page=${currentPage}&limit=50`);
-            
-            if (!result) break;
+        try {
+            do {
+                const result = await apiCall(`/project/my-projects?page=${currentPage}&limit=50`);
 
-            const fetchedProjects = result.projects || [];
-            allProjects = [...allProjects, ...fetchedProjects];
+                if (!result) break;
 
-            if (result.pagination) {
-                totalPages = result.pagination.totalPages;
-                currentPage++;
-            } else {
-                break;
-            }
-        } while (currentPage <= totalPages);
+                const fetchedProjects = result.projects || [];
+                allProjects = [...allProjects, ...fetchedProjects];
 
-        setProjects(allProjects);
-        setIsLoading(false);
+                if (result.pagination) {
+                    totalPages = result.pagination.totalPages;
+                    currentPage++;
+                } else {
+                    break;
+                }
+            } while (currentPage <= totalPages);
+
+            setProjects(allProjects);
+        } catch (error) {
+            console.error("Error fetching projects:", error);
+        } finally {
+            setIsLoading(false);
+        }
     };
 
     const handleProjectClick = (project) => {
         setSelectedProject(project);
-        localStorage.setItem("currentProjectId", project._id);
+        if (typeof window !== "undefined") {
+            try {
+                localStorage.setItem("currentProjectId", project._id);
+            } catch (error) {
+                console.error("Error saving to localStorage:", error);
+            }
+        }
     };
 
     const navigateToWorkspace = (project) => {
@@ -133,9 +153,15 @@ const ProjectSidebar = () => {
         } catch (error) {
             console.error("Logout error:", error);
         } finally {
-            localStorage.removeItem("token");
-            localStorage.removeItem("currentProjectId");
-            document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+            if (typeof window !== "undefined") {
+                try {
+                    localStorage.removeItem("token");
+                    localStorage.removeItem("currentProjectId");
+                    document.cookie = "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+                } catch (error) {
+                    console.error("Error clearing storage:", error);
+                }
+            }
             router.push("/login");
         }
     };
@@ -147,7 +173,10 @@ const ProjectSidebar = () => {
         return formatted.length > 5 ? formatted.slice(0, 5) + "." : formatted;
     };
 
+    // Only fetch data after component is mounted on client
     useEffect(() => {
+        if (!isMounted) return;
+
         fetchUserData();
         fetchProjects();
 
@@ -168,21 +197,35 @@ const ProjectSidebar = () => {
                 window.removeEventListener(PROJECT_EVENTS.CHANGED, handleProjectEvent);
             }
         };
-    }, []);
+    }, [isMounted]);
 
+    // Restore selected project from localStorage after projects are loaded
     useEffect(() => {
-        if (projects.length > 0) {
-            const storedProjectId = localStorage.getItem("currentProjectId");
-            if (storedProjectId) {
-                const foundProject = projects.find((project) => project._id === storedProjectId);
-                if (foundProject) {
-                    setSelectedProject(foundProject);
-                } else {
-                    localStorage.removeItem("currentProjectId");
+        if (!isMounted || projects.length === 0) return;
+
+        if (typeof window !== "undefined") {
+            try {
+                const storedProjectId = localStorage.getItem("currentProjectId");
+                if (storedProjectId) {
+                    const foundProject = projects.find((project) => project._id === storedProjectId);
+                    if (foundProject) {
+                        setSelectedProject(foundProject);
+                    } else {
+                        localStorage.removeItem("currentProjectId");
+                    }
                 }
+            } catch (error) {
+                console.error("Error restoring project:", error);
             }
         }
-    }, [projects]);
+    }, [projects, isMounted]);
+
+    // Don't render until mounted to avoid hydration mismatch
+    if (!isMounted) {
+        return (
+            <div className="w-[280px] h-screen bg-gradient-to-b from-slate-50 to-white dark:from-slate-900 dark:to-slate-950 border-r border-slate-200/50 dark:border-slate-700/50" />
+        );
+    }
 
     const sidebarVariants = {
         open: { width: 280 },
@@ -259,8 +302,6 @@ const ProjectSidebar = () => {
                         </motion.div>
                     ) : (
                         <motion.button
-                            tooltip-data="Open Sidebar"
-                            tooltip-placement="right"
                             key="closed-header"
                             initial={{ opacity: 0, scale: 0.5 }}
                             animate={{ opacity: 1, scale: 1 }}
@@ -268,6 +309,7 @@ const ProjectSidebar = () => {
                             whileTap={{ scale: 0.9 }}
                             onClick={toggleSidebar}
                             className="p-2 rounded-full text-blue-900 dark:text-blue-400 hover:text-slate-950 dark:hover:text-slate-100 transition-all duration-200 cursor-pointer"
+                            title="Open Sidebar"
                         >
                             <FaCoffee className="h-5 w-5" />
                         </motion.button>
@@ -293,11 +335,10 @@ const ProjectSidebar = () => {
                                 onHoverEnd={() => setHoveredProject(null)}
                                 onClick={() => handleProjectClick(project)}
                                 onDoubleClick={() => navigateToWorkspace(project)}
-                                className={`mx-2 my-1 rounded-xl border transition-all duration-200 cursor-pointer ${
-                                    selectedProject?._id === project._id
+                                className={`mx-2 my-1 rounded-xl border transition-all duration-200 cursor-pointer ${selectedProject?._id === project._id
                                         ? "border-blue-300 bg-blue-50 dark:bg-blue-950/30 dark:border-blue-700"
                                         : "border-transparent hover:border-slate-200/60 dark:hover:border-slate-700/60"
-                                }`}
+                                    }`}
                             >
                                 {isSidebarOpen ? (
                                     <div className="flex items-center px-4 py-3">
@@ -312,11 +353,10 @@ const ProjectSidebar = () => {
                                             />
                                         </motion.div>
                                         <span
-                                            className={`font-medium truncate ${
-                                                selectedProject?._id === project._id
+                                            className={`font-medium truncate ${selectedProject?._id === project._id
                                                     ? "text-blue-700 dark:text-blue-300"
                                                     : "text-slate-700 dark:text-slate-200"
-                                            }`}
+                                                }`}
                                         >
                                             {project.projectName}
                                         </span>
@@ -325,8 +365,7 @@ const ProjectSidebar = () => {
                                     <div className="flex items-center justify-center py-4">
                                         <motion.div
                                             whileHover={{ color: "#3b82f6" }}
-                                            tooltip-data={project.projectName}
-                                            tooltip-placement="right"
+                                            title={project.projectName}
                                         >
                                             <Folder
                                                 size={20}
@@ -379,13 +418,12 @@ const ProjectSidebar = () => {
                                 <div className="flex items-center gap-3 mt-3 pt-3 border-t border-slate-100 dark:border-slate-700/50">
                                     <div className="flex items-center gap-1.5">
                                         <div
-                                            className={`w-2 h-2 rounded-full ${
-                                                userData?.role === "admin"
+                                            className={`w-2 h-2 rounded-full ${userData?.role === "admin"
                                                     ? "bg-purple-500"
                                                     : userData?.role === "user"
-                                                    ? "bg-blue-500"
-                                                    : "bg-slate-500"
-                                            }`}
+                                                        ? "bg-blue-500"
+                                                        : "bg-slate-500"
+                                                }`}
                                         ></div>
                                         <span className="text-xs font-medium text-slate-700 dark:text-slate-300 capitalize">
                                             {userData?.role || "user"}
@@ -394,9 +432,8 @@ const ProjectSidebar = () => {
 
                                     <div className="flex items-center gap-1.5">
                                         <div
-                                            className={`w-2 h-2 rounded-full ${
-                                                userData?.isActive ? "bg-green-500" : "bg-red-500"
-                                            }`}
+                                            className={`w-2 h-2 rounded-full ${userData?.isActive ? "bg-green-500" : "bg-red-500"
+                                                }`}
                                         ></div>
                                         <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
                                             {userData?.isActive ? "Active" : "Inactive"}
@@ -405,9 +442,8 @@ const ProjectSidebar = () => {
 
                                     <div className="flex items-center gap-1.5">
                                         <div
-                                            className={`w-2 h-2 rounded-full ${
-                                                userData?.isVerified ? "bg-green-500" : "bg-yellow-500"
-                                            }`}
+                                            className={`w-2 h-2 rounded-full ${userData?.isVerified ? "bg-green-500" : "bg-yellow-500"
+                                                }`}
                                         ></div>
                                         <span className="text-xs font-medium text-slate-700 dark:text-slate-300">
                                             {userData?.isVerified ? "Verified" : "Pending"}
@@ -449,8 +485,7 @@ const ProjectSidebar = () => {
                             <button
                                 onClick={handleLogout}
                                 className="w-full p-4 text-left text-slate-700 dark:text-slate-200 hover:bg-slate-100 dark:hover:bg-slate-700/50 flex items-center gap-2 transition-colors duration-150"
-                                tooltip-data="Sign out from your account"
-                                tooltip-placement="top"
+                                title="Sign out from your account"
                             >
                                 <LogOut size={16} />
                                 <span>Sign out</span>

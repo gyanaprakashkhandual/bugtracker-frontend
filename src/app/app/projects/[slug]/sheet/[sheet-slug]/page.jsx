@@ -1,4 +1,4 @@
-import SheetComponent from '@/app/components/Modules/Sheet/pages/Sheet'
+import SheetComponent from '@/app/components/modules/Sheet/pages/Sheet'
 import React from 'react'
 
 function page() {

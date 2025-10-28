@@ -1,4 +1,4 @@
-import DustbinNavbar from '@/app/components/Modules/Trash/App'
+import DustbinNavbar from '@/app/components/modules/Trash/App'
 import React from 'react'
 
 function page() {

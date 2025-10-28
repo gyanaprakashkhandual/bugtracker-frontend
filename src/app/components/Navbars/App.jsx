@@ -21,17 +21,17 @@ import {
 import { useTheme } from '@/app/script/Theme.context';
 import { useProject } from '@/app/script/Project.context';
 import { GoogleArrowDown } from '@/app/components/utils/Icon';
-import UserManagementDashboard from '../Modules/User-Management/App';
-import ProjectConfiguration from '../Modules/Project-Management/App';
-import UserProfileInterface from '../Modules/User/App';
-import TestTypeManagement from '../Modules/Test-Type-Management/App';
+import UserManagementDashboard from '../modules/User-Management/App';
+import ProjectConfiguration from '../modules/Project-Management/App';
+import UserProfileInterface from '../modules/User/App';
+import TestTypeManagement from '../modules/Test-Type-Management/App';
 import { useRouter } from 'next/navigation';
-import Messaging from '../Modules/Messaging/App';
-import AccessControlSystem from '../Modules/Access-Management/App';
-import Dashboard from '../Modules/Dashboard/App';
-import NotificationPanel from '../Modules/Notification/App';
-import IssueKanban from '../Modules/Issue/Kanban';
-import IssueList from '../Modules/Issue/List';
+import Messaging from '../modules/Messaging/App';
+import AccessControlSystem from '../modules/Access-Management/App';
+import Dashboard from '../modules/Dashboard/App';
+import NotificationPanel from '../modules/Notification/App';
+import IssueKanban from '../modules/Issue/Kanban';
+import IssueList from '../modules/Issue/List';
 
 
 const AppNavbar = () => {

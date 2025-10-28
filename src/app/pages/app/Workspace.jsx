@@ -7,7 +7,7 @@ import TestCaseSpreadsheet from '../view/case-module/Table'
 import BugSpreadsheet from '../view/bug-module/Table'
 import BugCardView from '../view/bug-module/Card'
 import BugSplitView from '../view/bug-module/Split'
-import TestResultsDashboard from '@/app/components/Modules/Test-Result/App'
+import TestResultsDashboard from '@/app/components/modules/Test-Result/App'
 import BugKanbanView from '@/app/pages/view/bug-module/Kanban'
 
 function Workspace() {
