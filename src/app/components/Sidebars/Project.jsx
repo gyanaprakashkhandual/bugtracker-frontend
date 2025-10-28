@@ -14,7 +14,7 @@ import {
 import { useProject } from "@/app/script/Project.context";
 import { useAlert } from "@/app/script/Alert.context";
 import { useConfirm } from "@/app/script/Confirm.context";
-import { PROJECT_EVENTS } from "@/app/components/modules/Project-Management/App";
+import { PROJECT_EVENTS } from "../modules/Project-Management/App";
 import { useSidebar } from "@/app/hooks/Project.sidebar.hook";
 
 const ProjectSidebar = () => {
