@@ -1,4 +1,4 @@
-import DocumentManagement from '@/app/components/modules/Doc/App'
+import DocumentManagement from '@/app/components/Modules/Doc/App'
 import React from 'react'
 
 function page() {
