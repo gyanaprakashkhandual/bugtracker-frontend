@@ -22,7 +22,7 @@ import { useTheme } from '@/app/script/Theme.context';
 import { useProject } from '@/app/script/Project.context';
 import { GoogleArrowDown } from '@/app/components/utils/Icon';
 import UserManagementDashboard from '../modules/User-Management/App';
-import ProjectConfiguration from '../modules/Project-Management/App';
+import ProjectManagement from '../modules/Project-Management/App';
 import UserProfileInterface from '../modules/User/App';
 import TestTypeManagement from '../modules/Test-Type-Management/App';
 import { useRouter } from 'next/navigation';
@@ -177,7 +177,7 @@ const AppNavbar = () => {
             case 'Dashboard':
                 return <Dashboard />
             case 'ProjectConfiguration':
-                return <ProjectConfiguration />
+                return <ProjectManagement />
             case 'TestTypeConfiguration':
                 return <TestTypeManagement />
             case 'UserManagement':
