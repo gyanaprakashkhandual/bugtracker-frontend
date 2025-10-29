@@ -11,12 +11,13 @@ const NotificationPanel = () => {
 
   const API_BASE_URL = 'https://caffetest.onrender.com/api/v1/notification';
 
-  const getToken = () => {
-    if (typeof window !== 'undefined') {
-      return 'your-token-here';
-    }
-    return null;
-  };
+const getToken = () => {
+  if (typeof window !== 'undefined') {
+    return localStorage.getItem('token');
+  }
+  return null;
+};
+
 
   const fetchNotifications = async () => {
     setLoading(true);
@@ -216,11 +217,10 @@ const NotificationPanel = () => {
                   animate={{ opacity: 1, x: 0 }}
                   exit={{ opacity: 0, x: 20, height: 0 }}
                   transition={{ delay: index * 0.03 }}
-                  className={`relative border-b border-gray-100 dark:border-gray-700 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent dark:hover:from-blue-900/20 dark:hover:to-transparent transition-all duration-200 ${
-                    !notification.isRead 
-                      ? 'bg-gradient-to-r from-blue-50 to-transparent dark:from-blue-900/30 dark:to-transparent' 
+                  className={`relative border-b border-gray-100 dark:border-gray-700 hover:bg-gradient-to-r hover:from-blue-50/50 hover:to-transparent dark:hover:from-blue-900/20 dark:hover:to-transparent transition-all duration-200 ${!notification.isRead
+                      ? 'bg-gradient-to-r from-blue-50 to-transparent dark:from-blue-900/30 dark:to-transparent'
                       : ''
-                  }`}
+                    }`}
                 >
                   <div className="p-4 sm:p-5 lg:p-6">
                     <div className="flex gap-3 sm:gap-4">
