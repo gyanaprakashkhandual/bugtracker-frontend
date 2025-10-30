@@ -886,6 +886,7 @@ const AuthPage = () => {
                         <p className="text-gray-600">
                           We sent a verification code to <br />
                           <span className="font-medium text-gray-800">{formData.email}</span>
+                          <span className="font-medium text-gray-800">Please Check Your Spam Folder</span>
                         </p>
                       </div>
 
@@ -899,7 +900,7 @@ const AuthPage = () => {
                           name="otp"
                           value={formData.otp}
                           onChange={handleInputChange}
-                          className="w-full px-4 py-3 border border-gray-300 rounded-lg text-center text-lg font-mono tracking-widest focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all"
+                          className="w-full px-4 py-3 text-blue-800 border border-gray-300 rounded-lg text-center text-lg font-mono tracking-widest focus:outline-none focus:ring-1 focus:ring-blue-900 transition-all"
                           placeholder="Enter 6-digit code"
                           maxLength="6"
                           required
@@ -951,7 +952,7 @@ const AuthPage = () => {
                         Email Address
                       </label>
                       <div className="relative">
-                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Mail className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-900 w-5 h-5" />
                         <input
                           type="email"
                           name="email"
@@ -970,7 +971,7 @@ const AuthPage = () => {
                         Password
                       </label>
                       <div className="relative">
-                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-5 h-5" />
+                        <Lock className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-900 w-5 h-5" />
                         <input
                           type={showPassword ? 'text' : 'password'}
                           name="password"
