@@ -61,83 +61,133 @@ const AuthPage = () => {
     { value: 'other', label: 'Other' }
   ];
 
-  // Check for existing token on component mount
   useEffect(() => {
-    const token = localStorage.getItem('token');
-    const user = localStorage.getItem('user');
-    if (token && user) {
-      setShowLoginModal(true);
-      setTimeout(() => {
-        setShowLoginModal(false);
+    const verifyPersistentSession = async () => {
+      try {
+        setIsLoading(true);
+
+        // Call backend endpoint to verify session
+        const response = await fetch(
+          'https://caffetest.onrender.com/api/v1/auth/verify-session',
+          {
+            method: 'GET',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include', // CRITICAL: Include cookies
+          }
+        );
+
+        const data = await response.json();
+
+        if (response.ok && data.authenticated) {
+          // Session is valid
+          localStorage.setItem('userId', data.user._id);
+          localStorage.setItem('userName', data.user.name);
+          localStorage.setItem('userEmail', data.user.email);
+          localStorage.setItem('userRole', data.user.role);
+          localStorage.setItem('isVerified', data.user.isVerified);
+          localStorage.setItem('isActive', data.user.isActive);
+          localStorage.setItem('isOrganizationOwner', data.user.isOrganizationOwner);
+          localStorage.setItem('organizationId', data.user.organizationId);
+          localStorage.setItem('organizationName', data.user.organizationName);
+          localStorage.setItem('user', JSON.stringify(data.user));
+
+          // Store fresh token if provided
+          if (data.token) {
+            localStorage.setItem('token', data.token);
+          }
+
+          setShowLoginModal(true);
+          setTimeout(() => {
+            setShowLoginModal(false);
+            showAlert({
+              type: "success",
+              message: "Welcome back to Caffetest"
+            });
+            router.push('/app');
+          }, 1500);
+        } else {
+          // No valid session, show info alert
+          showAlert({
+            type: "info",
+            message: "For enhanced security and compatibility with VS Code environment, we currently support email-based authentication only. This ensures maximum protection for your testing projects and data.",
+            duration: 7000
+          });
+        }
+      } catch (error) {
+        // Session verification failed, show info alert
         showAlert({
-          type: "success",
-          message: "Welcome to Caffetest"
+          type: "info",
+          message: "For enhanced security and compatibility with VS Code environment, we currently support email-based authentication only. This ensures maximum protection for your testing projects and data.",
+          duration: 7000
         });
-        router.push('/app');
-      }, 2000);
-    } else {
-      showAlert({
-        type: "info",
-        message: "For enhanced security and compatibility with VS Code environment, we currently support email-based authentication only. This ensures maximum protection for your testing projects and data.",
-        duration: 7000
-      });
-    }
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    // Verify session on component mount
+    verifyPersistentSession();
   }, [router, showAlert]);
 
-  // Handle Google OAuth callback
   useEffect(() => {
-    const urlParams = new URLSearchParams(window.location.search);
-    const token = urlParams.get('token');
-    const userString = urlParams.get('user');
-    const error = urlParams.get('error');
+    const handleGoogleAuthCallback = async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const token = urlParams.get('token');
+      const userString = urlParams.get('user');
+      const error = urlParams.get('error');
 
-    if (error) {
-      showAlert({
-        type: "error",
-        message: "Google authentication failed. Please try again."
-      });
-      window.history.replaceState({}, document.title, window.location.pathname);
-      return;
-    }
-
-    if (token && userString) {
-      try {
-        const user = JSON.parse(decodeURIComponent(userString));
-
-        // Store token in both localStorage and cookie
-        document.cookie = `token=${token}; path=/; max-age=86400`;
-        localStorage.setItem('token', token);
-        localStorage.setItem('userId', user._id);
-        localStorage.setItem('userName', user.name);
-        localStorage.setItem('userEmail', user.email);
-        localStorage.setItem('userRole', user.role);
-        localStorage.setItem('isVerified', user.isVerified);
-        localStorage.setItem('isActive', user.isActive);
-        localStorage.setItem('isOrganizationOwner', user.isOrganizationOwner);
-        localStorage.setItem('organizationId', user.organizationId);
-        localStorage.setItem('organizationName', user.organizationName);
-        localStorage.setItem('user', JSON.stringify(user));
-
-        showAlert({
-          type: "success",
-          message: "Google login successful! Redirecting..."
-        });
-
-        // Clean URL
-        window.history.replaceState({}, document.title, window.location.pathname);
-
-        setTimeout(() => {
-          router.push('/app');
-        }, 2000);
-      } catch (err) {
+      if (error) {
         showAlert({
           type: "error",
-          message: "Error processing authentication data"
+          message: "Google authentication failed. Please try again."
         });
         window.history.replaceState({}, document.title, window.location.pathname);
+        return;
       }
-    }
+
+      if (token && userString) {
+        try {
+          const user = JSON.parse(decodeURIComponent(userString));
+
+          // Store token and user data in localStorage
+          localStorage.setItem('token', token);
+          localStorage.setItem('userId', user._id);
+          localStorage.setItem('userName', user.name);
+          localStorage.setItem('userEmail', user.email);
+          localStorage.setItem('userRole', user.role);
+          localStorage.setItem('isVerified', user.isVerified);
+          localStorage.setItem('isActive', user.isActive);
+          localStorage.setItem('isOrganizationOwner', user.isOrganizationOwner);
+          localStorage.setItem('organizationId', user.organizationId);
+          localStorage.setItem('organizationName', user.organizationName);
+          localStorage.setItem('user', JSON.stringify(user));
+
+          showAlert({
+            type: "success",
+            message: "Google login successful! Redirecting..."
+          });
+
+          // Clean URL
+          window.history.replaceState({}, document.title, window.location.pathname);
+
+          setTimeout(() => {
+            router.push('/app');
+          }, 1500);
+        } catch (err) {
+          showAlert({
+            type: "error",
+            message: "Error processing authentication data"
+          });
+          window.history.replaceState({}, document.title, window.location.pathname);
+        }
+      }
+    };
+
+    handleGoogleAuthCallback();
   }, [router, showAlert]);
+
 
   const handleInputChange = (e) => {
     setFormData({
@@ -357,6 +407,7 @@ const AuthPage = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // CRITICAL: Include cookies
         body: JSON.stringify({
           name: formData.name,
           email: formData.email,
@@ -367,15 +418,27 @@ const AuthPage = () => {
       });
       const data = await response.json();
       if (response.ok) {
+        // Store token and user data in localStorage
+        localStorage.setItem('token', data.token);
+        localStorage.setItem('userId', data.user._id);
+        localStorage.setItem('userName', data.user.name);
+        localStorage.setItem('userEmail', data.user.email);
+        localStorage.setItem('userRole', data.user.role);
+        localStorage.setItem('isVerified', data.user.isVerified);
+        localStorage.setItem('isActive', data.user.isActive);
+        localStorage.setItem('isOrganizationOwner', data.user.isOrganizationOwner);
+        localStorage.setItem('organizationId', data.user.organizationId);
+        localStorage.setItem('organizationName', data.user.organizationName);
+        localStorage.setItem('user', JSON.stringify(data.user));
+
         showAlert({
           type: "success",
-          message: "Registration successful! Please login."
+          message: "Registration successful! Redirecting..."
         });
-        setFormData({ name: '', email: '', password: '', otp: '' });
-        setShowOTPForm(false);
+
         setTimeout(() => {
-          setIsLogin(true);
-        }, 2000);
+          router.push('/app');
+        }, 1500);
       } else {
         showAlert({
           type: "error",
@@ -422,20 +485,16 @@ const AuthPage = () => {
         headers: {
           'Content-Type': 'application/json',
         },
+        credentials: 'include', // CRITICAL: Include cookies
         body: JSON.stringify({
           email: formData.email,
           password: formData.password,
-          persistent: isPersistent
         }),
       });
       const data = await response.json();
       if (response.ok) {
-        if (isPersistent) {
-          document.cookie = `token=${data.token}; path=/; max-age=86400`;
-          localStorage.setItem('token', data.token);
-        } else {
-          sessionStorage.setItem('token', data.token);
-        }
+        // Store token and user data in localStorage
+        localStorage.setItem('token', data.token);
         localStorage.setItem('userId', data.user._id);
         localStorage.setItem('userName', data.user.name);
         localStorage.setItem('userEmail', data.user.email);
@@ -446,13 +505,14 @@ const AuthPage = () => {
         localStorage.setItem('organizationId', data.user.organizationId);
         localStorage.setItem('organizationName', data.user.organizationName);
         localStorage.setItem('user', JSON.stringify(data.user));
+
         showAlert({
           type: "success",
           message: "Login successful! Redirecting..."
         });
         setTimeout(() => {
           router.push('/app');
-        }, 2000);
+        }, 1500);
       } else {
         showAlert({
           type: "error",
@@ -469,6 +529,7 @@ const AuthPage = () => {
     }
   };
 
+
   const handleForgotPassword = () => {
     router.push('/forgot-password');
   };
@@ -482,8 +543,11 @@ const AuthPage = () => {
   };
 
   const handleGoogleLogin = () => {
-    window.location.href = 'https://caffetest.onrender.com/api/v1/auth/google?state=web';
+    // Generate random state for CSRF protection
+    const state = 'web';
+    window.location.href = `https://caffetest.onrender.com/api/v1/auth/google?state=${state}`;
   };
+
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 flex relative sidebar-scrollbar">
