@@ -258,62 +258,124 @@ const KanbanBoard = () => {
   };
 
   // Update issue status (drag and drop)
-  const handleUpdateIssueStatus = async (issueId, newStatus) => {
-    try {
-      setUpdatingStatus(true);
-      setError(null);
-      await axios.put(
-        `https://caffetest.onrender.com/api/v1/issue/${issueId}`,
-        { status: newStatus },
-        getAuthConfig()
+const handleUpdateIssueStatus = async (issueId, newStatus) => {
+  try {
+    setUpdatingStatus(true);
+    setError(null);
+    
+    // Save to localStorage immediately
+    const pendingUpdate = {
+      issueId,
+      newStatus,
+      timestamp: Date.now()
+    };
+    const pendingUpdates = JSON.parse(localStorage.getItem('pendingIssueUpdates') || '[]');
+    pendingUpdates.push(pendingUpdate);
+    localStorage.setItem('pendingIssueUpdates', JSON.stringify(pendingUpdates));
+    
+    // Make API call in background
+    axios.put(
+      `https://caffetest.onrender.com/api/v1/issue/${issueId}`,
+      { status: newStatus },
+      getAuthConfig()
+    ).then(async () => {
+      // Remove from localStorage after successful API call
+      const currentPending = JSON.parse(localStorage.getItem('pendingIssueUpdates') || '[]');
+      const updated = currentPending.filter(
+        item => !(item.issueId === issueId && item.timestamp === pendingUpdate.timestamp)
       );
+      localStorage.setItem('pendingIssueUpdates', JSON.stringify(updated));
+      
       await fetchIssues();
       showAlert({
         type: "success",
         message: "Issue status updated successfully"
       });
-    } catch (err) {
+    }).catch(() => {
       setError('Failed to update issue status');
       showAlert({
         type: "error",
         message: "Failed to update issue status"
       });
-    } finally {
-      setUpdatingStatus(false);
-    }
-  };
+    });
+    
+  } catch (err) {
+    setError('Failed to update issue status');
+    showAlert({
+      type: "error",
+      message: "Failed to update issue status"
+    });
+  } finally {
+    setUpdatingStatus(false);
+  }
+};
 
   // Update existing issue
   const handleUpdateIssue = async () => {
-    try {
-      setLoading(true);
-      setError(null);
-      const response = await axios.put(
-        `https://caffetest.onrender.com/api/v1/issue/${selectedIssue._id}`,
-        editedIssue,
-        getAuthConfig()
+  try {
+    setLoading(true);
+    setError(null);
+    
+    // Save to localStorage immediately
+    const pendingUpdate = {
+      issueId: selectedIssue._id,
+      updatedData: editedIssue,
+      timestamp: Date.now()
+    };
+    const pendingUpdates = JSON.parse(localStorage.getItem('pendingIssueFullUpdates') || '[]');
+    pendingUpdates.push(pendingUpdate);
+    localStorage.setItem('pendingIssueFullUpdates', JSON.stringify(pendingUpdates));
+    
+    // Optimistically update UI
+    setIssues(issues.map(issue =>
+      issue._id === selectedIssue._id ? editedIssue : issue
+    ));
+    setSelectedIssue(editedIssue);
+    setIsEditMode(false);
+    
+    // Make API call in background
+    axios.put(
+      `https://caffetest.onrender.com/api/v1/issue/${selectedIssue._id}`,
+      editedIssue,
+      getAuthConfig()
+    ).then(async (response) => {
+      // Remove from localStorage after successful API call
+      const currentPending = JSON.parse(localStorage.getItem('pendingIssueFullUpdates') || '[]');
+      const updated = currentPending.filter(
+        item => !(item.issueId === selectedIssue._id && item.timestamp === pendingUpdate.timestamp)
       );
+      localStorage.setItem('pendingIssueFullUpdates', JSON.stringify(updated));
+      
+      // Update with server response
       setIssues(issues.map(issue =>
         issue._id === selectedIssue._id ? response.data.data : issue
       ));
       setSelectedIssue(response.data.data);
       setEditedIssue(response.data.data);
-      setIsEditMode(false);
+      
       await fetchIssues();
       showAlert({
         type: "success",
         message: "Issue updated successfully"
       });
-    } catch (err) {
+    }).catch(() => {
       setError('Failed to update issue');
       showAlert({
         type: "error",
         message: "Failed to update issue"
       });
-    } finally {
-      setLoading(false);
-    }
-  };
+    });
+    
+  } catch (err) {
+    setError('Failed to update issue');
+    showAlert({
+      type: "error",
+      message: "Failed to update issue"
+    });
+  } finally {
+    setLoading(false);
+  }
+};
 
   // Move issue to trash
   const handleMoveIssueToTrash = async (issueId) => {
@@ -470,16 +532,6 @@ const KanbanBoard = () => {
   return (
     <div className="max-h-[calc(100vh-69px)] p-2 kanban-scrollbar justify-center items-center bg-gray-50 dark:bg-gray-900">
       {error && <div className="text-red-500 dark:text-red-400 text-sm mb-2">{error}</div>}
-
-      {/* Drag and drop loader overlay */}
-      {updatingStatus && (
-        <div className="fixed inset-0 bg-black/20 dark:bg-black/40 backdrop-blur-sm z-40 flex items-center justify-center">
-          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 shadow-xl flex items-center gap-3">
-            <Loader2 className="w-5 h-5 animate-spin text-blue-600 dark:text-blue-400" />
-            <span className="text-sm font-medium text-gray-700 dark:text-gray-100">Updating issue status...</span>
-          </div>
-        </div>
-      )}
 
       <div className="flex gap-3 overflow-x-auto">
         {statuses.map((status) => {
