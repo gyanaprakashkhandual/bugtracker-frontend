@@ -1,21 +1,21 @@
-# CapTest — CA50EST | Bug Tracker Frontend
+# Caffetest — Bug Tracker Frontend
 
-CapTest is an intelligent, AI-powered bug tracking and test management web application. It automatically generates test cases from your Selenium test code, logs bugs on test failure, and provides a complete project management ecosystem — all from a single platform.
+Caffetest is an intelligent, AI-powered bug tracking and test management web application. It automatically generates test cases from your Selenium test code, logs bugs on test failure, and provides a complete project management ecosystem — all from a single platform.
 
 Live: [caffetest.vercel.app](https://caffetest.vercel.app)
 
 ---
 
-## What CapTest Does
+## What Caffetest Does
 
-CapTest transforms your Selenium test code into structured test cases and bug reports automatically, without any manual input. It combines the intelligence of an AI chatbot with the discipline of a full project management and bug tracking platform.
+Caffetest transforms your Selenium test code into structured test cases and bug reports automatically, without any manual input. It combines the intelligence of an AI chatbot with the discipline of a full project management and bug tracking platform.
 
 **How it works:**
 
 1. Install the **Capitus Tracker** extension from the VS Code Marketplace.
-2. Connect your project to CapTest via the extension.
+2. Connect your project to Caffetest via the extension.
 3. Write your Selenium test code inside VS Code as usual.
-4. AI automatically reads your test code and generates test cases inside your CapTest project.
+4. AI automatically reads your test code and generates test cases inside your Caffetest project.
 5. When a test runs and **fails**, a bug is automatically created and logged to the project.
 6. When a test **passes**, the test case is marked resolved — no manual update needed.
 
@@ -100,8 +100,8 @@ To use the AI test case generation and auto bug logging features:
 
 1. Open VS Code.
 2. Search for **Capitus Tracker** in the Extensions Marketplace.
-3. Install and configure it with your CapTest project credentials.
-4. Write Selenium tests — CapTest handles everything from there.
+3. Install and configure it with your Caffetest project credentials.
+4. Write Selenium tests — Caffetest handles everything from there.
 
 ---
 
